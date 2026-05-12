@@ -606,6 +606,26 @@
     .btn-sheet.marcar:hover { background:#d1fae5; }
     .btn-sheet.close  { background:#f1f5f9; color:var(--text-soft); border-color:var(--border); }
     .btn-sheet.close:hover  { background:var(--border); color:var(--black); }
+    .btn-sheet.parcial { background:#fff7ed; color:#ea580c; border-color:rgba(251,146,60,0.3); }
+    .btn-sheet.parcial:hover { background:#ffedd5; }
+
+    /* ─── PARTIAL PAYMENT BADGE ─── */
+    .sheet-status-badge.parcial::before { content:''; width:6px; height:6px; border-radius:50%; background:#fb923c; display:block; }
+
+    /* ─── PAYMENT BREAKDOWN BLOCK ─── */
+    .sheet-payment-breakdown { display:flex; justify-content:space-between; background:#fff7ed; border:1px solid rgba(251,146,60,0.3); border-radius:10px; padding:12px 16px; margin-bottom:18px; font-size:12px; }
+    .sheet-payment-col { display:flex; flex-direction:column; gap:2px; }
+    .sheet-payment-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#9a3412; }
+    .sheet-payment-value { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#ea580c; }
+    .sheet-payment-value.paid { color:#059669; }
+
+    /* ─── DOC BADGE PARCIAL ─── */
+    .doc-badge.parcial { background:#fff7ed; color:#ea580c; border:1px solid rgba(251,146,60,0.3); }
+
+    /* ─── HISTORIAL SECTIONS ─── */
+    .hist-section { margin-bottom: 20px; }
+    .hist-section-title { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--text-soft); padding:8px 0 6px; border-bottom:2px solid var(--border); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .hist-count { background:var(--border); border-radius:20px; padding:2px 8px; font-size:9px; }
 
     /* ─── EDIT MODAL ─── */
     .edit-sheet {
@@ -642,35 +662,120 @@
     /* ─── PRINT ─── */
     @media print {
       body * { visibility: hidden; }
-      .doc-sheet, .doc-sheet * { visibility: visible; }
-      .doc-sheet { position: fixed; top:0; left:0; width:100%; max-width:100%; border-radius:0; box-shadow:none; max-height:none; overflow:visible; }
-      .sheet-actions { display: none; }
+      #modalDoc, #modalDoc * { visibility: visible; }
+      #modalDoc {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: white; display: flex !important;
+        align-items: flex-start; justify-content: center;
+        padding: 0; z-index: 999999;
+      }
+      .doc-sheet {
+        position: relative; top:0; left:0;
+        width: 100%; max-width: 600px; margin: 0 auto;
+        border-radius: 0; box-shadow: none;
+        max-height: none; overflow: visible;
+        page-break-inside: avoid;
+      }
+      .sheet-actions { display: none !important; }
+      .modal-overlay { background: none !important; backdrop-filter: none !important; }
+      .sheet-title { font-size: 40px !important; }
+      .sheet-doc-type { font-size: 12px !important; letter-spacing: 6px !important; }
+      .sheet-payment-breakdown { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sheet-top-factura, .sheet-top-recibo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sheet-total-block { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
 
     /* ─── RESPONSIVE ─── */
+    /* ─── RESPONSIVE ─── */
     @media (max-width: 700px) {
-      .ranking-grid { grid-template-columns: repeat(2, 1fr); }
-      .bottom-row { grid-template-columns: 1fr; }
-      .fact-grid { grid-template-columns: 1fr; }
-      .meta-top { flex-direction: column; }
+
+      /* Header */
+      .header { padding: 12px 16px; gap: 8px; }
+      .logo-text { font-size: 17px; letter-spacing: 2px; }
+      .logo-sub { display: none; }
+      .badge-bono { display: none; }
+      .live-dot { font-size: 10px; }
+      .btn-logout { padding: 5px 10px; font-size: 10px; }
+      .header-right { gap: 8px; }
+
+      /* Nav */
+      .nav-tab { padding: 12px 14px; font-size: 10px; letter-spacing: 1px; }
+
+      /* Ventas page */
+      .ventas-main, .fact-main { padding: 14px 12px; }
+      .meta-hero { padding: 20px 16px; }
+      .meta-top { flex-direction: column; gap: 12px; }
       .meta-amounts { justify-content: space-between; width: 100%; }
       .amount-block { text-align: left !important; }
-      .amount-value { font-size: 38px; }
-      .header { padding: 14px 18px; }
-      .ventas-main, .fact-main { padding: 18px 14px; }
-      .meta-hero { padding: 24px 20px; }
-      .panel-v, .panel-f { padding: 20px 16px; }
-      .venta-service { display: none; }
-      .form-row { grid-template-columns: 1fr; }
+      .amount-value { font-size: 34px; }
+      .semana-title { font-size: 18px; }
       .progress-labels span:nth-child(2),
       .progress-labels span:nth-child(3),
       .progress-labels span:nth-child(4) { display: none; }
-      .nav-tab { padding: 12px 14px; font-size: 10px; }
-      .subtabs { flex-direction: column; }
-      .subtab-btn:first-child { border-radius: 10px 10px 0 0; border-right-width: 1.5px; border-bottom-width: 0.75px; }
-      .subtab-btn:last-child  { border-radius: 0 0 10px 10px; border-left-width: 1.5px; border-top-width: 0.75px; }
-      .login-box { padding: 30px 22px; }
-      .doc-item { flex-direction: column; align-items: flex-start; }
+
+      /* Ranking */
+      .ranking-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+      /* Bottom row */
+      .bottom-row { grid-template-columns: 1fr; gap: 10px; }
+      .panel-v, .panel-f { padding: 18px 14px; }
+      .form-row { grid-template-columns: 1fr; }
+
+      /* Venta rows */
+      .venta-service { display: none; }
+      .venta-row { gap: 8px; padding: 10px 0; }
+      .venta-amount { font-size: 15px; }
+      .venta-actions { gap: 3px; }
+      .venta-actions .btn-sm { padding: 5px 8px; font-size: 9px; }
+
+      /* Facturación */
+      .fact-grid { grid-template-columns: 1fr; }
+      .subtabs { gap: 0; }
+      .subtab-btn { border-radius: 0; font-size: 10px; padding: 11px 12px; }
+      .subtab-btn:first-child { border-radius: 10px 10px 0 0; border-bottom-width: 0; }
+      .subtab-btn:last-child  { border-radius: 0 0 10px 10px; border-top-width: 0; }
+
+      /* Historial doc items */
+      .doc-item { flex-wrap: wrap; gap: 8px; padding: 12px 12px; }
+      .doc-info { flex: 1; min-width: 120px; }
+      .doc-amount { width: 100%; font-size: 18px; }
+      .doc-actions { width: 100%; justify-content: flex-start; gap: 5px; flex-wrap: wrap; }
+      .doc-actions .btn-sm { padding: 6px 10px; font-size: 9px; }
+
+      /* Historial sections */
+      .hist-section-title { font-size: 8px; }
+
+      /* Sheet modal (invoice) */
+      .doc-sheet { border-radius: 16px 16px 0 0; max-height: 95vh; }
+      .sheet-top-factura, .sheet-top-recibo { padding: 20px 20px 16px; }
+      .sheet-title { font-size: 24px; }
+      .sheet-body { padding: 16px 20px 0; }
+      .sheet-total-block { margin: 0 -20px; padding: 14px 20px; }
+      .sheet-total-amount { font-size: 26px; }
+      .sheet-actions { padding: 0 20px 18px; gap: 8px; }
+      .sheet-actions.three { grid-template-columns: 1fr 1fr; }
+      .sheet-actions.three .btn-sheet:last-child { grid-column: 1 / -1; }
+      .sheet-actions.four  { grid-template-columns: 1fr 1fr; }
+
+      /* Edit / Pago parcial modals */
+      .edit-sheet { border-radius: 16px 16px 0 0; max-height: 95vh; }
+      .modal-overlay { align-items: flex-end; }
+      .edit-sheet-body { padding: 18px 18px; }
+
+      /* Login */
+      .login-box { padding: 28px 20px; max-width: 100%; border-radius: 16px; }
+      .login-logo-text { font-size: 24px; }
+
+      /* Payment breakdown */
+      .sheet-payment-breakdown { flex-direction: column; gap: 10px; }
+    }
+
+    @media (max-width: 400px) {
+      .ranking-grid { grid-template-columns: 1fr 1fr; }
+      .amount-value { font-size: 28px; }
+      .venta-name { font-size: 11px; }
+      .doc-actions .btn-sm { padding: 5px 8px; font-size: 8px; }
+      .header-right .live-dot { display: none; }
     }
   </style>
 </head>
@@ -1062,6 +1167,22 @@
       </div>
       <button class="btn-edit-save" onclick="saveEditVenta()">💾 Guardar Cambios</button>
       <button class="btn-edit-cancel" onclick="closeEditVentaModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: PAGO PARCIAL ─── -->
+<div class="modal-overlay" id="modalPagoParcial">
+  <div class="edit-sheet" style="max-width:380px;">
+    <div class="edit-sheet-header">
+      <h3>💰 REGISTRAR PAGO</h3>
+      <p id="pago-parcial-info">Total: $0.00 · Pagado: $0.00 · Pendiente: $0.00</p>
+    </div>
+    <div class="edit-sheet-body">
+      <div class="ff"><label>Monto a registrar ($)</label><input type="number" id="pp-monto" placeholder="0.00" step="0.01"></div>
+      <div class="ff"><label>Referencia del pago</label><input type="text" id="pp-ref" placeholder="Ej. Zelle, transferencia..."></div>
+      <button class="btn-edit-save" onclick="confirmarPagoParcial()">💾 Registrar Pago</button>
+      <button class="btn-edit-cancel" onclick="document.getElementById('modalPagoParcial').classList.remove('show')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1775,20 +1896,37 @@ async function saveDoc() {
 
 /* ─── Open sheet modal ─── */
 function openSheet(doc) {
-  const isFactura = doc.type === 'factura' && !doc.pagado;
+  const isFactura = doc.type === 'factura' && !doc.pagado && !doc.pagadoParcial;
+  const isParcial = doc.type === 'factura' && !!doc.pagadoParcial;
+  const isRecibo  = doc.pagado || doc.type === 'recibo';
+
+  /* Determine header style, status class and text */
+  let headerClass, statusClass, statusText;
+  if (isRecibo) {
+    headerClass = 'sheet-top-recibo';
+    statusClass = 'pagado';
+    statusText  = 'PAGO CONFIRMADO';
+  } else if (isParcial) {
+    headerClass = 'sheet-top-factura';
+    statusClass = 'parcial';
+    statusText  = 'PAGO PARCIAL';
+  } else {
+    headerClass = 'sheet-top-factura';
+    statusClass = 'pendiente';
+    statusText  = 'PENDIENTE DE PAGO';
+  }
 
   /* Header */
   const topEl = document.getElementById('sheet-top');
   topEl.innerHTML = `
-    <div class="${isFactura ? 'sheet-top-factura' : 'sheet-top-recibo'}">
-      <div class="sheet-doc-type">DGP Group</div>
-      <div class="sheet-title">${isFactura ? 'FACTURA' : 'RECIBO DE PAGO'}</div>
-      <div class="sheet-status-badge ${isFactura ? 'pendiente' : 'pagado'}">
-        ${isFactura ? 'PENDIENTE DE PAGO' : 'PAGO CONFIRMADO'}
-      </div>
+    <div class="${headerClass}">
+      <div class="sheet-doc-type">DGP GROUP USA · dgp-link.com</div>
+      <div class="sheet-title">${(isFactura || isParcial) ? 'FACTURA' : 'RECIBO DE PAGO'}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
+      <div class="sheet-status-badge ${statusClass}">${statusText}</div>
     </div>`;
   document.getElementById('sheet-zigzag').innerHTML =
-    `<div class="${isFactura ? 'sheet-zigzag-dark' : 'sheet-zigzag-blue'}"></div>`;
+    `<div class="${isRecibo ? 'sheet-zigzag-blue' : 'sheet-zigzag-dark'}"></div>`;
 
   document.getElementById('s-id').textContent    = doc.docId || doc._fsId || '—';
   document.getElementById('s-fecha').textContent = doc.fecha || '—';
@@ -1797,45 +1935,79 @@ function openSheet(doc) {
 
   const clientBlock = document.getElementById('s-client-block');
   const clientLabel = document.getElementById('s-client-label');
-  clientBlock.className = `sheet-client-block ${isFactura ? 'factura-style' : 'recibo-style'}`;
-  clientLabel.className = `sheet-client-label ${isFactura ? 'factura-style' : 'recibo-style'}`;
+  clientBlock.className = `sheet-client-block ${isRecibo ? 'recibo-style' : 'factura-style'}`;
+  clientLabel.className = `sheet-client-label ${isRecibo ? 'recibo-style' : 'factura-style'}`;
 
   const notaBlock = document.getElementById('s-nota-block');
-  if (isFactura && doc.nota) {
+  if ((isFactura || isParcial) && doc.nota) {
     document.getElementById('s-nota').textContent = doc.nota;
     notaBlock.style.display = 'block';
   } else {
     notaBlock.style.display = 'none';
   }
 
+  /* Payment breakdown for parcial */
+  const sheetBody = document.querySelector('.sheet-body');
+  let existingBreakdown = document.getElementById('s-payment-breakdown');
+  if (existingBreakdown) existingBreakdown.remove();
+  if (isParcial) {
+    const montoPagado = doc.montoPagado || 0;
+    const pendiente   = (doc.total || 0) - montoPagado;
+    const breakdownEl = document.createElement('div');
+    breakdownEl.id = 's-payment-breakdown';
+    breakdownEl.className = 'sheet-payment-breakdown';
+    breakdownEl.innerHTML = `
+      <div class="sheet-payment-col">
+        <div class="sheet-payment-label">Pagado</div>
+        <div class="sheet-payment-value paid">$${montoPagado.toFixed(2)}</div>
+      </div>
+      <div class="sheet-payment-col" style="text-align:right">
+        <div class="sheet-payment-label">Pendiente</div>
+        <div class="sheet-payment-value">$${pendiente.toFixed(2)}</div>
+      </div>`;
+    clientBlock.insertAdjacentElement('afterend', breakdownEl);
+  }
+
   const items = doc.items || [];
   let itemsHtml = '';
   items.forEach(it => {
     itemsHtml += `<tr>
-      <td><div class="item-name">${esc(it.s)}</div><div class="item-qty">Cantidad: ${it.c}</div></td>
+      <td><div class="item-name">${esc(it.s)}</div><div class="item-qty">${it.c > 1 ? `${it.c} unidades × $${it.p.toFixed(2)}` : 'Unidad'}</div></td>
       <td>$${it.t.toFixed(2)}</td>
     </tr>`;
   });
   document.getElementById('s-items').innerHTML = itemsHtml;
 
   const totalBlock = document.getElementById('s-total-block');
-  totalBlock.className = `sheet-total-block ${isFactura ? 'factura-style' : 'recibo-style'}`;
-  document.getElementById('s-total-label').textContent = isFactura ? 'Total a Pagar' : 'Total Pagado';
+  totalBlock.className = `sheet-total-block ${isRecibo ? 'recibo-style' : 'factura-style'}`;
+  document.getElementById('s-total-label').textContent = isRecibo ? 'Total Pagado' : 'Total a Pagar';
   document.getElementById('s-total').textContent = (doc.total || 0).toFixed(2);
 
-  document.getElementById('s-footer-text').innerHTML = isFactura
-    ? 'Una vez realizado el pago, recibirás tu recibo de confirmación.<br><strong>DGP Group — Servicios Digitales Profesionales</strong>'
-    : '¡Gracias por su preferencia!<br><strong>DGP Group — Servicios Digitales Profesionales</strong>';
+  document.getElementById('s-footer-text').innerHTML = isRecibo
+    ? '¡Gracias por su preferencia!<br><strong>DGP Group — Servicios Digitales Profesionales</strong>'
+    : 'Una vez realizado el pago, recibirás tu recibo de confirmación.<br><strong>DGP Group — Servicios Digitales Profesionales</strong>';
 
   const fsId = doc._fsId || '';
   const actions = document.getElementById('sheet-actions');
-  if (isFactura) {
-    actions.className = 'sheet-actions three';
+  if (isParcial) {
+    actions.className = 'sheet-actions';
+    actions.style.gridTemplateColumns = 'repeat(4, 1fr)';
     actions.innerHTML = `
-      <button class="btn-sheet print" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Registrar Pago</button>
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
-      <button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
+      <button class="btn-sheet close"  onclick="closeModal()">Cerrar</button>`;
+  } else if (isFactura) {
+    actions.style.gridTemplateColumns = '';
+    actions.className = 'sheet-actions';
+    actions.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    actions.innerHTML = `
+      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Pago parcial</button>
+      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
+      <button class="btn-sheet close"  onclick="closeModal()">Cerrar</button>`;
   } else {
+    actions.style.gridTemplateColumns = '';
     actions.className = 'sheet-actions';
     actions.innerHTML = `
       <button class="btn-sheet print" onclick="window.print()">🖨️ Imprimir</button>
@@ -1857,53 +2029,184 @@ async function marcarPagado(fsId) {
 
   try {
     await db.collection('documentos').doc(fsId).update({
-      type:      'recibo',
-      pagado:    true,
+      type:          'recibo',
+      pagado:        true,
+      pagadoParcial: false,
       fechaPago,
-      docId:     newDocId,
-      ref:       doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'
+      docId:         newDocId,
+      ref:           doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'
     });
     toast('Marcado como pagado ✅');
     /* Refresh the open sheet */
-    const updated = { ...doc, type:'recibo', pagado:true, fechaPago, docId:newDocId };
+    const updated = { ...doc, type:'recibo', pagado:true, pagadoParcial:false, fechaPago, docId:newDocId };
     openSheet(updated);
   } catch(err) {
     toast('Error al actualizar.', 'err');
   }
 }
 
+/* ─── Partial payment ─── */
+let pagoParcialFsId = null;
+
+function abrirPagoParcial(fsId) {
+  const doc = docsMap[fsId];
+  if (!doc) return;
+  pagoParcialFsId = fsId;
+  const total      = doc.total || 0;
+  const pagado     = doc.montoPagado || 0;
+  const pendiente  = total - pagado;
+  document.getElementById('pago-parcial-info').textContent =
+    `Total: $${total.toFixed(2)} · Pagado: $${pagado.toFixed(2)} · Pendiente: $${pendiente.toFixed(2)}`;
+  document.getElementById('pp-monto').value = '';
+  document.getElementById('pp-ref').value   = '';
+  document.getElementById('modalPagoParcial').classList.add('show');
+}
+
+async function confirmarPagoParcial() {
+  if (!pagoParcialFsId) return;
+  const doc = docsMap[pagoParcialFsId];
+  if (!doc) return;
+
+  const monto = parseFloat(document.getElementById('pp-monto').value);
+  const ref   = document.getElementById('pp-ref').value.trim();
+  const total = doc.total || 0;
+  const yaPageado = doc.montoPagado || 0;
+  const pendiente = total - yaPageado;
+
+  if (isNaN(monto) || monto <= 0) {
+    toast('⚠️ Ingresa un monto válido.', 'err'); return;
+  }
+  if (monto > pendiente + 0.001) {
+    toast(`⚠️ El monto no puede exceder el pendiente ($${pendiente.toFixed(2)}).`, 'err'); return;
+  }
+
+  const newMontoPagado = parseFloat((yaPageado + monto).toFixed(2));
+  const fsId = pagoParcialFsId;
+
+  try {
+    if (newMontoPagado >= total - 0.001) {
+      /* Fully paid — convert to recibo */
+      const oldDocId = doc.docId || '';
+      const numPart  = oldDocId.replace(/^FAC-/, '');
+      const newDocId = 'REC-' + numPart;
+      const fechaPago = fmtDate();
+      await db.collection('documentos').doc(fsId).update({
+        type:          'recibo',
+        pagado:        true,
+        pagadoParcial: false,
+        montoPagado:   newMontoPagado,
+        fechaPago,
+        docId:         newDocId,
+        ref:           ref || (doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'),
+        pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
+      });
+      toast('Pago completo registrado ✅');
+    } else {
+      /* Partial */
+      await db.collection('documentos').doc(fsId).update({
+        pagadoParcial: true,
+        montoPagado:   newMontoPagado,
+        pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
+      });
+      toast('Pago parcial registrado 💰');
+    }
+    document.getElementById('modalPagoParcial').classList.remove('show');
+    pagoParcialFsId = null;
+    /* Refresh sheet after listener updates docsMap */
+    setTimeout(() => {
+      const updated = docsMap[fsId];
+      if (updated) openSheet(updated);
+    }, 600);
+  } catch(err) {
+    toast('Error al registrar pago.', 'err');
+  }
+}
+
 function renderHistorial() {
   const container = document.getElementById('hist-list');
-  const docs = Object.values(docsMap).sort((a, b) => {
+  const allDocs = Object.values(docsMap).sort((a, b) => {
     const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
     const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
     return tb - ta;
   });
-  if (docs.length === 0) {
+  if (allDocs.length === 0) {
     container.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div>';
     return;
   }
-  let html = '';
-  docs.forEach(doc => {
-    const isFactura = doc.type === 'factura' && !doc.pagado;
-    const fsId      = doc._fsId || '';
-    html += `
+
+  /* Classify into 3 groups */
+  const pendientes = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
+  const parciales  = allDocs.filter(d => d.type === 'factura' && !!d.pagadoParcial);
+  const pagados    = allDocs.filter(d => d.pagado || d.type === 'recibo');
+
+  function docItemHTML(doc, group) {
+    const fsId = doc._fsId || '';
+    let badgeClass, badgeText;
+    if (group === 'parcial') {
+      badgeClass = 'parcial'; badgeText = 'Parcial';
+    } else if (group === 'pagado') {
+      badgeClass = 'recibo'; badgeText = 'Recibo';
+    } else {
+      badgeClass = 'factura'; badgeText = 'Factura';
+    }
+
+    let extraInfo = '';
+    if (group === 'parcial') {
+      const pagado    = doc.montoPagado || 0;
+      const pendiente = (doc.total || 0) - pagado;
+      extraInfo = `<div class="doc-date" style="color:#ea580c;">Pagado: $${pagado.toFixed(2)} / Pendiente: $${pendiente.toFixed(2)}</div>`;
+    }
+
+    let actionsHTML = `
+      <button class="btn-sm outline" onclick='openSheetById("${esc(fsId)}")'>Ver</button>
+      <button class="btn-sm edit"    onclick='openEditModal("${esc(fsId)}")'>✏️ Editar</button>
+      <button class="btn-sm del"     onclick='deleteDoc("${esc(fsId)}")'>🗑️</button>`;
+    if (group === 'pendiente') {
+      actionsHTML += `
+      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado</button>`;
+    } else if (group === 'parcial') {
+      actionsHTML += `
+      <button class="btn-sm" style="background:#fff7ed;border-color:rgba(251,146,60,0.3);color:#ea580c;" onclick='abrirPagoParcial("${esc(fsId)}")'>💰 Pago</button>
+      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado total</button>`;
+    }
+
+    return `
     <div class="doc-item">
-      <div class="doc-badge ${isFactura ? 'factura' : 'recibo'}">${isFactura ? 'Factura' : 'Recibo'}</div>
+      <div class="doc-badge ${badgeClass}">${badgeText}</div>
       <div class="doc-info">
         <div class="doc-id">${esc(doc.docId || fsId)}</div>
         <div class="doc-name">${esc(doc.cli || '—')}</div>
         <div class="doc-date">${esc(doc.fecha || '—')}</div>
+        ${extraInfo}
       </div>
       <div class="doc-amount">$${(doc.total || 0).toFixed(2)}</div>
-      <div class="doc-actions">
-        <button class="btn-sm outline" onclick='openSheetById("${esc(fsId)}")'>Ver</button>
-        <button class="btn-sm edit"    onclick='openEditModal("${esc(fsId)}")'>✏️ Editar</button>
-        <button class="btn-sm del"     onclick='deleteDoc("${esc(fsId)}")'>🗑️</button>
-        ${isFactura ? `<button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado</button>` : ''}
-      </div>
+      <div class="doc-actions">${actionsHTML}</div>
     </div>`;
-  });
+  }
+
+  let html = '';
+
+  if (pendientes.length) {
+    html += `<div class="hist-section">
+      <div class="hist-section-title">🔴 PENDIENTES DE PAGO <span class="hist-count">${pendientes.length}</span></div>
+      ${pendientes.map(d => docItemHTML(d, 'pendiente')).join('')}
+    </div>`;
+  }
+
+  if (parciales.length) {
+    html += `<div class="hist-section">
+      <div class="hist-section-title">🟡 PAGO PARCIAL <span class="hist-count">${parciales.length}</span></div>
+      ${parciales.map(d => docItemHTML(d, 'parcial')).join('')}
+    </div>`;
+  }
+
+  if (pagados.length) {
+    html += `<div class="hist-section">
+      <div class="hist-section-title">🟢 RECIBOS / PAGADOS <span class="hist-count">${pagados.length}</span></div>
+      ${pagados.map(d => docItemHTML(d, 'pagado')).join('')}
+    </div>`;
+  }
+
   container.innerHTML = html;
 }
 
