@@ -805,6 +805,10 @@
           <label class="field-label">Servicio</label>
           <select id="fSer"></select>
         </div>
+        <div class="field-group">
+          <label class="field-label">Fecha de la venta</label>
+          <input type="date" id="fFec">
+        </div>
         <button class="btn-reg" onclick="registrar()">
           <span style="display:flex;align-items:center;gap:10px">
             <i class="fa-solid fa-rocket"></i> GUARDAR VENTA
@@ -1222,6 +1226,7 @@ document.getElementById('login-pass').addEventListener('keydown', e => {
    INIT (runs after login)
 ═══════════════════════════════════════════════════════ */
 function initPage() {
+  document.getElementById('fFec').value = todayISO();
   buildEmployeeUI();
   populateServiceSelects();
   initVentas();
@@ -1439,11 +1444,17 @@ function filtrar(nom, btn) {
   renderLista(DATOS);
 }
 
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 async function registrar() {
   const e = document.getElementById('fEmp').value;
   const c = document.getElementById('fCli').value.trim();
   const s = document.getElementById('fSer').value;
   const m = parseFloat(document.getElementById('fMon').value);
+  const fechaVal = document.getElementById('fFec').value || todayISO();
   if (!c || isNaN(m) || m <= 0) {
     toast('⚠️ Ingresa el nombre del cliente y el monto.', 'err');
     return;
@@ -1453,13 +1464,15 @@ async function registrar() {
   btn.disabled = true;
   btn.querySelector('span').textContent = 'PROCESANDO...';
 
+  const fechaTS = firebase.firestore.Timestamp.fromDate(new Date(fechaVal + 'T12:00:00'));
+
   try {
     await db.collection('ventas').add({
       empleado: e,
       cliente:  c,
       servicio: s,
       monto:    m,
-      fecha:    firebase.firestore.FieldValue.serverTimestamp(),
+      fecha:    fechaTS,
       registradoPor: currentUser ? currentUser.email : 'desconocido'
     });
 
@@ -1492,6 +1505,7 @@ function cerrarModalVenta() {
   document.getElementById('modalExito').classList.remove('show');
   document.getElementById('fCli').value = '';
   document.getElementById('fMon').value = '';
+  document.getElementById('fFec').value = todayISO();
   resetBtnReg();
 }
 
