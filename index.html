@@ -1494,6 +1494,7 @@ function initPage() {
   populateServiceSelects();
   initVentas();
   initDocs();
+  initClientes();
   setSemanaLabel();
   onTypeChange();
 }
@@ -1553,6 +1554,7 @@ function switchPage(page, btn) {
   btn.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
+  if (page === 'dashboard') renderDashboard();
 }
 
 function switchSubTab(tab, btn) {
@@ -1576,6 +1578,7 @@ function initVentas() {
     .onSnapshot(snap => {
       DATOS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
       render();
+      if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
     }, err => {
       console.error('Ventas listener error:', err);
     });
@@ -1836,6 +1839,7 @@ async function registrar() {
       `*NUEVA VENTA DGP GROUP*\n👤 ${e}\n🤝 ${c}\n💼 ${s}\n💰 $${m.toFixed(2)}`
     );
     document.getElementById('lnkWA').href = `https://wa.me/${WA_NUM}?text=${waText}`;
+    saveCliente(c);
     document.getElementById('modalExito').classList.add('show');
     toast('Venta registrada con éxito ✅');
   } catch(err) {
@@ -1876,10 +1880,8 @@ function initDocs() {
       docsMap = {};
       snap.docs.forEach(d => { docsMap[d.id] = { _fsId: d.id, ...d.data() }; });
       updateHistorialBadge();
-      /* Re-render historial if visible */
-      if (document.getElementById('subtab-historial').style.display !== 'none') {
-        renderHistorial();
-      }
+      if (document.getElementById('subtab-historial').style.display !== 'none') renderHistorial();
+      if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
     }, err => {
       console.error('Docs listener error:', err);
     });
@@ -1991,6 +1993,7 @@ async function saveDoc() {
     document.getElementById('doc-nota').value = '';
     btn.disabled = false;
     btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+    saveCliente(cli);
     toast('Documento guardado ✅');
     /* Show the sheet immediately (use local data since listener may lag) */
     openSheet({ _fsId: added.id, ...docData });
@@ -2230,15 +2233,36 @@ async function confirmarPagoParcial() {
   }
 }
 
+let histFilter = 'todos';
+function setHistFilter(f, btn) {
+  histFilter = f;
+  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistorial();
+}
+
 function renderHistorial() {
   const container = document.getElementById('hist-list');
-  const allDocs = Object.values(docsMap).sort((a, b) => {
+  const search = (document.getElementById('hist-search')?.value || '').toLowerCase().trim();
+
+  let allDocs = Object.values(docsMap).sort((a, b) => {
     const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
     const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
     return tb - ta;
   });
+
+  if (search) {
+    allDocs = allDocs.filter(d =>
+      (d.cli || '').toLowerCase().includes(search) ||
+      (d.docId || '').toLowerCase().includes(search)
+    );
+  }
+  if (histFilter === 'factura') allDocs = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
+  else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial);
+  else if (histFilter === 'recibo')  allDocs = allDocs.filter(d => d.pagado || d.type === 'recibo');
+
   if (allDocs.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div>';
+    container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">${search || histFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
     return;
   }
 
@@ -2468,6 +2492,168 @@ document.getElementById('modalEdit').addEventListener('click', function(e) {
 document.getElementById('edit-type').addEventListener('change', function() {
   document.getElementById('edit-field-nota').style.display = this.value === 'factura' ? 'block' : 'none';
 });
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+let dashPeriod = 'semana';
+
+function setDashPeriod(p, btn) {
+  dashPeriod = p;
+  document.querySelectorAll('.dash-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const now          = new Date();
+  const semanaActual = Math.ceil(now.getDate() / 7);
+  const mesActual    = now.getMonth();
+  const añoActual    = now.getFullYear();
+
+  const ventasFiltradas = DATOS.filter(f => {
+    if (dashPeriod === 'todo') return true;
+    const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
+    if (dashPeriod === 'mes')    return fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
+    if (dashPeriod === 'semana') return Math.ceil(fd.getDate() / 7) === semanaActual && fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
+    return true;
+  });
+
+  const totalVentas = ventasFiltradas.reduce((a, f) => a + (parseFloat(f.monto) || 0), 0);
+  document.getElementById('dash-total-ventas').textContent = '$' + totalVentas.toFixed(2);
+
+  const allDocs  = Object.values(docsMap);
+  const cobrado  = allDocs.reduce((a, d) => {
+    if (d.pagado) return a + (d.total || 0);
+    if (d.pagadoParcial) return a + (d.montoPagado || 0);
+    return a;
+  }, 0);
+  const pendiente = allDocs.reduce((a, d) => {
+    if (d.pagado) return a;
+    return a + ((d.total || 0) - (d.montoPagado || 0));
+  }, 0);
+  document.getElementById('dash-total-facturas').textContent = allDocs.length;
+  document.getElementById('dash-cobrado').textContent        = '$' + cobrado.toFixed(2);
+  document.getElementById('dash-pendiente').textContent      = '$' + pendiente.toFixed(2);
+
+  /* Ventas por empleado */
+  const empSums = {};
+  EMPLEADOS.forEach(e => { empSums[e.nombre] = 0; });
+  ventasFiltradas.forEach(f => { if (empSums[f.empleado] !== undefined) empSums[f.empleado] += parseFloat(f.monto) || 0; });
+  const maxEmp = Math.max(...Object.values(empSums), 0.01);
+  document.getElementById('dash-emp-bars').innerHTML = EMPLEADOS.map(e => {
+    const v = empSums[e.nombre] || 0;
+    const pct = (v / maxEmp * 100).toFixed(1);
+    return `<div class="dash-bar-row">
+      <div class="dash-bar-label">${esc(e.nombre.split(' ')[0])}</div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct}%"></div></div>
+      <div class="dash-bar-amount">$${v.toFixed(0)}</div>
+    </div>`;
+  }).join('');
+
+  /* Top clientes */
+  const cliMap = {};
+  ventasFiltradas.forEach(f => {
+    const c = f.cliente || '—';
+    if (!cliMap[c]) cliMap[c] = { total: 0, count: 0 };
+    cliMap[c].total += parseFloat(f.monto) || 0;
+    cliMap[c].count++;
+  });
+  const topCli = Object.entries(cliMap).sort((a, b) => b[1].total - a[1].total).slice(0, 6);
+  document.getElementById('dash-top-clients').innerHTML = topCli.length
+    ? topCli.map(([n, d]) => `<div class="dash-top-row">
+        <span class="dash-top-name">${esc(n)}</span>
+        <span class="dash-top-count">${d.count} venta${d.count > 1 ? 's' : ''}</span>
+        <span class="dash-top-amt">$${d.total.toFixed(2)}</span>
+      </div>`).join('')
+    : '<div style="color:var(--text-soft);font-size:12px;padding:12px 0;">Sin datos para este período</div>';
+
+  /* Top servicios */
+  const srvMap = {};
+  ventasFiltradas.forEach(f => {
+    const s = f.servicio || '—';
+    if (!srvMap[s]) srvMap[s] = { total: 0, count: 0 };
+    srvMap[s].total += parseFloat(f.monto) || 0;
+    srvMap[s].count++;
+  });
+  const topSrv = Object.entries(srvMap).sort((a, b) => b[1].count - a[1].count).slice(0, 6);
+  document.getElementById('dash-top-services').innerHTML = topSrv.length
+    ? topSrv.map(([n, d]) => `<div class="dash-top-row">
+        <span class="dash-top-name">${esc(n)}</span>
+        <span class="dash-top-count">${d.count} vez${d.count > 1 ? 'ces' : ''}</span>
+        <span class="dash-top-amt">$${d.total.toFixed(2)}</span>
+      </div>`).join('')
+    : '<div style="color:var(--text-soft);font-size:12px;padding:12px 0;">Sin datos para este período</div>';
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMPARTIR FACTURA — WhatsApp / Email
+═══════════════════════════════════════════════════════ */
+function enviarWhatsApp(fsId) {
+  const doc = docsMap[fsId];
+  if (!doc) return;
+  const tipo   = doc.pagado ? 'RECIBO' : (doc.pagadoParcial ? 'FACTURA (Pago Parcial)' : 'FACTURA');
+  const estado = doc.pagado
+    ? '✅ PAGADO'
+    : doc.pagadoParcial
+      ? `💛 PAGO PARCIAL — Pagado: $${(doc.montoPagado || 0).toFixed(2)} · Pendiente: $${((doc.total || 0) - (doc.montoPagado || 0)).toFixed(2)}`
+      : '⏳ PENDIENTE DE PAGO';
+  const items = (doc.items || []).map(it => `  • ${it.s} x${it.c} — $${it.t.toFixed(2)}`).join('\n');
+  const msg =
+    `*${tipo} — DGP Group USA*\n\n` +
+    `📋 *N°:* ${doc.docId || '—'}\n` +
+    `👤 *Cliente:* ${doc.cli || '—'}\n` +
+    `📅 *Fecha:* ${doc.fecha || '—'}\n\n` +
+    `*Servicios:*\n${items}\n\n` +
+    `💰 *Total: $${(doc.total || 0).toFixed(2)}*\n` +
+    `${estado}\n\n` +
+    `_DGP Group USA — dgp-link.com_`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function enviarEmail(fsId) {
+  const doc = docsMap[fsId];
+  if (!doc) return;
+  const tipo  = doc.pagado ? 'Recibo' : 'Factura';
+  const items = (doc.items || []).map(it => `${it.s} x${it.c} - $${it.t.toFixed(2)}`).join('\n');
+  const body  =
+    `${tipo} N° ${doc.docId || '—'}\n` +
+    `Cliente: ${doc.cli || '—'}\n` +
+    `Fecha: ${doc.fecha || '—'}\n\n` +
+    `Servicios:\n${items}\n\n` +
+    `Total: $${(doc.total || 0).toFixed(2)}\n\n` +
+    `DGP Group USA — dgp-link.com`;
+  window.location.href = `mailto:?subject=${encodeURIComponent(tipo + ' ' + (doc.docId || ''))}&body=${encodeURIComponent(body)}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLIENTES — autocompletar
+═══════════════════════════════════════════════════════ */
+let clientesCache = [];
+
+function initClientes() {
+  db.collection('clientes').orderBy('nombre').get().then(snap => {
+    clientesCache = snap.docs.map(d => d.data().nombre);
+    refreshClientesDatalist();
+  }).catch(() => {});
+}
+
+function saveCliente(nombre) {
+  if (!nombre) return;
+  const id = nombre.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_áéíóúüñ]/g, '');
+  if (!id) return;
+  db.collection('clientes').doc(id).set(
+    { nombre, lastUsed: firebase.firestore.FieldValue.serverTimestamp() },
+    { merge: true }
+  ).then(() => {
+    if (!clientesCache.includes(nombre)) { clientesCache.push(nombre); refreshClientesDatalist(); }
+  }).catch(() => {});
+}
+
+function refreshClientesDatalist() {
+  const dl = document.getElementById('clientes-list');
+  if (dl) dl.innerHTML = clientesCache.map(c => `<option value="${esc(c)}">`).join('');
+}
 
 </script>
 
