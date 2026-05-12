@@ -62,6 +62,48 @@
       pointer-events: none; z-index: 0;
     }
 
+    /* ─── SPLASH SCREEN ─── */
+    #splash-screen {
+      position: fixed; inset: 0;
+      background: #080d1a;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #splash-screen.hidden { opacity: 0; visibility: hidden; }
+    .splash-logo-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px; letter-spacing: 8px; color: #fff;
+      animation: splashFadeUp 0.7s ease both;
+    }
+    .splash-logo-text span { color: #1438cc; }
+    .splash-logo-sub {
+      font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 4px;
+      text-transform: uppercase; margin-top: 4px;
+      animation: splashFadeUp 0.7s 0.1s ease both;
+    }
+    .splash-bar-wrap {
+      width: 160px; height: 2px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px; margin-top: 32px;
+      overflow: hidden;
+      animation: splashFadeUp 0.7s 0.2s ease both;
+    }
+    .splash-bar {
+      height: 100%; width: 0;
+      background: #1438cc;
+      border-radius: 2px;
+      animation: splashLoad 1.2s 0.3s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes splashFadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes splashLoad {
+      from { width: 0; }
+      to   { width: 100%; }
+    }
+
     /* ─── LOGIN SCREEN ─── */
     #login-screen {
       position: fixed; inset: 0;
@@ -634,7 +676,13 @@
 <body>
 
 <!-- ─── LOGIN SCREEN ─── -->
-<div id="login-screen">
+<div id="splash-screen">
+  <div class="splash-logo-text">DGP GROUP <span>USA</span></div>
+  <div class="splash-logo-sub">Sistema de Gestión</div>
+  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+</div>
+
+<div id="login-screen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-text">DGP GROUP <span>USA</span></div>
@@ -823,8 +871,12 @@
 
         <div class="ff">
           <label>Servicio</label>
-          <select id="srv-sel" onchange="document.getElementById('srv-pre').value=this.options[this.selectedIndex].dataset.p||''">
+          <select id="srv-sel" onchange="onSrvSelChange()">
           </select>
+        </div>
+        <div class="ff" id="srv-otro-wrap" style="display:none;">
+          <label>Nombre del servicio</label>
+          <input type="text" id="srv-otro-txt" placeholder="Ej. Mantenimiento web, Consultoría...">
         </div>
         <div class="ff-row">
           <div class="ff" style="margin:0"><label>Precio ($)</label><input type="number" id="srv-pre" placeholder="0.00" step="0.01"></div>
@@ -956,8 +1008,11 @@
       <div class="edit-add-section">
         <span class="edit-section-label">Añadir ítem</span>
         <div class="ff" style="margin-bottom:8px;">
-          <select id="edit-srv-sel" onchange="document.getElementById('edit-srv-pre').value=this.options[this.selectedIndex].dataset.p||''">
+          <select id="edit-srv-sel" onchange="onEditSrvSelChange()">
           </select>
+        </div>
+        <div class="ff" id="edit-srv-otro-wrap" style="display:none;margin-bottom:8px;">
+          <input type="text" id="edit-srv-otro-txt" placeholder="Nombre del servicio...">
         </div>
         <div class="edit-ff-row">
           <div class="ff" style="margin:0"><input type="number" id="edit-srv-pre" placeholder="Precio $" step="0.01"></div>
@@ -1062,6 +1117,9 @@ function servicesOptionsHTML() {
       <option value="3,000 Seguidores" data-p="75">3,000 Seguidores — $75</option>
       <option value="5,000 Seguidores" data-p="125">5,000 Seguidores — $125</option>
       <option value="10,000 Seguidores" data-p="190">10,000 Seguidores — $190</option>
+    </optgroup>
+    <optgroup label="──────────────────">
+      <option value="__otro__" data-p="">✏️ Otro (especificar)...</option>
     </optgroup>`;
 }
 
@@ -1097,7 +1155,13 @@ async function verificarAcceso(user) {
   }
 }
 
+function hideSplash() {
+  const s = document.getElementById('splash-screen');
+  if (s) s.classList.add('hidden');
+}
+
 function showLogin() {
+  hideSplash();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app-shell').style.display    = 'none';
   if (unsubVentas) { unsubVentas(); unsubVentas = null; }
@@ -1105,6 +1169,7 @@ function showLogin() {
 }
 
 function showApp(user) {
+  hideSplash();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display    = 'block';
   const ini = (user.displayName || user.email || '?')[0].toUpperCase();
@@ -1227,6 +1292,7 @@ function switchSubTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('subtab-nuevo').style.display     = tab === 'nuevo'    ? 'grid'  : 'none';
   document.getElementById('subtab-historial').style.display = tab === 'historial' ? 'block' : 'none';
+  if (tab === 'historial') renderHistorial();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1465,15 +1531,33 @@ function onTypeChange() {
   document.getElementById('btn-submit').textContent   = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
 }
 
+function onSrvSelChange() {
+  const sel = document.getElementById('srv-sel');
+  const isOtro = sel.value === '__otro__';
+  document.getElementById('srv-otro-wrap').style.display = isOtro ? 'block' : 'none';
+  document.getElementById('srv-pre').value = isOtro ? '' : (sel.options[sel.selectedIndex].dataset.p || '');
+}
+
+function onEditSrvSelChange() {
+  const sel = document.getElementById('edit-srv-sel');
+  const isOtro = sel.value === '__otro__';
+  document.getElementById('edit-srv-otro-wrap').style.display = isOtro ? 'block' : 'none';
+  document.getElementById('edit-srv-pre').value = isOtro ? '' : (sel.options[sel.selectedIndex].dataset.p || '');
+}
+
 /* ─── Cart ─── */
 function addItem() {
-  const s = document.getElementById('srv-sel').value;
+  const sel = document.getElementById('srv-sel');
+  let s = sel.value;
+  if (s === '__otro__') s = document.getElementById('srv-otro-txt').value.trim();
   const p = parseFloat(document.getElementById('srv-pre').value);
   const c = parseInt(document.getElementById('srv-can').value) || 1;
-  if (!s || isNaN(p) || p <= 0) { toast('Selecciona un servicio y un precio válido.', 'err'); return; }
+  if (!s || isNaN(p) || p <= 0) { toast('Ingresa el nombre del servicio y un precio válido.', 'err'); return; }
   cart.push({ s, p, c, t: parseFloat((p * c).toFixed(2)) });
   renderCart();
-  document.getElementById('srv-sel').selectedIndex = 0;
+  sel.selectedIndex = 0;
+  document.getElementById('srv-otro-wrap').style.display = 'none';
+  document.getElementById('srv-otro-txt').value = '';
   document.getElementById('srv-pre').value = '';
   document.getElementById('srv-can').value = '1';
 }
@@ -1732,6 +1816,8 @@ function openEditModal(fsId) {
   document.getElementById('edit-field-nota').style.display = showNota ? 'block' : 'none';
 
   document.getElementById('edit-srv-sel').selectedIndex = 0;
+  document.getElementById('edit-srv-otro-wrap').style.display = 'none';
+  document.getElementById('edit-srv-otro-txt').value = '';
   document.getElementById('edit-srv-pre').value = '';
   document.getElementById('edit-srv-can').value = '1';
 
@@ -1763,13 +1849,17 @@ function editRemoveItem(idx) {
 }
 
 function editAddItem() {
-  const s = document.getElementById('edit-srv-sel').value;
+  const sel = document.getElementById('edit-srv-sel');
+  let s = sel.value;
+  if (s === '__otro__') s = document.getElementById('edit-srv-otro-txt').value.trim();
   const p = parseFloat(document.getElementById('edit-srv-pre').value);
   const c = parseInt(document.getElementById('edit-srv-can').value) || 1;
-  if (!s || isNaN(p) || p <= 0) { toast('Selecciona servicio y precio.', 'err'); return; }
+  if (!s || isNaN(p) || p <= 0) { toast('Ingresa el nombre del servicio y un precio válido.', 'err'); return; }
   editCart.push({ s, p, c, t: parseFloat((p * c).toFixed(2)) });
   renderEditCart();
-  document.getElementById('edit-srv-sel').selectedIndex = 0;
+  sel.selectedIndex = 0;
+  document.getElementById('edit-srv-otro-wrap').style.display = 'none';
+  document.getElementById('edit-srv-otro-txt').value = '';
   document.getElementById('edit-srv-pre').value = '';
   document.getElementById('edit-srv-can').value = '1';
 }
