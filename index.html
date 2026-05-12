@@ -428,6 +428,7 @@
       padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
       animation: fadeIn 0.4s ease both;
     }
+    .venta-actions { display: flex; gap: 4px; flex-shrink: 0; }
     .venta-row:last-child { border-bottom: none; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
     .venta-avatar { width: 30px; height: 30px; flex-shrink: 0; background: var(--black); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--white); }
@@ -1031,6 +1032,40 @@
   </div>
 </div>
 
+<!-- ─── MODAL: EDITAR VENTA ─── -->
+<div class="modal-overlay" id="modalEditVenta">
+  <div class="edit-sheet" id="edit-venta-sheet">
+    <div class="edit-sheet-header">
+      <h3>✏️ EDITAR VENTA</h3>
+      <p id="edit-venta-id-label">—</p>
+    </div>
+    <div class="edit-sheet-body">
+      <div class="ff">
+        <label>Empleado</label>
+        <select id="ev-emp"></select>
+      </div>
+      <div class="ff">
+        <label>Cliente</label>
+        <input type="text" id="ev-cli" placeholder="Nombre cliente">
+      </div>
+      <div class="ff">
+        <label>Servicio</label>
+        <select id="ev-ser"></select>
+      </div>
+      <div class="ff">
+        <label>Monto ($)</label>
+        <input type="number" id="ev-mon" placeholder="0.00" step="0.01">
+      </div>
+      <div class="ff">
+        <label>Fecha</label>
+        <input type="date" id="ev-fec">
+      </div>
+      <button class="btn-edit-save" onclick="saveEditVenta()">💾 Guardar Cambios</button>
+      <button class="btn-edit-cancel" onclick="closeEditVentaModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── TOAST ─── -->
 <div id="toast" class="toast"></div>
 
@@ -1412,7 +1447,7 @@ function renderLista(data) {
   }
 
   let html = '';
-  filtered.slice().reverse().slice(0, 12).forEach((f, i) => {
+  filtered.slice().reverse().forEach((f, i) => {
     const emp     = f.empleado || '';
     const empObj  = EMPLEADOS.find(e => e.nombre === emp);
     const ini     = empObj ? empObj.ini : (emp[0] || '?').toUpperCase();
@@ -1422,6 +1457,7 @@ function renderLista(data) {
     const monto   = parseFloat(f.monto) || 0;
     const fechaRaw = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     const fecha   = fechaRaw.toLocaleDateString('es-ES', { day:'2-digit', month:'short' });
+    const vid     = esc(f._id || '');
     html += `
       <div class="venta-row" style="animation-delay:${i*0.05}s">
         <div class="venta-avatar">${esc(ini)}</div>
@@ -1432,6 +1468,10 @@ function renderLista(data) {
         <span class="venta-service">${esc(servicio)}</span>
         <span class="venta-date">${esc(fecha)}</span>
         <span class="venta-amount">$${monto.toFixed(2)}</span>
+        <div class="venta-actions">
+          <button class="btn-sm edit" onclick='openEditVentaModal("${vid}")'>✏️</button>
+          <button class="btn-sm del"  onclick='deleteVenta("${vid}")'>🗑️</button>
+        </div>
       </div>`;
   });
   el.innerHTML = html;
@@ -1443,6 +1483,91 @@ function filtrar(nom, btn) {
   filtroActivo = nom;
   renderLista(DATOS);
 }
+
+/* ═══════════════════════════════════════════════════════
+   EDITAR / ELIMINAR VENTAS
+═══════════════════════════════════════════════════════ */
+let editVentaId = null;
+
+function openEditVentaModal(id) {
+  const f = DATOS.find(d => d._id === id);
+  if (!f) return;
+  editVentaId = id;
+
+  const evEmp = document.getElementById('ev-emp');
+  evEmp.innerHTML = EMPLEADOS.map(e => `<option value="${esc(e.nombre)}">${esc(e.nombre)}</option>`).join('');
+  evEmp.value = f.empleado || '';
+
+  const evSer = document.getElementById('ev-ser');
+  const serviciosVenta = [
+    'Web Plan Básico','Web Plan Estándar','Web Plan Premium',
+    'Identidad Visual','Tarjeta de Presentación','Post / Flyers RRSS',
+    'Office Pack','Paquete Básico','Paquete Intermedio','Paquete Avanzado',
+    'WhatsApp Bronce','WhatsApp Plata','WhatsApp Oro','WhatsApp Pro','WhatsApp Enterprise',
+    '1,000 Seguidores','3,000 Seguidores','5,000 Seguidores','10,000 Seguidores',
+    'Publicidad Masiva','Otro'
+  ];
+  const servicioActual = f.servicio || '';
+  let optsHtml = serviciosVenta.map(s => `<option value="${esc(s)}"${s===servicioActual?' selected':''}>${esc(s)}</option>`).join('');
+  if (servicioActual && !serviciosVenta.includes(servicioActual)) {
+    optsHtml += `<option value="${esc(servicioActual)}" selected>${esc(servicioActual)}</option>`;
+  }
+  evSer.innerHTML = optsHtml;
+
+  document.getElementById('ev-cli').value = f.cliente || '';
+  document.getElementById('ev-mon').value = f.monto || '';
+
+  const fechaRaw = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
+  const iso = `${fechaRaw.getFullYear()}-${String(fechaRaw.getMonth()+1).padStart(2,'0')}-${String(fechaRaw.getDate()).padStart(2,'0')}`;
+  document.getElementById('ev-fec').value = iso;
+
+  document.getElementById('edit-venta-id-label').textContent = id.slice(-6).toUpperCase();
+  document.getElementById('modalEditVenta').classList.add('show');
+}
+
+function closeEditVentaModal() {
+  document.getElementById('modalEditVenta').classList.remove('show');
+  editVentaId = null;
+}
+
+async function saveEditVenta() {
+  const emp = document.getElementById('ev-emp').value;
+  const cli = document.getElementById('ev-cli').value.trim();
+  const ser = document.getElementById('ev-ser').value;
+  const mon = parseFloat(document.getElementById('ev-mon').value);
+  const fecVal = document.getElementById('ev-fec').value || todayISO();
+
+  if (!cli || isNaN(mon) || mon <= 0) {
+    toast('⚠️ Ingresa cliente y monto válido.', 'err'); return;
+  }
+
+  const fechaTS = firebase.firestore.Timestamp.fromDate(new Date(fecVal + 'T12:00:00'));
+  try {
+    await db.collection('ventas').doc(editVentaId).update({
+      empleado: emp, cliente: cli, servicio: ser, monto: mon, fecha: fechaTS
+    });
+    toast('Venta actualizada ✅');
+    closeEditVentaModal();
+  } catch(e) {
+    toast('Error al guardar.', 'err');
+  }
+}
+
+async function deleteVenta(id) {
+  const f = DATOS.find(d => d._id === id);
+  const name = f ? (f.cliente || id) : id;
+  if (!confirm(`¿Eliminar la venta de "${name}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await db.collection('ventas').doc(id).delete();
+    toast('Venta eliminada.');
+  } catch(e) {
+    toast('Error al eliminar.', 'err');
+  }
+}
+
+document.getElementById('modalEditVenta').addEventListener('click', function(e) {
+  if (e.target === this) closeEditVentaModal();
+});
 
 function todayISO() {
   const d = new Date();
