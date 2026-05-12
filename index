@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DGP Group | Sistema Completo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+
+    :root {
+      --white:      #ffffff;
+      --off:        #f7f7f5;
+      --black:      #0a0a0a;
+      --blue:       #1438cc;
+      --blue-light: #2a52e0;
+      --blue-xlight:#eff6ff;
+      --muted:      #2a3f7e;
+      --border:     #e8e8e4;
+      --text-soft:  #64748b;
+      --green:      #22c55e;
+      --green-dark: #059669;
+      --green-light:#ecfdf5;
+      --amber:      #d97706;
+      --amber-light:#fffbeb;
+      --text-mid:   #334155;
+      --bg-alt:     #f0f5ff;
+    }
+
+    body {
+      background: var(--white);
+      color: var(--black);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, #c8c8c8 1px, transparent 1px);
+      background-size: 36px 36px;
+      opacity: 0.28;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(20,56,204,0.05) 0%, transparent 65%);
+      top: 0; left: 50%; transform: translateX(-50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      position: sticky; top: 0; z-index: 200;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 32px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(16px);
+    }
+    .logo-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 3px; color: var(--black);
+    }
+    .logo-text span { color: var(--blue); }
+    .logo-sub { font-size: 9px; color: var(--text-soft); letter-spacing: 3px; text-transform: uppercase; font-weight: 300; margin-top: 1px; }
+
+    .header-right { display: flex; gap: 12px; align-items: center; }
+    .badge-bono {
+      border: 1px solid var(--border);
+      color: var(--black); padding: 5px 14px;
+      font-size: 11px; font-weight: 500; letter-spacing: 1px;
+      text-transform: uppercase;
+      background: var(--off);
+    }
+    .live-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--green); font-weight: 500; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .live-dot::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); display: block;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ─── NAV TABS ─── */
+    .nav-tabs {
+      position: relative; z-index: 100;
+      display: flex; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      padding: 0 32px;
+    }
+    .nav-tab {
+      padding: 14px 24px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-soft); background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-tab:hover { color: var(--blue); }
+    .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ─── TICKER ─── */
+    .ticker {
+      position: relative; z-index: 9;
+      border-bottom: 1px solid var(--border);
+      padding: 9px 32px;
+      font-size: 11px; font-weight: 400; letter-spacing: 1.5px;
+      color: var(--blue); text-transform: uppercase;
+      display: none; overflow: hidden;
+      background: rgba(20,56,204,0.03);
+    }
+    .ticker-inner { display: inline-block; animation: ticker-scroll 18s linear infinite; white-space: nowrap; }
+    @keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+    /* ─── PAGE WRAPPERS ─── */
+    .page { display: none; position: relative; z-index: 5; }
+    .page.active { display: block; }
+
+    /* ════════════════════════════
+       PAGE 1 — PANEL DE VENTAS
+    ════════════════════════════ */
+    .ventas-main {
+      max-width: 1050px; margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* META HERO */
+    .meta-hero {
+      background: var(--black);
+      padding: 32px 36px;
+      margin-bottom: 12px;
+      position: relative; overflow: hidden;
+    }
+    .meta-hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--blue-light), var(--blue));
+      background-size: 200% 100%;
+      animation: slideLine 3s ease-in-out infinite;
+    }
+    @keyframes slideLine { 0%{background-position:0% center}50%{background-position:100% center}100%{background-position:0% center} }
+
+    .meta-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+    }
+    .semana-label { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 6px; font-weight: 300; }
+    .semana-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--white); letter-spacing: 1px; }
+
+    .meta-amounts { display: flex; gap: 40px; align-items: flex-end; }
+    .amount-block { text-align: right; }
+    .amount-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); font-weight: 300; }
+    .amount-value { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--white); line-height: 1; }
+    .amount-value em { font-style: normal; color: var(--blue); font-size: 26px; }
+    .amount-faltante { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); letter-spacing: 0.5px; margin-top: 4px; display: block; }
+
+    .progress-track { height: 2px; background: rgba(255,255,255,0.12); position: relative; margin-bottom: 10px; }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: var(--blue);
+      transition: width 1.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--blue); box-shadow: 0 0 10px rgba(20,56,204,0.6);
+    }
+    .progress-labels { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 300; letter-spacing: 0.5px; }
+
+    /* RANKING */
+    .ranking-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .rank-card {
+      background: var(--white); padding: 24px 20px;
+      text-align: center; position: relative; overflow: hidden;
+      transition: background 0.25s; cursor: default;
+    }
+    .rank-card:hover { background: rgba(20,56,204,0.03); }
+    .rank-card.leader { background: rgba(20,56,204,0.05); }
+    .rank-card.leader::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); }
+    .rank-medal { position: absolute; top: 8px; right: 10px; font-size: 18px; }
+    .rank-streak { position: absolute; top: 8px; left: 10px; font-size: 15px; }
+    .rank-avatar {
+      width: 40px; height: 40px; border-radius: 0;
+      background: var(--black);
+      margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white);
+    }
+    .rank-card.leader .rank-avatar { background: var(--blue); }
+    .rank-name { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-soft); font-weight: 400; margin-bottom: 8px; }
+    .rank-total { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--black); line-height: 1; }
+    .rank-card.leader .rank-total { color: var(--blue); }
+
+    /* BOTTOM ROW VENTAS */
+    .bottom-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; }
+
+    .panel-v {
+      border: 1px solid var(--border);
+      background: var(--white);
+      padding: 28px 28px 24px;
+    }
+    .panel-title-v {
+      font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--blue); font-weight: 500; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title-v::before { content:''; display:block; width:16px; height:1px; background:var(--blue); }
+
+    /* Form fields */
+    .field-group { margin-bottom: 10px; }
+    .field-label { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-soft); margin-bottom: 6px; display: block; font-weight: 400; }
+    .field-group select, .field-group input {
+      width: 100%; padding: 11px 14px;
+      background: var(--off); border: 1px solid var(--border); border-radius: 0;
+      color: var(--black); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .field-group select:focus, .field-group input:focus { border-color: var(--blue); background: var(--white); }
+    .field-group input::placeholder { color: var(--text-soft); font-weight: 300; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .btn-reg {
+      width: 100%; padding: 15px 20px;
+      background: var(--blue); color: var(--white);
+      border: none; border-radius: 100px;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 1.5px;
+      text-transform: uppercase; cursor: pointer; margin-top: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.25s, transform 0.2s;
+    }
+    .btn-reg:hover { background: var(--blue-light); transform: translateY(-2px); }
+    .btn-reg:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-reg .arr { width: 24px; height: 24px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; transition: transform 0.25s; }
+    .btn-reg:hover .arr { transform: rotate(45deg); }
+
+    /* Filtros */
+    .filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .btn-filter {
+      padding: 5px 14px; background: var(--off); border: 1px solid var(--border);
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif;
+      font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .btn-filter:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-filter.active { background: var(--blue); border-color: var(--blue); color: var(--white); }
+
+    /* Venta rows */
+    .venta-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
+      animation: fadeIn 0.4s ease both;
+    }
+    .venta-row:last-child { border-bottom: none; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .venta-avatar { width: 30px; height: 30px; flex-shrink: 0; background: var(--black); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--white); }
+    .venta-info { flex: 1; min-width: 0; }
+    .venta-name { font-size: 12px; font-weight: 500; color: var(--black); }
+    .venta-client { font-size: 11px; color: var(--text-soft); font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .venta-service { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--blue); border: 1px solid var(--border); padding: 2px 8px; white-space: nowrap; }
+    .venta-date { font-size: 10px; color: var(--text-soft); white-space: nowrap; font-weight: 300; }
+    .venta-amount { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--green); white-space: nowrap; }
+    .empty-state { text-align: center; padding: 40px 0; color: var(--text-soft); font-size: 13px; font-weight: 300; }
+    .empty-state div { font-size: 28px; margin-bottom: 8px; }
+
+    /* ════════════════════════════
+       PAGE 2 — FACTURACIÓN
+    ════════════════════════════ */
+    .fact-main {
+      max-width: 1000px; margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    /* Subtabs */
+    .subtabs { display: flex; gap: 0; margin-bottom: 20px; }
+    .subtab-btn {
+      flex: 1; padding: 13px 10px;
+      background: white; border: 1.5px solid var(--border);
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--text-soft); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .subtab-btn:first-child { border-radius: 10px 0 0 10px; border-right-width: 0.75px; }
+    .subtab-btn:last-child  { border-radius: 0 10px 10px 0; border-left-width: 0.75px; }
+    .subtab-btn.active { background: var(--blue); color: white; border-color: var(--blue); box-shadow: 0 4px 16px rgba(20,56,204,0.3); }
+
+    /* Panels */
+    .fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .panel-f { background: white; border: 1px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+    .panel-f-full { grid-column: 1 / -1; }
+    .panel-title-f { font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--blue); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .panel-title-f::before { content:''; width:3px; height:14px; background:var(--blue); border-radius:2px; display:block; }
+
+    /* Fields facturacion */
+    .ff { margin-bottom: 13px; }
+    .ff label { display: block; font-size: 9px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--text-soft); margin-bottom: 5px; }
+    .ff input, .ff select, .ff textarea {
+      width: 100%; padding: 11px 14px;
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+      color: var(--black); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
+      outline: none; -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .ff input:focus, .ff select:focus, .ff textarea:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(20,56,204,0.08); }
+    .ff input::placeholder, .ff textarea::placeholder { color: #cbd5e1; }
+    .ff textarea { resize: vertical; min-height: 72px; font-size: 12px; }
+    .ff-row { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
+
+    .btn-add-f { width:100%; padding:12px; background:var(--black); color:white; border:none; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; margin-top:12px; }
+    .btn-add-f:hover { background:#1e293b; transform:translateY(-1px); }
+    .btn-primary-f { width:100%; padding:15px; background:linear-gradient(135deg,var(--blue),#0080ff); color:white; border:none; border-radius:12px; font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; letter-spacing:3px; text-transform:uppercase; cursor:pointer; margin-top:10px; transition:all 0.3s; box-shadow:0 6px 20px rgba(20,56,204,0.3); position:relative; overflow:hidden; }
+    .btn-primary-f:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(20,56,204,0.4); }
+    .btn-primary-f:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+    /* Cart */
+    .cart-table { width:100%; border-collapse:collapse; }
+    .cart-table th { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); padding:6px; border-bottom:1px solid var(--border); text-align:left; }
+    .cart-table td { padding:9px 6px; font-size:12px; border-bottom:1px solid #f8fafc; vertical-align:middle; }
+    .cart-table tr:last-child td { border-bottom:none; }
+    .remove-btn { background:none; border:none; color:#ef4444; cursor:pointer; font-size:16px; line-height:1; padding:0 4px; }
+    .cart-total { display:flex; justify-content:space-between; align-items:center; padding:14px 6px 0; border-top:2px solid var(--border); margin-top:8px; }
+    .cart-total-label { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); }
+    .cart-total-value { font-family:'Bebas Neue',sans-serif; font-size:24px; font-weight:800; color:var(--blue); }
+    .empty-cart { text-align:center; padding:24px 0; color:var(--text-soft); font-size:12px; }
+
+    /* Historial docs */
+    .doc-item { display:flex; align-items:center; gap:12px; padding:13px 16px; background:#f8fafc; border:1px solid var(--border); border-radius:14px; margin-bottom:8px; transition:all 0.2s; cursor:default; }
+    .doc-item:hover { border-color:rgba(20,56,204,0.2); background:var(--blue-xlight); }
+    .doc-badge { padding:4px 10px; border-radius:6px; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; white-space:nowrap; flex-shrink:0; }
+    .doc-badge.factura { background:var(--amber-light); color:var(--amber); border:1px solid rgba(217,119,6,0.2); }
+    .doc-badge.recibo  { background:var(--green-light); color:var(--green-dark); border:1px solid rgba(5,150,105,0.2); }
+    .doc-info { flex:1; min-width:0; }
+    .doc-id   { font-size:9px; font-weight:600; letter-spacing:2px; color:var(--blue); }
+    .doc-name { font-size:13px; font-weight:600; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .doc-date { font-size:10px; color:var(--text-soft); }
+    .doc-amount { font-family:'Bebas Neue',sans-serif; font-size:16px; font-weight:800; color:var(--black); white-space:nowrap; flex-shrink:0; }
+    .doc-actions { display:flex; gap:6px; flex-shrink:0; }
+    .btn-sm { padding:6px 12px; border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; border:1.5px solid; white-space:nowrap; }
+    .btn-sm.outline { background:white; border-color:var(--border); color:var(--text-mid); }
+    .btn-sm.outline:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-xlight); }
+    .btn-sm.paid { background:var(--green-light); border-color:rgba(5,150,105,0.3); color:var(--green-dark); }
+    .btn-sm.paid:hover { background:#d1fae5; }
+
+    /* ─── MODAL VENTA ─── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,10,10,0.65); backdrop-filter: blur(8px);
+      z-index: 9999; justify-content: center; align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--white); border: 1px solid var(--border);
+      padding: 48px 40px; text-align: center; max-width: 380px; width: 90%;
+      animation: modalIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative;
+    }
+    .modal-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), var(--blue-light)); }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.8) translateY(20px)} to{opacity:1;transform:scale(1)} }
+    .modal-icon { font-size: 56px; display: block; margin-bottom: 16px; }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--black); margin-bottom: 8px; letter-spacing: 0.5px; }
+    .modal-sub { font-size: 13px; color: var(--text-soft); font-weight: 300; margin-bottom: 28px; line-height: 1.7; border-left: 2px solid var(--border); padding-left: 14px; text-align: left; }
+    .btn-wa { display: flex; width: 100%; align-items: center; justify-content: space-between; background: var(--black); color: var(--white); text-decoration: none; padding: 15px 20px; border-radius: 100px; font-size: 12px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; transition: background 0.25s, transform 0.2s; }
+    .btn-wa:hover { background: var(--green); transform: translateY(-2px); }
+    .btn-wa .arr { width: 24px; height: 24px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; transition: transform 0.25s; }
+    .btn-wa:hover .arr { transform: rotate(45deg); }
+    .btn-close { display: block; width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text-soft); padding: 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .btn-close:hover { background: var(--off); color: var(--black); }
+
+    /* ─── MODAL DOCUMENTO ─── */
+    .doc-sheet {
+      background: white; border-radius: 24px;
+      max-width: 430px; width: 100%;
+      overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.2);
+      animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-height: 92vh; overflow-y: auto;
+    }
+    .sheet-top-factura { background: linear-gradient(135deg,#0f172a,#1e3a5f); padding: 26px 28px 22px; position: relative; overflow: hidden; }
+    .sheet-top-factura::before { content:''; position:absolute; bottom:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.05); }
+    .sheet-top-recibo { background: linear-gradient(135deg,var(--blue),#2979ff); padding: 26px 28px 22px; position: relative; overflow: hidden; }
+    .sheet-top-recibo::before { content:''; position:absolute; bottom:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08); }
+    .sheet-doc-type { font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,0.6); margin-bottom:5px; }
+    .sheet-title { font-family:'Bebas Neue',sans-serif; font-size:30px; font-weight:900; color:white; letter-spacing:1px; }
+    .sheet-status-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); color:white; font-size:10px; font-weight:600; letter-spacing:2px; padding:4px 12px; border-radius:20px; margin-top:10px; font-family:'IBM Plex Sans',sans-serif; }
+    .sheet-status-badge.pendiente::before { content:''; width:6px; height:6px; border-radius:50%; background:#fbbf24; display:block; }
+    .sheet-status-badge.pagado::before   { content:''; width:6px; height:6px; border-radius:50%; background:#34d399; display:block; }
+    .sheet-zigzag-dark { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#1e3a5f; background-size:16px 16px; background-repeat:repeat-x; }
+    .sheet-zigzag-blue { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#2979ff; background-size:16px 16px; background-repeat:repeat-x; }
+    .sheet-body { padding:22px 28px 0; }
+    .sheet-meta { display:flex; justify-content:space-between; margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed #e2e8f0; }
+    .sheet-meta-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); margin-bottom:3px; }
+    .sheet-meta-value { font-family:'Bebas Neue',sans-serif; font-size:14px; font-weight:600; color:var(--black); }
+    .sheet-client-block { border-radius:12px; padding:12px 16px; margin-bottom:18px; }
+    .sheet-client-block.factura-style { background:rgba(15,23,42,0.05); border:1px solid rgba(15,23,42,0.1); }
+    .sheet-client-block.recibo-style  { background:var(--blue-xlight); border:1px solid rgba(20,56,204,0.12); }
+    .sheet-client-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
+    .sheet-client-label.factura-style { color:var(--text-mid); }
+    .sheet-client-label.recibo-style  { color:var(--blue); }
+    .sheet-client-name { font-family:'Bebas Neue',sans-serif; font-size:18px; font-weight:800; color:var(--black); }
+    .sheet-client-ref  { font-size:11px; color:var(--text-soft); margin-top:2px; }
+    .sheet-nota-block { background:#fffbeb; border:1px solid rgba(217,119,6,0.2); border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:var(--amber); line-height:1.5; }
+    .sheet-nota-block strong { color:#92400e; }
+    .sheet-items { width:100%; border-collapse:collapse; margin-bottom:4px; }
+    .sheet-items thead th { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); padding:0 0 8px; text-align:left; border-bottom:1px solid var(--border); }
+    .sheet-items thead th:last-child { text-align:right; }
+    .sheet-items tbody td { padding:9px 0; font-size:12.5px; color:var(--text-mid); border-bottom:1px solid #f8fafc; vertical-align:middle; }
+    .sheet-items tbody td:last-child { text-align:right; font-weight:600; color:var(--black); }
+    .sheet-items tbody tr:last-child td { border-bottom:none; }
+    .item-name { font-weight:500; }
+    .item-qty  { font-size:10px; color:var(--text-soft); margin-top:1px; }
+    .sheet-total-block { margin:0 -28px; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; }
+    .sheet-total-block.factura-style { background:var(--black); }
+    .sheet-total-block.recibo-style  { background:var(--blue); }
+    .sheet-total-label  { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
+    .sheet-total-amount { font-family:'Bebas Neue',sans-serif; font-size:32px; font-weight:900; color:white; }
+    .sheet-footer { padding:16px 28px 20px; text-align:center; }
+    .sheet-footer p { font-size:11px; color:var(--text-soft); line-height:1.6; font-family:'IBM Plex Sans',sans-serif; }
+    .sheet-footer strong { color:var(--black); font-weight:600; }
+    .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 28px 24px; }
+    .sheet-actions.three { grid-template-columns:1fr 1fr 1fr; }
+    .btn-sheet { padding:12px; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; border:1.5px solid; text-align:center; }
+    .btn-sheet.print  { background:var(--blue-xlight); color:var(--blue); border-color:rgba(20,56,204,0.2); }
+    .btn-sheet.print:hover  { background:rgba(20,56,204,0.12); }
+    .btn-sheet.marcar { background:var(--green-light); color:var(--green-dark); border-color:rgba(5,150,105,0.25); }
+    .btn-sheet.marcar:hover { background:#d1fae5; }
+    .btn-sheet.close  { background:#f1f5f9; color:var(--text-soft); border-color:var(--border); }
+    .btn-sheet.close:hover  { background:var(--border); color:var(--black); }
+
+    /* ─── PRINT ─── */
+    @media print {
+      body * { visibility: hidden; }
+      .doc-sheet, .doc-sheet * { visibility: visible; }
+      .doc-sheet { position: fixed; top:0; left:0; width:100%; max-width:100%; border-radius:0; box-shadow:none; max-height:none; overflow:visible; }
+      .sheet-actions { display: none; }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 700px) {
+      .ranking-grid { grid-template-columns: 1fr 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+      .fact-grid { grid-template-columns: 1fr; }
+      .meta-top { flex-direction: column; }
+      .meta-amounts { justify-content: space-between; width: 100%; }
+      .amount-block { text-align: left !important; }
+      .amount-value { font-size: 38px; }
+      .header { padding: 14px 18px; }
+      .ventas-main, .fact-main { padding: 18px 14px; }
+      .meta-hero { padding: 24px 20px; }
+      .panel-v, .panel-f { padding: 20px 16px; }
+      .venta-service { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .progress-labels span:nth-child(2),
+      .progress-labels span:nth-child(3),
+      .progress-labels span:nth-child(4) { display: none; }
+      .nav-tab { padding: 12px 14px; font-size: 10px; }
+      .subtabs { flex-direction: column; }
+      .subtab-btn:first-child { border-radius: 10px 10px 0 0; border-right-width: 1.5px; border-bottom-width: 0.75px; }
+      .subtab-btn:last-child  { border-radius: 0 0 10px 10px; border-left-width: 1.5px; border-top-width: 0.75px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div>
+    <div class="logo-text">DGP GROUP <span>USA</span></div>
+    <div class="logo-sub">Sistema de Gestión</div>
+  </div>
+  <div class="header-right">
+    <div class="badge-bono"><i class="fa-solid fa-gift" style="color:var(--blue);margin-right:6px"></i> BONO $30</div>
+    <div class="live-dot">EN VIVO</div>
+  </div>
+</header>
+
+<!-- NAVIGATION -->
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="switchPage('ventas', this)">
+    <i class="fa-solid fa-chart-line"></i> Panel de Ventas
+  </button>
+  <button class="nav-tab" onclick="switchPage('facturacion', this)">
+    <i class="fa-solid fa-file-invoice-dollar"></i> Facturación
+  </button>
+</nav>
+
+<!-- TICKER -->
+<div id="ticker" class="ticker">
+  <span class="ticker-inner" id="tickerText"></span>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: PANEL DE VENTAS
+══════════════════════════════════════ -->
+<div id="page-ventas" class="page active">
+  <div class="ventas-main">
+
+    <!-- META HERO -->
+    <div class="meta-hero">
+      <div class="meta-top">
+        <div>
+          <div class="semana-label">Periodo Activo</div>
+          <div class="semana-title" id="txtSemana">CARGANDO...</div>
+        </div>
+        <div class="meta-amounts">
+          <div class="amount-block">
+            <div class="amount-label">Recaudado</div>
+            <div class="amount-value"><em>$</em><span id="valActual">0.00</span></div>
+            <span class="amount-faltante" id="txtFaltante">Calculando...</span>
+          </div>
+          <div class="amount-block" style="text-align:right">
+            <div class="amount-label">Progreso</div>
+            <div class="amount-value" id="valPorcentaje" style="color:var(--white)">0%</div>
+            <span class="amount-faltante">META $1,000</span>
+          </div>
+        </div>
+      </div>
+      <div class="progress-track">
+        <div id="barFill" class="progress-fill"></div>
+      </div>
+      <div class="progress-labels">
+        <span>$0</span><span>$250</span><span>$500</span><span>$750</span><span>$1,000</span>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div class="ranking-grid" id="rankingGrid">
+      <div class="rank-card" id="card-Kevin">
+        <div class="rank-avatar">K</div>
+        <div class="rank-name">Kevin</div>
+        <div class="rank-total" id="total-Kevin">$0.00</div>
+      </div>
+      <div class="rank-card" id="card-Angel">
+        <div class="rank-avatar">A</div>
+        <div class="rank-name">Angel</div>
+        <div class="rank-total" id="total-Angel">$0.00</div>
+      </div>
+      <div class="rank-card" id="card-Jose">
+        <div class="rank-avatar">J</div>
+        <div class="rank-name">Jose</div>
+        <div class="rank-total" id="total-Jose">$0.00</div>
+      </div>
+      <div class="rank-card" id="card-Paul">
+        <div class="rank-avatar">P</div>
+        <div class="rank-name">Paul</div>
+        <div class="rank-total" id="total-Paul">$0.00</div>
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="bottom-row">
+      <!-- FORM -->
+      <div class="panel-v">
+        <div class="panel-title-v">Registrar Venta</div>
+        <div class="field-group">
+          <label class="field-label">Empleado</label>
+          <select id="fEmp">
+            <option>Kevin Bermudez</option>
+            <option>Angel Rosales</option>
+            <option>Jose Acosta</option>
+            <option>Paul Espina</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label class="field-label">Cliente</label>
+            <input type="text" id="fCli" placeholder="Nombre cliente">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Monto $</label>
+            <input type="number" id="fMon" placeholder="0.00" step="0.01">
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Servicio</label>
+          <select id="fSer">
+            <option>Seguidores</option>
+            <option>Publicidad Masiva</option>
+            <option>Pagina Web</option>
+          </select>
+        </div>
+        <button class="btn-reg" onclick="registrar()">
+          <span style="display:flex;align-items:center;gap:10px">
+            <i class="fa-solid fa-rocket"></i> GUARDAR VENTA
+          </span>
+          <span class="arr"><i class="fa-solid fa-arrow-right"></i></span>
+        </button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="panel-v">
+        <div class="panel-title-v">Movimientos</div>
+        <div class="filtros">
+          <button class="btn-filter active" onclick="filtrar('Todos',this)">Todos</button>
+          <button class="btn-filter" onclick="filtrar('Kevin',this)">Kevin</button>
+          <button class="btn-filter" onclick="filtrar('Angel',this)">Angel</button>
+          <button class="btn-filter" onclick="filtrar('Jose',this)">Jose</button>
+          <button class="btn-filter" onclick="filtrar('Paul',this)">Paul</button>
+        </div>
+        <div id="listaVentas"></div>
+      </div>
+    </div>
+
+  </div><!-- /ventas-main -->
+</div><!-- /page-ventas -->
+
+
+<!-- ══════════════════════════════════════
+     PAGE: FACTURACIÓN
+══════════════════════════════════════ -->
+<div id="page-facturacion" class="page">
+  <div class="fact-main">
+
+    <!-- SUBTABS -->
+    <div class="subtabs">
+      <button class="subtab-btn active" onclick="switchSubTab('nuevo', this)">➕ Nuevo Documento</button>
+      <button class="subtab-btn" onclick="switchSubTab('historial', this)">📋 Historial</button>
+    </div>
+
+    <!-- SUB: NUEVO -->
+    <div id="subtab-nuevo" class="fact-grid">
+
+      <!-- FORM -->
+      <div class="panel-f">
+        <div class="panel-title-f" id="form-panel-title">Datos del Documento</div>
+
+        <div class="ff">
+          <label>Tipo de documento</label>
+          <select id="doc-type" onchange="onTypeChange()">
+            <option value="factura">🧾 Factura (pendiente de pago)</option>
+            <option value="recibo">✅ Recibo (pago ya recibido)</option>
+          </select>
+        </div>
+
+        <div class="ff">
+          <label>Nombre del cliente</label>
+          <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez">
+        </div>
+        <div class="ff">
+          <label>Referencia de pago</label>
+          <input type="text" id="pago-ref" placeholder="Ej. Zelle / Binance / Efectivo">
+        </div>
+
+        <div class="ff" id="field-nota" style="display:none;">
+          <label>Nota / Instrucción de pago</label>
+          <textarea id="doc-nota" placeholder="Ej: Realizar pago vía Zelle al correo pagos@dgpgroup.com..."></textarea>
+        </div>
+
+        <div style="border-top:1px solid var(--border); margin:16px 0 16px;"></div>
+        <div class="panel-title-f" style="margin-bottom:14px;">Añadir Servicio</div>
+
+        <div class="ff">
+          <label>Servicio</label>
+          <select id="srv-sel" onchange="document.getElementById('srv-pre').value=this.options[this.selectedIndex].dataset.p||''">
+            <option value="" disabled selected>Seleccionar servicio...</option>
+            <optgroup label="Diseño &amp; Identidad 🎨">
+              <option value="Web Plan Básico" data-p="215">Web Plan Básico — $215</option>
+              <option value="Web Plan Estándar" data-p="350">Web Plan Estándar — $350</option>
+              <option value="Web Plan Premium" data-p="500">Web Plan Premium — $500</option>
+              <option value="Identidad Visual" data-p="85">Identidad Visual — $85</option>
+              <option value="Tarjeta de Presentación" data-p="20">Tarjeta de Presentación — $20</option>
+              <option value="Post / Flyers RRSS" data-p="10">Post / Flyers RRSS — $10</option>
+              <option value="Office Pack" data-p="80">Office Pack — $80</option>
+              <option value="Paquete Básico" data-p="95">Paquete Básico — $95</option>
+              <option value="Paquete Intermedio" data-p="170">Paquete Intermedio — $170</option>
+              <option value="Paquete Avanzado" data-p="425">Paquete Avanzado — $425</option>
+            </optgroup>
+            <optgroup label="WhatsApp Marketing 📲">
+              <option value="WhatsApp Bronce (1 Sem)" data-p="55">Bronce — $55</option>
+              <option value="WhatsApp Plata (2 Sem)" data-p="75">Plata — $75</option>
+              <option value="WhatsApp Oro (1 Mes)" data-p="108">Oro — $108</option>
+              <option value="WhatsApp Pro (3 Meses)" data-p="225">Pro — $225</option>
+              <option value="WhatsApp Enterprise (1 Año)" data-p="650">Enterprise — $650</option>
+            </optgroup>
+            <optgroup label="Seguidores 🚀">
+              <option value="1,000 Seguidores" data-p="55">1,000 Seguidores — $55</option>
+              <option value="3,000 Seguidores" data-p="75">3,000 Seguidores — $75</option>
+              <option value="5,000 Seguidores" data-p="125">5,000 Seguidores — $125</option>
+              <option value="10,000 Seguidores" data-p="190">10,000 Seguidores — $190</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="ff-row">
+          <div class="ff" style="margin:0"><label>Precio ($)</label><input type="number" id="srv-pre" placeholder="0.00" step="0.01"></div>
+          <div class="ff" style="margin:0"><label>Cant.</label><input type="number" id="srv-can" value="1" min="1"></div>
+        </div>
+        <button class="btn-add-f" onclick="addItem()">+ Añadir al documento</button>
+      </div>
+
+      <!-- CART -->
+      <div class="panel-f" style="display:flex;flex-direction:column;">
+        <div class="panel-title-f">Vista Previa del Documento</div>
+
+        <div id="cart-empty" class="empty-cart">📋 Añade servicios para comenzar</div>
+        <table class="cart-table" id="cart-table" style="display:none;">
+          <thead><tr><th>Servicio</th><th style="text-align:right">Subtotal</th><th></th></tr></thead>
+          <tbody id="cart-list"></tbody>
+        </table>
+        <div class="cart-total" id="cart-total" style="display:none;">
+          <span class="cart-total-label">Total</span>
+          <span class="cart-total-value" id="cart-total-val">$0.00</span>
+        </div>
+
+        <button class="btn-primary-f" id="btn-submit" onclick="saveDoc()" style="margin-top:auto;padding-top:16px;">
+          🧾 Generar Factura
+        </button>
+      </div>
+
+    </div><!-- /subtab-nuevo -->
+
+    <!-- SUB: HISTORIAL -->
+    <div id="subtab-historial" style="display:none;">
+      <div class="panel-f panel-f-full">
+        <div class="panel-title-f">Todos los documentos</div>
+        <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
+      </div>
+    </div>
+
+  </div><!-- /fact-main -->
+</div><!-- /page-facturacion -->
+
+
+<!-- ─── MODAL: VENTA REGISTRADA ─── -->
+<div id="modalExito" class="modal-overlay">
+  <div class="modal-box">
+    <span class="modal-icon">🚀</span>
+    <div class="modal-title">¡VENTA REGISTRADA!</div>
+    <div class="modal-sub" id="pResumen"></div>
+    <a id="lnkWA" href="#" target="_blank" class="btn-wa">
+      <span style="display:flex;align-items:center;gap:10px">
+        <i class="fa-brands fa-whatsapp"></i> REPORTAR A WHATSAPP
+      </span>
+      <span class="arr"><i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <button class="btn-close" onclick="cerrarModalVenta()">Cerrar</button>
+  </div>
+</div>
+
+<!-- ─── MODAL: DOCUMENTO ─── -->
+<div class="modal-overlay" id="modalDoc">
+  <div class="doc-sheet" id="doc-sheet">
+    <div id="sheet-top"></div>
+    <div id="sheet-zigzag"></div>
+    <div class="sheet-body">
+      <div class="sheet-meta">
+        <div><div class="sheet-meta-label">N° Documento</div><div class="sheet-meta-value" id="s-id">—</div></div>
+        <div style="text-align:right"><div class="sheet-meta-label">Fecha</div><div class="sheet-meta-value" id="s-fecha">—</div></div>
+      </div>
+      <div class="sheet-client-block" id="s-client-block">
+        <div class="sheet-client-label" id="s-client-label">Cliente</div>
+        <div class="sheet-client-name" id="s-cli">—</div>
+        <div class="sheet-client-ref" id="s-ref">—</div>
+      </div>
+      <div class="sheet-nota-block" id="s-nota-block" style="display:none;">
+        <strong>📌 Instrucciones de pago:</strong><br>
+        <span id="s-nota"></span>
+      </div>
+      <table class="sheet-items">
+        <thead><tr><th>Descripción</th><th style="text-align:right">Importe</th></tr></thead>
+        <tbody id="s-items"></tbody>
+      </table>
+    </div>
+    <div class="sheet-total-block" id="s-total-block">
+      <span class="sheet-total-label" id="s-total-label">Total</span>
+      <span class="sheet-total-amount">$<span id="s-total">0.00</span></span>
+    </div>
+    <div class="sheet-footer">
+      <p id="s-footer-text">¡Gracias por su preferencia!<br><strong>DGP Group — Servicios Digitales Profesionales</strong></p>
+    </div>
+    <div class="sheet-actions" id="sheet-actions"></div>
+  </div>
+</div>
+
+
+<script>
+  /* ═══════════════════════════════════════════
+     NAVIGATION
+  ═══════════════════════════════════════════ */
+  function switchPage(page, btn) {
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+  }
+
+  function switchSubTab(tab, btn) {
+    document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('subtab-nuevo').style.display     = tab === 'nuevo' ? 'grid' : 'none';
+    document.getElementById('subtab-historial').style.display = tab === 'historial' ? 'block' : 'none';
+    if (tab === 'historial') renderHistorial();
+  }
+
+
+  /* ═══════════════════════════════════════════
+     PANEL DE VENTAS
+  ═══════════════════════════════════════════ */
+  const SCRIPT_VENTAS = "https://script.google.com/macros/s/AKfycbzIFxM6T6yGOl2GBQnwqYZyrg5HtEexNlDj8LrMGgZqglzWuY75AcQNzwBcCBlACf_haQ/exec";
+  let DATOS = [];
+  const INITIALS = { 'Kevin Bermudez':'K', 'Angel Rosales':'A', 'Jose Acosta':'J', 'Paul Espina':'P' };
+
+  async function cargar() {
+    const h = new Date();
+    const numSemana = Math.ceil(h.getDate() / 7);
+    const mes = h.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+    document.getElementById('txtSemana').innerText = `${mes} — SEMANA ${numSemana}`;
+    try {
+      const res = await fetch(SCRIPT_VENTAS + "?v=" + Math.random());
+      DATOS = await res.json();
+      render();
+    } catch(e) {
+      document.getElementById('txtSemana').innerText = "ERROR AL CARGAR";
+    }
+  }
+
+  function render() {
+    let sumas = { "Kevin Bermudez":0, "Angel Rosales":0, "Jose Acosta":0, "Paul Espina":0 };
+    let rachas = {};
+    let global = 0;
+    const hoy = new Date();
+    const hoyStr = hoy.toLocaleDateString();
+    const semanaActual = Math.ceil(hoy.getDate() / 7);
+    const mesActual = hoy.getMonth();
+    const añoActual = hoy.getFullYear();
+
+    DATOS.forEach((f, i) => {
+      const fechaVenta = new Date(f[0]);
+      const m = parseFloat(f[4]) || 0;
+      const emp = f[1];
+      const semanaVenta = Math.ceil(fechaVenta.getDate() / 7);
+
+      if (semanaVenta === semanaActual && fechaVenta.getMonth() === mesActual && fechaVenta.getFullYear() === añoActual) {
+        if (sumas.hasOwnProperty(emp)) sumas[emp] += m;
+        global += m;
+        if (fechaVenta.toLocaleDateString() === hoyStr) rachas[emp] = true;
+      }
+
+      if (i === DATOS.length - 1) {
+        const tickEl = document.getElementById('ticker');
+        const tickText = document.getElementById('tickerText');
+        const msg = `🔥 ÚLTIMA VENTA — ${emp.split(' ')[0]} cerró $${m.toFixed(2)} con ${f[2]}`;
+        tickText.innerText = msg + '   ·   ' + msg;
+        tickEl.style.display = 'block';
+      }
+    });
+
+    const p = Math.min((global / 1000) * 100, 100);
+    document.getElementById('barFill').style.width = p + '%';
+    document.getElementById('valActual').innerText = global.toFixed(2);
+    document.getElementById('valPorcentaje').innerText = p.toFixed(1) + '%';
+    const faltante = 1000 - global;
+    document.getElementById('txtFaltante').innerText = faltante > 0
+      ? `Faltan $${faltante.toFixed(2)} para el bono`
+      : '¡BONO ALCANZADO! 🏆';
+
+    const max = Math.max(...Object.values(sumas));
+    for (let e in sumas) {
+      const id = e.split(' ')[0];
+      const card = document.getElementById(`card-${id}`);
+      if (!card) continue;
+      document.getElementById(`total-${id}`).innerText = `$${sumas[e].toFixed(2)}`;
+      card.classList.remove('leader');
+      card.querySelectorAll('.rank-medal, .rank-streak').forEach(el => el.remove());
+      if (rachas[e]) card.insertAdjacentHTML('beforeend','<span class="rank-streak">🔥</span>');
+      if (sumas[e] === max && max > 0) {
+        card.classList.add('leader');
+        card.insertAdjacentHTML('beforeend','<span class="rank-medal">🏆</span>');
+      }
+    }
+
+    renderLista(DATOS);
+  }
+
+  function renderLista(data) {
+    const el = document.getElementById('listaVentas');
+    if (!data.length) {
+      el.innerHTML = '<div class="empty-state"><div>📭</div>Sin movimientos aún</div>';
+      return;
+    }
+    let html = '';
+    data.slice().reverse().slice(0,12).forEach((f, i) => {
+      const emp     = f[1] || '';
+      const ini     = INITIALS[emp] || emp[0] || '?';
+      const nombre  = emp.split(' ')[0];
+      const cliente = f[2] || '';
+      const servicio= f[3] || '';
+      const monto   = parseFloat(f[4]) || 0;
+      const fecha   = new Date(f[0]).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
+      html += `
+        <div class="venta-row" style="animation-delay:${i*0.05}s">
+          <div class="venta-avatar">${ini}</div>
+          <div class="venta-info">
+            <div class="venta-name">${nombre} <span style="font-weight:300;color:var(--text-soft)">· ${cliente}</span></div>
+            <div class="venta-client">${servicio}</div>
+          </div>
+          <span class="venta-service">${servicio}</span>
+          <span class="venta-date">${fecha}</span>
+          <span class="venta-amount">$${monto.toFixed(2)}</span>
+        </div>`;
+    });
+    el.innerHTML = html;
+  }
+
+  function filtrar(nom, btn) {
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = nom === 'Todos' ? DATOS : DATOS.filter(d => d[1] && d[1].includes(nom));
+    renderLista(f);
+  }
+
+  async function registrar() {
+    const e = document.getElementById('fEmp').value;
+    const c = document.getElementById('fCli').value.trim();
+    const s = document.getElementById('fSer').value;
+    const m = document.getElementById('fMon').value;
+    if (!c || !m) return alert('⚠️ Por favor ingresa el nombre del cliente y el monto.');
+
+    const btn = document.querySelector('.btn-reg');
+    btn.innerHTML = '<span>PROCESANDO...</span>';
+    btn.disabled = true;
+
+    try {
+      await fetch(SCRIPT_VENTAS, {
+        method: 'POST', mode: 'no-cors',
+        body: JSON.stringify({ empleado:e, cliente:c, servicio:s, monto:m })
+      });
+      document.getElementById('pResumen').innerText =
+        `${e.split(' ')[0]} cerró $${parseFloat(m).toFixed(2)} con ${c} — ${s}`;
+      document.getElementById('lnkWA').href =
+        `https://wa.me/584121002090?text=*NUEVA VENTA DGP GROUP*%0A👤 ${e}%0A🤝 ${c}%0A💼 ${s}%0A💰 $${m}`;
+      document.getElementById('modalExito').classList.add('show');
+    } catch(err) {
+      alert('Error al registrar. Verifica tu conexión.');
+      btn.innerHTML = '<span style="display:flex;align-items:center;gap:10px"><i class="fa-solid fa-rocket"></i> GUARDAR VENTA</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span>';
+      btn.disabled = false;
+    }
+  }
+
+  function cerrarModalVenta() {
+    document.getElementById('modalExito').classList.remove('show');
+    document.getElementById('fCli').value = '';
+    document.getElementById('fMon').value = '';
+    const btn = document.querySelector('.btn-reg');
+    btn.innerHTML = '<span style="display:flex;align-items:center;gap:10px"><i class="fa-solid fa-rocket"></i> GUARDAR VENTA</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span>';
+    btn.disabled = false;
+    cargar();
+  }
+
+  cargar();
+
+
+  /* ═══════════════════════════════════════════
+     FACTURACIÓN
+  ═══════════════════════════════════════════ */
+  const API_FACT = "https://script.google.com/macros/s/AKfycbxNxd1nWGmRAj_DPqrFkbcF5I5_wkxEAF1YYTEssj_jkocRUrG51nIA_2wvPjscHN6UGQ/exec";
+  const STORAGE_KEY = 'dgp-docs-v2';
+  let cart = [];
+  let docs = [];
+
+  /* Storage */
+  async function saveDocs() {
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(docs)); } catch(e) { localStorage.setItem(STORAGE_KEY, JSON.stringify(docs)); }
+  }
+  async function loadDocs() {
+    try {
+      const result = await window.storage.get(STORAGE_KEY);
+      if (result && result.value) { docs = JSON.parse(result.value); return; }
+    } catch(e) {}
+    try { const d = localStorage.getItem(STORAGE_KEY); if (d) docs = JSON.parse(d); } catch(e) { docs = []; }
+  }
+
+  /* Type change */
+  function onTypeChange() {
+    const type = document.getElementById('doc-type').value;
+    document.getElementById('field-nota').style.display = type === 'factura' ? 'block' : 'none';
+    document.getElementById('btn-submit').innerText = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+  }
+
+  /* Cart */
+  function addItem() {
+    const s = document.getElementById('srv-sel').value;
+    const p = parseFloat(document.getElementById('srv-pre').value);
+    const c = parseInt(document.getElementById('srv-can').value) || 1;
+    if (!s || isNaN(p) || p <= 0) return;
+    cart.push({ s, p, c, t: parseFloat((p * c).toFixed(2)) });
+    renderCart();
+    document.getElementById('srv-sel').selectedIndex = 0;
+    document.getElementById('srv-pre').value = '';
+    document.getElementById('srv-can').value = '1';
+  }
+
+  function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
+
+  function renderCart() {
+    const empty = cart.length === 0;
+    document.getElementById('cart-empty').style.display  = empty ? 'block' : 'none';
+    document.getElementById('cart-table').style.display  = empty ? 'none' : 'table';
+    document.getElementById('cart-total').style.display  = empty ? 'none' : 'flex';
+    document.getElementById('cart-list').innerHTML = cart.map((item, i) => `
+      <tr>
+        <td><div style="font-weight:500">${item.s}</div><div style="font-size:10px;color:var(--text-soft)">x${item.c} · $${item.p.toFixed(2)} c/u</div></td>
+        <td style="text-align:right;font-weight:600">$${item.t.toFixed(2)}</td>
+        <td><button class="remove-btn" onclick="removeItem(${i})">×</button></td>
+      </tr>`).join('');
+    document.getElementById('cart-total-val').innerText = '$' + cart.reduce((a,b) => a+b.t, 0).toFixed(2);
+  }
+
+  function fmtDate(d) {
+    const dt = d ? new Date(d) : new Date();
+    return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+  }
+
+  async function saveDoc() {
+    const cli  = document.getElementById('cli-nom').value.trim();
+    const ref  = document.getElementById('pago-ref').value.trim() || '—';
+    const nota = document.getElementById('doc-nota').value.trim();
+    const type = document.getElementById('doc-type').value;
+    if (!cli || cart.length === 0) return alert('⚠️ Completa el nombre del cliente y añade al menos un servicio.');
+
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true; btn.innerText = 'Procesando...';
+
+    const total  = cart.reduce((a,b) => a+b.t, 0);
+    const prefix = type === 'factura' ? 'FAC' : 'REC';
+    const id     = prefix + '-' + Math.floor(Math.random()*9000+1000);
+    const fecha  = fmtDate();
+    const doc    = { id, type, cli, ref, nota, fecha, total, items: [...cart], pagado: type === 'recibo' };
+
+    docs.unshift(doc);
+    await saveDocs();
+
+    try {
+      await fetch(API_FACT, {
+        method:'POST', mode:'no-cors', cache:'no-cache',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ nombre:cli, items:cart, subtotal:total, descuentoPct:0, totalFinal:total, tipo:type })
+      });
+    } catch(e) {}
+
+    cart = []; renderCart();
+    document.getElementById('cli-nom').value  = '';
+    document.getElementById('pago-ref').value = '';
+    document.getElementById('doc-nota').value = '';
+    btn.disabled = false;
+    btn.innerText = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+
+    // Update historial badge
+    const tabHist = document.querySelectorAll('.subtab-btn')[1];
+    tabHist.innerText = `📋 Historial (${docs.length})`;
+
+    openSheet(doc);
+  }
+
+  function openSheet(doc) {
+    const isFactura = doc.type === 'factura' && !doc.pagado;
+    document.getElementById('sheet-top').innerHTML = `
+      <div class="${isFactura ? 'sheet-top-factura' : 'sheet-top-recibo'}">
+        <div class="sheet-doc-type">DGP Group</div>
+        <div class="sheet-title">${isFactura ? 'FACTURA' : 'RECIBO DE PAGO'}</div>
+        <div class="sheet-status-badge ${isFactura ? 'pendiente' : 'pagado'}">
+          ${isFactura ? 'PENDIENTE DE PAGO' : 'PAGO CONFIRMADO'}
+        </div>
+      </div>`;
+    document.getElementById('sheet-zigzag').innerHTML =
+      `<div class="${isFactura ? 'sheet-zigzag-dark' : 'sheet-zigzag-blue'}"></div>`;
+
+    document.getElementById('s-id').innerText    = doc.id;
+    document.getElementById('s-fecha').innerText = doc.fecha;
+    document.getElementById('s-cli').innerText   = doc.cli;
+    document.getElementById('s-ref').innerText   = doc.ref && doc.ref !== '—' ? '📌 Ref: ' + doc.ref : '';
+
+    const clientBlock = document.getElementById('s-client-block');
+    const clientLabel = document.getElementById('s-client-label');
+    clientBlock.className = `sheet-client-block ${isFactura ? 'factura-style' : 'recibo-style'}`;
+    clientLabel.className = `sheet-client-label ${isFactura ? 'factura-style' : 'recibo-style'}`;
+
+    const notaBlock = document.getElementById('s-nota-block');
+    if (isFactura && doc.nota) {
+      document.getElementById('s-nota').innerText = doc.nota;
+      notaBlock.style.display = 'block';
+    } else { notaBlock.style.display = 'none'; }
+
+    document.getElementById('s-items').innerHTML = doc.items.map(i => `
+      <tr>
+        <td><div class="item-name">${i.s}</div><div class="item-qty">Cantidad: ${i.c}</div></td>
+        <td>$${i.t.toFixed(2)}</td>
+      </tr>`).join('');
+
+    const totalBlock = document.getElementById('s-total-block');
+    totalBlock.className = `sheet-total-block ${isFactura ? 'factura-style' : 'recibo-style'}`;
+    document.getElementById('s-total-label').innerText = isFactura ? 'Total a Pagar' : 'Total Pagado';
+    document.getElementById('s-total').innerText = doc.total.toFixed(2);
+
+    document.getElementById('s-footer-text').innerHTML = isFactura
+      ? 'Una vez realizado el pago, recibirás tu recibo de confirmación.<br><strong>DGP Group — Servicios Digitales Profesionales</strong>'
+      : '¡Gracias por su preferencia!<br><strong>DGP Group — Servicios Digitales Profesionales</strong>';
+
+    const actions = document.getElementById('sheet-actions');
+    if (isFactura) {
+      actions.className = 'sheet-actions three';
+      actions.innerHTML = `
+        <button class="btn-sheet print" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn-sheet marcar" onclick="marcarPagado('${doc.id}')">✅ Marcar pagado</button>
+        <button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
+    } else {
+      actions.className = 'sheet-actions';
+      actions.innerHTML = `
+        <button class="btn-sheet print" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
+    }
+
+    document.getElementById('modalDoc').classList.add('show');
+  }
+
+  async function marcarPagado(id) {
+    const doc = docs.find(d => d.id === id);
+    if (!doc) return;
+    doc.pagado = true; doc.type = 'recibo'; doc.fechaPago = fmtDate();
+    const numPart = doc.id.split('-')[1];
+    doc.id = 'REC-' + numPart;
+    doc.ref = doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado';
+    await saveDocs();
+    openSheet(doc);
+  }
+
+  function renderHistorial() {
+    const container = document.getElementById('hist-list');
+    if (docs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div>';
+      return;
+    }
+    container.innerHTML = docs.map(doc => {
+      const isFactura = doc.type === 'factura' && !doc.pagado;
+      return `
+      <div class="doc-item">
+        <div class="doc-badge ${isFactura ? 'factura' : 'recibo'}">${isFactura ? 'Factura' : 'Recibo'}</div>
+        <div class="doc-info">
+          <div class="doc-id">${doc.id}</div>
+          <div class="doc-name">${doc.cli}</div>
+          <div class="doc-date">${doc.fecha}</div>
+        </div>
+        <div class="doc-amount">$${doc.total.toFixed(2)}</div>
+        <div class="doc-actions">
+          ${isFactura ? `<button class="btn-sm paid" onclick='marcarPagadoFromList("${doc.id}")'>✅ Pagado</button>` : ''}
+          <button class="btn-sm outline" onclick='openSheetById("${doc.id}")'>Ver</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openSheetById(id)        { const d = docs.find(x => x.id === id); if (d) openSheet(d); }
+  function marcarPagadoFromList(id) { marcarPagado(id); }
+
+  function closeModal() {
+    document.getElementById('modalDoc').classList.remove('show');
+    renderHistorial();
+    const tabHist = document.querySelectorAll('.subtab-btn')[1];
+    tabHist.innerText = `📋 Historial (${docs.length})`;
+  }
+
+  document.getElementById('modalDoc').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  async function fetchSheetHistory() {
+    try {
+      const res  = await fetch(API_FACT + '?v=' + Math.random());
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+      const existingIds = new Set(docs.map(d => d.id));
+      let added = 0;
+      data.forEach(f => {
+        const id = f.id || ('REC-' + Math.floor(Math.random()*9000+1000));
+        if (existingIds.has(id)) return;
+        const srv = f.servicios || f.items || '—';
+        const tot = parseFloat(f.total || f.totalFinal || 0);
+        docs.push({ id, type:'recibo', pagado:true, cli:f.cliente||f.nombre||'—', ref:f.ref||'Venta registrada', nota:'', fecha:fmtDate(f.fecha), total:tot, items:[{s:srv,p:tot,c:1,t:tot}] });
+        added++;
+      });
+      if (added > 0) await saveDocs();
+    } catch(e) {}
+  }
+
+  /* Init */
+  (async () => {
+    await loadDocs();
+    await fetchSheetHistory();
+    const tabHist = document.querySelectorAll('.subtab-btn')[1];
+    tabHist.innerText = docs.length > 0 ? `📋 Historial (${docs.length})` : '📋 Historial';
+  })();
+</script>
+
+</body>
+</html>
