@@ -1072,8 +1072,14 @@ let unsubVentas   = null;
 let unsubDocs     = null;
 let currentUser   = null;
 
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
   if (user) {
+    const permitido = await verificarAcceso(user);
+    if (!permitido) {
+      await auth.signOut();
+      showLoginError('⛔ No tienes acceso al sistema. Contacta al administrador.');
+      return;
+    }
     currentUser = user;
     showApp(user);
   } else {
@@ -1081,6 +1087,15 @@ auth.onAuthStateChanged(user => {
     showLogin();
   }
 });
+
+async function verificarAcceso(user) {
+  try {
+    const doc = await db.collection('accesos').doc(user.email).get();
+    return doc.exists;
+  } catch(e) {
+    return false;
+  }
+}
 
 function showLogin() {
   document.getElementById('login-screen').style.display = 'flex';
