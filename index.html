@@ -777,6 +777,50 @@
       .doc-actions .btn-sm { padding: 5px 8px; font-size: 8px; }
       .header-right .live-dot { display: none; }
     }
+
+/* ─── DASHBOARD ─── */
+.dash-main { max-width:1000px; margin:0 auto; padding:28px 24px; }
+.dash-period-row { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.dash-period-btn { padding:7px 18px; border:1.5px solid var(--border); background:var(--white); border-radius:100px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; color:var(--text-soft); }
+.dash-period-btn.active { background:var(--blue); border-color:var(--blue); color:white; }
+.dash-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.dash-kpi-card { background:var(--white); border:1px solid var(--border); padding:18px 20px; border-radius:0; }
+.dash-kpi-label { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
+.dash-kpi-value { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--black); }
+.dash-kpi-value.green { color:var(--green); }
+.dash-kpi-value.amber { color:#d97706; }
+.dash-bar-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.dash-bar-label { font-size:11px; font-weight:500; color:var(--text-mid); width:120px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dash-bar-track { flex:1; height:8px; background:var(--off); border-radius:4px; overflow:hidden; }
+.dash-bar-fill { height:100%; background:var(--blue); border-radius:4px; transition:width 0.6s ease; }
+.dash-bar-fill.green { background:var(--green); }
+.dash-bar-amount { font-family:'Bebas Neue',sans-serif; font-size:14px; color:var(--black); width:60px; text-align:right; flex-shrink:0; }
+.dash-top-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.dash-top-row:last-child { border-bottom:none; }
+.dash-top-name { font-weight:500; color:var(--text-mid); flex:1; }
+.dash-top-count { font-size:10px; color:var(--text-soft); margin:0 12px; }
+.dash-top-amt { font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--black); }
+
+/* ─── HISTORIAL SEARCH ─── */
+.hist-search-bar { margin-bottom:16px; display:flex; flex-direction:column; gap:10px; }
+.hist-search-bar input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--black); background:var(--off); outline:none; transition:border-color 0.2s; box-sizing:border-box; }
+.hist-search-bar input:focus { border-color:var(--blue); background:var(--white); }
+.hist-filters { display:flex; gap:6px; flex-wrap:wrap; }
+.hist-filter-btn { padding:5px 14px; border:1.5px solid var(--border); border-radius:100px; font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:600; letter-spacing:1px; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; }
+.hist-filter-btn.active { background:var(--blue); border-color:var(--blue); color:white; }
+
+/* ─── WHATSAPP / EMAIL SHEET BUTTONS ─── */
+.btn-sheet.wa { background:#dcfce7; color:#15803d; border-color:rgba(5,150,105,0.25); }
+.btn-sheet.wa:hover { background:#bbf7d0; }
+.btn-sheet.email { background:#eff6ff; color:#1d4ed8; border-color:rgba(29,78,216,0.2); }
+.btn-sheet.email:hover { background:#dbeafe; }
+.sheet-actions.four { grid-template-columns: 1fr 1fr; }
+
+@media (max-width:700px) {
+  .dash-kpi-grid { grid-template-columns:1fr 1fr; }
+  .dash-bar-label { width:80px; }
+  .dash-main { padding:14px 12px; }
+}
   </style>
 </head>
 <body>
@@ -844,6 +888,9 @@
   <button class="nav-tab" onclick="switchPage('facturacion', this)">
     <i class="fa-solid fa-file-invoice-dollar"></i> Facturación
   </button>
+  <button class="nav-tab" onclick="switchPage('dashboard', this)">
+    <i class="fa-solid fa-chart-pie"></i> Dashboard
+  </button>
 </nav>
 
 <!-- TICKER -->
@@ -900,7 +947,7 @@
         <div class="form-row">
           <div class="field-group">
             <label class="field-label">Cliente</label>
-            <input type="text" id="fCli" placeholder="Nombre cliente">
+            <input type="text" id="fCli" placeholder="Nombre cliente" list="clientes-list">
           </div>
           <div class="field-group">
             <label class="field-label">Monto $</label>
@@ -964,7 +1011,7 @@
 
         <div class="ff">
           <label>Nombre del cliente</label>
-          <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez">
+          <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez" list="clientes-list">
         </div>
         <div class="ff">
           <label>Referencia de pago</label>
@@ -1020,12 +1067,72 @@
     <div id="subtab-historial" style="display:none;">
       <div class="panel-f panel-f-full">
         <div class="panel-title-f">Todos los documentos</div>
+        <div class="hist-search-bar">
+          <input type="text" id="hist-search" placeholder="🔍 Buscar por cliente o N° doc..." oninput="renderHistorial()">
+          <div class="hist-filters">
+            <button class="hist-filter-btn active" data-filter="todos" onclick="setHistFilter('todos',this)">Todos</button>
+            <button class="hist-filter-btn" data-filter="factura" onclick="setHistFilter('factura',this)">Pendientes</button>
+            <button class="hist-filter-btn" data-filter="parcial" onclick="setHistFilter('parcial',this)">Parciales</button>
+            <button class="hist-filter-btn" data-filter="recibo" onclick="setHistFilter('recibo',this)">Pagados</button>
+          </div>
+        </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
       </div>
     </div>
 
   </div><!-- /fact-main -->
 </div><!-- /page-facturacion -->
+
+<div id="page-dashboard" class="page">
+  <div class="dash-main">
+
+    <!-- Period selector -->
+    <div class="dash-period-row">
+      <button class="dash-period-btn active" onclick="setDashPeriod('semana',this)">Esta semana</button>
+      <button class="dash-period-btn" onclick="setDashPeriod('mes',this)">Este mes</button>
+      <button class="dash-period-btn" onclick="setDashPeriod('todo',this)">Todo</button>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="dash-kpi-grid">
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">💰 Ventas Totales</div>
+        <div class="dash-kpi-value" id="dash-total-ventas">$0.00</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">📄 Facturas Emitidas</div>
+        <div class="dash-kpi-value" id="dash-total-facturas">0</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">✅ Cobrado</div>
+        <div class="dash-kpi-value green" id="dash-cobrado">$0.00</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">⏳ Por Cobrar</div>
+        <div class="dash-kpi-value amber" id="dash-pendiente">$0.00</div>
+      </div>
+    </div>
+
+    <!-- Sales by employee -->
+    <div class="panel-f" style="margin-bottom:12px;">
+      <div class="panel-title-f">Ventas por empleado</div>
+      <div id="dash-emp-bars"></div>
+    </div>
+
+    <!-- Top clients -->
+    <div class="panel-f" style="margin-bottom:12px;">
+      <div class="panel-title-f">Top clientes</div>
+      <div id="dash-top-clients"></div>
+    </div>
+
+    <!-- Top services -->
+    <div class="panel-f">
+      <div class="panel-title-f">Servicios más vendidos</div>
+      <div id="dash-top-services"></div>
+    </div>
+
+  </div>
+</div>
 
 </div><!-- /app-shell -->
 
@@ -1098,7 +1205,7 @@
       </div>
       <div class="ff">
         <label>Nombre del cliente</label>
-        <input type="text" id="edit-cli" placeholder="Nombre cliente">
+        <input type="text" id="edit-cli" placeholder="Nombre cliente" list="clientes-list">
       </div>
       <div class="ff">
         <label>Referencia de pago</label>
@@ -1151,7 +1258,7 @@
       </div>
       <div class="ff">
         <label>Cliente</label>
-        <input type="text" id="ev-cli" placeholder="Nombre cliente">
+        <input type="text" id="ev-cli" placeholder="Nombre cliente" list="clientes-list">
       </div>
       <div class="ff">
         <label>Servicio</label>
@@ -1989,29 +2096,30 @@ function openSheet(doc) {
 
   const fsId = doc._fsId || '';
   const actions = document.getElementById('sheet-actions');
+  actions.style.gridTemplateColumns = '';
   if (isParcial) {
-    actions.className = 'sheet-actions';
-    actions.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    actions.className = 'sheet-actions four';
     actions.innerHTML = `
       <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
       <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Registrar Pago</button>
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
-      <button class="btn-sheet close"  onclick="closeModal()">Cerrar</button>`;
+      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   } else if (isFactura) {
-    actions.style.gridTemplateColumns = '';
-    actions.className = 'sheet-actions';
-    actions.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    actions.className = 'sheet-actions four';
     actions.innerHTML = `
       <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
       <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Pago parcial</button>
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
-      <button class="btn-sheet close"  onclick="closeModal()">Cerrar</button>`;
+      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   } else {
-    actions.style.gridTemplateColumns = '';
-    actions.className = 'sheet-actions';
+    actions.className = 'sheet-actions three';
     actions.innerHTML = `
-      <button class="btn-sheet print" onclick="window.print()">🖨️ Imprimir</button>
-      <button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
+      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
+      <button class="btn-sheet email"  onclick="enviarEmail('${esc(fsId)}')">📧 Email</button>
+      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   }
 
   document.getElementById('modalDoc').classList.add('show');
@@ -2362,6 +2470,8 @@ document.getElementById('edit-type').addEventListener('change', function() {
 });
 
 </script>
+
+<datalist id="clientes-list"></datalist>
 
 </body>
 </html>
