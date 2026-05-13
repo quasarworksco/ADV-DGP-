@@ -783,6 +783,7 @@
 .dash-period-row { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
 .dash-period-btn { padding:7px 18px; border:1.5px solid var(--border); background:var(--white); border-radius:100px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; color:var(--text-soft); }
 .dash-period-btn.active { background:var(--blue); border-color:var(--blue); color:white; }
+.dash-section-label { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
 .dash-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
 .dash-kpi-card { background:var(--white); border:1px solid var(--border); padding:18px 20px; border-radius:0; }
 .dash-kpi-label { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
@@ -1086,19 +1087,33 @@
 <div id="page-dashboard" class="page">
   <div class="dash-main">
 
-    <!-- Period selector -->
+    <!-- Period selector — solo afecta ventas -->
     <div class="dash-period-row">
       <button class="dash-period-btn active" onclick="setDashPeriod('semana',this)">Esta semana</button>
       <button class="dash-period-btn" onclick="setDashPeriod('mes',this)">Este mes</button>
       <button class="dash-period-btn" onclick="setDashPeriod('todo',this)">Todo</button>
     </div>
 
-    <!-- KPI cards -->
-    <div class="dash-kpi-grid">
+    <!-- KPI ventas (filtradas por período) -->
+    <div class="dash-section-label">📊 Ventas registradas</div>
+    <div class="dash-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">💰 Ventas Totales</div>
+        <div class="dash-kpi-label">💰 Monto Total</div>
         <div class="dash-kpi-value" id="dash-total-ventas">$0.00</div>
       </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">🔢 N° de Ventas</div>
+        <div class="dash-kpi-value" id="dash-num-ventas">0</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">📈 Promedio/Venta</div>
+        <div class="dash-kpi-value" id="dash-avg-venta">$0.00</div>
+      </div>
+    </div>
+
+    <!-- KPI facturas (siempre totales, no filtran por período) -->
+    <div class="dash-section-label" style="margin-top:16px;">🧾 Estado de facturación (total)</div>
+    <div class="dash-kpi-grid" style="margin-bottom:16px;">
       <div class="dash-kpi-card">
         <div class="dash-kpi-label">📄 Facturas Emitidas</div>
         <div class="dash-kpi-value" id="dash-total-facturas">0</div>
@@ -1111,8 +1126,11 @@
         <div class="dash-kpi-label">⏳ Por Cobrar</div>
         <div class="dash-kpi-value amber" id="dash-pendiente">$0.00</div>
       </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">💛 Pago Parcial</div>
+        <div class="dash-kpi-value" id="dash-parciales">0</div>
+      </div>
     </div>
-
     <!-- Sales by employee -->
     <div class="panel-f" style="margin-bottom:12px;">
       <div class="panel-title-f">Ventas por empleado</div>
@@ -2519,11 +2537,17 @@ function renderDashboard() {
     return true;
   });
 
+  /* KPIs de VENTAS — filtradas por período */
   const totalVentas = ventasFiltradas.reduce((a, f) => a + (parseFloat(f.monto) || 0), 0);
+  const numVentas   = ventasFiltradas.length;
+  const avgVenta    = numVentas > 0 ? totalVentas / numVentas : 0;
   document.getElementById('dash-total-ventas').textContent = '$' + totalVentas.toFixed(2);
+  document.getElementById('dash-num-ventas').textContent   = numVentas;
+  document.getElementById('dash-avg-venta').textContent    = '$' + avgVenta.toFixed(2);
 
-  const allDocs  = Object.values(docsMap);
-  const cobrado  = allDocs.reduce((a, d) => {
+  /* KPIs de FACTURAS — siempre totales, no filtran por período */
+  const allDocs   = Object.values(docsMap);
+  const cobrado   = allDocs.reduce((a, d) => {
     if (d.pagado) return a + (d.total || 0);
     if (d.pagadoParcial) return a + (d.montoPagado || 0);
     return a;
@@ -2532,9 +2556,11 @@ function renderDashboard() {
     if (d.pagado) return a;
     return a + ((d.total || 0) - (d.montoPagado || 0));
   }, 0);
+  const parciales = allDocs.filter(d => d.pagadoParcial && !d.pagado).length;
   document.getElementById('dash-total-facturas').textContent = allDocs.length;
   document.getElementById('dash-cobrado').textContent        = '$' + cobrado.toFixed(2);
   document.getElementById('dash-pendiente').textContent      = '$' + pendiente.toFixed(2);
+  document.getElementById('dash-parciales').textContent      = parciales;
 
   /* Ventas por empleado */
   const empSums = {};
