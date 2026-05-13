@@ -18,7 +18,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <!-- Firebase Storage removido — imágenes via Cloudinary -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -1471,7 +1471,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
-const storage = firebase.storage();
+// Cloudinary — reemplaza a Firebase Storage (gratis hasta 25GB)
+const CLOUDINARY_CLOUD_NAME   = 'dgden7fws';
+const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
 
 /* ═══════════════════════════════════════════════════════
    CONSTANTS
@@ -3184,7 +3186,7 @@ function openComprobanteModal(ventaId) {
   document.getElementById('modalComprobante').classList.add('show');
 }
 
-function uploadComprobante(input) {
+async function uploadComprobante(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { toast('La imagen no puede superar 5MB.', 'err'); return; }
@@ -3193,26 +3195,43 @@ function uploadComprobante(input) {
   const progressWrap = document.getElementById('upload-progress');
   const progressBar  = document.getElementById('upload-progress-bar');
   progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
 
-  const path = `comprobantes/${comprobanteVentaId}/${Date.now()}_${file.name}`;
-  const ref  = storage.ref(path);
-  const task = ref.put(file);
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', 'comprobantes');
+    formData.append('public_id', `${comprobanteVentaId}_${Date.now()}`);
 
-  task.on('state_changed',
-    snap => {
-      const pct = (snap.bytesTransferred / snap.totalBytes * 100).toFixed(0);
-      progressBar.style.width = pct + '%';
-    },
-    () => { toast('Error al subir imagen.', 'err'); progressWrap.style.display = 'none'; },
-    async () => {
-      const url = await ref.getDownloadURL();
-      await db.collection('ventas').doc(comprobanteVentaId).update({ comprobante_url: url });
-      toast('Comprobante guardado ✅');
-      document.getElementById('comp-img').src = url;
-      document.getElementById('comp-img-container').style.display = 'block';
-      progressWrap.style.display = 'none';
-    }
-  );
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener('progress', e => {
+      if (e.lengthComputable) {
+        progressBar.style.width = Math.round(e.loaded / e.total * 100) + '%';
+      }
+    });
+
+    const url = await new Promise((resolve, reject) => {
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+      xhr.onload = () => {
+        const res = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) resolve(res.secure_url);
+        else reject(new Error(res.error?.message || 'Error Cloudinary'));
+      };
+      xhr.onerror = () => reject(new Error('Error de red'));
+      xhr.send(formData);
+    });
+
+    await db.collection('ventas').doc(comprobanteVentaId).update({ comprobante_url: url });
+    toast('Comprobante guardado ✅');
+    document.getElementById('comp-img').src = url;
+    document.getElementById('comp-img-container').style.display = 'block';
+  } catch(e) {
+    toast('Error al subir imagen.', 'err');
+    console.error(e);
+  } finally {
+    progressWrap.style.display = 'none';
+  }
 }
 
 async function eliminarComprobante() {
