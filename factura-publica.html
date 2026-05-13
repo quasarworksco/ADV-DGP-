@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura — DGP Group USA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#f1f5f9; font-family:'IBM Plex Sans',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px; }
+    .pub-card { background:white; max-width:520px; width:100%; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.12); }
+    .pub-header-factura { background:linear-gradient(135deg,#0f172a,#1e3a5f); padding:28px 32px 24px; position:relative; }
+    .pub-header-recibo  { background:linear-gradient(135deg,#1438cc,#2979ff); padding:28px 32px 24px; position:relative; }
+    .pub-brand { font-size:10px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:6px; }
+    .pub-title { font-family:'Bebas Neue',sans-serif; font-size:36px; color:white; letter-spacing:1px; }
+    .pub-docnum { font-family:'Bebas Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.45); margin-top:4px; letter-spacing:2px; }
+    .pub-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); color:white; font-size:10px; font-weight:600; letter-spacing:2px; padding:4px 14px; border-radius:20px; margin-top:12px; }
+    .pub-badge::before { content:''; width:6px; height:6px; border-radius:50%; display:block; }
+    .pub-badge.pendiente::before { background:#fbbf24; }
+    .pub-badge.pagado::before   { background:#34d399; }
+    .pub-badge.parcial::before  { background:#fb923c; }
+    .pub-zigzag-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#1e3a5f; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-zigzag-blue { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#2979ff; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-body { padding:24px 32px 0; }
+    .pub-meta { display:flex; justify-content:space-between; margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed #e2e8f0; }
+    .pub-meta-col { }
+    .pub-meta-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; margin-bottom:3px; }
+    .pub-meta-value { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#0a0f1e; }
+    .pub-client { border-radius:10px; padding:12px 16px; margin-bottom:18px; }
+    .pub-client.dark { background:rgba(15,23,42,0.05); border:1px solid rgba(15,23,42,0.1); }
+    .pub-client.blue { background:#eff3ff; border:1px solid rgba(20,56,204,0.12); }
+    .pub-client-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
+    .pub-client-label.dark { color:#475569; }
+    .pub-client-label.blue { color:#1438cc; }
+    .pub-client-name { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#0a0f1e; }
+    .pub-nota { background:#fffbeb; border:1px solid rgba(217,119,6,0.2); border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:#92400e; line-height:1.5; }
+    .pub-partial { background:#fff7ed; border:1px solid rgba(251,146,60,0.3); border-radius:10px; padding:12px 16px; margin-bottom:18px; display:flex; justify-content:space-between; }
+    .pub-partial-col { }
+    .pub-partial-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#9a3412; margin-bottom:2px; }
+    .pub-partial-value { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#ea580c; }
+    .pub-partial-value.paid { color:#059669; }
+    table { width:100%; border-collapse:collapse; margin-bottom:4px; }
+    thead th { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; padding:0 0 8px; text-align:left; border-bottom:1px solid #e2e8f0; }
+    thead th:last-child { text-align:right; }
+    tbody td { padding:9px 0; font-size:12.5px; color:#475569; border-bottom:1px solid #f8fafc; vertical-align:middle; }
+    tbody td:last-child { text-align:right; font-weight:600; color:#0a0f1e; }
+    tbody tr:last-child td { border-bottom:none; }
+    .item-name { font-weight:500; color:#0a0f1e; }
+    .item-qty  { font-size:10px; color:#94a3b8; margin-top:1px; }
+    .pub-total { margin:0 -32px; padding:18px 32px; display:flex; justify-content:space-between; align-items:center; }
+    .pub-total.dark { background:#0a0f1e; }
+    .pub-total.blue { background:#1438cc; }
+    .pub-total-label { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
+    .pub-total-amount { font-family:'Bebas Neue',sans-serif; font-size:34px; color:white; }
+    .pub-footer { padding:16px 32px 24px; text-align:center; }
+    .pub-footer p { font-size:11px; color:#94a3b8; line-height:1.6; }
+    .pub-footer strong { color:#0a0f1e; }
+    .pub-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 32px 28px; }
+    .pub-btn { padding:12px; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; border:1.5px solid; text-align:center; }
+    .pub-btn.print { background:#eff3ff; color:#1438cc; border-color:rgba(20,56,204,0.2); }
+    .pub-btn.print:hover { background:rgba(20,56,204,0.12); }
+    .pub-btn.wa { background:#dcfce7; color:#15803d; border-color:rgba(5,150,105,0.25); }
+    .pub-btn.wa:hover { background:#bbf7d0; }
+    .pub-loading { padding:60px 32px; text-align:center; color:#94a3b8; font-size:14px; }
+    .pub-error { padding:60px 32px; text-align:center; }
+    .pub-error div:first-child { font-size:40px; margin-bottom:12px; }
+    .pub-error p { color:#475569; font-size:13px; }
+    @media print {
+      body { background:white; padding:0; }
+      .pub-card { border-radius:0; box-shadow:none; max-width:100%; }
+      .pub-actions { display:none; }
+      .pub-header-factura, .pub-header-recibo, .pub-total { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+    @media (max-width:560px) {
+      body { padding:0; }
+      .pub-card { border-radius:0; min-height:100vh; }
+      .pub-actions { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="pub-card" id="pub-card">
+  <div class="pub-loading" id="pub-loading">
+    <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+    Cargando factura...
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
+    authDomain:        "dgp-group.firebaseapp.com",
+    projectId:         "dgp-group",
+    storageBucket:     "dgp-group.firebasestorage.app",
+    messagingSenderId: "492620738391",
+    appId:             "1:492620738391:web:e497fdfe134e6e781b5812"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function loadFactura() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const card = document.getElementById('pub-card');
+
+    if (!id) {
+      card.innerHTML = `<div class="pub-error"><div>🔍</div><p>No se especificó ninguna factura.<br>Verifica el enlace.</p></div>`;
+      return;
+    }
+
+    try {
+      const snap = await db.collection('documentos').doc(id).get();
+      if (!snap.exists) {
+        card.innerHTML = `<div class="pub-error"><div>❌</div><p>Factura no encontrada.<br>El enlace puede haber expirado.</p></div>`;
+        return;
+      }
+      const doc = { _fsId: id, ...snap.data() };
+      renderFactura(card, doc);
+    } catch(e) {
+      card.innerHTML = `<div class="pub-error"><div>⚠️</div><p>Error al cargar la factura.<br>Intenta de nuevo.</p></div>`;
+    }
+  }
+
+  function renderFactura(card, doc) {
+    const isParcial = doc.type === 'factura' && !!doc.pagadoParcial && !doc.pagado;
+    const isRecibo  = doc.pagado || doc.type === 'recibo';
+    const isFactura = !isParcial && !isRecibo;
+
+    const headerClass  = isRecibo ? 'pub-header-recibo' : 'pub-header-factura';
+    const zigzagClass  = isRecibo ? 'pub-zigzag-blue'   : 'pub-zigzag-dark';
+    const clientStyle  = isRecibo ? 'blue' : 'dark';
+    const totalClass   = isRecibo ? 'blue' : 'dark';
+    const badgeClass   = isRecibo ? 'pagado' : (isParcial ? 'parcial' : 'pendiente');
+    const badgeText    = isRecibo ? 'PAGO CONFIRMADO' : (isParcial ? 'PAGO PARCIAL' : 'PENDIENTE DE PAGO');
+    const docTitle     = isRecibo ? 'RECIBO DE PAGO' : 'FACTURA';
+    const totalLabel   = isRecibo ? 'Total Pagado' : 'Total a Pagar';
+
+    const items = (doc.items || []).map(it => `
+      <tr>
+        <td><div class="item-name">${esc(it.s)}</div><div class="item-qty">${it.c > 1 ? `${it.c} unidades × $${it.p.toFixed(2)}` : 'Unidad'}</div></td>
+        <td>$${(it.t||0).toFixed(2)}</td>
+      </tr>`).join('');
+
+    const parcialBlock = isParcial ? `
+      <div class="pub-partial">
+        <div class="pub-partial-col"><div class="pub-partial-label">Pagado</div><div class="pub-partial-value paid">$${(doc.montoPagado||0).toFixed(2)}</div></div>
+        <div class="pub-partial-col" style="text-align:right"><div class="pub-partial-label">Pendiente</div><div class="pub-partial-value">$${((doc.total||0)-(doc.montoPagado||0)).toFixed(2)}</div></div>
+      </div>` : '';
+
+    const notaBlock = (isFactura || isParcial) && doc.nota ? `
+      <div class="pub-nota"><strong>📌 Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
+
+    const waText = encodeURIComponent(
+      `Hola, aquí está tu ${docTitle.toLowerCase()} de DGP Group USA:\n${window.location.href}`
+    );
+
+    card.innerHTML = `
+      <div class="${headerClass}">
+        <div class="pub-brand">DGP GROUP USA · dgp-link.com</div>
+        <div class="pub-title">${docTitle}</div>
+        <div class="pub-docnum">N° ${esc(doc.docId || id)}</div>
+        <div class="pub-badge ${badgeClass}">${badgeText}</div>
+      </div>
+      <div class="${zigzagClass}"></div>
+      <div class="pub-body">
+        <div class="pub-meta">
+          <div class="pub-meta-col"><div class="pub-meta-label">Fecha</div><div class="pub-meta-value">${esc(doc.fecha||'—')}</div></div>
+          ${doc.ref && doc.ref !== '—' ? `<div class="pub-meta-col" style="text-align:right"><div class="pub-meta-label">Referencia</div><div class="pub-meta-value" style="font-size:11px;">${esc(doc.ref)}</div></div>` : ''}
+        </div>
+        <div class="pub-client ${clientStyle}">
+          <div class="pub-client-label ${clientStyle}">Cliente</div>
+          <div class="pub-client-name">${esc(doc.cli||'—')}</div>
+        </div>
+        ${notaBlock}
+        ${parcialBlock}
+        <table>
+          <thead><tr><th>Descripción</th><th style="text-align:right">Importe</th></tr></thead>
+          <tbody>${items}</tbody>
+        </table>
+      </div>
+      <div class="pub-total ${totalClass}">
+        <span class="pub-total-label">${totalLabel}</span>
+        <span class="pub-total-amount">$${(doc.total||0).toFixed(2)}</span>
+      </div>
+      <div class="pub-footer">
+        <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></p>
+      </div>
+      <div class="pub-actions">
+        <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
+      </div>`;
+  }
+
+  loadFactura();
+</script>
+</body>
+</html>
