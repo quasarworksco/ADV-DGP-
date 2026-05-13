@@ -874,6 +874,9 @@
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
     <i class="fa-solid fa-chart-pie"></i> Dashboard
   </button>
+  <button class="nav-tab" onclick="switchPage('clientes', this)">
+    <i class="fa-solid fa-address-book"></i> Clientes
+  </button>
 </nav>
 
 <!-- TICKER -->
@@ -990,6 +993,9 @@
             <option value="factura">🧾 Factura (pendiente de pago)</option>
             <option value="recibo">✅ Recibo (pago ya recibido)</option>
           </select>
+        </div>
+        <div class="ff" id="plantillas-wrap" style="margin-top:-8px;">
+          <button type="button" class="btn-add-f" style="background:var(--off);color:var(--text-mid);border:1.5px solid var(--border);font-size:10px;" onclick="openPlantillasModal()">📂 Cargar plantilla guardada</button>
         </div>
 
         <div class="ff">
@@ -1131,6 +1137,40 @@
       <div id="dash-top-services"></div>
     </div>
 
+    <!-- Calendario -->
+    <div class="panel-f" style="margin-top:12px;">
+      <div class="panel-title-f">Calendario de ventas</div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calPrevMonth()">&#9664;</button>
+        <span id="cal-titulo" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--black);"></span>
+        <button class="cal-nav-btn" onclick="calNextMonth()">&#9658;</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend"><span class="cal-dot" style="background:var(--blue);"></span> Día con ventas</div>
+    </div>
+
+    <!-- Actividad reciente -->
+    <div class="panel-f" style="margin-top:12px;">
+      <div class="panel-title-f">Actividad reciente</div>
+      <div id="actividad-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:16px;">Cargando...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="page-clientes" class="page">
+  <div class="clientes-main">
+    <div class="clientes-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Base de Clientes</div>
+        <div style="font-size:11px;color:var(--text-soft);"><span id="clientes-count">0</span> clientes registrados</div>
+      </div>
+      <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
+    </div>
+    <div class="clientes-search-row">
+      <input type="text" id="clientes-search" placeholder="🔍 Buscar por nombre, teléfono o correo..." oninput="renderClientes()">
+    </div>
+    <div id="clientes-list-container"></div>
   </div>
 </div>
 
@@ -1290,6 +1330,39 @@
       <div class="ff"><label>Referencia del pago</label><input type="text" id="pp-ref" placeholder="Ej. Zelle, transferencia..."></div>
       <button class="btn-edit-save" onclick="confirmarPagoParcial()">💾 Registrar Pago</button>
       <button class="btn-edit-cancel" onclick="document.getElementById('modalPagoParcial').classList.remove('show')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: CLIENTE (CRM) ─── -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="edit-sheet" style="max-width:460px;">
+    <div class="edit-sheet-header">
+      <h3 id="cliente-modal-title">👤 NUEVO CLIENTE</h3>
+      <p id="cliente-modal-sub">Completa la información del cliente</p>
+    </div>
+    <div class="edit-sheet-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="ff"><label>Nombre</label><input type="text" id="cl-nombre" placeholder="Nombre"></div>
+        <div class="ff"><label>Apellido</label><input type="text" id="cl-apellido" placeholder="Apellido"></div>
+      </div>
+      <div class="ff"><label>Teléfono / WhatsApp</label><input type="tel" id="cl-telefono" placeholder="+1 555 000 0000"></div>
+      <div class="ff"><label>Correo electrónico</label><input type="email" id="cl-correo" placeholder="cliente@ejemplo.com"></div>
+      <div class="ff"><label>Empresa (opcional)</label><input type="text" id="cl-empresa" placeholder="Nombre de empresa"></div>
+      <div class="ff"><label>Notas</label><textarea id="cl-notas" placeholder="Notas internas sobre este cliente..." style="height:70px;resize:none;"></textarea></div>
+      <button class="btn-edit-save" onclick="saveCliente2()">💾 Guardar Cliente</button>
+      <button class="btn-edit-cancel" onclick="closeClienteModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: PLANTILLAS ─── -->
+<div class="modal-overlay" id="modalPlantillas">
+  <div class="edit-sheet" style="max-width:440px;">
+    <div class="edit-sheet-header"><h3>📂 PLANTILLAS</h3><p>Selecciona una plantilla para cargar</p></div>
+    <div class="edit-sheet-body">
+      <div id="plantillas-list"></div>
+      <button class="btn-edit-cancel" style="margin-top:12px;" onclick="document.getElementById('modalPlantillas').classList.remove('show')">Cerrar</button>
     </div>
   </div>
 </div>
