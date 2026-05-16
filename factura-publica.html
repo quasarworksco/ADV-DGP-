@@ -132,7 +132,13 @@
       const doc = { _fsId: id, ...snap.data() };
       renderFactura(card, doc);
     } catch(e) {
-      card.innerHTML = `<div class="pub-error"><div>⚠️</div><p>Error al cargar la factura.<br>Intenta de nuevo.</p></div>`;
+      console.error('Error factura pública:', e.code, e.message);
+      const msg = e.code === 'auth/operation-not-allowed'
+        ? 'Autenticación anónima no habilitada en Firebase.'
+        : e.code === 'permission-denied'
+        ? 'Sin permisos para leer el documento.'
+        : e.message || 'Error desconocido';
+      card.innerHTML = `<div class="pub-error"><div>⚠️</div><p>Error al cargar la factura.<br><small style="color:#94a3b8">${msg}</small></p></div>`;
     }
   }
 
