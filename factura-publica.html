@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.databuddy.cc/databuddy.js" data-client-id="f3a183a0-2636-4c00-afbe-7e7670e99704" crossorigin="anonymous" async></script>
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { background:#f1f5f9; font-family:'IBM Plex Sans',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px; }
@@ -100,7 +102,8 @@
     appId:             "1:492620738391:web:e497fdfe134e6e781b5812"
   };
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -117,6 +120,7 @@
     }
 
     try {
+      await auth.signInAnonymously();
       const snap = await db.collection('documentos').doc(id).get();
       if (!snap.exists) {
         card.innerHTML = `<div class="pub-error"><div>❌</div><p>Factura no encontrada.<br>El enlace puede haber expirado.</p></div>`;

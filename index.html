@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.databuddy.cc/databuddy.js" data-client-id="f3a183a0-2636-4c00-afbe-7e7670e99704" crossorigin="anonymous" async></script>
 
   <!-- Firebase SDK (compat v10) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -725,15 +726,15 @@
       .meta-hero { padding: 20px 16px; }
       .panel-v, .panel-f { padding: 18px 14px; }
       .venta-service { display: none; }
-      .venta-actions { gap: 2px; }
-      .btn-sm { padding: 5px 8px; font-size: 9px; }
+      .venta-actions { gap: 4px; }
+      .btn-sm { padding: 8px 10px; font-size: 10px; min-height: 36px; }
 
       /* Facturación */
       .subtabs { flex-direction: column; }
       .subtab-btn:first-child { border-radius: 10px 10px 0 0; border-right-width: 1.5px; border-bottom-width: 0.75px; }
       .subtab-btn:last-child  { border-radius: 0 0 10px 10px; border-left-width: 1.5px; border-top-width: 0.75px; }
       .doc-item { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .doc-actions { flex-wrap: wrap; gap: 4px; }
+      .doc-actions { flex-wrap: wrap; gap: 6px; }
       .doc-amount { align-self: flex-end; }
 
       /* Dashboard */
@@ -744,13 +745,35 @@
       /* Login */
       .login-box { padding: 28px 20px; }
 
-      /* Sheet modal */
-      .doc-sheet { border-radius: 16px 16px 0 0; max-height: 96vh; }
-      .modal-overlay { align-items: flex-end; }
-      .sheet-actions { grid-template-columns: 1fr 1fr; }
-      .sheet-actions.three, .sheet-actions.four { grid-template-columns: 1fr 1fr; }
-      .edit-sheet { border-radius: 16px 16px 0 0; max-height: 96vh; }
-      .modal-overlay.show.bottom { align-items: flex-end; }
+      /* Modales tipo sheet — deslizan desde abajo */
+      .modal-overlay:has(.doc-sheet),
+      .modal-overlay:has(.edit-sheet) { align-items: flex-end; }
+
+      /* Modal-box (éxito/alerta) permanece centrado */
+      .modal-overlay:has(.modal-box) { align-items: center; padding: 16px; }
+      .modal-box { padding: 36px 24px; max-height: 88vh; overflow-y: auto; }
+
+      /* Sheets desde abajo */
+      .doc-sheet  { border-radius: 20px 20px 0 0; max-height: 93vh; }
+      .edit-sheet { border-radius: 20px 20px 0 0; max-height: 93vh; }
+
+      /* Botones de acción en sheet — touch target mínimo 44px */
+      .btn-sheet { padding: 14px 8px; font-size: 10px; min-height: 44px; }
+      .sheet-actions { gap: 8px; padding: 0 20px 24px; padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)); }
+      .sheet-actions.three,
+      .sheet-actions.four { grid-template-columns: 1fr 1fr; }
+
+      /* Header de sheets: menos padding en pantallas chicas */
+      .edit-sheet-header { padding: 18px 20px 14px; }
+      .edit-sheet-body   { padding: 18px 20px; }
+      .sheet-body        { padding: 18px 20px 0; }
+      .sheet-top-factura,
+      .sheet-top-recibo  { padding: 22px 22px 18px; }
+      .sheet-total-block { margin: 0 -20px; padding: 16px 22px; }
+      .sheet-footer      { padding: 14px 22px 20px; }
+
+      /* Toast: evita quedar oculto por barra del sistema */
+      .toast { bottom: max(24px, env(safe-area-inset-bottom, 24px)); max-width: calc(100% - 48px); white-space: normal; text-align: center; line-height: 1.4; }
 
       /* Progress labels */
       .progress-labels span:nth-child(2),
