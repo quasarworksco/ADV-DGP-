@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /factura-publica.html
-
-Sitemap: https://adv.dgp-link.com/sitemap.xml
