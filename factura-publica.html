@@ -123,7 +123,6 @@
     }
 
     try {
-      await auth.signInAnonymously();
       const snap = await db.collection('documentos').doc(id).get();
       if (!snap.exists) {
         card.innerHTML = `<div class="pub-error"><div>❌</div><p>Factura no encontrada.<br>El enlace puede haber expirado.</p></div>`;
