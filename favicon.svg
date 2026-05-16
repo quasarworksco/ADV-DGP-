@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#1438cc"/>
+  <text x="32" y="26" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="15" fill="white" text-anchor="middle" letter-spacing="1">DGP</text>
+  <text x="32" y="42" font-family="Arial,sans-serif" font-weight="700" font-size="9" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="2">GROUP</text>
+  <text x="32" y="54" font-family="Arial,sans-serif" font-weight="400" font-size="7.5" fill="rgba(255,255,255,0.55)" text-anchor="middle" letter-spacing="1.5">USA</text>
+</svg>
