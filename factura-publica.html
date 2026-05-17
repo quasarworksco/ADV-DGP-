@@ -77,7 +77,9 @@
     .pub-terms-title { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
     .pub-terms-title::after { content:''; flex:1; height:1px; background:#e2e8f0; }
     .pub-term-item { display:flex; gap:10px; margin-bottom:10px; font-size:11px; color:#475569; line-height:1.5; }
-    .pub-term-num { font-weight:700; color:#1438cc; flex-shrink:0; font-size:11px; }
+    .pub-term-num { font-weight:700; color:#94a3b8; flex-shrink:0; font-size:12px; min-width:16px; }
+    .pub-term-item .pub-term-num.ok  { color:#059669; }
+    .pub-term-item .pub-term-num.num { color:#1438cc; }
     .pub-terms-section { margin-top:14px; padding-top:12px; border-top:1px solid #f1f5f9; }
     .pub-terms-section-title { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#0a0f1e; margin-bottom:8px; }
     .pub-terms-contact { background:#f8fafc; border-radius:10px; padding:12px 16px; margin:16px 32px 0; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
@@ -204,42 +206,45 @@
     if (s.web) terminosEspecificos.push(`
       <div class="pub-terms-section">
         <div class="pub-terms-section-title">🌐 Sitios Web</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>Se incluyen 2 rondas de revisión después de la entrega. Una ronda = todos los cambios enviados juntos en un solo mensaje.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>El cliente (${cliente}) es responsable de adquirir y gestionar su dominio. El sitio no se activa hasta recibir el 100% del pago.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>Todos los planes incluyen 1 mes de mantenimiento gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año según el plan.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>DGP Group no garantiza posicionamiento SEO, tráfico ni resultados de ventas.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Incluye 2 rondas de ajustes después de la entrega para que el resultado sea exactamente lo que necesitas. Una ronda = todos los cambios enviados juntos en un mensaje.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Todos los planes incluyen 1 mes de soporte gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El dominio lo registra el cliente a su nombre. El sitio se activa al completar el pago.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El crecimiento en buscadores y ventas depende también del contenido, la inversión en marketing y el tiempo. DGP Group entrega las mejores bases para lograrlo.</div>
       </div>`);
 
     if (s.redes) terminosEspecificos.push(`
       <div class="pub-terms-section">
         <div class="pub-terms-section-title">📱 Redes Sociales</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>Servicio mensual. El cliente debe aprobar el contenido en 48h; de lo contrario se publica según criterio de DGP Group.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>Cancelación con 15 días de aviso previo. No hay reembolso del mes en curso.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>No se garantizan métricas específicas de engagement, alcance ni ventas.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Aprobación de contenido en 48h para mantenerte siempre en control de lo que se publica.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados de engagement varían según el nicho, la audiencia y los algoritmos de cada plataforma.</div>
       </div>`);
 
     if (s.ads) terminosEspecificos.push(`
       <div class="pub-terms-section">
         <div class="pub-terms-section-title">📣 Publicidad (ADS)</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>El presupuesto de pauta publicitaria es responsabilidad del cliente y se paga directamente a Meta/Google. DGP Group cobra únicamente la gestión.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>No se garantizan ventas, clics, conversiones ni retorno de inversión específico.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El presupuesto de pauta (lo que se invierte en Meta/Google) lo paga el cliente directamente a la plataforma. DGP Group cobra solo la gestión.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados dependen del presupuesto, el mercado y los algoritmos. Trabajamos para optimizar al máximo cada campaña.</div>
       </div>`);
 
     if (s.seguidores) terminosEspecificos.push(`
       <div class="pub-terms-section">
         <div class="pub-terms-section-title">👥 Seguidores</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>Garantía de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
-        <div class="pub-term-item"><span class="pub-term-num">→</span>La garantía aplica como reposición, no como devolución de dinero. Si la cuenta del cliente es suspendida o eliminada por la plataforma, la garantía no aplica.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>La garantía de reposición aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.</div>
       </div>`);
 
     return `
       <div class="pub-terms">
-        <div class="pub-terms-title">Términos del Servicio</div>
-        <div class="pub-term-item"><span class="pub-term-num">1.</span><span>Sin reembolsos. Una vez iniciado el trabajo no se realizan devoluciones bajo ninguna circunstancia.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">2.</span><span>El trabajo no se entrega ni activa hasta recibir el 100% del pago acordado.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">3.</span><span>Cambios fuera del alcance acordado tienen costo adicional y se cotizan antes de ejecutarse.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">4.</span><span>El cliente obtiene licencia de uso del material entregado solo al completar el pago total. DGP Group puede retirar el trabajo si hay saldo pendiente.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">5.</span><span>DGP Group no es responsable por pérdidas indirectas ni por fallas de plataformas de terceros (Meta, Google, etc.).</span></div>
+        <div class="pub-terms-title">Información del Servicio</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Trabajo 100% personalizado, entregado en los tiempos acordados con acompañamiento durante todo el proceso.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Al completar el pago, ${cliente} recibe licencia de uso permanente sobre todo el material entregado.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>El trabajo inicia y se entrega según los pagos acordados. Cambios fuera del alcance original se cotizan por separado antes de realizarse.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>Los pagos realizados no son reembolsables, ya que representan tiempo y recursos comprometidos desde el inicio del proyecto.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>DGP Group no asume responsabilidad por interrupciones en servicios de terceros como Meta, Google o proveedores de hosting.</span></div>
         ${terminosEspecificos.join('')}
       </div>
       <div class="pub-terms-contact">
@@ -247,7 +252,7 @@
         <div class="pub-terms-contact-col"><strong>WhatsApp</strong>+1 (239) 823-1738</div>
         <div class="pub-terms-contact-col"><strong>Correo</strong>dgpgroup.usa@gmail.com</div>
       </div>
-      <div class="pub-terms-accept">Al realizar el pago, ${cliente} declara haber leído y aceptado los términos anteriores.</div>`;
+      <div class="pub-terms-accept">Al realizar el pago, ${cliente} acepta los términos descritos anteriormente.</div>`;
   }
 
   const METODO_LABELS = {
