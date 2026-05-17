@@ -1581,32 +1581,38 @@ function fmtDate(d) {
    SERVICES OPTIONS HTML (shared)
 ═══════════════════════════════════════════════════════ */
 function servicesOptionsHTML() {
+  const eur = monedaSeleccionada === 'eur';
+  const p = (usd, euros) => eur ? euros : usd;
+  const sym = eur ? '€' : '$';
   return `
     <option value="" disabled selected>Seleccionar servicio...</option>
+    <optgroup label="Sitios Web 🌐">
+      <option value="Web Básica" data-p="280" data-eur="260">Web Básica — ${sym}${p(280,260)}</option>
+      <option value="Web Estándar" data-p="455" data-eur="423">Web Estándar — ${sym}${p(455,423)}</option>
+      <option value="Web Premium" data-p="950" data-eur="884">Web Premium — ${sym}${p(950,884)}</option>
+      <option value="Plan Gestión Ecommerce" data-p="750" data-eur="698">Plan Gestión Ecommerce — ${sym}${p(750,698)}</option>
+    </optgroup>
     <optgroup label="Diseño &amp; Identidad 🎨">
-      <option value="Web Plan Básico" data-p="215">Web Plan Básico — $215</option>
-      <option value="Web Plan Estándar" data-p="350">Web Plan Estándar — $350</option>
-      <option value="Web Plan Premium" data-p="500">Web Plan Premium — $500</option>
-      <option value="Identidad Visual" data-p="85">Identidad Visual — $85</option>
-      <option value="Tarjeta de Presentación" data-p="20">Tarjeta de Presentación — $20</option>
-      <option value="Post / Flyers RRSS" data-p="10">Post / Flyers RRSS — $10</option>
-      <option value="Office Pack" data-p="80">Office Pack — $80</option>
-      <option value="Paquete Básico" data-p="95">Paquete Básico — $95</option>
-      <option value="Paquete Intermedio" data-p="170">Paquete Intermedio — $170</option>
-      <option value="Paquete Avanzado" data-p="425">Paquete Avanzado — $425</option>
+      <option value="Identidad Visual" data-p="85" data-eur="79">Identidad Visual — ${sym}${p(85,79)}</option>
+      <option value="Tarjeta de Presentación" data-p="20" data-eur="19">Tarjeta de Presentación — ${sym}${p(20,19)}</option>
+      <option value="Post / Flyers RRSS" data-p="10" data-eur="9">Post / Flyers RRSS — ${sym}${p(10,9)}</option>
+      <option value="Office Pack" data-p="80" data-eur="74">Office Pack — ${sym}${p(80,74)}</option>
+      <option value="Paquete Básico" data-p="124" data-eur="115">Paquete Básico — ${sym}${p(124,115)}</option>
+      <option value="Paquete Intermedio" data-p="221" data-eur="206">Paquete Intermedio — ${sym}${p(221,206)}</option>
+      <option value="Paquete Avanzado" data-p="553" data-eur="514">Paquete Avanzado — ${sym}${p(553,514)}</option>
     </optgroup>
     <optgroup label="WhatsApp Marketing 📲">
-      <option value="WhatsApp Bronce (1 Sem)" data-p="55">Bronce — $55</option>
-      <option value="WhatsApp Plata (2 Sem)" data-p="75">Plata — $75</option>
-      <option value="WhatsApp Oro (1 Mes)" data-p="108">Oro — $108</option>
-      <option value="WhatsApp Pro (3 Meses)" data-p="225">Pro — $225</option>
-      <option value="WhatsApp Enterprise (1 Año)" data-p="650">Enterprise — $650</option>
+      <option value="WhatsApp Bronce (1 Sem)" data-p="55" data-eur="51">Bronce — ${sym}${p(55,51)}</option>
+      <option value="WhatsApp Plata (2 Sem)" data-p="75" data-eur="70">Plata — ${sym}${p(75,70)}</option>
+      <option value="WhatsApp Oro (1 Mes)" data-p="108" data-eur="100">Oro — ${sym}${p(108,100)}</option>
+      <option value="WhatsApp Pro (3 Meses)" data-p="225" data-eur="209">Pro — ${sym}${p(225,209)}</option>
+      <option value="WhatsApp Enterprise (1 Año)" data-p="650" data-eur="605">Enterprise — ${sym}${p(650,605)}</option>
     </optgroup>
     <optgroup label="Seguidores 🚀">
-      <option value="1,000 Seguidores" data-p="55">1,000 Seguidores — $55</option>
-      <option value="3,000 Seguidores" data-p="75">3,000 Seguidores — $75</option>
-      <option value="5,000 Seguidores" data-p="125">5,000 Seguidores — $125</option>
-      <option value="10,000 Seguidores" data-p="190">10,000 Seguidores — $190</option>
+      <option value="1,000 Seguidores" data-p="55" data-eur="51">1,000 Seguidores — ${sym}${p(55,51)}</option>
+      <option value="3,000 Seguidores" data-p="75" data-eur="70">3,000 Seguidores — ${sym}${p(75,70)}</option>
+      <option value="5,000 Seguidores" data-p="125" data-eur="116">5,000 Seguidores — ${sym}${p(125,116)}</option>
+      <option value="10,000 Seguidores" data-p="190" data-eur="177">10,000 Seguidores — ${sym}${p(190,177)}</option>
     </optgroup>
     <optgroup label="──────────────────">
       <option value="__otro__" data-p="">✏️ Otro (especificar)...</option>
@@ -2134,15 +2140,19 @@ function onTypeChange() {
 function onSrvSelChange() {
   const sel = document.getElementById('srv-sel');
   const isOtro = sel.value === '__otro__';
+  const opt = sel.options[sel.selectedIndex];
   document.getElementById('srv-otro-wrap').style.display = isOtro ? 'block' : 'none';
-  document.getElementById('srv-pre').value = isOtro ? '' : (sel.options[sel.selectedIndex].dataset.p || '');
+  if (!isOtro) document.getElementById('srv-pre').value =
+    monedaSeleccionada === 'eur' ? (opt?.dataset?.eur || opt?.dataset?.p || '') : (opt?.dataset?.p || '');
 }
 
 function onEditSrvSelChange() {
   const sel = document.getElementById('edit-srv-sel');
   const isOtro = sel.value === '__otro__';
+  const opt = sel.options[sel.selectedIndex];
   document.getElementById('edit-srv-otro-wrap').style.display = isOtro ? 'block' : 'none';
-  document.getElementById('edit-srv-pre').value = isOtro ? '' : (sel.options[sel.selectedIndex].dataset.p || '');
+  if (!isOtro) document.getElementById('edit-srv-pre').value =
+    monedaSeleccionada === 'eur' ? (opt?.dataset?.eur || opt?.dataset?.p || '') : (opt?.dataset?.p || '');
 }
 
 /* ─── Cart ─── */
@@ -3322,6 +3332,11 @@ function selectMoneda(val) {
   monedaSeleccionada = val;
   document.getElementById('btn-usd').classList.toggle('active', val === 'usd');
   document.getElementById('btn-eur').classList.toggle('active', val === 'eur');
+  const html = servicesOptionsHTML();
+  const s1 = document.getElementById('srv-sel');
+  const s2 = document.getElementById('edit-srv-sel');
+  if (s1) { const v = s1.value; s1.innerHTML = html; s1.value = v; }
+  if (s2) { const v = s2.value; s2.innerHTML = html; s2.value = v; }
 }
 
 const METODOS_CAMPOS = {
