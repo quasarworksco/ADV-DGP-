@@ -1582,6 +1582,36 @@ function fmtDate(d) {
 ═══════════════════════════════════════════════════════ */
 let monedaSeleccionada = 'usd';
 
+const METODOS_CAMPOS = {
+  zelle:        [
+    { id:'mp-correo',   label:'Correo o teléfono Zelle',    placeholder:'pagos@email.com o +1 (xxx) xxx-xxxx' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  bizum:        [
+    { id:'mp-telefono', label:'Teléfono Bizum',              placeholder:'+34 6xx xxx xxx' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  usdt:         [
+    { id:'mp-wallet',   label:'Dirección wallet TRC20',      placeholder:'TXxx...' }
+  ],
+  binancepay:   [
+    { id:'mp-payid',    label:'Binance Pay ID',              placeholder:'Ej: 123456789' }
+  ],
+  bolivares:    [
+    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Banesco, Mercantil...' },
+    { id:'mp-cuenta',   label:'Número de cuenta',            placeholder:'0000-0000-00-0000000000' },
+    { id:'mp-rifci',    label:'RIF / CI',                    placeholder:'V-00000000' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  paypal:       [
+    { id:'mp-correo',   label:'Correo o link PayPal',        placeholder:'pagos@email.com' }
+  ],
+  westernunion: [
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' },
+    { id:'mp-pais',     label:'País / Ciudad',               placeholder:'Estados Unidos — Naples, FL' }
+  ]
+};
+
 function servicesOptionsHTML() {
   const eur = monedaSeleccionada === 'eur';
   const p = (usd, euros) => eur ? euros : usd;
@@ -3339,36 +3369,6 @@ function selectMoneda(val) {
   if (s1) { const v = s1.value; s1.innerHTML = html; s1.value = v; }
   if (s2) { const v = s2.value; s2.innerHTML = html; s2.value = v; }
 }
-
-const METODOS_CAMPOS = {
-  zelle:        [
-    { id:'mp-correo',   label:'Correo o teléfono Zelle',    placeholder:'pagos@email.com o +1 (xxx) xxx-xxxx' },
-    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
-  ],
-  bizum:        [
-    { id:'mp-telefono', label:'Teléfono Bizum',              placeholder:'+34 6xx xxx xxx' },
-    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
-  ],
-  usdt:         [
-    { id:'mp-wallet',   label:'Dirección wallet TRC20',      placeholder:'TXxx...' }
-  ],
-  binancepay:   [
-    { id:'mp-payid',    label:'Binance Pay ID',              placeholder:'Ej: 123456789' }
-  ],
-  bolivares:    [
-    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Banesco, Mercantil...' },
-    { id:'mp-cuenta',   label:'Número de cuenta',            placeholder:'0000-0000-00-0000000000' },
-    { id:'mp-rifci',    label:'RIF / CI',                    placeholder:'V-00000000' },
-    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
-  ],
-  paypal:       [
-    { id:'mp-correo',   label:'Correo o link PayPal',        placeholder:'pagos@email.com' }
-  ],
-  westernunion: [
-    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' },
-    { id:'mp-pais',     label:'País / Ciudad',               placeholder:'Estados Unidos — Naples, FL' }
-  ]
-};
 
 function onMetodoPagoChange() {
   const metodo = document.getElementById('metodo-pago').value;
