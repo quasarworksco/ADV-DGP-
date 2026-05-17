@@ -906,6 +906,13 @@
 
 .btn-sheet.link { background:#f0fdf4; color:#166534; border-color:rgba(22,101,52,0.2); }
 .btn-sheet.link:hover { background:#dcfce7; }
+
+    /* ─── MÉTODO DE PAGO ─── */
+    .moneda-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+    .moneda-btn { padding:8px; border:1.5px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; text-align:center; }
+    .moneda-btn.active { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
+    .metodo-fields { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+    .metodo-fields .ff { margin:0; }
   </style>
 </head>
 <body>
@@ -1107,6 +1114,29 @@
         <div class="ff">
           <label>Referencia de pago</label>
           <input type="text" id="pago-ref" placeholder="Ej. Zelle / Binance / Efectivo">
+        </div>
+
+        <div class="ff">
+          <label>Moneda</label>
+          <div class="moneda-toggle">
+            <button type="button" class="moneda-btn active" id="btn-usd" onclick="selectMoneda('usd')">🇺🇸 USD — Dólar</button>
+            <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur')">🇪🇺 EUR — Euro</button>
+          </div>
+        </div>
+
+        <div class="ff">
+          <label>Método de pago (para la factura del cliente)</label>
+          <select id="metodo-pago" onchange="onMetodoPagoChange()">
+            <option value="">— Sin especificar —</option>
+            <option value="zelle">💸 Zelle</option>
+            <option value="bizum">📱 Bizum</option>
+            <option value="usdt">🔐 USDT TRC20</option>
+            <option value="binancepay">🟡 Binance Pay</option>
+            <option value="bolivares">🇻🇪 Bolívares Venezolanos</option>
+            <option value="paypal">🅿️ PayPal</option>
+            <option value="westernunion">🌐 Western Union</option>
+          </select>
+          <div class="metodo-fields" id="metodo-pago-fields"></div>
         </div>
 
         <div class="ff" id="field-nota" style="display:none;">
@@ -2178,6 +2208,9 @@ async function saveDoc() {
     nota,
     fecha,
     total,
+    moneda:     monedaSeleccionada,
+    metodoPago: document.getElementById('metodo-pago').value || null,
+    infoPago:   getInfoPago(),
     items:      [...cart],
     pagado:     type === 'recibo',
     fechaPago:  type === 'recibo' ? fecha : null,
@@ -2192,6 +2225,7 @@ async function saveDoc() {
     document.getElementById('cli-nom').value  = '';
     document.getElementById('pago-ref').value = '';
     document.getElementById('doc-nota').value = '';
+    resetMetodoPago();
     btn.disabled = false;
     btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
@@ -3279,6 +3313,78 @@ async function eliminarComprobante() {
 document.getElementById('modalComprobante').addEventListener('click', function(e) {
   if (e.target === this) this.classList.remove('show');
 });
+
+/* ═══════════════════════════════════════════════════════
+   MÉTODO DE PAGO
+═══════════════════════════════════════════════════════ */
+let monedaSeleccionada = 'usd';
+
+function selectMoneda(val) {
+  monedaSeleccionada = val;
+  document.getElementById('btn-usd').classList.toggle('active', val === 'usd');
+  document.getElementById('btn-eur').classList.toggle('active', val === 'eur');
+}
+
+const METODOS_CAMPOS = {
+  zelle:        [
+    { id:'mp-correo',   label:'Correo o teléfono Zelle',    placeholder:'pagos@email.com o +1 (xxx) xxx-xxxx' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  bizum:        [
+    { id:'mp-telefono', label:'Teléfono Bizum',              placeholder:'+34 6xx xxx xxx' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  usdt:         [
+    { id:'mp-wallet',   label:'Dirección wallet TRC20',      placeholder:'TXxx...' }
+  ],
+  binancepay:   [
+    { id:'mp-payid',    label:'Binance Pay ID',              placeholder:'Ej: 123456789' }
+  ],
+  bolivares:    [
+    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Banesco, Mercantil...' },
+    { id:'mp-cuenta',   label:'Número de cuenta',            placeholder:'0000-0000-00-0000000000' },
+    { id:'mp-rifci',    label:'RIF / CI',                    placeholder:'V-00000000' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+  ],
+  paypal:       [
+    { id:'mp-correo',   label:'Correo o link PayPal',        placeholder:'pagos@email.com' }
+  ],
+  westernunion: [
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' },
+    { id:'mp-pais',     label:'País / Ciudad',               placeholder:'Estados Unidos — Naples, FL' }
+  ]
+};
+
+function onMetodoPagoChange() {
+  const metodo = document.getElementById('metodo-pago').value;
+  const wrap   = document.getElementById('metodo-pago-fields');
+  if (!metodo || !METODOS_CAMPOS[metodo]) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = METODOS_CAMPOS[metodo].map(f => `
+    <div class="ff" style="margin:0">
+      <label style="font-size:10px">${f.label}</label>
+      <input type="text" id="${f.id}" placeholder="${f.placeholder}">
+    </div>`).join('');
+}
+
+function getInfoPago() {
+  const metodo = document.getElementById('metodo-pago').value;
+  if (!metodo || !METODOS_CAMPOS[metodo]) return {};
+  const campos = METODOS_CAMPOS[metodo];
+  const info = {};
+  campos.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el) info[f.id.replace('mp-', '')] = el.value.trim();
+  });
+  return info;
+}
+
+function resetMetodoPago() {
+  monedaSeleccionada = 'usd';
+  document.getElementById('btn-usd').classList.add('active');
+  document.getElementById('btn-eur').classList.remove('active');
+  document.getElementById('metodo-pago').value = '';
+  document.getElementById('metodo-pago-fields').innerHTML = '';
+}
 
 /* ═══════════════════════════════════════════════════════
    LINK PÚBLICO DE FACTURA

@@ -84,6 +84,34 @@
     .pub-terms-contact-col { font-size:11px; color:#475569; }
     .pub-terms-contact-col strong { display:block; font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; margin-bottom:2px; }
     .pub-terms-accept { text-align:center; padding:12px 32px 24px; font-size:10px; color:#94a3b8; line-height:1.6; font-style:italic; }
+    .pub-pago { margin:0 32px 0; padding:20px 0 0; }
+    .pub-pago-title { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+    .pub-pago-title::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+    .pub-pago-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+    .pub-pago-metodo { font-size:13px; font-weight:600; color:#0a0f1e; margin-bottom:10px; }
+    .pub-pago-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9; gap:8px; }
+    .pub-pago-row:last-child { border-bottom:none; }
+    .pub-pago-key { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#94a3b8; flex-shrink:0; }
+    .pub-pago-val { font-size:12px; color:#0a0f1e; font-weight:500; word-break:break-all; text-align:right; }
+    .pub-pago-copy { background:none; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:10px; cursor:pointer; color:#1438cc; flex-shrink:0; margin-left:8px; }
+    .pub-pago-copy:hover { background:#eff3ff; }
+    .pub-comp-wrap { margin:0 32px 20px; }
+    .pub-comp-uploaded { background:#f0fdf4; border:1px solid rgba(5,150,105,0.25); border-radius:12px; padding:14px 18px; text-align:center; }
+    .pub-comp-uploaded img { width:100%; border-radius:8px; margin-bottom:10px; display:block; }
+    .pub-comp-uploaded p { font-size:12px; color:#059669; font-weight:600; }
+    .pub-comp-area { border:2px dashed #e2e8f0; border-radius:12px; padding:24px; text-align:center; cursor:pointer; transition:all 0.2s; }
+    .pub-comp-area:hover { border-color:#1438cc; background:#eff3ff; }
+    .pub-comp-area input { display:none; }
+    .pub-comp-icon { font-size:28px; margin-bottom:8px; }
+    .pub-comp-txt { font-size:13px; font-weight:600; color:#475569; }
+    .pub-comp-sub { font-size:11px; color:#94a3b8; margin-top:4px; }
+    .pub-comp-progress { height:4px; background:#e2e8f0; border-radius:2px; margin-top:12px; overflow:hidden; display:none; }
+    .pub-comp-bar { height:100%; background:#1438cc; border-radius:2px; width:0; transition:width 0.3s; }
+    .pub-comp-ok { background:#f0fdf4; border:1px solid rgba(5,150,105,0.2); border-radius:12px; padding:12px; text-align:center; font-size:12px; color:#059669; font-weight:600; display:none; margin-top:10px; }
+    @media (max-width:560px) {
+      .pub-pago { margin:0 20px 0; }
+      .pub-comp-wrap { margin:0 20px 20px; }
+    }
     @media (max-width:560px) {
       .pub-terms { margin:0 20px; }
       .pub-terms-contact { margin:16px 0 0; border-radius:0; }
@@ -110,6 +138,9 @@
 </div>
 
 <script>
+  const CLOUDINARY_CLOUD_NAME    = 'dgden7fws';
+  const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
+
   const firebaseConfig = {
     apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
     authDomain:        "dgp-group.firebaseapp.com",
@@ -219,6 +250,105 @@
       <div class="pub-terms-accept">Al realizar el pago, ${cliente} declara haber leído y aceptado los términos anteriores.</div>`;
   }
 
+  const METODO_LABELS = {
+    zelle:'💸 Zelle', bizum:'📱 Bizum', usdt:'🔐 USDT TRC20',
+    binancepay:'🟡 Binance Pay', bolivares:'🇻🇪 Bolívares Venezolanos',
+    paypal:'🅿️ PayPal', westernunion:'🌐 Western Union'
+  };
+  const CAMPO_LABELS = {
+    correo:'Correo / Cuenta', telefono:'Teléfono', wallet:'Dirección Wallet',
+    payid:'Pay ID', banco:'Banco', cuenta:'N° de Cuenta', rifci:'RIF / CI',
+    nombre:'Beneficiario', pais:'País / Ciudad'
+  };
+
+  function renderPago(doc) {
+    if (!doc.metodoPago) return '';
+    const label  = METODO_LABELS[doc.metodoPago] || doc.metodoPago;
+    const info   = doc.infoPago || {};
+    const moneda = doc.moneda === 'eur' ? '€' : '$';
+    const filas  = Object.entries(info).filter(([,v]) => v).map(([k, v]) => `
+      <div class="pub-pago-row">
+        <span class="pub-pago-key">${CAMPO_LABELS[k] || k}</span>
+        <span style="display:flex;align-items:center;gap:4px">
+          <span class="pub-pago-val">${esc(v)}</span>
+          <button class="pub-pago-copy" onclick="copiarTexto('${esc(v)}',this)">Copiar</button>
+        </span>
+      </div>`).join('');
+    return `
+      <div class="pub-pago">
+        <div class="pub-pago-title">Cómo Pagar</div>
+        <div class="pub-pago-card">
+          <div class="pub-pago-metodo">${label} · <span style="color:#1438cc">${moneda}${(doc.total||0).toFixed(2)}</span></div>
+          ${filas}
+        </div>
+      </div>`;
+  }
+
+  function renderComprobante(doc, fsId) {
+    if (doc.comprobante_url) {
+      return `
+        <div class="pub-comp-wrap">
+          <div class="pub-comp-uploaded">
+            <img src="${esc(doc.comprobante_url)}" alt="Comprobante">
+            <p>✅ Comprobante enviado</p>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="pub-comp-wrap">
+        <div class="pub-comp-area" onclick="document.getElementById('pub-comp-input').click()">
+          <div class="pub-comp-icon">📎</div>
+          <div class="pub-comp-txt">Subir comprobante de pago</div>
+          <div class="pub-comp-sub">JPG, PNG, WebP — máx. 5MB</div>
+          <input type="file" id="pub-comp-input" accept="image/*" onchange="subirComprobantePublico(this,'${fsId}')">
+          <div class="pub-comp-progress" id="pub-comp-progress">
+            <div class="pub-comp-bar" id="pub-comp-bar"></div>
+          </div>
+        </div>
+        <div class="pub-comp-ok" id="pub-comp-ok">✅ ¡Comprobante enviado! El equipo de DGP Group lo revisará pronto.</div>
+      </div>`;
+  }
+
+  async function subirComprobantePublico(input, fsId) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('La imagen no puede superar 5MB.'); return; }
+    const progress = document.getElementById('pub-comp-progress');
+    const bar      = document.getElementById('pub-comp-bar');
+    progress.style.display = 'block';
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'comprobantes');
+      formData.append('public_id', `${fsId}_pub_${Date.now()}`);
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) bar.style.width = Math.round(e.loaded / e.total * 100) + '%';
+      });
+      const url = await new Promise((resolve, reject) => {
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+        xhr.onload = () => { const r = JSON.parse(xhr.responseText); xhr.status === 200 ? resolve(r.secure_url) : reject(new Error(r.error?.message)); };
+        xhr.onerror = () => reject(new Error('Error de red'));
+        xhr.send(formData);
+      });
+      await db.collection('documentos').doc(fsId).update({ comprobante_url: url });
+      progress.style.display = 'none';
+      document.getElementById('pub-comp-ok').style.display = 'block';
+      document.querySelector('.pub-comp-area').style.display = 'none';
+    } catch(e) {
+      progress.style.display = 'none';
+      alert('Error al subir el comprobante. Intenta de nuevo.');
+    }
+  }
+
+  function copiarTexto(txt, btn) {
+    navigator.clipboard?.writeText(txt).then(() => {
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
+    });
+  }
+
   function renderFactura(card, doc) {
     const isParcial = doc.type === 'factura' && !!doc.pagadoParcial && !doc.pagado;
     const isRecibo  = doc.pagado || doc.type === 'recibo';
@@ -283,6 +413,8 @@
       <div class="pub-footer">
         <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></p>
       </div>
+      ${!isRecibo ? renderPago(doc) : ''}
+      ${!isRecibo ? renderComprobante(doc, doc._fsId) : ''}
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
