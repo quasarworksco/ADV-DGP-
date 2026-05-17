@@ -2418,6 +2418,20 @@ function openSheet(doc) {
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   }
 
+  /* ── Comprobante del cliente (subido desde factura pública) ── */
+  let existingComp = document.getElementById('s-comp-block');
+  if (existingComp) existingComp.remove();
+  if (doc.comprobante_url) {
+    const compEl = document.createElement('div');
+    compEl.id = 's-comp-block';
+    compEl.style.cssText = 'padding:0 28px 16px;';
+    compEl.innerHTML = `
+      <div style="font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">Comprobante de Pago</div>
+      <img src="${esc(doc.comprobante_url)}" style="width:100%;border-radius:10px;display:block;margin-bottom:8px;" alt="Comprobante">
+      <a href="${esc(doc.comprobante_url)}" download="comprobante_${esc(doc.docId||fsId)}.jpg" target="_blank" class="btn-sheet print" style="display:block;text-align:center;text-decoration:none;">⬇️ Descargar comprobante</a>`;
+    document.getElementById('sheet-actions').insertAdjacentElement('beforebegin', compEl);
+  }
+
   document.getElementById('modalDoc').classList.add('show');
 }
 
