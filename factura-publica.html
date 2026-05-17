@@ -73,7 +73,22 @@
     .pub-error { padding:60px 32px; text-align:center; }
     .pub-error div:first-child { font-size:40px; margin-bottom:12px; }
     .pub-error p { color:#475569; font-size:13px; }
-    @media print {
+    .pub-terms { border-top:2px dashed #e2e8f0; margin:0 32px; padding:20px 0 4px; }
+    .pub-terms-title { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+    .pub-terms-title::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+    .pub-term-item { display:flex; gap:10px; margin-bottom:10px; font-size:11px; color:#475569; line-height:1.5; }
+    .pub-term-num { font-weight:700; color:#1438cc; flex-shrink:0; font-size:11px; }
+    .pub-terms-section { margin-top:14px; padding-top:12px; border-top:1px solid #f1f5f9; }
+    .pub-terms-section-title { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#0a0f1e; margin-bottom:8px; }
+    .pub-terms-contact { background:#f8fafc; border-radius:10px; padding:12px 16px; margin:16px 32px 0; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .pub-terms-contact-col { font-size:11px; color:#475569; }
+    .pub-terms-contact-col strong { display:block; font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; margin-bottom:2px; }
+    .pub-terms-accept { text-align:center; padding:12px 32px 24px; font-size:10px; color:#94a3b8; line-height:1.6; font-style:italic; }
+    @media (max-width:560px) {
+      .pub-terms { margin:0 20px; }
+      .pub-terms-contact { margin:16px 0 0; border-radius:0; }
+      .pub-terms-accept { padding:12px 20px 24px; }
+    }
       body { background:white; padding:0; }
       .pub-card { border-radius:0; box-shadow:none; max-width:100%; }
       .pub-actions { display:none; }
@@ -137,6 +152,71 @@
         : e.message || 'Error desconocido';
       card.innerHTML = `<div class="pub-error"><div>⚠️</div><p>Error al cargar la factura.<br><small style="color:#94a3b8">${msg}</small></p></div>`;
     }
+  }
+
+  function detectServicios(items) {
+    const texto = (items || []).map(i => (i.s || '').toLowerCase()).join(' ');
+    return {
+      web:        /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web/.test(texto),
+      redes:      /redes|social|instagram|facebook|contenido|community|manejo/.test(texto),
+      ads:        /ads|publicidad|pauta|campa[ñn]a|google ads|meta ads/.test(texto),
+      seguidores: /seguidor|follower|crecimiento|seguidores/.test(texto)
+    };
+  }
+
+  function renderTerminos(doc) {
+    const s = detectServicios(doc.items);
+    const cliente = esc(doc.cli || '—');
+
+    const terminosEspecificos = [];
+
+    if (s.web) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">🌐 Sitios Web</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>Se incluyen 2 rondas de revisión después de la entrega. Una ronda = todos los cambios enviados juntos en un solo mensaje.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>El cliente (${cliente}) es responsable de adquirir y gestionar su dominio. El sitio no se activa hasta recibir el 100% del pago.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>Todos los planes incluyen 1 mes de mantenimiento gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año según el plan.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>DGP Group no garantiza posicionamiento SEO, tráfico ni resultados de ventas.</div>
+      </div>`);
+
+    if (s.redes) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">📱 Redes Sociales</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>Servicio mensual. El cliente debe aprobar el contenido en 48h; de lo contrario se publica según criterio de DGP Group.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>Cancelación con 15 días de aviso previo. No hay reembolso del mes en curso.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>No se garantizan métricas específicas de engagement, alcance ni ventas.</div>
+      </div>`);
+
+    if (s.ads) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">📣 Publicidad (ADS)</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>El presupuesto de pauta publicitaria es responsabilidad del cliente y se paga directamente a Meta/Google. DGP Group cobra únicamente la gestión.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>No se garantizan ventas, clics, conversiones ni retorno de inversión específico.</div>
+      </div>`);
+
+    if (s.seguidores) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">👥 Seguidores</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>Garantía de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
+        <div class="pub-term-item"><span class="pub-term-num">→</span>La garantía aplica como reposición, no como devolución de dinero. Si la cuenta del cliente es suspendida o eliminada por la plataforma, la garantía no aplica.</div>
+      </div>`);
+
+    return `
+      <div class="pub-terms">
+        <div class="pub-terms-title">Términos del Servicio</div>
+        <div class="pub-term-item"><span class="pub-term-num">1.</span><span>Sin reembolsos. Una vez iniciado el trabajo no se realizan devoluciones bajo ninguna circunstancia.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">2.</span><span>El trabajo no se entrega ni activa hasta recibir el 100% del pago acordado.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">3.</span><span>Cambios fuera del alcance acordado tienen costo adicional y se cotizan antes de ejecutarse.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">4.</span><span>El cliente obtiene licencia de uso del material entregado solo al completar el pago total. DGP Group puede retirar el trabajo si hay saldo pendiente.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">5.</span><span>DGP Group no es responsable por pérdidas indirectas ni por fallas de plataformas de terceros (Meta, Google, etc.).</span></div>
+        ${terminosEspecificos.join('')}
+      </div>
+      <div class="pub-terms-contact">
+        <div class="pub-terms-contact-col"><strong>Proveedor</strong>Andrés Espina — DGP Group USA</div>
+        <div class="pub-terms-contact-col"><strong>WhatsApp</strong>+1 (239) 823-1738</div>
+        <div class="pub-terms-contact-col"><strong>Correo</strong>dgpgroup.usa@gmail.com</div>
+      </div>
+      <div class="pub-terms-accept">Al realizar el pago, ${cliente} declara haber leído y aceptado los términos anteriores.</div>`;
   }
 
   function renderFactura(card, doc) {
@@ -206,7 +286,8 @@
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
-      </div>`;
+      </div>
+      ${renderTerminos(doc)}`;
   }
 
   loadFactura();
