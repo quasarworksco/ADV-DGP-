@@ -3287,6 +3287,9 @@ function openComprobanteModal(ventaId) {
   const imgContainer = document.getElementById('comp-img-container');
   if (f.comprobante_url) {
     document.getElementById('comp-img').src = f.comprobante_url;
+    const dl = document.getElementById('comp-download');
+    dl.href = f.comprobante_url;
+    dl.download = `comprobante_${ventaId}.jpg`;
     imgContainer.style.display = 'block';
   } else {
     imgContainer.style.display = 'none';
@@ -3333,6 +3336,9 @@ async function uploadComprobante(input) {
     await db.collection('ventas').doc(comprobanteVentaId).update({ comprobante_url: url });
     toast('Comprobante guardado ✅');
     document.getElementById('comp-img').src = url;
+    const dl = document.getElementById('comp-download');
+    dl.href = url;
+    dl.download = `comprobante_${comprobanteVentaId}.jpg`;
     document.getElementById('comp-img-container').style.display = 'block';
   } catch(e) {
     toast('Error al subir imagen.', 'err');
@@ -3434,7 +3440,10 @@ function copiarLinkFactura(fsId) {
     <div class="edit-sheet-body">
       <div id="comp-img-container" style="display:none;">
         <img id="comp-img" src="" alt="Comprobante" class="comprobante-modal-img">
-        <button class="btn-sm del" onclick="eliminarComprobante()" style="margin-bottom:12px;">🗑️ Eliminar comprobante</button>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <a id="comp-download" href="#" download="comprobante.jpg" target="_blank" class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,0.2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">⬇️ Descargar</a>
+          <button class="btn-sm del" onclick="eliminarComprobante()">🗑️ Eliminar</button>
+        </div>
         <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
         <p style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">Subir nuevo comprobante (reemplaza el actual):</p>
       </div>
