@@ -1119,8 +1119,8 @@
         <div class="ff">
           <label>Moneda</label>
           <div class="moneda-toggle">
-            <button type="button" class="moneda-btn active" id="btn-usd" onclick="selectMoneda('usd')">🇺🇸 USD — Dólar</button>
-            <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur')">🇪🇺 EUR — Euro</button>
+            <button type="button" class="moneda-btn active" id="btn-usd" onclick="selectMoneda('usd');event.preventDefault();event.stopPropagation();">🇺🇸 USD — Dólar</button>
+            <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur');event.preventDefault();event.stopPropagation();">🇪🇺 EUR — Euro</button>
           </div>
         </div>
 
@@ -2195,6 +2195,7 @@ async function saveDoc() {
   btn.disabled = true;
   btn.textContent = 'Procesando...';
 
+  try {
   const total  = parseFloat(cart.reduce((a,b) => a+b.t, 0).toFixed(2));
   const prefix = type === 'factura' ? 'FAC' : 'REC';
   const docId  = genId(prefix);
@@ -2217,8 +2218,6 @@ async function saveDoc() {
     createdBy:  currentUser ? currentUser.email : 'desconocido',
     createdAt:  firebase.firestore.FieldValue.serverTimestamp()
   };
-
-  try {
     const added = await db.collection('documentos').add(docData);
     cart = [];
     renderCart();
@@ -3358,6 +3357,7 @@ const METODOS_CAMPOS = {
 function onMetodoPagoChange() {
   const metodo = document.getElementById('metodo-pago').value;
   const wrap   = document.getElementById('metodo-pago-fields');
+  if (metodo === 'bizum') selectMoneda('eur');
   if (!metodo || !METODOS_CAMPOS[metodo]) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = METODOS_CAMPOS[metodo].map(f => `
     <div class="ff" style="margin:0">
