@@ -1580,6 +1580,8 @@ function fmtDate(d) {
 /* ═══════════════════════════════════════════════════════
    SERVICES OPTIONS HTML (shared)
 ═══════════════════════════════════════════════════════ */
+let monedaSeleccionada = 'usd';
+
 function servicesOptionsHTML() {
   const eur = monedaSeleccionada === 'eur';
   const p = (usd, euros) => eur ? euros : usd;
@@ -3326,8 +3328,6 @@ document.getElementById('modalComprobante').addEventListener('click', function(e
 /* ═══════════════════════════════════════════════════════
    MÉTODO DE PAGO
 ═══════════════════════════════════════════════════════ */
-let monedaSeleccionada = 'usd';
-
 function selectMoneda(val) {
   monedaSeleccionada = val;
   document.getElementById('btn-usd').classList.toggle('active', val === 'usd');
