@@ -2245,7 +2245,8 @@ async function saveDoc() {
     /* Show the sheet immediately (use local data since listener may lag) */
     openSheet({ _fsId: added.id, ...docData });
   } catch(err) {
-    toast('Error al guardar. Verifica tu conexión.', 'err');
+    console.error('saveDoc error:', err?.code, err?.message, err);
+    toast(`Error: ${err?.message || err?.code || 'desconocido'}`, 'err');
     btn.disabled = false;
     btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
   }
