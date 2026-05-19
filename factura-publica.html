@@ -97,10 +97,14 @@
     .pub-pago-key { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#94a3b8; flex-shrink:0; }
     .pub-pago-val { font-size:12px; color:#0a0f1e; font-weight:500; word-break:break-all; text-align:right; }
     .pub-pago-copy { background:none; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:10px; cursor:pointer; color:#1438cc; flex-shrink:0; margin-left:8px; }
-    .helio-section { margin:0 32px 4px; padding-top:20px; }
-    .helio-title { font-size:9px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-    .helio-title::after { content:''; flex:1; height:1px; background:#e2e8f0; }
-    .helio-badge { display:inline-flex; align-items:center; gap:5px; background:#eff3ff; color:#1438cc; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; margin-bottom:10px; }
+    .helio-section { margin:0 32px 16px; padding-top:8px; }
+    .helio-toggle { display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:11px 14px; cursor:pointer; user-select:none; }
+    .helio-toggle-left { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:500; color:#475569; }
+    .helio-toggle-badge { background:#eff3ff; color:#1438cc; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; }
+    .helio-toggle-arrow { font-size:11px; color:#94a3b8; transition:transform 0.2s; }
+    .helio-toggle-arrow.open { transform:rotate(180deg); }
+    .helio-body { overflow:hidden; max-height:0; transition:max-height 0.3s ease; }
+    .helio-body.open { max-height:800px; }
     @media print { .helio-section { display:none; } }
     .pub-pago-copy:hover { background:#eff3ff; }
     .pub-comp-wrap { margin:0 32px 20px; }
@@ -324,16 +328,33 @@
   const HELIO_PAYLINK_ID = '6a0be8197fd14a41cf1947bd';
 
   function renderHelio(doc) {
-    const pendiente = doc.pagadoParcial
-      ? Math.max(0, (doc.total || 0) - (doc.montoPagado || 0))
-      : (doc.total || 0);
     return `
       <div class="helio-section" id="helio-section">
-        <div class="helio-title">💳 Pagar con cripto</div>
-        <div class="helio-badge">⚡ Powered by Helio</div>
-        <div id="helioCheckoutContainer"></div>
+        <div class="helio-toggle" onclick="toggleHelio()">
+          <div class="helio-toggle-left">
+            <span>💳 ¿Pagar con cripto?</span>
+            <span class="helio-toggle-badge">⚡ Helio</span>
+          </div>
+          <span class="helio-toggle-arrow" id="helio-arrow">▼</span>
+        </div>
+        <div class="helio-body" id="helio-body">
+          <div id="helioCheckoutContainer" style="padding-top:12px;"></div>
+        </div>
       </div>`;
   }
+
+  let helioInited = false;
+  function toggleHelio() {
+    const body  = document.getElementById('helio-body');
+    const arrow = document.getElementById('helio-arrow');
+    const open  = body.classList.toggle('open');
+    arrow.classList.toggle('open', open);
+    if (open && !helioInited) {
+      helioInited = true;
+      initHelioWidget(_helioAmount);
+    }
+  }
+  let _helioAmount = 0;
 
   function initHelioWidget(amount) {
     const container = document.getElementById('helioCheckoutContainer');
@@ -460,8 +481,8 @@
         <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></p>
       </div>
       ${!isRecibo ? renderPago(doc) : ''}
-      ${!isRecibo ? renderHelio(doc) : ''}
       ${!isRecibo ? renderComprobante(doc, doc._fsId) : ''}
+      ${!isRecibo ? renderHelio(doc) : ''}
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
@@ -469,10 +490,10 @@
       ${renderTerminos(doc)}`;
 
     if (!isRecibo) {
-      const pendiente = doc.pagadoParcial
+      _helioAmount = doc.pagadoParcial
         ? Math.max(0, (doc.total || 0) - (doc.montoPagado || 0))
         : (doc.total || 0);
-      initHelioWidget(pendiente);
+      helioInited = false;
     }
   }
 
