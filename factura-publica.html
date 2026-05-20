@@ -106,6 +106,99 @@
     .helio-body { overflow:hidden; max-height:0; transition:max-height 0.3s ease; }
     .helio-body.open { max-height:800px; }
     @media print { .helio-section { display:none; } }
+    /* ── Brief del Proyecto ── */
+    .brief-section { margin:0 32px 20px; }
+    .brief-toggle { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#0f172a,#1e3a5f); border-radius:12px; padding:14px 18px; cursor:pointer; user-select:none; }
+    .brief-toggle-left { display:flex; align-items:center; gap:10px; }
+    .brief-toggle-icon { font-size:22px; }
+    .brief-toggle-text strong { display:block; font-size:13px; font-weight:600; color:white; }
+    .brief-toggle-text small { font-size:10px; color:rgba(255,255,255,0.55); }
+    .brief-toggle-arrow { font-size:11px; color:rgba(255,255,255,0.5); transition:transform 0.25s; }
+    .brief-toggle-arrow.open { transform:rotate(180deg); }
+    .brief-body { overflow:hidden; max-height:0; transition:max-height 0.5s ease; }
+    .brief-body.open { max-height:9000px; }
+    .brief-inner { padding-top:16px; }
+    .brief-step { margin-bottom:22px; }
+    .brief-step-title { font-size:9px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+    .brief-step-title::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+    .brief-label { font-size:11px; font-weight:600; color:#475569; margin-bottom:5px; display:block; }
+    .brief-label .req { color:#ef4444; }
+    .brief-input { width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:12px; color:#0a0f1e; background:white; outline:none; box-sizing:border-box; transition:border-color 0.2s; }
+    .brief-input:focus { border-color:#1438cc; }
+    .brief-textarea { min-height:80px; resize:vertical; }
+    .brief-field { margin-bottom:12px; }
+    .brief-2col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    /* Style mockups */
+    .brief-style-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
+    .brief-style-card { border:2px solid #e2e8f0; border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.2s; }
+    .brief-style-card.sel { border-color:#1438cc; box-shadow:0 0 0 3px rgba(20,56,204,0.15); }
+    .brief-style-preview { height:70px; position:relative; overflow:hidden; }
+    .brief-style-lbl { padding:8px 10px; font-size:11px; font-weight:600; color:#64748b; text-align:center; background:white; }
+    .brief-style-card.sel .brief-style-lbl { color:#1438cc; background:#eff3ff; }
+    .mock-min { background:#fff; }
+    .mock-min-bar { height:3px; background:#1438cc; width:38%; margin:14px auto 0; border-radius:2px; }
+    .mock-min-circle { width:22px; height:22px; border-radius:50%; background:#f1f5f9; margin:7px auto; }
+    .mock-min-line { height:2px; background:#f1f5f9; margin:3px 16px; border-radius:1px; }
+    .mock-min-line.s { margin:3px 28px; }
+    .mock-corp { background:#0f172a; }
+    .mock-corp-head { height:26px; background:#1438cc; display:flex; align-items:center; padding:0 8px; gap:3px; }
+    .mock-corp-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.35); }
+    .mock-corp-body { padding:5px 8px; }
+    .mock-corp-ln { height:2px; background:rgba(255,255,255,0.12); margin-bottom:4px; border-radius:1px; }
+    .mock-corp-ln.a { background:#2979ff; width:42%; }
+    .mock-cre { background:linear-gradient(135deg,#7c3aed,#db2777); position:relative; }
+    .mock-cre-blob { position:absolute; width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.12); top:-12px; right:-10px; }
+    .mock-cre-inner { padding:10px 10px 0; }
+    .mock-cre-big { height:8px; background:white; border-radius:2px; margin-bottom:4px; width:68%; }
+    .mock-cre-sm { height:4px; background:rgba(255,255,255,0.45); border-radius:2px; width:48%; }
+    .mock-cre-btn { margin:8px 10px 0; height:13px; background:white; border-radius:20px; width:38%; }
+    .mock-eleg { background:#0a0f1e; }
+    .mock-eleg-ln { height:1px; background:rgba(212,175,55,0.55); margin:11px 14px 5px; }
+    .mock-eleg-t1 { height:6px; background:rgba(212,175,55,0.75); border-radius:1px; margin:0 18px 4px; }
+    .mock-eleg-t2 { height:3px; background:rgba(255,255,255,0.18); border-radius:1px; margin:0 22px 3px; }
+    .mock-eleg-t3 { height:3px; background:rgba(255,255,255,0.12); border-radius:1px; margin:0 26px; }
+    .mock-eleg-ln2 { height:1px; background:rgba(212,175,55,0.25); margin:7px 14px 0; }
+    /* Paletas */
+    .brief-palette-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+    .brief-palette { display:flex; border-radius:8px; overflow:hidden; cursor:pointer; border:2px solid transparent; transition:all 0.18s; height:30px; }
+    .brief-palette.sel { border-color:#1438cc; transform:scale(1.07); }
+    .brief-palette-sw { width:30px; height:30px; }
+    .brief-custom-row { display:flex; gap:8px; margin-top:10px; align-items:center; }
+    .brief-custom-row label { font-size:11px; color:#94a3b8; flex-shrink:0; }
+    .brief-cpick { width:36px; height:36px; border-radius:8px; border:1.5px solid #e2e8f0; cursor:pointer; padding:2px; background:none; }
+    /* Páginas */
+    .brief-pages-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .brief-chk { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1.5px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.15s; }
+    .brief-chk input { width:15px; height:15px; accent-color:#1438cc; flex-shrink:0; }
+    .brief-chk label { font-size:12px; color:#475569; cursor:pointer; }
+    .brief-chk:has(input:checked) { border-color:#1438cc; background:#eff3ff; }
+    .brief-chk:has(input:checked) label { color:#1438cc; font-weight:500; }
+    /* Sociales */
+    .brief-social-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .brief-social-icon { font-size:18px; flex-shrink:0; width:26px; text-align:center; }
+    .brief-social-lbl { font-size:11px; font-weight:600; color:#64748b; flex-shrink:0; width:82px; }
+    /* Logo opts */
+    .brief-logo-opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .brief-logo-opt { border:2px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center; cursor:pointer; transition:all 0.15s; }
+    .brief-logo-opt.sel { border-color:#1438cc; background:#eff3ff; }
+    .brief-logo-opt-icon { font-size:22px; margin-bottom:3px; }
+    .brief-logo-opt-lbl { font-size:12px; font-weight:600; color:#64748b; }
+    .brief-logo-opt.sel .brief-logo-opt-lbl { color:#1438cc; }
+    /* Submit */
+    .brief-submit-btn { width:100%; padding:14px; background:#1438cc; color:white; border:none; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.2s; margin-top:4px; }
+    .brief-submit-btn:hover { background:#0f2ba8; }
+    .brief-submit-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+    .brief-done { background:#f0fdf4; border:1.5px solid rgba(5,150,105,0.25); border-radius:12px; padding:22px; text-align:center; }
+    .brief-done .bd-icon { font-size:34px; margin-bottom:8px; }
+    .brief-done p { font-size:13px; font-weight:600; color:#059669; margin-bottom:4px; }
+    .brief-done small { font-size:11px; color:#94a3b8; }
+    .brief-err { display:none; color:#ef4444; font-size:12px; margin-top:8px; text-align:center; }
+    @media (max-width:560px) {
+      .brief-section { margin:0 20px 20px; }
+      .brief-2col { grid-template-columns:1fr; }
+      .brief-style-grid { grid-template-columns:1fr 1fr; }
+    }
+    @media print { .brief-section { display:none; } }
     .pub-pago-copy:hover { background:#eff3ff; }
     .pub-comp-wrap { margin:0 32px 20px; }
     .pub-comp-uploaded { background:#f0fdf4; border:1px solid rgba(5,150,105,0.25); border-radius:12px; padding:14px 18px; text-align:center; }
@@ -483,6 +576,7 @@
       ${!isRecibo ? renderPago(doc) : ''}
       ${!isRecibo ? renderComprobante(doc, doc._fsId) : ''}
       ${!isRecibo ? renderHelio(doc) : ''}
+      ${renderBrief(doc, doc._fsId)}
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
@@ -494,6 +588,458 @@
         ? Math.max(0, (doc.total || 0) - (doc.montoPagado || 0))
         : (doc.total || 0);
       helioInited = false;
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     BRIEF DEL PROYECTO
+  ══════════════════════════════════════════ */
+  function renderBrief(doc, fsId) {
+    const s = detectServicios(doc.items);
+    if (!s.web && !s.seguidores && !s.redes && !s.ads) return '';
+
+    if (doc.brief) {
+      return `<div class="brief-section">
+        <div class="brief-done">
+          <div class="bd-icon">📋</div>
+          <p>¡Brief enviado!</p>
+          <small>Gracias, Andrés revisará tu información y te contactará pronto.</small>
+        </div>
+      </div>`;
+    }
+
+    let formHTML = '';
+    if (s.web)        formHTML = _briefWebForm(fsId);
+    else if (s.seguidores) formHTML = _briefSeguidoresForm(doc, fsId);
+    else if (s.redes) formHTML = _briefRedesForm(fsId);
+    else if (s.ads)   formHTML = _briefAdsForm(fsId);
+
+    return `
+    <div class="brief-section" id="brief-section">
+      <div class="brief-toggle" onclick="toggleBrief()">
+        <div class="brief-toggle-left">
+          <span class="brief-toggle-icon">📋</span>
+          <div class="brief-toggle-text">
+            <strong>Brief del Proyecto</strong>
+            <small>Cuéntanos lo que necesitamos para empezar — opcional pero importante</small>
+          </div>
+        </div>
+        <span class="brief-toggle-arrow" id="brief-arrow">▼</span>
+      </div>
+      <div class="brief-body" id="brief-body">
+        <div class="brief-inner">${formHTML}</div>
+      </div>
+    </div>`;
+  }
+
+  function toggleBrief() {
+    const body = document.getElementById('brief-body');
+    const arrow = document.getElementById('brief-arrow');
+    body.classList.toggle('open');
+    arrow.classList.toggle('open', body.classList.contains('open'));
+  }
+
+  function bSelStyle(el) {
+    document.querySelectorAll('.brief-style-card').forEach(c => c.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  function bSelPalette(el) {
+    document.querySelectorAll('.brief-palette').forEach(p => p.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  function bToggleLogo(val) {
+    document.querySelectorAll('.brief-logo-opt').forEach(o => o.classList.remove('sel'));
+    document.querySelector(`.brief-logo-opt[data-v="${val}"]`).classList.add('sel');
+    document.getElementById('brief-logo-si').style.display  = val === 'si' ? 'block' : 'none';
+    document.getElementById('brief-logo-no').style.display  = val === 'no' ? 'block' : 'none';
+  }
+
+  function _briefWebForm(fsId) {
+    const paginas = ['Inicio','Nosotros / Equipo','Servicios','Portafolio','Blog','Tienda / E-commerce','Contacto','Preguntas frecuentes'];
+    const redes   = [
+      ['📸','Instagram','@usuario o URL','ig'],
+      ['📘','Facebook','URL de la página','fb'],
+      ['🎵','TikTok','@usuario','tt'],
+      ['▶️','YouTube','URL del canal','yt'],
+      ['🐦','Twitter / X','@usuario','tw'],
+      ['💼','LinkedIn','URL del perfil','li'],
+      ['💬','WhatsApp','Número con código','wa'],
+    ];
+    const paletas = [
+      ['#1438cc','#2979ff','#e8eeff','azul-profesional'],
+      ['#0a0f1e','#d4af37','#f8f5ee','negro-dorado'],
+      ['#15803d','#4ade80','#f0fdf4','verde-natural'],
+      ['#ea580c','#fb923c','#fff7ed','naranja-moderno'],
+      ['#7c3aed','#a78bfa','#f5f3ff','morado-creativo'],
+      ['#be185d','#f472b6','#fdf2f8','rosa-elegante'],
+      ['#1e293b','#64748b','#f8fafc','gris-minimalista'],
+      ['#dc2626','#f87171','#fef2f2','rojo-impacto'],
+    ];
+
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title">🏢 Información del negocio</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
+            <input id="b-negocio" class="brief-input" type="text" placeholder="Ej: Mi Empresa"></div>
+          <div class="brief-field"><label class="brief-label">Tu nombre completo <span class="req">*</span></label>
+            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+        </div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Correo electrónico <span class="req">*</span></label>
+            <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+          <div class="brief-field"><label class="brief-label">WhatsApp / Teléfono</label>
+            <input id="b-tel" class="brief-input" type="tel" placeholder="+1 000 000 0000"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Ciudad / País</label>
+          <input id="b-ubi" class="brief-input" type="text" placeholder="Ej: Miami, Florida"></div>
+        <div class="brief-field"><label class="brief-label">¿A qué se dedica tu negocio? <span class="req">*</span></label>
+          <textarea id="b-desc" class="brief-input brief-textarea" placeholder="Describe tu negocio, productos/servicios y tus clientes ideales..."></textarea></div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">🎨 Estilo visual</div>
+        <label class="brief-label" style="margin-bottom:10px;">¿Cuál te identifica más?</label>
+        <div class="brief-style-grid">
+          <div class="brief-style-card" onclick="bSelStyle(this)" data-estilo="minimalista">
+            <div class="brief-style-preview mock-min">
+              <div class="mock-min-bar"></div>
+              <div class="mock-min-circle"></div>
+              <div class="mock-min-line"></div><div class="mock-min-line s"></div>
+            </div>
+            <div class="brief-style-lbl">Minimalista</div>
+          </div>
+          <div class="brief-style-card" onclick="bSelStyle(this)" data-estilo="corporativo">
+            <div class="brief-style-preview mock-corp">
+              <div class="mock-corp-head"><div class="mock-corp-dot"></div><div class="mock-corp-dot"></div><div class="mock-corp-dot"></div></div>
+              <div class="mock-corp-body"><div class="mock-corp-ln a"></div><div class="mock-corp-ln"></div><div class="mock-corp-ln"></div></div>
+            </div>
+            <div class="brief-style-lbl">Corporativo</div>
+          </div>
+          <div class="brief-style-card" onclick="bSelStyle(this)" data-estilo="creativo">
+            <div class="brief-style-preview mock-cre">
+              <div class="mock-cre-blob"></div>
+              <div class="mock-cre-inner"><div class="mock-cre-big"></div><div class="mock-cre-sm"></div></div>
+              <div class="mock-cre-btn"></div>
+            </div>
+            <div class="brief-style-lbl">Creativo</div>
+          </div>
+          <div class="brief-style-card" onclick="bSelStyle(this)" data-estilo="elegante">
+            <div class="brief-style-preview mock-eleg">
+              <div class="mock-eleg-ln"></div>
+              <div class="mock-eleg-t1"></div><div class="mock-eleg-t2"></div><div class="mock-eleg-t3"></div>
+              <div class="mock-eleg-ln2"></div>
+            </div>
+            <div class="brief-style-lbl">Elegante</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">🎨 Paleta de colores</div>
+        <label class="brief-label" style="margin-bottom:10px;">Selecciona una paleta o elige tus colores</label>
+        <div class="brief-palette-grid">
+          ${paletas.map(([c1,c2,c3,id]) => `
+            <div class="brief-palette" onclick="bSelPalette(this)" data-pal="${id}" title="${id.replace(/-/g,' ')}">
+              <div class="brief-palette-sw" style="background:${c1}"></div>
+              <div class="brief-palette-sw" style="background:${c2}"></div>
+              <div class="brief-palette-sw" style="background:${c3}"></div>
+            </div>`).join('')}
+        </div>
+        <div class="brief-custom-row">
+          <label>O mis colores:</label>
+          <input type="color" class="brief-cpick" id="b-c1" value="#1438cc" title="Principal">
+          <input type="color" class="brief-cpick" id="b-c2" value="#ffffff" title="Secundario">
+          <input type="color" class="brief-cpick" id="b-c3" value="#f1f5f9" title="Fondo">
+          <span style="font-size:10px;color:#94a3b8;">Principal · Secundario · Fondo</span>
+        </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">🖼️ Logo</div>
+        <label class="brief-label" style="margin-bottom:10px;">¿Tienes un logo?</label>
+        <div class="brief-logo-opts">
+          <div class="brief-logo-opt" data-v="si" onclick="bToggleLogo('si')">
+            <div class="brief-logo-opt-icon">✅</div><div class="brief-logo-opt-lbl">Sí, tengo</div>
+          </div>
+          <div class="brief-logo-opt" data-v="no" onclick="bToggleLogo('no')">
+            <div class="brief-logo-opt-icon">🚫</div><div class="brief-logo-opt-lbl">No tengo</div>
+          </div>
+        </div>
+        <div id="brief-logo-si" style="display:none;">
+          <label class="brief-label">Sube tu logo (PNG, SVG o PDF)</label>
+          <input id="b-logo" type="file" class="brief-input" accept="image/*,.svg,.pdf" style="padding:6px;">
+        </div>
+        <div id="brief-logo-no" style="display:none;background:#eff3ff;border-radius:10px;padding:12px;font-size:12px;color:#1438cc;">
+          💡 <strong>¿Necesitas un logo?</strong> En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.
+        </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">📄 Páginas del sitio</div>
+        <label class="brief-label" style="margin-bottom:10px;">¿Qué páginas necesitas?</label>
+        <div class="brief-pages-grid">
+          ${paginas.map((p,i) => `
+            <div class="brief-chk">
+              <input type="checkbox" id="bp${i}" value="${p}">
+              <label for="bp${i}">${p}</label>
+            </div>`).join('')}
+        </div>
+        <div class="brief-field" style="margin-top:10px;">
+          <label class="brief-label">Otras páginas que necesitas</label>
+          <input id="b-otras" class="brief-input" type="text" placeholder="Ej: Calculadora, Reservas online...">
+        </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">📱 Redes sociales</div>
+        <label class="brief-label" style="margin-bottom:10px;">Añade tus perfiles (opcional)</label>
+        ${redes.map(([ic,nm,ph,id]) => `
+          <div class="brief-social-row">
+            <span class="brief-social-icon">${ic}</span>
+            <span class="brief-social-lbl">${nm}</span>
+            <input class="brief-input" id="b-sn-${id}" type="text" placeholder="${ph}">
+          </div>`).join('')}
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title">🎯 Referencias y objetivos</div>
+        <div class="brief-field">
+          <label class="brief-label">Sitios web que te gustan como referencia</label>
+          <input id="b-r1" class="brief-input" type="url" placeholder="https://..." style="margin-bottom:6px;">
+          <input id="b-r2" class="brief-input" type="url" placeholder="https://..." style="margin-bottom:6px;">
+          <input id="b-r3" class="brief-input" type="url" placeholder="https://...">
+        </div>
+        <div class="brief-field">
+          <label class="brief-label">¿Cuál es el objetivo principal del sitio? <span class="req">*</span></label>
+          <textarea id="b-objetivo" class="brief-input brief-textarea" placeholder="Ej: Quiero que los clientes vean mis servicios y me contacten. También vender productos online..."></textarea>
+        </div>
+        <div class="brief-field">
+          <label class="brief-label">¿Tienes contenido listo? (textos, fotos, videos)</label>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;">
+            ${[['si','Sí, tengo todo'],['parcial','Tengo algo'],['no','Nada aún']].map(([v,l]) => `
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;cursor:pointer;">
+                <input type="radio" name="b-cont" value="${v}"> ${l}
+              </label>`).join('')}
+          </div>
+        </div>
+        <div class="brief-field">
+          <label class="brief-label">¿Algo más que quieras que sepamos?</label>
+          <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Ideas especiales, funciones específicas, preguntas..."></textarea>
+        </div>
+      </div>
+
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','web')">✅ Enviar Brief del Proyecto</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
+
+  function _briefSeguidoresForm(doc, fsId) {
+    const items = doc.items || [];
+    const totalSeg = items.reduce((sum, it) => {
+      const m = String(it.s || '').match(/(\d[\d.,]*)\s*seguidores?/i);
+      return sum + (m ? parseInt(m[1].replace(/[.,]/g,'')) : 0);
+    }, 0) || 0;
+
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Tu nombre <span class="req">*</span></label>
+            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+          <div class="brief-field"><label class="brief-label">Correo <span class="req">*</span></label>
+            <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+        </div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">📱 Cuentas a trabajar</div>
+        <p style="font-size:12px;color:#475569;margin-bottom:12px;">Total de seguidores contratados: <strong style="color:#1438cc;">${totalSeg > 0 ? totalSeg.toLocaleString() : 'ver factura'}</strong></p>
+        ${[
+          ['📸','Instagram'],['📘','Facebook'],['🎵','TikTok'],
+          ['▶️','YouTube'],['🐦','Twitter/X'],
+        ].map(([ic,red]) => `
+          <div class="brief-social-row" style="margin-bottom:10px;">
+            <span class="brief-social-icon">${ic}</span>
+            <span class="brief-social-lbl">${red}</span>
+            <div style="flex:1;">
+              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}" type="text" placeholder="@usuario o URL del perfil" style="margin-bottom:4px;">
+              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}-cant" type="number" min="0" placeholder="Cantidad de seguidores para esta red">
+            </div>
+          </div>`).join('')}
+        <div style="background:#fffbeb;border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;margin-top:4px;">
+          ⚠️ Las cuentas deben estar en <strong>público</strong> para poder trabajarlas.
+        </div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">💬 Comentarios adicionales</div>
+        <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Algún detalle importante o preferencia sobre el proceso..."></textarea>
+      </div>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','seguidores')">✅ Enviar información</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
+
+  function _briefRedesForm(fsId) {
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
+            <input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa"></div>
+          <div class="brief-field"><label class="brief-label">Tu nombre <span class="req">*</span></label>
+            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Correo <span class="req">*</span></label>
+          <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">📱 Redes a manejar</div>
+        ${[['📸','Instagram','ig'],['📘','Facebook','fb'],['🎵','TikTok','tt'],['▶️','YouTube','yt']].map(([ic,red,id]) => `
+          <div class="brief-social-row">
+            <span class="brief-social-icon">${ic}</span>
+            <span class="brief-social-lbl">${red}</span>
+            <input class="brief-input" id="b-sn-${id}" type="text" placeholder="@usuario o URL">
+          </div>`).join('')}
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">🎯 Línea de comunicación</div>
+        <div class="brief-field"><label class="brief-label">Tono de comunicación</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+            ${['Profesional','Cercano y amigable','Divertido','Inspiracional','Informativo'].map(t => `
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:5px 10px;border:1.5px solid #e2e8f0;border-radius:20px;">
+                <input type="radio" name="b-tono" value="${t}"> ${t}
+              </label>`).join('')}
+          </div>
+        </div>
+        <div class="brief-field"><label class="brief-label">¿Qué quieres transmitir a tu audiencia?</label>
+          <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Describe tu negocio, tus servicios y qué esperas de las redes..."></textarea>
+        </div>
+      </div>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','redes')">✅ Enviar Brief</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
+
+  function _briefAdsForm(fsId) {
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
+            <input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa"></div>
+          <div class="brief-field"><label class="brief-label">Correo <span class="req">*</span></label>
+            <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+        </div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">🎯 Objetivo de la campaña</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          ${['Ventas / Compras','Generación de leads','Reconocimiento de marca','Tráfico al sitio web','Descargas de app'].map(o => `
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:20px;">
+              <input type="radio" name="b-obj" value="${o}"> ${o}
+            </label>`).join('')}
+        </div>
+        <div class="brief-field"><label class="brief-label">Red publicitaria</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+            ${['Meta (Facebook/Instagram)','Google Ads','TikTok Ads'].map(r => `
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:20px;">
+                <input type="radio" name="b-red" value="${r}"> ${r}
+              </label>`).join('')}
+          </div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Describe tu producto/servicio y tu cliente ideal <span class="req">*</span></label>
+          <textarea id="b-extra" class="brief-input brief-textarea" placeholder="¿Qué vendes? ¿A quién va dirigido? ¿Qué presupuesto de pauta tienes disponible?"></textarea>
+        </div>
+      </div>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','ads')">✅ Enviar Brief</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
+
+  async function guardarBrief(fsId, tipo) {
+    const btn = document.querySelector('.brief-submit-btn');
+    const errEl = document.getElementById('brief-err');
+    errEl.style.display = 'none';
+
+    const v = id => document.getElementById(id)?.value?.trim() || '';
+    const nombre  = v('b-nombre');
+    const correo  = v('b-correo');
+    const negocio = v('b-negocio');
+
+    if (!nombre || !correo) {
+      errEl.style.display = 'block';
+      errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Enviando...';
+
+    let brief = { tipo, nombre, correo, fechaEnvio: new Date().toISOString() };
+
+    if (tipo === 'web') {
+      if (!v('b-objetivo')) {
+        errEl.style.display = 'block';
+        errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
+        btn.disabled = false; btn.textContent = '✅ Enviar Brief del Proyecto';
+        return;
+      }
+      const estiloEl  = document.querySelector('.brief-style-card.sel');
+      const paletteEl = document.querySelector('.brief-palette.sel');
+      const paginas   = [...document.querySelectorAll('.brief-pages-grid input:checked')].map(c => c.value);
+      const otrasPag  = v('b-otras');
+      brief = { ...brief,
+        negocio,
+        tel:         v('b-tel'),
+        ubicacion:   v('b-ubi'),
+        descripcion: v('b-desc'),
+        estilo:      estiloEl?.dataset.estilo || '',
+        colores: {
+          paleta: paletteEl?.dataset.pal || 'personalizada',
+          c1: document.getElementById('b-c1')?.value || '',
+          c2: document.getElementById('b-c2')?.value || '',
+          c3: document.getElementById('b-c3')?.value || '',
+        },
+        logo: document.querySelector('.brief-logo-opt.sel')?.dataset.v || '',
+        paginas: [...paginas, ...(otrasPag ? [otrasPag] : [])],
+        redes: { ig:v('b-sn-ig'), fb:v('b-sn-fb'), tt:v('b-sn-tt'), yt:v('b-sn-yt'), tw:v('b-sn-tw'), li:v('b-sn-li'), wa:v('b-sn-wa') },
+        referencias: [v('b-r1'),v('b-r2'),v('b-r3')].filter(Boolean),
+        objetivo:    v('b-objetivo'),
+        contenido:   document.querySelector('input[name="b-cont"]:checked')?.value || '',
+        extra:       v('b-extra'),
+      };
+    } else if (tipo === 'seguidores') {
+      const redes = ['instagram','facebook','tiktok','youtube','twitterx'];
+      brief.cuentas = redes.map(r => ({
+        red:      r,
+        usuario:  v(`b-seg-${r}`),
+        cantidad: v(`b-seg-${r}-cant`),
+      })).filter(c => c.usuario);
+      brief.extra = v('b-extra');
+    } else if (tipo === 'redes') {
+      brief = { ...brief, negocio,
+        redes:  { ig:v('b-sn-ig'), fb:v('b-sn-fb'), tt:v('b-sn-tt'), yt:v('b-sn-yt') },
+        tono:   document.querySelector('input[name="b-tono"]:checked')?.value || '',
+        extra:  v('b-extra'),
+      };
+    } else if (tipo === 'ads') {
+      brief = { ...brief, negocio,
+        objetivo: document.querySelector('input[name="b-obj"]:checked')?.value || '',
+        red:      document.querySelector('input[name="b-red"]:checked')?.value || '',
+        extra:    v('b-extra'),
+      };
+    }
+
+    try {
+      await db.collection('documentos').doc(fsId).update({ brief });
+      document.getElementById('brief-section').innerHTML = `
+        <div class="brief-done">
+          <div class="bd-icon">🎉</div>
+          <p>¡Brief enviado con éxito!</p>
+          <small>Andrés revisará tu información y se pondrá en contacto pronto.</small>
+        </div>`;
+    } catch(e) {
+      console.error('Error brief:', e);
+      btn.disabled    = false;
+      btn.textContent = '✅ Enviar Brief del Proyecto';
+      errEl.style.display = 'block';
+      errEl.textContent   = 'Error al guardar. Intenta de nuevo.';
     }
   }
 
