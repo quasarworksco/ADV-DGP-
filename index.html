@@ -868,6 +868,49 @@
   .cliente-stats { display:none; }
 }
 
+/* ─── PROYECTOS ─── */
+.proy-main { max-width:900px; margin:0 auto; padding:28px 24px; }
+.proy-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
+.proy-filter-row { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.proy-filter-btn { padding:7px 16px; border:1.5px solid var(--border); border-radius:20px; background:var(--off); color:var(--text-mid); font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.proy-filter-btn.active { background:var(--blue); color:white; border-color:var(--blue); }
+.proy-card { background:white; border:1.5px solid var(--border); border-radius:14px; margin-bottom:12px; overflow:hidden; transition:border-color 0.2s; }
+.proy-card:hover { border-color:var(--blue); }
+.proy-card-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; cursor:pointer; gap:12px; }
+.proy-card-left { display:flex; align-items:center; gap:12px; min-width:0; }
+.proy-card-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.proy-card-icon.web  { background:#eff3ff; }
+.proy-card-icon.seg  { background:#f0fdf4; }
+.proy-card-icon.red  { background:#fff7ed; }
+.proy-card-icon.ads  { background:#fdf2f8; }
+.proy-card-title { font-size:13px; font-weight:600; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.proy-card-sub { font-size:11px; color:var(--text-soft); margin-top:2px; }
+.proy-card-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.proy-badge { font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; text-transform:uppercase; }
+.proy-badge.web  { background:#eff3ff; color:#1438cc; }
+.proy-badge.seg  { background:#f0fdf4; color:#059669; }
+.proy-badge.red  { background:#fff7ed; color:#ea580c; }
+.proy-badge.ads  { background:#fdf2f8; color:#be185d; }
+.proy-arrow { font-size:11px; color:var(--text-soft); transition:transform 0.2s; }
+.proy-arrow.open { transform:rotate(180deg); }
+.proy-card-body { display:none; padding:0 20px 18px; border-top:1px solid var(--border); }
+.proy-card-body.open { display:block; }
+.proy-section { margin-top:14px; }
+.proy-section-title { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.proy-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.proy-row { display:flex; gap:8px; margin-bottom:6px; font-size:12px; }
+.proy-row-key { color:var(--text-soft); flex-shrink:0; width:120px; font-weight:600; font-size:11px; }
+.proy-row-val { color:var(--black); flex:1; word-break:break-word; }
+.proy-colores { display:flex; gap:6px; align-items:center; margin-top:4px; }
+.proy-color-dot { width:24px; height:24px; border-radius:6px; border:1px solid var(--border); }
+.proy-paginas { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.proy-chip { background:var(--off); border:1px solid var(--border); border-radius:20px; padding:3px 10px; font-size:11px; color:var(--text-mid); }
+.proy-empty { text-align:center; padding:48px 24px; color:var(--text-soft); font-size:13px; }
+.proy-link-btn { font-size:11px; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline; }
+@media (max-width:700px) {
+  .proy-main { padding:14px 12px; }
+  .proy-row-key { width:90px; }
+}
 /* ─── CALENDARIO ─── */
 .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .cal-nav-btn { background:none; border:1.5px solid var(--border); border-radius:8px; width:32px; height:32px; cursor:pointer; font-size:12px; color:var(--text-mid); transition:all 0.2s; }
@@ -985,6 +1028,9 @@
   </button>
   <button class="nav-tab" onclick="switchPage('clientes', this)">
     <i class="fa-solid fa-address-book"></i> Clientes
+  </button>
+  <button class="nav-tab" onclick="switchPage('proyectos', this)">
+    <i class="fa-solid fa-layer-group"></i> Proyectos
   </button>
 </nav>
 
@@ -1318,6 +1364,28 @@
       <input type="text" id="clientes-search" placeholder="🔍 Buscar por nombre, teléfono o correo..." oninput="renderClientes()">
     </div>
     <div id="clientes-list-container"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: PROYECTOS
+══════════════════════════════════════ -->
+<div id="page-proyectos" class="page">
+  <div class="proy-main">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Proyectos</div>
+        <div style="font-size:11px;color:var(--text-soft);">Briefs enviados por clientes desde sus facturas</div>
+      </div>
+    </div>
+    <div class="proy-filter-row">
+      <button class="proy-filter-btn active" onclick="filterProyectos('todos',this)">Todos</button>
+      <button class="proy-filter-btn" onclick="filterProyectos('web',this)">🌐 Web</button>
+      <button class="proy-filter-btn" onclick="filterProyectos('seguidores',this)">👥 Seguidores</button>
+      <button class="proy-filter-btn" onclick="filterProyectos('redes',this)">📱 Redes</button>
+      <button class="proy-filter-btn" onclick="filterProyectos('ads',this)">📣 ADS</button>
+    </div>
+    <div id="proy-list"></div>
   </div>
 </div>
 
@@ -1816,8 +1884,178 @@ function switchPage(page, btn) {
   btn.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  if (page === 'dashboard') { renderDashboard(); renderCalendario(); renderActividad(); }
-  if (page === 'clientes') renderClientes();
+  if (page === 'dashboard')  { renderDashboard(); renderCalendario(); renderActividad(); }
+  if (page === 'clientes')   renderClientes();
+  if (page === 'proyectos')  renderProyectos();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROYECTOS — Briefs de clientes
+═══════════════════════════════════════════════════════ */
+let _proyFiltro = 'todos';
+
+function filterProyectos(tipo, btn) {
+  _proyFiltro = tipo;
+  document.querySelectorAll('.proy-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProyectos();
+}
+
+function toggleProyCard(id) {
+  const body  = document.getElementById('proy-body-' + id);
+  const arrow = document.getElementById('proy-arrow-' + id);
+  body.classList.toggle('open');
+  arrow.classList.toggle('open', body.classList.contains('open'));
+}
+
+function renderProyectos() {
+  const container = document.getElementById('proy-list');
+  if (!container) return;
+
+  const TIPO_LABEL = { web:'🌐 Sitio Web', seguidores:'👥 Seguidores', redes:'📱 Redes Sociales', ads:'📣 Publicidad' };
+  const TIPO_CLS   = { web:'web', seguidores:'seg', redes:'red', ads:'ads' };
+  const TIPO_ICON  = { web:'🌐', seguidores:'👥', redes:'📱', ads:'📣' };
+
+  const docs = Object.values(docsMap)
+    .filter(d => d.brief)
+    .filter(d => _proyFiltro === 'todos' || d.brief.tipo === _proyFiltro)
+    .sort((a,b) => (b.brief.fechaEnvio||'') > (a.brief.fechaEnvio||'') ? 1 : -1);
+
+  if (!docs.length) {
+    container.innerHTML = `<div class="proy-empty">📭 No hay briefs enviados aún${_proyFiltro !== 'todos' ? ' para este filtro' : ''}.<br><span style="font-size:11px;">Cuando un cliente llene el formulario desde su factura pública, aparecerá aquí.</span></div>`;
+    return;
+  }
+
+  container.innerHTML = docs.map(doc => {
+    const b    = doc.brief;
+    const tipo = b.tipo || 'web';
+    const cls  = TIPO_CLS[tipo]  || 'web';
+    const icon = TIPO_ICON[tipo] || '📋';
+    const id   = doc._fsId;
+    const fecha = b.fechaEnvio ? new Date(b.fechaEnvio).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+    let detalles = '';
+
+    if (tipo === 'web') {
+      const colores = b.colores ? `
+        <div class="proy-colores">
+          <div class="proy-color-dot" style="background:${esc(b.colores.c1||'#ccc')}" title="Principal"></div>
+          <div class="proy-color-dot" style="background:${esc(b.colores.c2||'#ccc')}" title="Secundario"></div>
+          <div class="proy-color-dot" style="background:${esc(b.colores.c3||'#ccc')}" title="Fondo"></div>
+          <span style="font-size:10px;color:var(--text-soft);">${esc(b.colores.paleta||'personalizada')}</span>
+        </div>` : '—';
+
+      const paginas = (b.paginas||[]).length
+        ? `<div class="proy-paginas">${b.paginas.map(p => `<span class="proy-chip">${esc(p)}</span>`).join('')}</div>`
+        : '—';
+
+      const redes = b.redes ? Object.entries({
+        '📸 Instagram':b.redes.ig,'📘 Facebook':b.redes.fb,'🎵 TikTok':b.redes.tt,
+        '▶️ YouTube':b.redes.yt,'🐦 Twitter/X':b.redes.tw,'💼 LinkedIn':b.redes.li,'💬 WhatsApp':b.redes.wa
+      }).filter(([,v])=>v).map(([k,v])=>`<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val">${esc(v)}</span></div>`).join('') : '';
+
+      const refs = (b.referencias||[]).filter(Boolean);
+
+      detalles = `
+        <div class="proy-section">
+          <div class="proy-section-title">🏢 Negocio</div>
+          <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Contacto</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Teléfono</span><span class="proy-row-val">${esc(b.tel||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Ubicación</span><span class="proy-row-val">${esc(b.ubicacion||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Descripción</span><span class="proy-row-val">${esc(b.descripcion||'—')}</span></div>
+        </div>
+        <div class="proy-section">
+          <div class="proy-section-title">🎨 Diseño</div>
+          <div class="proy-row"><span class="proy-row-key">Estilo</span><span class="proy-row-val" style="text-transform:capitalize;">${esc(b.estilo||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Colores</span><span class="proy-row-val">${colores}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Logo</span><span class="proy-row-val">${b.logo === 'si' ? '✅ Tiene logo' : b.logo === 'no' ? '🚫 Sin logo' : '—'}</span></div>
+        </div>
+        <div class="proy-section">
+          <div class="proy-section-title">📄 Páginas</div>
+          ${paginas}
+        </div>
+        ${redes ? `<div class="proy-section"><div class="proy-section-title">📱 Redes sociales</div>${redes}</div>` : ''}
+        <div class="proy-section">
+          <div class="proy-section-title">🎯 Objetivo</div>
+          <div class="proy-row"><span class="proy-row-key">Objetivo</span><span class="proy-row-val">${esc(b.objetivo||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Contenido</span><span class="proy-row-val">${esc(b.contenido||'—')}</span></div>
+          ${refs.length ? `<div class="proy-row"><span class="proy-row-key">Referencias</span><span class="proy-row-val">${refs.map(r=>`<a href="${esc(r)}" target="_blank" style="display:block;color:var(--blue);font-size:11px;">${esc(r)}</a>`).join('')}</span></div>` : ''}
+          ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Notas</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
+        </div>`;
+
+    } else if (tipo === 'seguidores') {
+      const cuentas = (b.cuentas||[]).map(c =>
+        `<div class="proy-row"><span class="proy-row-key" style="text-transform:capitalize;">${esc(c.red)}</span><span class="proy-row-val">${esc(c.usuario)}${c.cantidad ? ` · <strong>${esc(c.cantidad)}</strong> seguidores` : ''}</span></div>`
+      ).join('');
+      detalles = `
+        <div class="proy-section">
+          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-row"><span class="proy-row-key">Nombre</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
+        </div>
+        <div class="proy-section">
+          <div class="proy-section-title">📱 Cuentas</div>
+          ${cuentas || '<div style="font-size:12px;color:var(--text-soft);">Sin cuentas registradas</div>'}
+        </div>
+        ${b.extra ? `<div class="proy-section"><div class="proy-section-title">💬 Notas</div><div style="font-size:12px;color:var(--text-mid);">${esc(b.extra)}</div></div>` : ''}`;
+
+    } else if (tipo === 'redes') {
+      const redes = b.redes ? Object.entries({'📸 Instagram':b.redes.ig,'📘 Facebook':b.redes.fb,'🎵 TikTok':b.redes.tt,'▶️ YouTube':b.redes.yt})
+        .filter(([,v])=>v).map(([k,v])=>`<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val">${esc(v)}</span></div>`).join('') : '';
+      detalles = `
+        <div class="proy-section">
+          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Nombre</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
+        </div>
+        ${redes ? `<div class="proy-section"><div class="proy-section-title">📱 Perfiles</div>${redes}</div>` : ''}
+        <div class="proy-section">
+          <div class="proy-section-title">🎯 Línea</div>
+          <div class="proy-row"><span class="proy-row-key">Tono</span><span class="proy-row-val">${esc(b.tono||'—')}</span></div>
+          ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Notas</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
+        </div>`;
+
+    } else if (tipo === 'ads') {
+      detalles = `
+        <div class="proy-section">
+          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
+        </div>
+        <div class="proy-section">
+          <div class="proy-section-title">🎯 Campaña</div>
+          <div class="proy-row"><span class="proy-row-key">Objetivo</span><span class="proy-row-val">${esc(b.objetivo||'—')}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Red</span><span class="proy-row-val">${esc(b.red||'—')}</span></div>
+          ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Descripción</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
+        </div>`;
+    }
+
+    return `
+      <div class="proy-card">
+        <div class="proy-card-head" onclick="toggleProyCard('${esc(id)}')">
+          <div class="proy-card-left">
+            <div class="proy-card-icon ${cls}">${icon}</div>
+            <div>
+              <div class="proy-card-title">${esc(b.negocio || b.nombre || doc.cli || '—')}</div>
+              <div class="proy-card-sub">${esc(doc.docId||id)} · ${esc(doc.cli||'—')} · ${fecha}</div>
+            </div>
+          </div>
+          <div class="proy-card-right">
+            <span class="proy-badge ${cls}">${esc(TIPO_LABEL[tipo]||tipo)}</span>
+            <span class="proy-arrow" id="proy-arrow-${esc(id)}">▼</span>
+          </div>
+        </div>
+        <div class="proy-card-body" id="proy-body-${esc(id)}">
+          ${detalles}
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+            <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function switchSubTab(tab, btn) {
