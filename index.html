@@ -912,6 +912,12 @@
 .proy-done-btn.done { background:#f0fdf4; border-color:var(--green-dark); color:var(--green-dark); }
 .proy-card.done .proy-card-head { background:#f0fdf4; }
 .proy-done-badge { font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; background:#f0fdf4; color:var(--green-dark); }
+.proy-prompt-btn { font-size:11px; font-weight:600; padding:6px 14px; border-radius:8px; border:1.5px solid rgba(20,56,204,0.25); background:#eff3ff; color:var(--blue); cursor:pointer; transition:all 0.2s; }
+.proy-prompt-btn:hover { background:rgba(20,56,204,0.12); }
+.proy-prompt-box { background:var(--off); border:1.5px solid var(--border); border-radius:10px; padding:14px 16px; margin-top:12px; font-size:11px; color:var(--text-mid); line-height:1.7; white-space:pre-wrap; word-break:break-word; font-family:'IBM Plex Mono',monospace; display:none; position:relative; }
+.proy-prompt-box.open { display:block; }
+.proy-prompt-copy { position:absolute; top:10px; right:10px; padding:4px 12px; background:var(--blue); color:white; border:none; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; transition:background 0.2s; }
+.proy-prompt-copy:hover { background:var(--blue-light); }
 @media (max-width:700px) {
   .proy-main { padding:14px 12px; }
   .proy-row-key { width:90px; }
@@ -1913,6 +1919,145 @@ function toggleProyCard(id) {
   arrow.classList.toggle('open', body.classList.contains('open'));
 }
 
+function generarPromptBrief(fsId) {
+  const box = document.getElementById('proy-prompt-' + fsId);
+  if (!box) return;
+  if (box.classList.contains('open')) { box.classList.remove('open'); return; }
+
+  const doc = docsMap[fsId];
+  if (!doc || !doc.brief) return;
+  const b = doc.brief;
+  const tipo = b.tipo || 'web';
+
+  let prompt = '';
+
+  if (tipo === 'web') {
+    const paginas  = (b.paginas || []).join(', ') || 'No especificadas';
+    const estilo   = b.estilo   ? b.estilo.charAt(0).toUpperCase() + b.estilo.slice(1) : 'No especificado';
+    const colores  = b.colores  ? `${b.colores.paleta || 'personalizada'} (${[b.colores.c1,b.colores.c2,b.colores.c3].filter(Boolean).join(', ')})` : 'No especificados';
+    const logo     = b.logo === 'si' ? 'Sí tiene logo' : b.logo === 'no' ? 'No tiene logo' : 'No especificado';
+    const contenido = b.contenido === 'si' ? 'Sí tiene contenido listo' : b.contenido === 'parcial' ? 'Tiene contenido parcial' : 'No tiene contenido aún';
+    const refs     = (b.referencias || []).filter(Boolean).join('\n  · ') || 'No proporcionadas';
+    const redesArr = b.redes ? Object.entries({
+      Instagram:b.redes.ig, Facebook:b.redes.fb, TikTok:b.redes.tt, YouTube:b.redes.yt,
+      'Twitter/X':b.redes.tw, LinkedIn:b.redes.li, WhatsApp:b.redes.wa, 'Google Business':b.redes.gmb
+    }).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join('\n  · ') : 'No proporcionadas';
+
+    prompt = `Hola Andrés, aquí está el brief completo del proyecto de sitio web para que lo trabajes:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 BRIEF DE PROYECTO — SITIO WEB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏢 NEGOCIO
+  · Nombre: ${b.negocio || '—'}
+  · Contacto: ${b.nombre || '—'}
+  · Correo: ${b.correo || '—'}
+  · Teléfono: ${b.tel || '—'}
+  · Ubicación: ${b.ubicacion || '—'}
+  · Descripción: ${b.descripcion || '—'}
+
+🎨 DISEÑO
+  · Estilo: ${estilo}
+  · Colores: ${colores}
+  · Logo: ${logo}
+
+📄 PÁGINAS REQUERIDAS
+  · ${paginas.split(', ').join('\n  · ')}
+
+📱 REDES SOCIALES
+  · ${redesArr || 'No proporcionadas'}
+
+🎯 OBJETIVOS
+  · Objetivo principal: ${b.objetivo || '—'}
+  · Contenido disponible: ${contenido}
+  · Sitios de referencia:
+  · ${refs}
+
+💬 NOTAS ADICIONALES
+  ${b.extra || 'Ninguna'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  } else if (tipo === 'seguidores') {
+    const cuentas = (b.cuentas || []).map(c => `${c.red}: ${c.usuario}${c.cantidad ? ` (${c.cantidad} seguidores)` : ''}`).join('\n  · ') || '—';
+    prompt = `Hola Andrés, aquí está el brief para el servicio de seguidores:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 BRIEF — SEGUIDORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 CONTACTO
+  · Nombre: ${b.nombre || '—'}
+  · Correo: ${b.correo || '—'}
+
+📱 CUENTAS A TRABAJAR
+  · ${cuentas}
+
+💬 NOTAS
+  ${b.extra || 'Ninguna'}
+
+Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
+
+  } else if (tipo === 'redes') {
+    const redesArr = b.redes ? Object.entries({Instagram:b.redes.ig,Facebook:b.redes.fb,TikTok:b.redes.tt,YouTube:b.redes.yt})
+      .filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join('\n  · ') : '—';
+    prompt = `Hola Andrés, aquí está el brief para manejo de redes sociales:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 BRIEF — REDES SOCIALES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 CONTACTO
+  · Negocio: ${b.negocio || '—'}
+  · Nombre: ${b.nombre || '—'}
+  · Correo: ${b.correo || '—'}
+
+📱 PERFILES
+  · ${redesArr}
+
+🎯 COMUNICACIÓN
+  · Tono: ${b.tono || '—'}
+  · Descripción: ${b.extra || '—'}
+
+Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
+
+  } else if (tipo === 'ads') {
+    prompt = `Hola Andrés, aquí está el brief para la campaña publicitaria:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 BRIEF — PUBLICIDAD (ADS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 CONTACTO
+  · Negocio: ${b.negocio || '—'}
+  · Correo: ${b.correo || '—'}
+
+🎯 CAMPAÑA
+  · Objetivo: ${b.objetivo || '—'}
+  · Red publicitaria: ${b.red || '—'}
+  · Descripción / público: ${b.extra || '—'}
+
+Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
+  }
+
+  box.textContent = prompt;
+  box.classList.add('open');
+}
+
+function copiarPromptBrief(fsId) {
+  const box = document.getElementById('proy-prompt-' + fsId);
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent).then(() => {
+    const btn = box.querySelector('.proy-prompt-copy');
+    const orig = btn.textContent;
+    btn.textContent = '¡Copiado!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  });
+}
+
 async function toggleBriefCompletado(fsId) {
   const doc = docsMap[fsId];
   if (!doc || !doc.brief) return;
@@ -2073,8 +2218,10 @@ function renderProyectos() {
           ${detalles}
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <button class="proy-done-btn${isDone ? ' done' : ''}" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? '✅ Completado' : '○ Marcar completado'}</button>
+            <button class="proy-prompt-btn" onclick="event.stopPropagation();generarPromptBrief('${esc(id)}')">⚡ Generar prompt</button>
             <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
           </div>
+          <div class="proy-prompt-box" id="proy-prompt-${esc(id)}"><button class="proy-prompt-copy" onclick="copiarPromptBrief('${esc(id)}')">📋 Copiar</button></div>
         </div>
       </div>`;
   }).join('');
