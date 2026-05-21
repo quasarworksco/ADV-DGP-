@@ -1241,7 +1241,7 @@
       <div class="panel-f" style="display:flex;flex-direction:column;">
         <div class="panel-title-f">Vista Previa del Documento</div>
 
-        <div id="cart-empty" class="empty-cart">📋 Añade servicios para comenzar</div>
+        <div id="cart-empty" class="empty-cart" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Añade servicios para comenzar</div>
         <table class="cart-table" id="cart-table" style="display:none;">
           <thead><tr><th>Servicio</th><th style="text-align:right">Subtotal</th><th></th></tr></thead>
           <tbody id="cart-list"></tbody>
@@ -1263,7 +1263,7 @@
       <div class="panel-f panel-f-full">
         <div class="panel-title-f">Todos los documentos</div>
         <div class="hist-search-bar">
-          <input type="text" id="hist-search" placeholder="🔍 Buscar por cliente o N° doc..." oninput="renderHistorial()">
+          <input type="text" id="hist-search" placeholder="Buscar por cliente o N° doc..." oninput="renderHistorial()">
           <div class="hist-filters">
             <button class="hist-filter-btn active" data-filter="todos" onclick="setHistFilter('todos',this)">Todos</button>
             <button class="hist-filter-btn" data-filter="factura" onclick="setHistFilter('factura',this)">Pendientes</button>
@@ -1394,7 +1394,7 @@
       <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
     </div>
     <div class="clientes-search-row">
-      <input type="text" id="clientes-search" placeholder="🔍 Buscar por nombre, teléfono o correo..." oninput="renderClientes()">
+      <input type="text" id="clientes-search" placeholder="Buscar por nombre, teléfono o correo..." oninput="renderClientes()">
     </div>
     <div id="clientes-list-container"></div>
   </div>
@@ -1428,7 +1428,7 @@
 <!-- ─── MODAL: VENTA REGISTRADA ─── -->
 <div id="modalExito" class="modal-overlay">
   <div class="modal-box">
-    <span class="modal-icon">🚀</span>
+    <span class="modal-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
     <div class="modal-title">¡VENTA REGISTRADA!</div>
     <div class="modal-sub" id="pResumen"></div>
     <a id="lnkWA" href="#" target="_blank" class="btn-wa">
@@ -1457,7 +1457,7 @@
         <div class="sheet-client-ref" id="s-ref">—</div>
       </div>
       <div class="sheet-nota-block" id="s-nota-block" style="display:none;">
-        <strong>📌 Instrucciones de pago:</strong><br>
+        <strong>Instrucciones de pago:</strong><br>
         <span id="s-nota"></span>
       </div>
       <table class="sheet-items">
@@ -1536,7 +1536,7 @@
 <div class="modal-overlay" id="modalEditVenta">
   <div class="edit-sheet" id="edit-venta-sheet">
     <div class="edit-sheet-header">
-      <h3>✏️ EDITAR VENTA</h3>
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDITAR VENTA</h3>
       <p id="edit-venta-id-label">—</p>
     </div>
     <div class="edit-sheet-body">
@@ -1560,7 +1560,7 @@
         <label>Fecha</label>
         <input type="date" id="ev-fec">
       </div>
-      <button class="btn-edit-save" onclick="saveEditVenta()">💾 Guardar Cambios</button>
+      <button class="btn-edit-save" onclick="saveEditVenta()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cambios</button>
       <button class="btn-edit-cancel" onclick="closeEditVentaModal()">Cancelar</button>
     </div>
   </div>
@@ -1570,13 +1570,13 @@
 <div class="modal-overlay" id="modalPagoParcial">
   <div class="edit-sheet" style="max-width:380px;">
     <div class="edit-sheet-header">
-      <h3>💰 REGISTRAR PAGO</h3>
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> REGISTRAR PAGO</h3>
       <p id="pago-parcial-info">Total: $0.00 · Pagado: $0.00 · Pendiente: $0.00</p>
     </div>
     <div class="edit-sheet-body">
       <div class="ff"><label>Monto a registrar ($)</label><input type="number" id="pp-monto" placeholder="0.00" step="0.01"></div>
       <div class="ff"><label>Referencia del pago</label><input type="text" id="pp-ref" placeholder="Ej. Zelle, transferencia..."></div>
-      <button class="btn-edit-save" onclick="confirmarPagoParcial()">💾 Registrar Pago</button>
+      <button class="btn-edit-save" onclick="confirmarPagoParcial()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Registrar Pago</button>
       <button class="btn-edit-cancel" onclick="document.getElementById('modalPagoParcial').classList.remove('show')">Cancelar</button>
     </div>
   </div>
@@ -1586,7 +1586,7 @@
 <div class="modal-overlay" id="modalCliente">
   <div class="edit-sheet" style="max-width:460px;">
     <div class="edit-sheet-header">
-      <h3 id="cliente-modal-title">👤 NUEVO CLIENTE</h3>
+      <h3 id="cliente-modal-title" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> NUEVO CLIENTE</h3>
       <p id="cliente-modal-sub">Completa la información del cliente</p>
     </div>
     <div class="edit-sheet-body">
@@ -1598,7 +1598,7 @@
       <div class="ff"><label>Correo electrónico</label><input type="email" id="cl-correo" placeholder="cliente@ejemplo.com"></div>
       <div class="ff"><label>Empresa (opcional)</label><input type="text" id="cl-empresa" placeholder="Nombre de empresa"></div>
       <div class="ff"><label>Notas</label><textarea id="cl-notas" placeholder="Notas internas sobre este cliente..." style="height:70px;resize:none;"></textarea></div>
-      <button class="btn-edit-save" onclick="saveCliente2()">💾 Guardar Cliente</button>
+      <button class="btn-edit-save" onclick="saveCliente2()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cliente</button>
       <button class="btn-edit-cancel" onclick="closeClienteModal()">Cancelar</button>
     </div>
   </div>
@@ -1607,7 +1607,7 @@
 <!-- ─── MODAL: PLANTILLAS ─── -->
 <div class="modal-overlay" id="modalPlantillas">
   <div class="edit-sheet" style="max-width:440px;">
-    <div class="edit-sheet-header"><h3>📂 PLANTILLAS</h3><p>Selecciona una plantilla para cargar</p></div>
+    <div class="edit-sheet-header"><h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PLANTILLAS</h3><p>Selecciona una plantilla para cargar</p></div>
     <div class="edit-sheet-body">
       <div id="plantillas-list"></div>
       <button class="btn-edit-cancel" style="margin-top:12px;" onclick="document.getElementById('modalPlantillas').classList.remove('show')">Cerrar</button>
@@ -1720,13 +1720,13 @@ function servicesOptionsHTML() {
   const sym = eur ? '€' : '$';
   return `
     <option value="" disabled selected>Seleccionar servicio...</option>
-    <optgroup label="Sitios Web 🌐">
+    <optgroup label="Sitios Web">
       <option value="Web Básica" data-p="280" data-eur="260">Web Básica — ${sym}${p(280,260)}</option>
       <option value="Web Estándar" data-p="455" data-eur="423">Web Estándar — ${sym}${p(455,423)}</option>
       <option value="Web Premium" data-p="950" data-eur="884">Web Premium — ${sym}${p(950,884)}</option>
       <option value="Plan Gestión Ecommerce" data-p="750" data-eur="698">Plan Gestión Ecommerce — ${sym}${p(750,698)}</option>
     </optgroup>
-    <optgroup label="Diseño &amp; Identidad 🎨">
+    <optgroup label="Diseño &amp; Identidad">
       <option value="Identidad Visual" data-p="85" data-eur="79">Identidad Visual — ${sym}${p(85,79)}</option>
       <option value="Tarjeta de Presentación" data-p="20" data-eur="19">Tarjeta de Presentación — ${sym}${p(20,19)}</option>
       <option value="Post / Flyers RRSS" data-p="10" data-eur="9">Post / Flyers RRSS — ${sym}${p(10,9)}</option>
@@ -1735,21 +1735,21 @@ function servicesOptionsHTML() {
       <option value="Paquete Intermedio" data-p="221" data-eur="206">Paquete Intermedio — ${sym}${p(221,206)}</option>
       <option value="Paquete Avanzado" data-p="553" data-eur="514">Paquete Avanzado — ${sym}${p(553,514)}</option>
     </optgroup>
-    <optgroup label="WhatsApp Marketing 📲">
+    <optgroup label="WhatsApp Marketing">
       <option value="WhatsApp Bronce (1 Sem)" data-p="55" data-eur="51">Bronce — ${sym}${p(55,51)}</option>
       <option value="WhatsApp Plata (2 Sem)" data-p="75" data-eur="70">Plata — ${sym}${p(75,70)}</option>
       <option value="WhatsApp Oro (1 Mes)" data-p="108" data-eur="100">Oro — ${sym}${p(108,100)}</option>
       <option value="WhatsApp Pro (3 Meses)" data-p="225" data-eur="209">Pro — ${sym}${p(225,209)}</option>
       <option value="WhatsApp Enterprise (1 Año)" data-p="650" data-eur="605">Enterprise — ${sym}${p(650,605)}</option>
     </optgroup>
-    <optgroup label="Seguidores 🚀">
+    <optgroup label="Seguidores">
       <option value="1,000 Seguidores" data-p="55" data-eur="51">1,000 Seguidores — ${sym}${p(55,51)}</option>
       <option value="3,000 Seguidores" data-p="75" data-eur="70">3,000 Seguidores — ${sym}${p(75,70)}</option>
       <option value="5,000 Seguidores" data-p="125" data-eur="116">5,000 Seguidores — ${sym}${p(125,116)}</option>
       <option value="10,000 Seguidores" data-p="190" data-eur="177">10,000 Seguidores — ${sym}${p(190,177)}</option>
     </optgroup>
     <optgroup label="──────────────────">
-      <option value="__otro__" data-p="">✏️ Otro (especificar)...</option>
+      <option value="__otro__" data-p="">Otro (especificar)...</option>
     </optgroup>`;
 }
 
@@ -2123,7 +2123,7 @@ function renderProyectos() {
     .sort((a,b) => (b.brief.fechaEnvio||'') > (a.brief.fechaEnvio||'') ? 1 : -1);
 
   if (!docs.length) {
-    container.innerHTML = `<div class="proy-empty">📭 No hay briefs enviados aún${_proyFiltro !== 'todos' ? ' para este filtro' : ''}.<br><span style="font-size:11px;">Cuando un cliente llene el formulario desde su factura pública, aparecerá aquí.</span></div>`;
+    container.innerHTML = `<div class="proy-empty">No hay briefs enviados aún${_proyFiltro !== 'todos' ? ' para este filtro' : ''}.<br><span style="font-size:11px;">Cuando un cliente llene el formulario desde su factura pública, aparecerá aquí.</span></div>`;
     return;
   }
 
@@ -2131,7 +2131,7 @@ function renderProyectos() {
     const b    = doc.brief;
     const tipo = b.tipo || 'web';
     const cls  = TIPO_CLS[tipo]  || 'web';
-    const icon = TIPO_ICON[tipo] || '📋';
+    const icon = TIPO_ICON[tipo] || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
     const id   = doc._fsId;
     const fecha = b.fechaEnvio ? new Date(b.fechaEnvio).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 
@@ -2160,7 +2160,7 @@ function renderProyectos() {
 
       detalles = `
         <div class="proy-section">
-          <div class="proy-section-title">🏢 Negocio</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> Negocio</div>
           <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Contacto</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
@@ -2169,18 +2169,18 @@ function renderProyectos() {
           <div class="proy-row"><span class="proy-row-key">Descripción</span><span class="proy-row-val">${esc(b.descripcion||'—')}</span></div>
         </div>
         <div class="proy-section">
-          <div class="proy-section-title">🎨 Diseño</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Diseño</div>
           <div class="proy-row"><span class="proy-row-key">Estilo</span><span class="proy-row-val" style="text-transform:capitalize;">${esc(b.estilo||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Colores</span><span class="proy-row-val">${colores}</span></div>
-          <div class="proy-row"><span class="proy-row-key">Logo</span><span class="proy-row-val">${b.logo === 'si' ? '✅ Tiene logo' : b.logo === 'no' ? '🚫 Sin logo' : '—'}</span></div>
+          <div class="proy-row"><span class="proy-row-key">Logo</span><span class="proy-row-val" style="display:inline-flex;align-items:center;gap:4px;">${b.logo === 'si' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Tiene logo' : b.logo === 'no' ? 'Sin logo' : '—'}</span></div>
         </div>
         <div class="proy-section">
-          <div class="proy-section-title">📄 Páginas</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Páginas</div>
           ${paginas}
         </div>
-        ${redes ? `<div class="proy-section"><div class="proy-section-title">📱 Redes sociales</div>${redes}</div>` : ''}
+        ${redes ? `<div class="proy-section"><div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes sociales</div>${redes}</div>` : ''}
         <div class="proy-section">
-          <div class="proy-section-title">🎯 Objetivo</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Objetivo</div>
           <div class="proy-row"><span class="proy-row-key">Objetivo</span><span class="proy-row-val">${esc(b.objetivo||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Contenido</span><span class="proy-row-val">${esc(b.contenido||'—')}</span></div>
           ${refs.length ? `<div class="proy-row"><span class="proy-row-key">Referencias</span><span class="proy-row-val">${refs.map(r=>`<a href="${esc(r)}" target="_blank" style="display:block;color:var(--blue);font-size:11px;">${esc(r)}</a>`).join('')}</span></div>` : ''}
@@ -2193,29 +2193,29 @@ function renderProyectos() {
       ).join('');
       detalles = `
         <div class="proy-section">
-          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Contacto</div>
           <div class="proy-row"><span class="proy-row-key">Nombre</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
         </div>
         <div class="proy-section">
-          <div class="proy-section-title">📱 Cuentas</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Cuentas</div>
           ${cuentas || '<div style="font-size:12px;color:var(--text-soft);">Sin cuentas registradas</div>'}
         </div>
-        ${b.extra ? `<div class="proy-section"><div class="proy-section-title">💬 Notas</div><div style="font-size:12px;color:var(--text-mid);">${esc(b.extra)}</div></div>` : ''}`;
+        ${b.extra ? `<div class="proy-section"><div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Notas</div><div style="font-size:12px;color:var(--text-mid);">${esc(b.extra)}</div></div>` : ''}`;
 
     } else if (tipo === 'redes') {
       const redes = b.redes ? Object.entries({'📸 Instagram':b.redes.ig,'📘 Facebook':b.redes.fb,'🎵 TikTok':b.redes.tt,'▶️ YouTube':b.redes.yt})
         .filter(([,v])=>v).map(([k,v])=>`<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val">${esc(v)}</span></div>`).join('') : '';
       detalles = `
         <div class="proy-section">
-          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Contacto</div>
           <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Nombre</span><span class="proy-row-val">${esc(b.nombre||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
         </div>
-        ${redes ? `<div class="proy-section"><div class="proy-section-title">📱 Perfiles</div>${redes}</div>` : ''}
+        ${redes ? `<div class="proy-section"><div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Perfiles</div>${redes}</div>` : ''}
         <div class="proy-section">
-          <div class="proy-section-title">🎯 Línea</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Línea</div>
           <div class="proy-row"><span class="proy-row-key">Tono</span><span class="proy-row-val">${esc(b.tono||'—')}</span></div>
           ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Notas</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
         </div>`;
@@ -2223,12 +2223,12 @@ function renderProyectos() {
     } else if (tipo === 'ads') {
       detalles = `
         <div class="proy-section">
-          <div class="proy-section-title">👤 Contacto</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Contacto</div>
           <div class="proy-row"><span class="proy-row-key">Negocio</span><span class="proy-row-val">${esc(b.negocio||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Correo</span><span class="proy-row-val">${esc(b.correo||'—')}</span></div>
         </div>
         <div class="proy-section">
-          <div class="proy-section-title">🎯 Campaña</div>
+          <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Campaña</div>
           <div class="proy-row"><span class="proy-row-key">Objetivo</span><span class="proy-row-val">${esc(b.objetivo||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Red</span><span class="proy-row-val">${esc(b.red||'—')}</span></div>
           ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Descripción</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
@@ -2328,7 +2328,7 @@ function render() {
     const emp  = lastVenta.empleado || '';
     const m    = parseFloat(lastVenta.monto) || 0;
     const cli  = lastVenta.cliente || '';
-    const msg  = `🔥 ÚLTIMA VENTA — ${emp.split(' ')[0]} cerró $${m.toFixed(2)} con ${cli}`;
+    const msg  = `ÚLTIMA VENTA — ${emp.split(' ')[0]} cerró $${m.toFixed(2)} con ${cli}`;
     tickText.textContent = msg + '   ·   ' + msg;
     tickEl.style.display = 'block';
   }
@@ -2341,7 +2341,7 @@ function render() {
   const faltante = 1000 - global;
   document.getElementById('txtFaltante').textContent = faltante > 0
     ? `Faltan $${faltante.toFixed(2)} para el bono`
-    : '¡BONO ALCANZADO! 🏆';
+    : '¡BONO ALCANZADO!';
 
   /* Ranking cards */
   const vals = Object.values(sumas);
@@ -2355,14 +2355,14 @@ function render() {
     if (rachas[emp.nombre]) {
       const s = document.createElement('span');
       s.className = 'rank-streak';
-      s.textContent = '🔥';
+      s.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
       card.appendChild(s);
     }
     if ((sumas[emp.nombre] || 0) === max && max > 0) {
       card.classList.add('leader');
       const m2 = document.createElement('span');
       m2.className = 'rank-medal';
-      m2.textContent = '🏆';
+      m2.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
       card.appendChild(m2);
     }
   });
@@ -2380,7 +2380,7 @@ function renderLista(data) {
       });
 
   if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><div>📭</div>Sin movimientos aún</div>';
+    el.innerHTML = '<div class="empty-state"><div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>Sin movimientos aún</div>';
     return;
   }
 
@@ -2407,9 +2407,9 @@ function renderLista(data) {
         <span class="venta-date">${esc(fecha)}</span>
         <span class="venta-amount">$${monto.toFixed(2)}</span>
         <div class="venta-actions">
-          <button class="comprobante-btn ${f.comprobante_url ? 'has-file' : ''}" onclick='openComprobanteModal("${vid}")'>${f.comprobante_url ? '📸 Ver' : '📷'}</button>
-          <button class="btn-sm edit" onclick='openEditVentaModal("${vid}")'>✏️</button>
-          <button class="btn-sm del"  onclick='deleteVenta("${vid}")'>🗑️</button>
+          <button class="comprobante-btn ${f.comprobante_url ? 'has-file' : ''}" onclick='openComprobanteModal("${vid}")'  style="display:inline-flex;align-items:center;gap:5px;">${f.comprobante_url ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Ver' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'}</button>
+          <button class="btn-sm edit" onclick='openEditVentaModal("${vid}")'  style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn-sm del"  onclick='deleteVenta("${vid}")'         style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
   });
@@ -2603,14 +2603,15 @@ function initDocs() {
 function updateHistorialBadge() {
   const count = Object.keys(docsMap).length;
   const btn   = document.getElementById('tab-historial-btn');
-  if (btn) btn.textContent = count > 0 ? `📋 Historial (${count})` : '📋 Historial';
+  const svgClip = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+  if (btn) btn.innerHTML = count > 0 ? `${svgClip} Historial (${count})` : `${svgClip} Historial`;
 }
 
 /* ─── Type change ─── */
 function onTypeChange() {
   const type = document.getElementById('doc-type').value;
   document.getElementById('field-nota').style.display = type === 'factura' ? 'block' : 'none';
-  document.getElementById('btn-submit').textContent   = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+  document.getElementById('btn-submit').innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
 }
 
 function onSrvSelChange() {
@@ -2714,7 +2715,7 @@ async function saveDoc() {
     resetMetodoPago();
     selectMarca('dgp');
     btn.disabled = false;
-    btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+    btn.innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
     saveCliente(cli);
     toast('Documento guardado ✅');
@@ -2724,7 +2725,7 @@ async function saveDoc() {
     console.error('saveDoc error:', err?.code, err?.message, err);
     toast(`Error: ${err?.message || err?.code || 'desconocido'}`, 'err');
     btn.disabled = false;
-    btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
+    btn.innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
   }
 }
 
@@ -2761,7 +2762,7 @@ function openSheet(doc) {
       <div class="sheet-title">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO DE PAGO','PAYMENT RECEIPT')}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
       <div class="sheet-status-badge ${statusClass}">${statusText}</div>
-      <button onclick="toggleSheetLang()" id="btn-sheet-lang" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">${sheetLang === 'es' ? '🌐 EN' : '🌐 ES'}</button>
+      <button onclick="toggleSheetLang()" id="btn-sheet-lang" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${sheetLang === 'es' ? 'EN' : 'ES'}</button>
     </div>`;
   document.getElementById('sheet-zigzag').innerHTML =
     `<div class="${isRecibo ? 'sheet-zigzag-blue' : 'sheet-zigzag-dark'}"></div>`;
@@ -2769,7 +2770,7 @@ function openSheet(doc) {
   document.getElementById('s-id').textContent    = doc.docId || doc._fsId || '—';
   document.getElementById('s-fecha').textContent = doc.fecha || '—';
   document.getElementById('s-cli').textContent   = doc.cli  || '—';
-  document.getElementById('s-ref').textContent   = doc.ref && doc.ref !== '—' ? '📌 Ref: ' + doc.ref : '';
+  document.getElementById('s-ref').textContent   = doc.ref && doc.ref !== '—' ? 'Ref: ' + doc.ref : '';
 
   const clientBlock = document.getElementById('s-client-block');
   const clientLabel = document.getElementById('s-client-label');
@@ -2836,31 +2837,31 @@ function openSheet(doc) {
   if (isParcial) {
     actions.className = 'sheet-actions four';
     actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')">🔗 Link público</button>
-      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Registrar Pago</button>
-      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="guardarComoPlantilla('${esc(fsId)}')">💾 Plantilla</button>
+      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
+      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Registrar Pago</button>
+      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
+      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   } else if (isFactura) {
     actions.className = 'sheet-actions four';
     actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')">🔗 Link público</button>
-      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')">💰 Pago parcial</button>
-      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')">✅ Marcar pagado</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="guardarComoPlantilla('${esc(fsId)}')">💾 Plantilla</button>
+      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
+      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pago parcial</button>
+      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
+      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   } else {
     actions.className = 'sheet-actions three';
     actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()">🖨️ Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')">💬 WhatsApp</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')">🔗 Link público</button>
-      <button class="btn-sheet email"  onclick="enviarEmail('${esc(fsId)}')">📧 Email</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="guardarComoPlantilla('${esc(fsId)}')">💾 Plantilla</button>
+      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
+      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
+      <button class="btn-sheet email"  onclick="enviarEmail('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
+      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   }
 
@@ -2874,7 +2875,7 @@ function openSheet(doc) {
     compEl.innerHTML = `
       <div style="font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">Comprobante de Pago</div>
       <img src="${esc(doc.comprobante_url)}" style="width:100%;border-radius:10px;display:block;margin-bottom:8px;" alt="Comprobante">
-      <a href="${esc(doc.comprobante_url)}" download="comprobante_${esc(doc.docId||fsId)}.jpg" target="_blank" class="btn-sheet print" style="display:block;text-align:center;text-decoration:none;">⬇️ Descargar comprobante</a>`;
+      <a href="${esc(doc.comprobante_url)}" download="comprobante_${esc(doc.docId||fsId)}.jpg" target="_blank" class="btn-sheet print" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;text-decoration:none;width:100%;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar comprobante</a>`;
     document.getElementById('sheet-actions').insertAdjacentElement('beforebegin', compEl);
   }
 
@@ -3056,15 +3057,15 @@ function renderHistorial() {
 
     let actionsHTML = `
       <button class="btn-sm outline" onclick='openSheetById("${esc(fsId)}")'>Ver</button>
-      <button class="btn-sm edit"    onclick='openEditModal("${esc(fsId)}")'>✏️ Editar</button>
-      <button class="btn-sm del"     onclick='deleteDoc("${esc(fsId)}")'>🗑️</button>`;
+      <button class="btn-sm edit"    onclick='openEditModal("${esc(fsId)}")'  style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+      <button class="btn-sm del"     onclick='deleteDoc("${esc(fsId)}")'      style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
     if (group === 'pendiente') {
       actionsHTML += `
-      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado</button>`;
+      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'     style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pagado</button>`;
     } else if (group === 'parcial') {
       actionsHTML += `
-      <button class="btn-sm" style="background:#fff7ed;border-color:rgba(251,146,60,0.3);color:#ea580c;" onclick='abrirPagoParcial("${esc(fsId)}")'>💰 Pago</button>
-      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado total</button>`;
+      <button class="btn-sm" style="background:#fff7ed;border-color:rgba(251,146,60,0.3);color:#ea580c;display:inline-flex;align-items:center;gap:5px;" onclick='abrirPagoParcial("${esc(fsId)}")'><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pago</button>
+      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'     style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pagado total</button>`;
     }
 
     const vngBadge = doc.marca === 'vanguard'
@@ -3088,21 +3089,21 @@ function renderHistorial() {
 
   if (pendientes.length) {
     html += `<div class="hist-section">
-      <div class="hist-section-title">🔴 PENDIENTES DE PAGO <span class="hist-count">${pendientes.length}</span></div>
+      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span> PENDIENTES DE PAGO <span class="hist-count">${pendientes.length}</span></div>
       ${pendientes.map(d => docItemHTML(d, 'pendiente')).join('')}
     </div>`;
   }
 
   if (parciales.length) {
     html += `<div class="hist-section">
-      <div class="hist-section-title">🟡 PAGO PARCIAL <span class="hist-count">${parciales.length}</span></div>
+      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span> PAGO PARCIAL <span class="hist-count">${parciales.length}</span></div>
       ${parciales.map(d => docItemHTML(d, 'parcial')).join('')}
     </div>`;
   }
 
   if (pagados.length) {
     html += `<div class="hist-section">
-      <div class="hist-section-title">🟢 RECIBOS / PAGADOS <span class="hist-count">${pagados.length}</span></div>
+      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> RECIBOS / PAGADOS <span class="hist-count">${pagados.length}</span></div>
       ${pagados.map(d => docItemHTML(d, 'pagado')).join('')}
     </div>`;
   }
@@ -3473,10 +3474,16 @@ function renderActividad() {
   if (!el) return;
   db.collection('actividadLog').orderBy('fecha','desc').limit(20).get().then(snap => {
     if (snap.empty) { el.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:16px;">Sin actividad registrada aún.</div>'; return; }
-    const iconMap = { 'Nueva venta':'🚀','Nuevo documento':'🧾','Documento eliminado':'🗑️','Venta eliminada':'🗑️','Factura pagada':'✅','Documento editado':'✏️','Venta editada':'✏️' };
+    const _svgMoney  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
+    const _svgClip   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    const _svgTrash  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+    const _svgCheck  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    const _svgEdit   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    const _svgZap    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+    const iconMap = { 'Nueva venta':_svgMoney,'Nuevo documento':_svgClip,'Documento eliminado':_svgTrash,'Venta eliminada':_svgTrash,'Factura pagada':_svgCheck,'Documento editado':_svgEdit,'Venta editada':_svgEdit };
     el.innerHTML = snap.docs.map(d => {
       const data = d.data();
-      const icon = iconMap[data.accion] || '📌';
+      const icon = iconMap[data.accion] || _svgZap;
       const fecha = data.fecha?.toDate ? data.fecha.toDate().toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       return `<div class="actividad-row">
         <div class="actividad-icon">${icon}</div>
@@ -3590,9 +3597,9 @@ function renderClientes() {
       <div class="cliente-info">
         <div class="cliente-nombre">${esc(nombreCompleto)}</div>
         <div class="cliente-meta">
-          ${c.telefono ? `<span>📱 ${esc(c.telefono)}</span>` : ''}
-          ${c.correo   ? `<span>✉️ ${esc(c.correo)}</span>`   : ''}
-          ${c.empresa  ? `<span>🏢 ${esc(c.empresa)}</span>`  : ''}
+          ${c.telefono ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> ${esc(c.telefono)}</span>` : ''}
+          ${c.correo   ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(c.correo)}</span>`   : ''}
+          ${c.empresa  ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> ${esc(c.empresa)}</span>`  : ''}
         </div>
         ${c.notas ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;font-style:italic;">${esc(c.notas)}</div>` : ''}
       </div>
@@ -3601,9 +3608,9 @@ function renderClientes() {
         <div class="cliente-stats-label">${ventasCliente.length} venta${ventasCliente.length!==1?'s':''}</div>
       </div>
       <div class="cliente-actions">
-        ${c.telefono ? `<button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,0.2);" onclick="window.open('https://wa.me/${encodeURIComponent((c.telefono||'').replace(/\D/g,''))}','_blank')">💬</button>` : ''}
-        <button class="btn-sm edit" onclick="openClienteModal('${esc(c._id)}')">✏️</button>
-        <button class="btn-sm del"  onclick="deleteCliente('${esc(c._id)}')">🗑️</button>
+        ${c.telefono ? `<button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,0.2);display:inline-flex;align-items:center;justify-content:center;" onclick="window.open('https://wa.me/${encodeURIComponent((c.telefono||'').replace(/\D/g,''))}','_blank')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>` : ''}
+        <button class="btn-sm edit" onclick="openClienteModal('${esc(c._id)}')" style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="btn-sm del"  onclick="deleteCliente('${esc(c._id)}')"  style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
     </div>`;
   }).join('');
@@ -3612,7 +3619,11 @@ function renderClientes() {
 function openClienteModal(id) {
   editClienteId = id || null;
   const c = id ? clientesList.find(x => x._id === id) : null;
-  document.getElementById('cliente-modal-title').textContent = c ? '✏️ EDITAR CLIENTE' : '👤 NUEVO CLIENTE';
+  const editSVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+  const userSVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  const titleEl = document.getElementById('cliente-modal-title');
+  titleEl.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
+  titleEl.innerHTML = c ? `${editSVG} EDITAR CLIENTE` : `${userSVG} NUEVO CLIENTE`;
   document.getElementById('cliente-modal-sub').textContent   = c ? ([c.nombre, c.apellido].filter(Boolean).join(' ')) : 'Completa la información del cliente';
   document.getElementById('cl-nombre').value   = c?.nombre   || '';
   document.getElementById('cl-apellido').value = c?.apellido || '';
@@ -3711,7 +3722,7 @@ async function openPlantillasModal() {
           <div style="font-size:11px;color:var(--text-soft);">${p.items?.length||0} ítem${(p.items?.length||0)!==1?'s':''} · ${esc(p.cli||'Sin cliente')}</div>
         </div>
         <button class="btn-sm edit" onclick="cargarPlantilla('${esc(d.id)}')">Cargar</button>
-        <button class="btn-sm del" onclick="eliminarPlantilla('${esc(d.id)}',this)">🗑️</button>
+        <button class="btn-sm del" onclick="eliminarPlantilla('${esc(d.id)}',this)" style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>`;
     }).join('');
   } catch(e) { list.innerHTML = '<div style="color:#ef4444;font-size:12px;">Error al cargar.</div>'; }
@@ -3917,21 +3928,21 @@ function copiarLinkFactura(fsId) {
 <div class="modal-overlay" id="modalComprobante">
   <div class="edit-sheet" style="max-width:440px;">
     <div class="edit-sheet-header">
-      <h3>📸 COMPROBANTE DE PAGO</h3>
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> COMPROBANTE DE PAGO</h3>
       <p id="comp-venta-info">—</p>
     </div>
     <div class="edit-sheet-body">
       <div id="comp-img-container" style="display:none;">
         <img id="comp-img" src="" alt="Comprobante" class="comprobante-modal-img">
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <a id="comp-download" href="#" download="comprobante.jpg" target="_blank" class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,0.2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">⬇️ Descargar</a>
-          <button class="btn-sm del" onclick="eliminarComprobante()">🗑️ Eliminar</button>
+          <a id="comp-download" href="#" download="comprobante.jpg" target="_blank" class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,0.2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar</a>
+          <button class="btn-sm del" onclick="eliminarComprobante()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Eliminar</button>
         </div>
         <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
         <p style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">Subir nuevo comprobante (reemplaza el actual):</p>
       </div>
       <div class="upload-area" onclick="document.getElementById('comp-file-input').click()">
-        <div style="font-size:28px;margin-bottom:8px;">📁</div>
+        <div style="margin-bottom:8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
         <div style="font-size:13px;color:var(--text-mid);font-weight:500;">Haz clic para seleccionar imagen</div>
         <div style="font-size:11px;color:var(--text-soft);margin-top:4px;">JPG, PNG, WebP — máx. 5MB</div>
         <input type="file" id="comp-file-input" accept="image/*" onchange="uploadComprobante(this)">

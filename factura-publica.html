@@ -252,7 +252,7 @@
 <body>
 <div class="pub-card" id="pub-card">
   <div class="pub-loading" id="pub-loading">
-    <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+    <div style="margin-bottom:12px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
     Cargando factura...
   </div>
 </div>
@@ -282,14 +282,14 @@
     const card = document.getElementById('pub-card');
 
     if (!id) {
-      card.innerHTML = `<div class="pub-error"><div>🔍</div><p>No se especificó ninguna factura.<br>Verifica el enlace.</p></div>`;
+      card.innerHTML = `<div class="pub-error"><div><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><p>No se especificó ninguna factura.<br>Verifica el enlace.</p></div>`;
       return;
     }
 
     try {
       const snap = await db.collection('documentos').doc(id).get();
       if (!snap.exists) {
-        card.innerHTML = `<div class="pub-error"><div>❌</div><p>Factura no encontrada.<br>El enlace puede haber expirado.</p></div>`;
+        card.innerHTML = `<div class="pub-error"><div><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><p>Factura no encontrada.<br>El enlace puede haber expirado.</p></div>`;
         return;
       }
       const doc = { _fsId: id, ...snap.data() };
@@ -301,7 +301,7 @@
         : e.code === 'permission-denied'
         ? 'Sin permisos para leer el documento.'
         : e.message || 'Error desconocido';
-      card.innerHTML = `<div class="pub-error"><div>⚠️</div><p>Error al cargar la factura.<br><small style="color:#94a3b8">${msg}</small></p></div>`;
+      card.innerHTML = `<div class="pub-error"><div><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div><p>Error al cargar la factura.<br><small style="color:#94a3b8">${msg}</small></p></div>`;
     }
   }
 
@@ -323,7 +323,7 @@
 
     if (s.web) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">🌐 Sitios Web</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Sitios Web</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Incluye 2 rondas de ajustes después de la entrega para que el resultado sea exactamente lo que necesitas. Una ronda = todos los cambios enviados juntos en un mensaje.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Todos los planes incluyen 1 mes de soporte gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año.</div>
@@ -333,7 +333,7 @@
 
     if (s.redes) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">📱 Redes Sociales</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes Sociales</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Aprobación de contenido en 48h para mantenerte siempre en control de lo que se publica.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.</div>
@@ -342,7 +342,7 @@
 
     if (s.ads) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">📣 Publicidad (ADS)</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Publicidad (ADS)</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>El presupuesto de pauta (lo que se invierte en Meta/Google) lo paga el cliente directamente a la plataforma. DGP Group cobra solo la gestión.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados dependen del presupuesto, el mercado y los algoritmos. Trabajamos para optimizar al máximo cada campaña.</div>
@@ -350,7 +350,7 @@
 
     if (s.seguidores) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">👥 Seguidores</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Seguidores</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>La garantía de reposición aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.</div>
       </div>`);
@@ -380,7 +380,7 @@
 
     if (s.web) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">🌐 Sitios Web</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Sitios Web</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Incluye 2 rondas de ajustes después de la entrega. Una ronda = todos los cambios enviados juntos en un mensaje.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Todos los planes incluyen 1 mes de soporte gratuito.</div>
@@ -390,7 +390,7 @@
 
     if (s.redes) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">📱 Redes Sociales</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes Sociales</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Aprobación de contenido en 48h para que siempre estés en control de lo que se publica.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.</div>
@@ -398,7 +398,7 @@
 
     if (s.ads) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">📣 Publicidad (ADS)</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Publicidad (ADS)</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>El presupuesto de pauta lo paga el cliente directamente a la plataforma. Vanguard Business Solutions cobra solo la gestión.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados dependen del presupuesto, el mercado y los algoritmos de cada plataforma.</div>
@@ -406,7 +406,7 @@
 
     if (s.seguidores) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title">👥 Seguidores</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Seguidores</div>
         <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
         <div class="pub-term-item"><span class="pub-term-num">i</span>La garantía aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.</div>
       </div>`);
@@ -469,14 +469,14 @@
         <div class="pub-comp-wrap">
           <div class="pub-comp-uploaded">
             <img src="${esc(doc.comprobante_url)}" alt="Comprobante">
-            <p>✅ Comprobante enviado</p>
+            <p style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Comprobante enviado</p>
           </div>
         </div>`;
     }
     return `
       <div class="pub-comp-wrap">
         <div class="pub-comp-area" onclick="document.getElementById('pub-comp-input').click()">
-          <div class="pub-comp-icon">📎</div>
+          <div class="pub-comp-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
           <div class="pub-comp-txt">Subir comprobante de pago</div>
           <div class="pub-comp-sub">JPG, PNG, WebP — máx. 5MB</div>
           <input type="file" id="pub-comp-input" accept="image/*" onchange="subirComprobantePublico(this,'${fsId}')">
@@ -484,7 +484,7 @@
             <div class="pub-comp-bar" id="pub-comp-bar"></div>
           </div>
         </div>
-        <div class="pub-comp-ok" id="pub-comp-ok">✅ ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
+        <div class="pub-comp-ok" id="pub-comp-ok" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
       </div>`;
   }
 
@@ -496,8 +496,8 @@
       <div class="helio-section" id="helio-section">
         <div class="helio-toggle" onclick="toggleHelio()">
           <div class="helio-toggle-left">
-            <span>💳 ¿Pagar con cripto?</span>
-            <span class="helio-toggle-badge">⚡ Helio</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> ¿Pagar con cripto?</span>
+            <span class="helio-toggle-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Helio</span>
           </div>
           <span class="helio-toggle-arrow" id="helio-arrow">▼</span>
         </div>
@@ -616,7 +616,7 @@
       </div>` : '';
 
     const notaBlock = (isFactura || isParcial) && doc.nota ? `
-      <div class="pub-nota"><strong>📌 Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
+      <div class="pub-nota"><strong>Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
 
     const brandName  = isVanguard ? 'VANGUARD BUSINESS SOLUTIONS LLC' : 'DGP GROUP USA · dgp-link.com';
     const waText = encodeURIComponent(
@@ -663,8 +663,8 @@
       ${!isRecibo ? renderHelio(doc) : ''}
       ${renderBrief(doc, doc._fsId)}
       <div class="pub-actions">
-        <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
-        <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
+        <button class="pub-btn print" onclick="window.print()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
+        <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Compartir</button>
       </div>
       ${isVanguard ? renderTerminosVanguard(doc) : renderTerminos(doc)}`;
 
@@ -686,7 +686,7 @@
     if (doc.brief) {
       return `<div class="brief-section">
         <div class="brief-done">
-          <div class="bd-icon">📋</div>
+          <div class="bd-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
           <p>¡Brief enviado!</p>
           <small>Gracias, Andrés revisará tu información y te contactará pronto.</small>
         </div>
@@ -703,7 +703,7 @@
     <div class="brief-section" id="brief-section">
       <div class="brief-toggle" onclick="toggleBrief()">
         <div class="brief-toggle-left">
-          <span class="brief-toggle-icon">📋</span>
+          <span class="brief-toggle-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
           <div class="brief-toggle-text">
             <strong>Brief del Proyecto</strong>
             <small>Cuéntanos lo que necesitamos para empezar — opcional pero importante</small>
@@ -764,7 +764,7 @@
 
     return `
       <div class="brief-step">
-        <div class="brief-step-title">🏢 Información del negocio</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> Información del negocio</div>
         <div class="brief-2col">
           <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
             <input id="b-negocio" class="brief-input" type="text" placeholder="Ej: Mi Empresa"></div>
@@ -784,7 +784,7 @@
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">🎨 Estilo visual</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Estilo visual</div>
         <label class="brief-label" style="margin-bottom:10px;">¿Cuál te identifica más?</label>
         <div class="brief-style-grid">
           <div class="brief-style-card" onclick="bSelStyle(this)" data-estilo="minimalista">
@@ -822,7 +822,7 @@
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">🎨 Paleta de colores</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Paleta de colores</div>
         <label class="brief-label" style="margin-bottom:10px;">Selecciona una paleta o elige tus colores</label>
         <div class="brief-palette-grid">
           ${paletas.map(([c1,c2,c3,id]) => `
@@ -842,14 +842,14 @@
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">🖼️ Logo</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Logo</div>
         <label class="brief-label" style="margin-bottom:10px;">¿Tienes un logo?</label>
         <div class="brief-logo-opts">
           <div class="brief-logo-opt" data-v="si" onclick="bToggleLogo('si')">
-            <div class="brief-logo-opt-icon">✅</div><div class="brief-logo-opt-lbl">Sí, tengo</div>
+            <div class="brief-logo-opt-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="brief-logo-opt-lbl">Sí, tengo</div>
           </div>
           <div class="brief-logo-opt" data-v="no" onclick="bToggleLogo('no')">
-            <div class="brief-logo-opt-icon">🚫</div><div class="brief-logo-opt-lbl">No tengo</div>
+            <div class="brief-logo-opt-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="brief-logo-opt-lbl">No tengo</div>
           </div>
         </div>
         <div id="brief-logo-si" style="display:none;">
@@ -857,12 +857,12 @@
           <input id="b-logo" type="file" class="brief-input" accept="image/*,.svg,.pdf" style="padding:6px;">
         </div>
         <div id="brief-logo-no" style="display:none;background:#eff3ff;border-radius:10px;padding:12px;font-size:12px;color:#1438cc;">
-          💡 <strong>¿Necesitas un logo?</strong> En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <strong>¿Necesitas un logo?</strong> En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.
         </div>
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">📄 Páginas del sitio</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Páginas del sitio</div>
         <label class="brief-label" style="margin-bottom:10px;">¿Qué páginas necesitas?</label>
         <div class="brief-pages-grid">
           ${paginas.map((p,i) => `
@@ -878,7 +878,7 @@
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">📱 Redes sociales</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes sociales</div>
         <label class="brief-label" style="margin-bottom:10px;">Añade tus perfiles (opcional)</label>
         ${redes.map(([ic,nm,ph,id]) => `
           <div class="brief-social-row">
@@ -889,7 +889,7 @@
       </div>
 
       <div class="brief-step">
-        <div class="brief-step-title">🎯 Referencias y objetivos</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Referencias y objetivos</div>
         <div class="brief-field">
           <label class="brief-label">Sitios web que te gustan como referencia</label>
           <input id="b-r1" class="brief-input" type="url" placeholder="https://..." style="margin-bottom:6px;">
@@ -915,7 +915,7 @@
         </div>
       </div>
 
-      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','web')">✅ Enviar Brief del Proyecto</button>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','web')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief del Proyecto</button>
       <div class="brief-err" id="brief-err"></div>`;
   }
 
@@ -928,7 +928,7 @@
 
     return `
       <div class="brief-step">
-        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Datos de contacto</div>
         <div class="brief-2col">
           <div class="brief-field"><label class="brief-label">Tu nombre <span class="req">*</span></label>
             <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
@@ -937,7 +937,7 @@
         </div>
       </div>
       <div class="brief-step">
-        <div class="brief-step-title">📱 Cuentas a trabajar</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Cuentas a trabajar</div>
         <p style="font-size:12px;color:#475569;margin-bottom:12px;">Total de seguidores contratados: <strong style="color:#1438cc;">${totalSeg > 0 ? totalSeg.toLocaleString() : 'ver factura'}</strong></p>
         ${[
           ['📸','Instagram'],['📘','Facebook'],['🎵','TikTok'],
@@ -952,21 +952,21 @@
             </div>
           </div>`).join('')}
         <div style="background:#fffbeb;border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;margin-top:4px;">
-          ⚠️ Las cuentas deben estar en <strong>público</strong> para poder trabajarlas.
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Las cuentas deben estar en <strong>público</strong> para poder trabajarlas.
         </div>
       </div>
       <div class="brief-step">
-        <div class="brief-step-title">💬 Comentarios adicionales</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentarios adicionales</div>
         <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Algún detalle importante o preferencia sobre el proceso..."></textarea>
       </div>
-      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','seguidores')">✅ Enviar información</button>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','seguidores')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar información</button>
       <div class="brief-err" id="brief-err"></div>`;
   }
 
   function _briefRedesForm(fsId) {
     return `
       <div class="brief-step">
-        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Datos de contacto</div>
         <div class="brief-2col">
           <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
             <input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa"></div>
@@ -977,7 +977,7 @@
           <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
       </div>
       <div class="brief-step">
-        <div class="brief-step-title">📱 Redes a manejar</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes a manejar</div>
         ${[['📸','Instagram','ig'],['📘','Facebook','fb'],['🎵','TikTok','tt'],['▶️','YouTube','yt']].map(([ic,red,id]) => `
           <div class="brief-social-row">
             <span class="brief-social-icon">${ic}</span>
@@ -986,7 +986,7 @@
           </div>`).join('')}
       </div>
       <div class="brief-step">
-        <div class="brief-step-title">🎯 Línea de comunicación</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Línea de comunicación</div>
         <div class="brief-field"><label class="brief-label">Tono de comunicación</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
             ${['Profesional','Cercano y amigable','Divertido','Inspiracional','Informativo'].map(t => `
@@ -999,14 +999,14 @@
           <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Describe tu negocio, tus servicios y qué esperas de las redes..."></textarea>
         </div>
       </div>
-      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','redes')">✅ Enviar Brief</button>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','redes')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief</button>
       <div class="brief-err" id="brief-err"></div>`;
   }
 
   function _briefAdsForm(fsId) {
     return `
       <div class="brief-step">
-        <div class="brief-step-title">👤 Datos de contacto</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Datos de contacto</div>
         <div class="brief-2col">
           <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
             <input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa"></div>
@@ -1015,7 +1015,7 @@
         </div>
       </div>
       <div class="brief-step">
-        <div class="brief-step-title">🎯 Objetivo de la campaña</div>
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Objetivo de la campaña</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
           ${['Ventas / Compras','Generación de leads','Reconocimiento de marca','Tráfico al sitio web','Descargas de app'].map(o => `
             <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:20px;">
@@ -1034,7 +1034,7 @@
           <textarea id="b-extra" class="brief-input brief-textarea" placeholder="¿Qué vendes? ¿A quién va dirigido? ¿Qué presupuesto de pauta tienes disponible?"></textarea>
         </div>
       </div>
-      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','ads')">✅ Enviar Brief</button>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','ads')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief</button>
       <div class="brief-err" id="brief-err"></div>`;
   }
 
@@ -1063,7 +1063,7 @@
       if (!v('b-objetivo')) {
         errEl.style.display = 'block';
         errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
-        btn.disabled = false; btn.textContent = '✅ Enviar Brief del Proyecto';
+        btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief del Proyecto';
         return;
       }
       const estiloEl  = document.querySelector('.brief-style-card.sel');
@@ -1116,14 +1116,14 @@
       await db.collection('documentos').doc(fsId).update({ brief });
       document.getElementById('brief-section').innerHTML = `
         <div class="brief-done">
-          <div class="bd-icon">🎉</div>
+          <div class="bd-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
           <p>¡Brief enviado con éxito!</p>
           <small>Andrés revisará tu información y se pondrá en contacto pronto.</small>
         </div>`;
     } catch(e) {
       console.error('Error brief:', e);
       btn.disabled    = false;
-      btn.textContent = '✅ Enviar Brief del Proyecto';
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief del Proyecto';
       errEl.style.display = 'block';
       errEl.textContent   = 'Error al guardar. Intenta de nuevo.';
     }
