@@ -925,6 +925,17 @@
 @media (max-width:700px) {
   .proy-main { padding:14px 12px; }
   .proy-row-key { width:90px; }
+  .proy-card-head { padding:12px 14px; gap:8px; }
+  .proy-card-icon { width:34px; height:34px; border-radius:8px; }
+  .proy-card-title { font-size:12px; }
+  .proy-card-right { gap:6px; }
+  .proy-badge { display:none; }
+  .proy-card-body { padding:0 14px 14px; }
+  .proy-prompt-toolbar { flex-wrap:wrap; gap:6px; }
+  .proy-prompt-text { font-size:10px; padding:10px 12px; }
+  .proy-done-btn, .proy-prompt-btn { padding:5px 10px; font-size:10px; }
+  .proy-filter-row { gap:6px; }
+  .proy-filter-btn { padding:6px 12px; font-size:10px; }
 }
 /* ─── CALENDARIO ─── */
 .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -1206,9 +1217,10 @@
             <option value="bizum">📱 Bizum</option>
             <option value="usdt">🔐 USDT TRC20</option>
             <option value="binancepay">🟡 Binance Pay</option>
-            <option value="bolivares">🇻🇪 Bolívares Venezolanos</option>
-            <option value="paypal">🅿️ PayPal</option>
-            <option value="westernunion">🌐 Western Union</option>
+            <option value="bolivares">📱 Pago Móvil</option>
+            <option value="transferencia">🏦 Transferencia Interbancaria (USD)</option>
+            <option value="paypal">PayPal</option>
+            <option value="westernunion">Western Union</option>
           </select>
           <div class="metodo-fields" id="metodo-pago-fields"></div>
         </div>
@@ -1700,10 +1712,16 @@ const METODOS_CAMPOS = {
     { id:'mp-payid',    label:'Binance Pay ID',              placeholder:'Ej: 123456789' }
   ],
   bolivares:    [
-    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Banesco, Mercantil...' },
-    { id:'mp-cuenta',   label:'Número de cuenta',            placeholder:'0000-0000-00-0000000000' },
-    { id:'mp-rifci',    label:'RIF / CI',                    placeholder:'V-00000000' },
-    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' }
+    { id:'mp-telefono', label:'Teléfono',                    placeholder:'04xx-xxx-xxxx' },
+    { id:'mp-cedula',   label:'Cédula',                      placeholder:'V-00000000' },
+    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Banesco, Mercantil...' }
+  ],
+  transferencia: [
+    { id:'mp-banco',    label:'Banco',                       placeholder:'Ej: Bank of America, Chase...' },
+    { id:'mp-cuenta',   label:'Número de cuenta',            placeholder:'000000000' },
+    { id:'mp-ruta',     label:'Número de ruta (Routing)',    placeholder:'026009593' },
+    { id:'mp-nombre',   label:'Nombre del beneficiario',     placeholder:'Andres Espina' },
+    { id:'mp-tipo',     label:'Tipo de cuenta',              placeholder:'Checking / Savings' }
   ],
   paypal:       [
     { id:'mp-correo',   label:'Correo o link PayPal',        placeholder:'pagos@email.com' }

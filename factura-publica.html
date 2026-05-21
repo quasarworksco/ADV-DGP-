@@ -208,12 +208,13 @@
     .brief-done p { font-size:13px; font-weight:600; color:#059669; margin-bottom:4px; }
     .brief-done small { font-size:11px; color:#94a3b8; }
     .brief-err { display:none; color:#ef4444; font-size:12px; margin-top:8px; text-align:center; }
-    @media (max-width:560px) {
-      .brief-section { margin:0 20px 20px; }
-      .brief-2col { grid-template-columns:1fr; }
-      .brief-style-grid { grid-template-columns:1fr 1fr; }
+    @media print {
+      .brief-section { display:none; }
+      body { background:white; padding:0; }
+      .pub-card { border-radius:0; box-shadow:none; max-width:100%; }
+      .pub-actions { display:none; }
+      .pub-header-factura, .pub-header-recibo, .pub-total { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     }
-    @media print { .brief-section { display:none; } }
     .pub-pago-copy:hover { background:#eff3ff; }
     .pub-comp-wrap { margin:0 32px 20px; }
     .pub-comp-uploaded { background:#f0fdf4; border:1px solid rgba(5,150,105,0.25); border-radius:12px; padding:14px 18px; text-align:center; }
@@ -228,24 +229,50 @@
     .pub-comp-progress { height:4px; background:#e2e8f0; border-radius:2px; margin-top:12px; overflow:hidden; display:none; }
     .pub-comp-bar { height:100%; background:#1438cc; border-radius:2px; width:0; transition:width 0.3s; }
     .pub-comp-ok { background:#f0fdf4; border:1px solid rgba(5,150,105,0.2); border-radius:12px; padding:12px; text-align:center; font-size:12px; color:#059669; font-weight:600; display:none; margin-top:10px; }
-    @media (max-width:560px) {
-      .pub-pago { margin:0 20px 0; }
-      .pub-comp-wrap { margin:0 20px 20px; }
-    }
-    @media (max-width:560px) {
-      .pub-terms { margin:0 20px; }
-      .pub-terms-contact { margin:16px 0 0; border-radius:0; }
-      .pub-terms-accept { padding:12px 20px 24px; }
-    }
-      body { background:white; padding:0; }
-      .pub-card { border-radius:0; box-shadow:none; max-width:100%; }
-      .pub-actions { display:none; }
-      .pub-header-factura, .pub-header-recibo, .pub-total { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    }
+    /* ── Consolidated mobile styles ── */
     @media (max-width:560px) {
       body { padding:0; }
       .pub-card { border-radius:0; min-height:100vh; }
-      .pub-actions { grid-template-columns:1fr; }
+      /* Invoice header */
+      .pub-header-factura, .pub-header-recibo, .vng-header-factura, .vng-header-recibo { padding:24px 20px 18px; }
+      .pub-brand { font-size:9px; letter-spacing:2px; }
+      .pub-doc-num { font-size:10px; }
+      .pub-client-block { padding:16px 20px; }
+      /* Items table */
+      .pub-items { margin:0 20px; }
+      .pub-items table { font-size:11px; }
+      /* Total */
+      .pub-total { padding:16px 20px; }
+      .pub-total-label { font-size:10px; }
+      .pub-total-amount { font-size:24px; }
+      /* Actions */
+      .pub-actions { grid-template-columns:1fr; margin:0 20px; }
+      /* Payment */
+      .pub-pago { margin:0 20px 0; }
+      .pub-comp-wrap { margin:0 20px 20px; }
+      /* Helio */
+      .helio-section { margin:0 20px 16px; }
+      .helio-toggle { padding:10px 12px; }
+      /* Brief */
+      .brief-section { margin:0 20px 20px; }
+      .brief-toggle { padding:12px 14px; border-radius:10px; }
+      .brief-toggle-text strong { font-size:12px; }
+      .brief-2col { grid-template-columns:1fr; }
+      .brief-style-grid { grid-template-columns:1fr 1fr; }
+      .brief-style-preview { height:54px; }
+      .brief-palette-grid { gap:6px; }
+      .brief-palette { height:26px; }
+      .brief-palette-sw { width:26px; height:26px; }
+      .brief-custom-row { flex-wrap:wrap; }
+      .brief-pages-grid { grid-template-columns:1fr; }
+      .brief-social-row { flex-wrap:wrap; gap:6px; }
+      .brief-social-lbl { width:auto; min-width:70px; }
+      .brief-logo-opts { gap:8px; }
+      .brief-logo-opt { padding:10px 8px; }
+      /* Terms */
+      .pub-terms { margin:0 20px; }
+      .pub-terms-contact { margin:16px 0 0; border-radius:0; flex-direction:column; }
+      .pub-terms-accept { padding:12px 20px 24px; }
     }
   </style>
 </head>
@@ -429,13 +456,15 @@
   }
 
   const METODO_LABELS = {
-    zelle:'💸 Zelle', bizum:'📱 Bizum', usdt:'🔐 USDT TRC20',
-    binancepay:'🟡 Binance Pay', bolivares:'🇻🇪 Bolívares Venezolanos',
-    paypal:'🅿️ PayPal', westernunion:'🌐 Western Union'
+    zelle:'Zelle', bizum:'Bizum', usdt:'USDT TRC20',
+    binancepay:'Binance Pay', bolivares:'Pago Móvil',
+    transferencia:'Transferencia Interbancaria (USD)',
+    paypal:'PayPal', westernunion:'Western Union'
   };
   const CAMPO_LABELS = {
     correo:'Correo / Cuenta', telefono:'Teléfono', wallet:'Dirección Wallet',
     payid:'Pay ID', banco:'Banco', cuenta:'N° de Cuenta', rifci:'RIF / CI',
+    cedula:'Cédula', ruta:'N° de Ruta (Routing)', tipo:'Tipo de Cuenta',
     nombre:'Beneficiario', pais:'País / Ciudad'
   };
 
@@ -661,7 +690,7 @@
       ${!isRecibo ? renderPago(doc) : ''}
       ${!isRecibo ? renderComprobante(doc, doc._fsId, isVanguard) : ''}
       ${!isRecibo ? renderHelio(doc) : ''}
-      ${renderBrief(doc, doc._fsId)}
+      ${renderBrief(doc, doc._fsId, isVanguard)}
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Compartir</button>
@@ -679,22 +708,23 @@
   /* ══════════════════════════════════════════
      BRIEF DEL PROYECTO
   ══════════════════════════════════════════ */
-  function renderBrief(doc, fsId) {
+  function renderBrief(doc, fsId, isVanguard) {
     const s = detectServicios(doc.items);
     if (!s.web && !s.seguidores && !s.redes && !s.ads) return '';
 
+    const contactName = isVanguard ? 'Lisnay' : 'Andrés';
     if (doc.brief) {
       return `<div class="brief-section">
         <div class="brief-done">
           <div class="bd-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
           <p>¡Brief enviado!</p>
-          <small>Gracias, Andrés revisará tu información y te contactará pronto.</small>
+          <small>Gracias, ${contactName} revisará tu información y te contactará pronto.</small>
         </div>
       </div>`;
     }
 
     let formHTML = '';
-    if (s.web)        formHTML = _briefWebForm(fsId);
+    if (s.web)        formHTML = _briefWebForm(fsId, isVanguard);
     else if (s.seguidores) formHTML = _briefSeguidoresForm(doc, fsId);
     else if (s.redes) formHTML = _briefRedesForm(fsId);
     else if (s.ads)   formHTML = _briefAdsForm(fsId);
@@ -739,7 +769,7 @@
     document.getElementById('brief-logo-no').style.display  = val === 'no' ? 'block' : 'none';
   }
 
-  function _briefWebForm(fsId) {
+  function _briefWebForm(fsId, isVanguard) {
     const paginas = ['Inicio','Nosotros / Equipo','Servicios','Portafolio','Blog','Tienda / E-commerce','Contacto','Preguntas frecuentes'];
     const redes   = [
       ['📸','Instagram','@usuario o URL','ig'],
@@ -857,7 +887,7 @@
           <input id="b-logo" type="file" class="brief-input" accept="image/*,.svg,.pdf" style="padding:6px;">
         </div>
         <div id="brief-logo-no" style="display:none;background:#eff3ff;border-radius:10px;padding:12px;font-size:12px;color:#1438cc;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <strong>¿Necesitas un logo?</strong> En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <strong>¿Necesitas un logo?</strong> ${isVanguard ? 'En Vanguard Business Solutions también diseñamos logos profesionales. Coméntaselo a Lisnay al comenzar el proyecto.' : 'En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.'}
         </div>
       </div>
 
