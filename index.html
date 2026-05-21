@@ -1272,8 +1272,8 @@
           </div>
           <div class="hist-filters" style="margin-top:6px;">
             <button class="hist-filter-btn active" data-marcaf="todas" onclick="setHistMarcaFilter('todas',this)">Ambas marcas</button>
-            <button class="hist-filter-btn" data-marcaf="dgp" onclick="setHistMarcaFilter('dgp',this)" style="color:#1438cc;">🔵 DGP</button>
-            <button class="hist-filter-btn" data-marcaf="vanguard" onclick="setHistMarcaFilter('vanguard',this)" style="color:#b8960c;">⭐ Vanguard</button>
+            <button class="hist-filter-btn" data-marcaf="dgp" onclick="setHistMarcaFilter('dgp',this)" style="color:#1438cc;display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> DGP</button>
+            <button class="hist-filter-btn" data-marcaf="vanguard" onclick="setHistMarcaFilter('vanguard',this)" style="color:#b8960c;display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Vanguard</button>
           </div>
         </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
@@ -1294,39 +1294,39 @@
     </div>
 
     <!-- KPI ventas (filtradas por período) -->
-    <div class="dash-section-label">📊 Ventas registradas</div>
+    <div class="dash-section-label">Ventas registradas</div>
     <div class="dash-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">💰 Monto Total</div>
+        <div class="dash-kpi-label">Monto Total</div>
         <div class="dash-kpi-value" id="dash-total-ventas">$0.00</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">🔢 N° de Ventas</div>
+        <div class="dash-kpi-label">N° de Ventas</div>
         <div class="dash-kpi-value" id="dash-num-ventas">0</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">📈 Promedio/Venta</div>
+        <div class="dash-kpi-label">Promedio/Venta</div>
         <div class="dash-kpi-value" id="dash-avg-venta">$0.00</div>
       </div>
     </div>
 
     <!-- KPI facturas (siempre totales, no filtran por período) -->
-    <div class="dash-section-label" style="margin-top:16px;">🧾 Estado de facturación (total)</div>
+    <div class="dash-section-label" style="margin-top:16px;">Estado de facturación (total)</div>
     <div class="dash-kpi-grid" style="margin-bottom:16px;">
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">📄 Facturas Emitidas</div>
+        <div class="dash-kpi-label">Facturas Emitidas</div>
         <div class="dash-kpi-value" id="dash-total-facturas">0</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">✅ Cobrado</div>
+        <div class="dash-kpi-label">Cobrado</div>
         <div class="dash-kpi-value green" id="dash-cobrado">$0.00</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">⏳ Por Cobrar</div>
+        <div class="dash-kpi-label">Por Cobrar</div>
         <div class="dash-kpi-value amber" id="dash-pendiente">$0.00</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">💛 Pago Parcial</div>
+        <div class="dash-kpi-label">Pago Parcial</div>
         <div class="dash-kpi-value" id="dash-parciales">0</div>
       </div>
     </div>
@@ -1480,7 +1480,7 @@
 <div class="modal-overlay" id="modalEdit">
   <div class="edit-sheet" id="edit-sheet">
     <div class="edit-sheet-header">
-      <h3>✏️ EDITAR DOCUMENTO</h3>
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDITAR DOCUMENTO</h3>
       <p id="edit-doc-id-label">—</p>
     </div>
     <div class="edit-sheet-body">
@@ -1526,7 +1526,7 @@
         <button class="btn-add-f" style="margin-top:8px;" onclick="editAddItem()">+ Añadir ítem</button>
       </div>
 
-      <button class="btn-edit-save" onclick="saveEditDoc()">💾 Guardar Cambios</button>
+      <button class="btn-edit-save" onclick="saveEditDoc()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cambios</button>
       <button class="btn-edit-cancel" onclick="closeEditModal()">Cancelar</button>
     </div>
   </div>
