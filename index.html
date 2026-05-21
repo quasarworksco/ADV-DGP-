@@ -907,6 +907,11 @@
 .proy-chip { background:var(--off); border:1px solid var(--border); border-radius:20px; padding:3px 10px; font-size:11px; color:var(--text-mid); }
 .proy-empty { text-align:center; padding:48px 24px; color:var(--text-soft); font-size:13px; }
 .proy-link-btn { font-size:11px; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline; }
+.proy-done-btn { font-size:11px; font-weight:600; padding:6px 14px; border-radius:8px; border:1.5px solid var(--border); background:var(--off); color:var(--text-mid); cursor:pointer; transition:all 0.2s; }
+.proy-done-btn:hover { border-color:var(--green-dark); color:var(--green-dark); }
+.proy-done-btn.done { background:#f0fdf4; border-color:var(--green-dark); color:var(--green-dark); }
+.proy-card.done .proy-card-head { background:#f0fdf4; }
+.proy-done-badge { font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; background:#f0fdf4; color:var(--green-dark); }
 @media (max-width:700px) {
   .proy-main { padding:14px 12px; }
   .proy-row-key { width:90px; }
@@ -1908,6 +1913,20 @@ function toggleProyCard(id) {
   arrow.classList.toggle('open', body.classList.contains('open'));
 }
 
+async function toggleBriefCompletado(fsId) {
+  const doc = docsMap[fsId];
+  if (!doc || !doc.brief) return;
+  const completado = !doc.brief.completado;
+  try {
+    const brief = { ...doc.brief, completado };
+    await db.collection('documentos').doc(fsId).update({ brief });
+    docsMap[fsId].brief.completado = completado;
+    renderProyectos();
+  } catch(e) {
+    toast('Error al actualizar.', 'err');
+  }
+}
+
 function renderProyectos() {
   const container = document.getElementById('proy-list');
   if (!container) return;
@@ -1951,7 +1970,8 @@ function renderProyectos() {
 
       const redes = b.redes ? Object.entries({
         '📸 Instagram':b.redes.ig,'📘 Facebook':b.redes.fb,'🎵 TikTok':b.redes.tt,
-        '▶️ YouTube':b.redes.yt,'🐦 Twitter/X':b.redes.tw,'💼 LinkedIn':b.redes.li,'💬 WhatsApp':b.redes.wa
+        '▶️ YouTube':b.redes.yt,'🐦 Twitter/X':b.redes.tw,'💼 LinkedIn':b.redes.li,
+        '💬 WhatsApp':b.redes.wa,'🗺️ Google Business':b.redes.gmb
       }).filter(([,v])=>v).map(([k,v])=>`<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val">${esc(v)}</span></div>`).join('') : '';
 
       const refs = (b.referencias||[]).filter(Boolean);
@@ -2033,8 +2053,9 @@ function renderProyectos() {
         </div>`;
     }
 
+    const isDone = !!b.completado;
     return `
-      <div class="proy-card">
+      <div class="proy-card${isDone ? ' done' : ''}">
         <div class="proy-card-head" onclick="toggleProyCard('${esc(id)}')">
           <div class="proy-card-left">
             <div class="proy-card-icon ${cls}">${icon}</div>
@@ -2044,13 +2065,14 @@ function renderProyectos() {
             </div>
           </div>
           <div class="proy-card-right">
-            <span class="proy-badge ${cls}">${esc(TIPO_LABEL[tipo]||tipo)}</span>
+            ${isDone ? '<span class="proy-done-badge">✅ Completado</span>' : `<span class="proy-badge ${cls}">${esc(TIPO_LABEL[tipo]||tipo)}</span>`}
             <span class="proy-arrow" id="proy-arrow-${esc(id)}">▼</span>
           </div>
         </div>
         <div class="proy-card-body" id="proy-body-${esc(id)}">
           ${detalles}
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button class="proy-done-btn${isDone ? ' done' : ''}" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? '✅ Completado' : '○ Marcar completado'}</button>
             <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
           </div>
         </div>

@@ -664,6 +664,7 @@
       ['🐦','Twitter / X','@usuario','tw'],
       ['💼','LinkedIn','URL del perfil','li'],
       ['💬','WhatsApp','Número con código','wa'],
+      ['🗺️','Google Business','URL del perfil en Google Maps','gmb'],
     ];
     const paletas = [
       ['#1438cc','#2979ff','#e8eeff','azul-profesional'],
@@ -691,7 +692,7 @@
           <div class="brief-field"><label class="brief-label">WhatsApp / Teléfono</label>
             <input id="b-tel" class="brief-input" type="tel" placeholder="+1 000 000 0000"></div>
         </div>
-        <div class="brief-field"><label class="brief-label">Ciudad / País</label>
+        <div class="brief-field"><label class="brief-label">Ciudad / Estado</label>
           <input id="b-ubi" class="brief-input" type="text" placeholder="Ej: Miami, Florida"></div>
         <div class="brief-field"><label class="brief-label">¿A qué se dedica tu negocio? <span class="req">*</span></label>
           <textarea id="b-desc" class="brief-input brief-textarea" placeholder="Describe tu negocio, productos/servicios y tus clientes ideales..."></textarea></div>
@@ -998,7 +999,7 @@
         },
         logo: document.querySelector('.brief-logo-opt.sel')?.dataset.v || '',
         paginas: [...paginas, ...(otrasPag ? [otrasPag] : [])],
-        redes: { ig:v('b-sn-ig'), fb:v('b-sn-fb'), tt:v('b-sn-tt'), yt:v('b-sn-yt'), tw:v('b-sn-tw'), li:v('b-sn-li'), wa:v('b-sn-wa') },
+        redes: { ig:v('b-sn-ig'), fb:v('b-sn-fb'), tt:v('b-sn-tt'), yt:v('b-sn-yt'), tw:v('b-sn-tw'), li:v('b-sn-li'), wa:v('b-sn-wa'), gmb:v('b-sn-gmb') },
         referencias: [v('b-r1'),v('b-r2'),v('b-r3')].filter(Boolean),
         objetivo:    v('b-objetivo'),
         contenido:   document.querySelector('input[name="b-cont"]:checked')?.value || '',
