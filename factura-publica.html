@@ -30,6 +30,21 @@
     .pub-badge.parcial::before  { background:#fb923c; }
     .pub-zigzag-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#1e3a5f; background-size:14px 14px; background-repeat:repeat-x; }
     .pub-zigzag-blue { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#2979ff; background-size:14px 14px; background-repeat:repeat-x; }
+    /* ── Vanguard theme ── */
+    .vng-header-factura { background:linear-gradient(135deg,#0a0f1e 0%,#1c1500 100%); padding:28px 32px 24px; position:relative; border-bottom:2px solid #d4af37; }
+    .vng-header-recibo  { background:linear-gradient(135deg,#b8960c 0%,#d4af37 100%); padding:28px 32px 24px; position:relative; }
+    .pub-zigzag-vng-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#1c1500; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-zigzag-vng-gold { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#d4af37; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-total.vng-dark { background:#0a0f1e; border-top:1px solid rgba(212,175,55,0.3); }
+    .pub-total.vng-gold { background:linear-gradient(135deg,#b8960c,#d4af37); }
+    .pub-client.vng-dark { background:rgba(212,175,55,0.06); border:1px solid rgba(212,175,55,0.18); }
+    .pub-client.vng-blue { background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); }
+    .pub-client-label.vng-dark { color:#b8960c; }
+    .pub-client-label.vng-blue { color:#b8960c; }
+    .vng-pago-val { color:#b8960c !important; }
+    .vng-footer { background:#0a0f1e; margin:0; padding:18px 32px; border-top:1px solid rgba(212,175,55,0.2); }
+    .vng-footer p { color:rgba(255,255,255,0.55); font-size:11px; line-height:1.6; text-align:center; }
+    .vng-footer strong { color:#d4af37; }
     .pub-body { padding:24px 32px 0; }
     .pub-meta { display:flex; justify-content:space-between; margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed #e2e8f0; }
     .pub-meta-col { }
@@ -358,6 +373,61 @@
       <div class="pub-terms-accept">Al realizar el pago, ${cliente} acepta los términos descritos anteriormente.</div>`;
   }
 
+  function renderTerminosVanguard(doc) {
+    const s = detectServicios(doc.items);
+    const cliente = esc(doc.cli || '—');
+    const terminosEspecificos = [];
+
+    if (s.web) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">🌐 Sitios Web</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Incluye 2 rondas de ajustes después de la entrega. Una ronda = todos los cambios enviados juntos en un mensaje.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Todos los planes incluyen 1 mes de soporte gratuito.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El dominio lo registra el cliente a su nombre. El sitio se activa al completar el pago.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El crecimiento en buscadores y ventas depende también del contenido, la inversión en marketing y el tiempo.</div>
+      </div>`);
+
+    if (s.redes) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">📱 Redes Sociales</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Aprobación de contenido en 48h para que siempre estés en control de lo que se publica.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.</div>
+      </div>`);
+
+    if (s.ads) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">📣 Publicidad (ADS)</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>El presupuesto de pauta lo paga el cliente directamente a la plataforma. Vanguard Business Solutions cobra solo la gestión.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados dependen del presupuesto, el mercado y los algoritmos de cada plataforma.</div>
+      </div>`);
+
+    if (s.seguidores) terminosEspecificos.push(`
+      <div class="pub-terms-section">
+        <div class="pub-terms-section-title">👥 Seguidores</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>La garantía aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.</div>
+      </div>`);
+
+    return `
+      <div class="pub-terms">
+        <div class="pub-terms-title">Información del Servicio</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Trabajo 100% personalizado, entregado en los tiempos acordados con acompañamiento durante todo el proceso.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Al completar el pago, ${cliente} recibe licencia de uso permanente sobre todo el material entregado.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>El trabajo inicia y se entrega según los pagos acordados. Cambios fuera del alcance original se cotizan por separado.</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>Los pagos realizados no son reembolsables, ya que representan tiempo y recursos comprometidos desde el inicio del proyecto.</span></div>
+        ${terminosEspecificos.join('')}
+      </div>
+      <div class="pub-terms-contact">
+        <div class="pub-terms-contact-col"><strong>Proveedor</strong>Lisnay Giménez — Vanguard Business Solutions LLC</div>
+        <div class="pub-terms-contact-col"><strong>Teléfono</strong>+1 (863) 254-8314</div>
+        <div class="pub-terms-contact-col"><strong>Correo</strong>vanguardbusa@gmail.com</div>
+      </div>
+      <div class="pub-terms-accept">Al realizar el pago, ${cliente} acepta los términos descritos anteriormente.</div>`;
+  }
+
   const METODO_LABELS = {
     zelle:'💸 Zelle', bizum:'📱 Bizum', usdt:'🔐 USDT TRC20',
     binancepay:'🟡 Binance Pay', bolivares:'🇻🇪 Bolívares Venezolanos',
@@ -392,7 +462,8 @@
       </div>`;
   }
 
-  function renderComprobante(doc, fsId) {
+  function renderComprobante(doc, fsId, isVanguard) {
+    const equipoNombre = isVanguard ? 'Vanguard Business Solutions' : 'DGP Group';
     if (doc.comprobante_url) {
       return `
         <div class="pub-comp-wrap">
@@ -413,7 +484,7 @@
             <div class="pub-comp-bar" id="pub-comp-bar"></div>
           </div>
         </div>
-        <div class="pub-comp-ok" id="pub-comp-ok">✅ ¡Comprobante enviado! El equipo de DGP Group lo revisará pronto.</div>
+        <div class="pub-comp-ok" id="pub-comp-ok">✅ ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
       </div>`;
   }
 
@@ -510,18 +581,27 @@
   }
 
   function renderFactura(card, doc) {
-    const isParcial = doc.type === 'factura' && !!doc.pagadoParcial && !doc.pagado;
-    const isRecibo  = doc.pagado || doc.type === 'recibo';
-    const isFactura = !isParcial && !isRecibo;
+    const isParcial   = doc.type === 'factura' && !!doc.pagadoParcial && !doc.pagado;
+    const isRecibo    = doc.pagado || doc.type === 'recibo';
+    const isFactura   = !isParcial && !isRecibo;
+    const isVanguard  = doc.marca === 'vanguard';
 
-    const headerClass  = isRecibo ? 'pub-header-recibo' : 'pub-header-factura';
-    const zigzagClass  = isRecibo ? 'pub-zigzag-blue'   : 'pub-zigzag-dark';
-    const clientStyle  = isRecibo ? 'blue' : 'dark';
-    const totalClass   = isRecibo ? 'blue' : 'dark';
-    const badgeClass   = isRecibo ? 'pagado' : (isParcial ? 'parcial' : 'pendiente');
-    const badgeText    = isRecibo ? 'PAGO CONFIRMADO' : (isParcial ? 'PAGO PARCIAL' : 'PENDIENTE DE PAGO');
-    const docTitle     = isRecibo ? 'RECIBO DE PAGO' : 'FACTURA';
-    const totalLabel   = isRecibo ? 'Total Pagado' : 'Total a Pagar';
+    const headerClass = isVanguard
+      ? (isRecibo ? 'vng-header-recibo'     : 'vng-header-factura')
+      : (isRecibo ? 'pub-header-recibo'     : 'pub-header-factura');
+    const zigzagClass = isVanguard
+      ? (isRecibo ? 'pub-zigzag-vng-gold'   : 'pub-zigzag-vng-dark')
+      : (isRecibo ? 'pub-zigzag-blue'       : 'pub-zigzag-dark');
+    const clientStyle = isVanguard
+      ? (isRecibo ? 'vng-blue' : 'vng-dark')
+      : (isRecibo ? 'blue'     : 'dark');
+    const totalClass  = isVanguard
+      ? (isRecibo ? 'vng-gold' : 'vng-dark')
+      : (isRecibo ? 'blue'     : 'dark');
+    const badgeClass  = isRecibo ? 'pagado' : (isParcial ? 'parcial' : 'pendiente');
+    const badgeText   = isRecibo ? 'PAGO CONFIRMADO' : (isParcial ? 'PAGO PARCIAL' : 'PENDIENTE DE PAGO');
+    const docTitle    = isRecibo ? 'RECIBO DE PAGO' : 'FACTURA';
+    const totalLabel  = isRecibo ? 'Total Pagado' : 'Total a Pagar';
 
     const items = (doc.items || []).map(it => `
       <tr>
@@ -538,13 +618,14 @@
     const notaBlock = (isFactura || isParcial) && doc.nota ? `
       <div class="pub-nota"><strong>📌 Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
 
+    const brandName  = isVanguard ? 'VANGUARD BUSINESS SOLUTIONS LLC' : 'DGP GROUP USA · dgp-link.com';
     const waText = encodeURIComponent(
-      `Hola, aquí está tu ${docTitle.toLowerCase()} de DGP Group USA:\n${window.location.href}`
+      `Hola, aquí está tu ${docTitle.toLowerCase()} de ${isVanguard ? 'Vanguard Business Solutions' : 'DGP Group USA'}:\n${window.location.href}`
     );
 
     card.innerHTML = `
       <div class="${headerClass}">
-        <div class="pub-brand">DGP GROUP USA · dgp-link.com</div>
+        <div class="pub-brand"${isVanguard ? ' style="color:rgba(212,175,55,0.7);letter-spacing:3px;"' : ''}>${brandName}</div>
         <div class="pub-title">${docTitle}</div>
         <div class="pub-docnum">N° ${esc(doc.docId || id)}</div>
         <div class="pub-badge ${badgeClass}">${badgeText}</div>
@@ -570,18 +651,22 @@
         <span class="pub-total-label">${totalLabel}</span>
         <span class="pub-total-amount">$${(doc.total||0).toFixed(2)}</span>
       </div>
+      ${isVanguard ? `
+      <div class="vng-footer">
+        <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>Vanguard Business Solutions LLC — Servicios Digitales Profesionales</strong></p>
+      </div>` : `
       <div class="pub-footer">
         <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></p>
-      </div>
+      </div>`}
       ${!isRecibo ? renderPago(doc) : ''}
-      ${!isRecibo ? renderComprobante(doc, doc._fsId) : ''}
+      ${!isRecibo ? renderComprobante(doc, doc._fsId, isVanguard) : ''}
       ${!isRecibo ? renderHelio(doc) : ''}
       ${renderBrief(doc, doc._fsId)}
       <div class="pub-actions">
         <button class="pub-btn print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')">💬 Compartir</button>
       </div>
-      ${renderTerminos(doc)}`;
+      ${isVanguard ? renderTerminosVanguard(doc) : renderTerminos(doc)}`;
 
     if (!isRecibo) {
       _helioAmount = doc.pagadoParcial

@@ -969,6 +969,11 @@
     .moneda-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
     .moneda-btn { padding:8px; border:1.5px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; text-align:center; }
     .moneda-btn.active { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
+    .marca-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+    .marca-btn { padding:10px 8px; border:1.5px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; text-align:center; line-height:1.4; }
+    .marca-btn.active-dgp { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
+    .marca-btn.active-vng { border-color:#b8960c; background:#fffbeb; color:#92400e; }
+    .marca-badge-vng { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; background:#fffbeb; color:#b8960c; border:1px solid rgba(184,150,12,0.3); vertical-align:middle; margin-left:4px; }
     .metodo-fields { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
     .metodo-fields .ff { margin:0; }
   </style>
@@ -1158,6 +1163,14 @@
         <div class="panel-title-f" id="form-panel-title">Datos del Documento</div>
 
         <div class="ff">
+          <label>Empresa emisora</label>
+          <div class="marca-toggle">
+            <button type="button" class="marca-btn active-dgp" id="btn-marca-dgp" onclick="selectMarca('dgp');event.preventDefault();event.stopPropagation();">🔵 DGP Global Group</button>
+            <button type="button" class="marca-btn" id="btn-marca-vng" onclick="selectMarca('vanguard');event.preventDefault();event.stopPropagation();">⭐ Vanguard Business Solutions</button>
+          </div>
+        </div>
+
+        <div class="ff">
           <label>Tipo de documento</label>
           <select id="doc-type" onchange="onTypeChange()">
             <option value="factura">🧾 Factura (pendiente de pago)</option>
@@ -1256,6 +1269,11 @@
             <button class="hist-filter-btn" data-filter="factura" onclick="setHistFilter('factura',this)">Pendientes</button>
             <button class="hist-filter-btn" data-filter="parcial" onclick="setHistFilter('parcial',this)">Parciales</button>
             <button class="hist-filter-btn" data-filter="recibo" onclick="setHistFilter('recibo',this)">Pagados</button>
+          </div>
+          <div class="hist-filters" style="margin-top:6px;">
+            <button class="hist-filter-btn active" data-marcaf="todas" onclick="setHistMarcaFilter('todas',this)">Ambas marcas</button>
+            <button class="hist-filter-btn" data-marcaf="dgp" onclick="setHistMarcaFilter('dgp',this)" style="color:#1438cc;">🔵 DGP</button>
+            <button class="hist-filter-btn" data-marcaf="vanguard" onclick="setHistMarcaFilter('vanguard',this)" style="color:#b8960c;">⭐ Vanguard</button>
           </div>
         </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
@@ -1664,6 +1682,7 @@ function fmtDate(d) {
    SERVICES OPTIONS HTML (shared)
 ═══════════════════════════════════════════════════════ */
 let monedaSeleccionada = 'usd';
+let marcaSeleccionada  = 'dgp';
 
 const METODOS_CAMPOS = {
   zelle:        [
@@ -2677,6 +2696,7 @@ async function saveDoc() {
     fecha,
     total,
     moneda:     monedaSeleccionada,
+    marca:      marcaSeleccionada,
     metodoPago: document.getElementById('metodo-pago').value || null,
     infoPago:   getInfoPago(),
     items:      [...cart],
@@ -2692,6 +2712,7 @@ async function saveDoc() {
     document.getElementById('pago-ref').value = '';
     document.getElementById('doc-nota').value = '';
     resetMetodoPago();
+    selectMarca('dgp');
     btn.disabled = false;
     btn.textContent = type === 'factura' ? '🧾 Generar Factura' : '✅ Generar Recibo';
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
@@ -2966,7 +2987,16 @@ async function confirmarPagoParcial() {
   }
 }
 
-let histFilter = 'todos';
+let histFilter      = 'todos';
+let histMarcaFilter = 'todas';
+
+function setHistMarcaFilter(f, btn) {
+  histMarcaFilter = f;
+  document.querySelectorAll('[data-marcaf]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistorial();
+}
+
 function setHistFilter(f, btn) {
   histFilter = f;
   document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
@@ -2993,6 +3023,8 @@ function renderHistorial() {
   if (histFilter === 'factura') allDocs = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
   else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial);
   else if (histFilter === 'recibo')  allDocs = allDocs.filter(d => d.pagado || d.type === 'recibo');
+  if (histMarcaFilter === 'dgp')      allDocs = allDocs.filter(d => !d.marca || d.marca === 'dgp');
+  else if (histMarcaFilter === 'vanguard') allDocs = allDocs.filter(d => d.marca === 'vanguard');
 
   if (allDocs.length === 0) {
     container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">${search || histFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
@@ -3035,11 +3067,14 @@ function renderHistorial() {
       <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'>✅ Pagado total</button>`;
     }
 
+    const vngBadge = doc.marca === 'vanguard'
+      ? `<span class="marca-badge-vng">VBS</span>` : '';
+
     return `
     <div class="doc-item">
       <div class="doc-badge ${badgeClass}">${badgeText}</div>
       <div class="doc-info">
-        <div class="doc-id">${esc(doc.docId || fsId)}</div>
+        <div class="doc-id">${esc(doc.docId || fsId)}${vngBadge}</div>
         <div class="doc-name">${esc(doc.cli || '—')}</div>
         <div class="doc-date">${esc(doc.fecha || '—')}</div>
         ${extraInfo}
@@ -3804,6 +3839,15 @@ document.getElementById('modalComprobante').addEventListener('click', function(e
 /* ═══════════════════════════════════════════════════════
    MÉTODO DE PAGO
 ═══════════════════════════════════════════════════════ */
+function selectMarca(val) {
+  marcaSeleccionada = val;
+  const btnDgp = document.getElementById('btn-marca-dgp');
+  const btnVng = document.getElementById('btn-marca-vng');
+  if (!btnDgp || !btnVng) return;
+  btnDgp.className = 'marca-btn' + (val === 'dgp'      ? ' active-dgp' : '');
+  btnVng.className = 'marca-btn' + (val === 'vanguard' ? ' active-vng' : '');
+}
+
 function selectMoneda(val) {
   monedaSeleccionada = val;
   document.getElementById('btn-usd').classList.toggle('active', val === 'usd');
