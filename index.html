@@ -914,10 +914,14 @@
 .proy-done-badge { font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; background:#f0fdf4; color:var(--green-dark); }
 .proy-prompt-btn { font-size:11px; font-weight:600; padding:6px 14px; border-radius:8px; border:1.5px solid rgba(20,56,204,0.25); background:#eff3ff; color:var(--blue); cursor:pointer; transition:all 0.2s; }
 .proy-prompt-btn:hover { background:rgba(20,56,204,0.12); }
-.proy-prompt-box { background:var(--off); border:1.5px solid var(--border); border-radius:10px; padding:14px 16px; margin-top:12px; font-size:11px; color:var(--text-mid); line-height:1.7; white-space:pre-wrap; word-break:break-word; font-family:'IBM Plex Mono',monospace; display:none; position:relative; }
+.proy-prompt-box { background:var(--off); border:1.5px solid var(--border); border-radius:10px; margin-top:12px; display:none; position:relative; overflow:hidden; }
 .proy-prompt-box.open { display:block; }
-.proy-prompt-copy { position:absolute; top:10px; right:10px; padding:4px 12px; background:var(--blue); color:white; border:none; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; transition:background 0.2s; }
+.proy-prompt-toolbar { display:flex; align-items:center; justify-content:space-between; padding:8px 14px; border-bottom:1px solid var(--border); background:white; }
+.proy-prompt-toolbar span { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); }
+.proy-prompt-copy { display:flex; align-items:center; gap:5px; padding:5px 12px; background:var(--blue); color:white; border:none; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; transition:background 0.2s; }
 .proy-prompt-copy:hover { background:var(--blue-light); }
+.proy-prompt-copy svg { flex-shrink:0; }
+.proy-prompt-text { padding:14px 16px; font-size:11px; color:var(--text-mid); line-height:1.7; white-space:pre-wrap; word-break:break-word; font-family:'IBM Plex Mono',monospace; }
 @media (max-width:700px) {
   .proy-main { padding:14px 12px; }
   .proy-row-key { width:90px; }
@@ -1919,6 +1923,11 @@ function toggleProyCard(id) {
   arrow.classList.toggle('open', body.classList.contains('open'));
 }
 
+const SVG_COPY   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const SVG_CHECK  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const SVG_BOLT   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+const SVG_CIRCLE = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`;
+
 function generarPromptBrief(fsId) {
   const box = document.getElementById('proy-prompt-' + fsId);
   if (!box) return;
@@ -2043,18 +2052,22 @@ Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
   }
 
-  box.textContent = prompt;
+  box.innerHTML = `
+    <div class="proy-prompt-toolbar">
+      <span>Prompt generado</span>
+      <button class="proy-prompt-copy" id="proy-copy-btn-${esc(fsId)}" onclick="copiarPromptBrief('${esc(fsId)}')">${SVG_COPY} Copiar</button>
+    </div>
+    <div class="proy-prompt-text" id="proy-prompt-text-${esc(fsId)}">${esc(prompt)}</div>`;
   box.classList.add('open');
 }
 
 function copiarPromptBrief(fsId) {
-  const box = document.getElementById('proy-prompt-' + fsId);
-  if (!box) return;
-  navigator.clipboard.writeText(box.textContent).then(() => {
-    const btn = box.querySelector('.proy-prompt-copy');
-    const orig = btn.textContent;
-    btn.textContent = '¡Copiado!';
-    setTimeout(() => btn.textContent = orig, 1800);
+  const textEl = document.getElementById('proy-prompt-text-' + fsId);
+  const btn    = document.getElementById('proy-copy-btn-'   + fsId);
+  if (!textEl || !btn) return;
+  navigator.clipboard.writeText(textEl.textContent).then(() => {
+    btn.innerHTML = `${SVG_CHECK} ¡Copiado!`;
+    setTimeout(() => { btn.innerHTML = `${SVG_COPY} Copiar`; }, 1800);
   });
 }
 
@@ -2210,18 +2223,18 @@ function renderProyectos() {
             </div>
           </div>
           <div class="proy-card-right">
-            ${isDone ? '<span class="proy-done-badge">✅ Completado</span>' : `<span class="proy-badge ${cls}">${esc(TIPO_LABEL[tipo]||tipo)}</span>`}
+            ${isDone ? `<span class="proy-done-badge" style="display:inline-flex;align-items:center;gap:4px;">${SVG_CHECK} Completado</span>` : `<span class="proy-badge ${cls}">${esc(TIPO_LABEL[tipo]||tipo)}</span>`}
             <span class="proy-arrow" id="proy-arrow-${esc(id)}">▼</span>
           </div>
         </div>
         <div class="proy-card-body" id="proy-body-${esc(id)}">
           ${detalles}
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <button class="proy-done-btn${isDone ? ' done' : ''}" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? '✅ Completado' : '○ Marcar completado'}</button>
-            <button class="proy-prompt-btn" onclick="event.stopPropagation();generarPromptBrief('${esc(id)}')">⚡ Generar prompt</button>
+            <button class="proy-done-btn${isDone ? ' done' : ''}" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? SVG_CHECK : SVG_CIRCLE} ${isDone ? 'Completado' : 'Marcar completado'}</button>
+            <button class="proy-prompt-btn" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();generarPromptBrief('${esc(id)}')">${SVG_BOLT} Generar prompt</button>
             <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
           </div>
-          <div class="proy-prompt-box" id="proy-prompt-${esc(id)}"><button class="proy-prompt-copy" onclick="copiarPromptBrief('${esc(id)}')">📋 Copiar</button></div>
+          <div class="proy-prompt-box" id="proy-prompt-${esc(id)}"></div>
         </div>
       </div>`;
   }).join('');
