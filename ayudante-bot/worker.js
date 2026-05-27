@@ -62,7 +62,7 @@ SERVICIOS Y PRECIOS (USD)
 • 10,000 seguidores →  $190
 
 Puntos clave — SIEMPRE mencionar:
-→ Son público real y variado. NUNCA digas bots, fake, automatizados.
+→ NUNCA digas "orgánico", "bots", "fake", "automatizados". Solo "público real", "gente real", "seguidores reales".
 → Garantía de por vida: si bajan, hacemos refill gratis sin preguntar.
 → Cargan muy rápido, en pocas horas ya se notan.
 → Sin contraseña ni acceso a la cuenta. 100% seguro.
@@ -166,17 +166,17 @@ export default {
       // ── Comando /start ──
       if (text === '/start') {
         await sendMsg(env.TG_TOKEN, chatId,
-          `Hola ${firstName}! 👋 Soy el asistente de ventas de DGP Group.\n\n` +
-          `Escríbeme lo que te dice el cliente y te doy una respuesta lista para copiarle. Así de simple.\n\n` +
-          `_Ejemplo: "El cliente pregunta cuánto cuestan los seguidores de Instagram"_`
+          `Hola ${firstName}! Soy el asistente de ventas de DGP Group 👋\n\n` +
+          `Escríbeme lo que te dice el cliente y te doy la respuesta lista.\n\n` +
+          `Cuando termines con un cliente y pases al siguiente, escribe /nuevo para limpiar el historial y que no se mezclen las conversaciones.`
         );
         return new Response('OK');
       }
 
-      // ── Comando /limpiar — reinicia el historial del chat ──
-      if (text === '/limpiar') {
+      // ── Comandos /nuevo y /limpiar — reinicia historial ──
+      if (text === '/nuevo' || text === '/limpiar') {
         historial.delete(chatId);
-        await sendMsg(env.TG_TOKEN, chatId, 'Listo, empezamos conversación nueva 👌');
+        await sendMsg(env.TG_TOKEN, chatId, 'Listo ✓ Conversación nueva. ¿Con qué cliente seguimos?');
         return new Response('OK');
       }
 
