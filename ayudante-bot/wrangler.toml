@@ -1,0 +1,6 @@
+name = "ayudante-dgp-bot"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Las variables secretas (TG_TOKEN y GROQ_API_KEY) se agregan
+# desde el dashboard de Cloudflare — NO van aquí en texto plano.
