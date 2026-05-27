@@ -288,6 +288,11 @@
   const CLOUDINARY_CLOUD_NAME    = 'dgden7fws';
   const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
 
+  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_CHAT_ID = '8446165096';
+
+  let _currentDoc = null;
+
   const firebaseConfig = {
     apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
     authDomain:        "dgp-group.firebaseapp.com",
@@ -498,7 +503,8 @@
         <div class="pub-comp-wrap">
           <div class="pub-comp-uploaded">
             <img src="${esc(doc.comprobante_url)}" alt="Comprobante">
-            <p style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Comprobante enviado</p>
+            <p style="display:inline-flex;align-items:center;gap:5px;margin-bottom:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado!</p>
+            <small style="font-size:11px;color:#64748b;font-weight:400;">El equipo de ${equipoNombre} lo revisará pronto.</small>
           </div>
         </div>`;
     }
@@ -593,13 +599,31 @@
         xhr.send(formData);
       });
       await db.collection('documentos').doc(fsId).update({ comprobante_url: url });
+      notificarTelegram(fsId, url);
       progress.style.display = 'none';
-      document.getElementById('pub-comp-ok').style.display = 'block';
+      document.getElementById('pub-comp-ok').style.display = 'flex';
       document.querySelector('.pub-comp-area').style.display = 'none';
     } catch(e) {
       progress.style.display = 'none';
       alert('Error al subir el comprobante. Intenta de nuevo.');
     }
+  }
+
+  async function notificarTelegram(fsId, imageUrl) {
+    try {
+      const doc       = _currentDoc || {};
+      const cliente   = doc.cliente  || 'Cliente';
+      const numero    = doc.numero   || fsId;
+      const total     = doc.total    ? `$${Number(doc.total).toFixed(2)}` : '';
+      const marca     = doc.marca === 'vanguard' ? 'Vanguard Business Solutions' : 'DGP Group';
+      const factUrl   = `https://adv.dgp-link.com/factura-publica.html?id=${fsId}`;
+      const caption   = `💳 *Nuevo comprobante de pago*\n\n👤 *Cliente:* ${cliente}\n🧾 *Factura:* #${numero}${total ? `\n💰 *Monto:* ${total}` : ''}\n🏢 *Empresa:* ${marca}\n\n🔗 [Ver factura](${factUrl})`;
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHAT_ID, photo: imageUrl, caption, parse_mode: 'Markdown' })
+      });
+    } catch(_) { /* notificación silenciosa — no interrumpe al cliente */ }
   }
 
   function copiarTexto(txt, btn) {
@@ -610,6 +634,7 @@
   }
 
   function renderFactura(card, doc) {
+    _currentDoc = doc;
     const isParcial   = doc.type === 'factura' && !!doc.pagadoParcial && !doc.pagado;
     const isRecibo    = doc.pagado || doc.type === 'recibo';
     const isFactura   = !isParcial && !isRecibo;
