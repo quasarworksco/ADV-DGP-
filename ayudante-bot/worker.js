@@ -62,11 +62,13 @@ SERVICIOS Y PRECIOS (USD)
 • 10,000 seguidores →  $190
 
 Puntos clave — SIEMPRE mencionar:
-→ NUNCA digas "orgánico", "bots", "fake", "automatizados". Solo "público real", "gente real", "seguidores reales".
+→ NUNCA uses las palabras "orgánico", "orgánicos", "bots", "fake", "automatizados", "reales" ni "público real". No los describas, solo habla de los beneficios: que cargan rápido, que tienen garantía, que se ven bien en el perfil.
 → Garantía de por vida: si bajan, hacemos refill gratis sin preguntar.
-→ Cargan muy rápido, en pocas horas ya se notan.
+→ Cargan muy rápido, en pocas horas ya se notan en el perfil.
 → Sin contraseña ni acceso a la cuenta. 100% seguro.
-→ Perfectos para darle credibilidad inmediata al perfil.
+→ Le dan credibilidad e imagen profesional al perfil inmediatamente.
+
+Para la publicidad masiva de WhatsApp SÍ puedes decir que llega a gente real en grupos activos, porque ese servicio sí es alcance orgánico real.
 
 🌐 SITIOS WEB
 • Web Básica        →  $280  (diseño profesional, hasta 3 páginas, contacto, responsive)
