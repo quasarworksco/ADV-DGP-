@@ -821,6 +821,14 @@
 .dash-top-name { font-weight:500; color:var(--text-mid); flex:1; }
 .dash-top-count { font-size:10px; color:var(--text-soft); margin:0 12px; }
 .dash-top-amt { font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--black); }
+.dash-emp-card { margin-bottom:10px; }
+.dash-emp-card-top { display:flex; align-items:center; gap:10px; }
+.dash-emp-avatar { width:32px; height:32px; border-radius:50%; background:var(--blue); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.dash-emp-info { flex:1; min-width:0; }
+.dash-emp-name { font-size:12px; font-weight:600; color:var(--black); }
+.dash-emp-stats { font-size:10px; color:var(--text-soft); display:flex; flex-wrap:wrap; gap:3px; align-items:center; margin-top:1px; }
+.dash-emp-dot { color:var(--border); }
+.dash-emp-total { font-size:14px; font-weight:700; color:var(--blue); font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px; flex-shrink:0; }
 
 /* ─── HISTORIAL SEARCH ─── */
 .hist-search-bar { margin-bottom:16px; display:flex; flex-direction:column; gap:10px; }
@@ -1342,6 +1350,27 @@
         <div class="dash-kpi-value" id="dash-parciales">0</div>
       </div>
     </div>
+    <!-- Meta mensual -->
+    <div class="panel-f" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="panel-title-f" style="margin-bottom:0;">Meta del mes</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--text-soft);">$</span>
+          <input type="number" id="meta-input" min="0" step="100"
+            style="width:90px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:var(--black);background:var(--off);outline:none;"
+            onchange="guardarMeta(this.value)" oninput="actualizarMeta(this.value)">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span id="meta-pct-label" style="font-size:11px;font-weight:700;color:var(--blue);">0%</span>
+        <span id="meta-amt-label" style="font-size:11px;color:var(--text-soft);">$0 / $0</span>
+      </div>
+      <div style="height:8px;background:var(--off);border-radius:20px;overflow:hidden;border:1px solid var(--border);">
+        <div id="meta-bar" style="height:100%;background:var(--blue);border-radius:20px;width:0%;transition:width 0.4s ease;"></div>
+      </div>
+      <div id="meta-msg" style="font-size:11px;color:var(--text-soft);margin-top:6px;text-align:right;"></div>
+    </div>
+
     <!-- Sales by employee -->
     <div class="panel-f" style="margin-bottom:12px;">
       <div class="panel-title-f">Ventas por empleado</div>
@@ -3286,6 +3315,48 @@ document.getElementById('edit-type').addEventListener('change', function() {
    DASHBOARD
 ═══════════════════════════════════════════════════════ */
 let dashPeriod = 'semana';
+let metaMensual = parseFloat(localStorage.getItem('dgp-meta-mensual')) || 1000;
+
+function guardarMeta(val) {
+  metaMensual = parseFloat(val) || 0;
+  localStorage.setItem('dgp-meta-mensual', metaMensual);
+  renderDashboard();
+}
+
+function actualizarMeta(val) {
+  metaMensual = parseFloat(val) || 0;
+  renderMetaBar();
+}
+
+function renderMetaBar() {
+  const input = document.getElementById('meta-input');
+  const bar   = document.getElementById('meta-bar');
+  const pct   = document.getElementById('meta-pct-label');
+  const amt   = document.getElementById('meta-amt-label');
+  const msg   = document.getElementById('meta-msg');
+  if (!bar) return;
+
+  const now = new Date();
+  const mesActual = now.getMonth();
+  const añoActual = now.getFullYear();
+  const totalMes  = DATOS.filter(f => {
+    const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
+    return fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
+  }).reduce((a, f) => a + (parseFloat(f.monto) || 0), 0);
+
+  if (input) input.value = metaMensual;
+  const porcentaje = metaMensual > 0 ? Math.min(totalMes / metaMensual * 100, 100) : 0;
+  const faltante   = Math.max(metaMensual - totalMes, 0);
+
+  bar.style.width   = porcentaje.toFixed(1) + '%';
+  bar.style.background = porcentaje >= 100 ? 'var(--green-dark)' : 'var(--blue)';
+  pct.textContent   = porcentaje.toFixed(0) + '%';
+  pct.style.color   = porcentaje >= 100 ? 'var(--green-dark)' : 'var(--blue)';
+  amt.textContent   = `$${totalMes.toFixed(0)} / $${metaMensual.toFixed(0)}`;
+  msg.textContent   = porcentaje >= 100
+    ? '¡Meta alcanzada este mes!'
+    : `Faltan $${faltante.toFixed(0)} para la meta`;
+}
 
 function setDashPeriod(p, btn) {
   dashPeriod = p;
@@ -3334,18 +3405,42 @@ function renderDashboard() {
   document.getElementById('dash-parciales').textContent      = parciales;
 
   /* Ventas por empleado */
-  const empSums = {};
-  EMPLEADOS.forEach(e => { empSums[e.nombre] = 0; });
-  ventasFiltradas.forEach(f => { if (empSums[f.empleado] !== undefined) empSums[f.empleado] += parseFloat(f.monto) || 0; });
+  const empSums  = {};
+  const empCounts = {};
+  const empServices = {};
+  EMPLEADOS.forEach(e => { empSums[e.nombre] = 0; empCounts[e.nombre] = 0; empServices[e.nombre] = {}; });
+  ventasFiltradas.forEach(f => {
+    if (empSums[f.empleado] !== undefined) {
+      empSums[f.empleado]   += parseFloat(f.monto) || 0;
+      empCounts[f.empleado] += 1;
+      const srv = f.servicio || '—';
+      empServices[f.empleado][srv] = (empServices[f.empleado][srv] || 0) + 1;
+    }
+  });
   const maxEmp = Math.max(...Object.values(empSums), 0.01);
   document.getElementById('dash-emp-bars').innerHTML = EMPLEADOS.map(e => {
-    const v = empSums[e.nombre] || 0;
+    const v   = empSums[e.nombre]   || 0;
+    const cnt = empCounts[e.nombre] || 0;
+    const avg = cnt > 0 ? (v / cnt) : 0;
     const pct = (v / maxEmp * 100).toFixed(1);
-    return `<div class="dash-bar-row">
-      <div class="dash-bar-label">${esc(e.nombre.split(' ')[0])}</div>
-      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct}%"></div></div>
-      <div class="dash-bar-amount">$${v.toFixed(0)}</div>
-    </div>`;
+    const topSrv = Object.entries(empServices[e.nombre]).sort((a,b) => b[1]-a[1])[0];
+    const topSrvLabel = topSrv ? topSrv[0].split(' ')[0] : '—';
+    return `<div class="dash-emp-card">
+    <div class="dash-emp-card-top">
+      <div class="dash-emp-avatar">${e.ini}</div>
+      <div class="dash-emp-info">
+        <div class="dash-emp-name">${esc(e.nombre.split(' ')[0])}</div>
+        <div class="dash-emp-stats">
+          <span>${cnt} venta${cnt !== 1 ? 's' : ''}</span>
+          <span class="dash-emp-dot">·</span>
+          <span>Prom. $${avg.toFixed(0)}</span>
+          ${topSrv ? `<span class="dash-emp-dot">·</span><span>${esc(topSrvLabel)}</span>` : ''}
+        </div>
+      </div>
+      <div class="dash-emp-total">$${v.toFixed(0)}</div>
+    </div>
+    <div class="dash-bar-track" style="margin-top:8px;"><div class="dash-bar-fill" style="width:${pct}%"></div></div>
+  </div>`;
   }).join('');
 
   /* Top clientes */
@@ -3384,6 +3479,7 @@ function renderDashboard() {
 
   renderCalendario();
   renderActividad();
+  renderMetaBar();
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -720,7 +720,8 @@
         <button class="pub-btn print" onclick="window.print()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
         <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Compartir</button>
       </div>
-      ${isVanguard ? renderTerminosVanguard(doc) : renderTerminos(doc)}`;
+      ${isVanguard ? renderTerminosVanguard(doc) : renderTerminos(doc)}
+      ${renderUpsell(doc, isVanguard)}`;
 
     if (!isRecibo) {
       _helioAmount = doc.pagadoParcial
@@ -728,6 +729,51 @@
         : (doc.total || 0);
       helioInited = false;
     }
+  }
+
+  /* ══════════════════════════════════════════
+     UPSELL AUTOMÁTICO
+  ══════════════════════════════════════════ */
+  function renderUpsell(doc, isVanguard) {
+    const items = (doc.items || []).map(i => (i.s || '').toLowerCase()).join(' ');
+
+    let titulo = '', texto = '', servicio = '';
+    if (items.includes('seguidor')) {
+      titulo   = 'Complementa tu crecimiento';
+      texto    = 'Con publicidad masiva en grupos de WhatsApp llegás a miles de personas reales en todo el país. Perfecto para que esos seguidores nuevos vean actividad real.';
+      servicio = 'WhatsApp Marketing';
+    } else if (items.includes('web') || items.includes('ecommerce')) {
+      titulo   = '¿Tu marca tiene identidad visual?';
+      texto    = 'Un logo y una paleta profesional hacen que tu sitio se vea completo y confiable. Lo trabajamos junto con tu web o por separado.';
+      servicio = 'Identidad Visual';
+    } else if (items.includes('whatsapp')) {
+      titulo   = 'Aumenta tu alcance';
+      texto    = 'Más seguidores en tus redes le dan más credibilidad a tu negocio. Tenemos paquetes desde 1,000 con garantía de por vida.';
+      servicio = 'Seguidores';
+    } else if (items.includes('diseño') || items.includes('identidad') || items.includes('logo') || items.includes('flyer') || items.includes('tarjeta')) {
+      titulo   = '¿Ya tienes tu sitio web?';
+      texto    = 'Con tu identidad lista, un sitio web profesional es el siguiente paso para que los clientes te encuentren y confíen en tu marca.';
+      servicio = 'Sitio Web';
+    } else {
+      return '';
+    }
+
+    const waNum  = isVanguard ? '18632548314' : '12398231738';
+    const waText = encodeURIComponent(`Hola! Vi mi factura y me interesa saber más sobre ${servicio}.`);
+    const color  = isVanguard ? '#b8960c' : '#1438cc';
+    const bgColor = isVanguard ? '#fffbeb' : '#eff3ff';
+
+    return `
+      <div style="margin:0 32px 24px;padding:16px 18px;background:${bgColor};border:1.5px solid ${isVanguard ? 'rgba(184,150,12,0.25)' : 'rgba(20,56,204,0.15)'};border-radius:14px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${color};margin-bottom:6px;opacity:0.8;">¿Sabías que?</div>
+        <div style="font-size:12px;font-weight:600;color:#0a0f1e;margin-bottom:4px;">${titulo}</div>
+        <div style="font-size:11px;color:#475569;line-height:1.6;margin-bottom:12px;">${texto}</div>
+        <a href="https://wa.me/${waNum}?text=${waText}" target="_blank"
+          style="display:inline-flex;align-items:center;gap:6px;background:${color};color:white;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:600;text-decoration:none;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Me interesa
+        </a>
+      </div>`;
   }
 
   /* ══════════════════════════════════════════
