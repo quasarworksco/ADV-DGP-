@@ -1239,13 +1239,13 @@
         </div>
 
         <div class="ff" id="field-contrato">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;" onclick="document.getElementById('contrato-toggle').click()">
-            <input type="checkbox" id="contrato-toggle" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;" onclick="event.stopPropagation()">
+          <label for="contrato-toggle" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;">
+            <input type="checkbox" id="contrato-toggle" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;">
             <div>
               <div style="font-size:12px;font-weight:600;color:var(--black);display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Requiere firma de contrato</div>
               <div style="font-size:10px;color:var(--text-soft);margin-top:1px;">El cliente deberá firmar antes de poder pagar</div>
             </div>
-          </div>
+          </label>
         </div>
 
         <div style="border-top:1px solid var(--border); margin:16px 0 16px;"></div>
