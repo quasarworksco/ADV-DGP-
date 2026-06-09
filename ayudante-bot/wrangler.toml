@@ -7,4 +7,5 @@ crons = ["0 9 1 * *"]
 
 # Las variables secretas (TG_TOKEN y GROQ_API_KEY) se agregan
 # desde el dashboard de Cloudflare — NO van aquí en texto plano.
-# FIREBASE_PROJECT = nombre del proyecto Firebase (ej: adv-dgp)
+# TG_TOKEN_NOTIF = token del bot de notificaciones (8938228745:...)
+# FIREBASE_PROJECT = adv-dgp (nombre del proyecto Firebase)
