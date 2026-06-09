@@ -1103,7 +1103,7 @@
           <div class="amount-block" style="text-align:right">
             <div class="amount-label">Progreso</div>
             <div class="amount-value" id="valPorcentaje" style="color:var(--white)">0%</div>
-            <span class="amount-faltante">META MENSUAL $1,000</span>
+            <span class="amount-faltante">META $1,000</span>
           </div>
         </div>
       </div>
@@ -1988,9 +1988,9 @@ function populateServiceSelects() {
 
 function setSemanaLabel() {
   const h = new Date();
+  const numSemana = Math.ceil(h.getDate() / 7);
   const mes = h.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-  const año = h.getFullYear();
-  document.getElementById('txtSemana').textContent = `${mes} ${año}`;
+  document.getElementById('txtSemana').textContent = `${mes} — SEMANA ${numSemana}`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2382,9 +2382,10 @@ function render() {
 
   let global = 0;
   const hoy  = new Date();
-  const hoyStr    = hoy.toLocaleDateString();
-  const mesActual = hoy.getMonth();
-  const añoActual = hoy.getFullYear();
+  const hoyStr       = hoy.toLocaleDateString();
+  const semanaActual = Math.ceil(hoy.getDate() / 7);
+  const mesActual    = hoy.getMonth();
+  const añoActual    = hoy.getFullYear();
 
   let lastVenta = null;
 
@@ -2392,8 +2393,10 @@ function render() {
     const fechaVenta = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     const m   = parseFloat(f.monto) || 0;
     const emp = f.empleado || '';
+    const semanaVenta = Math.ceil(fechaVenta.getDate() / 7);
 
-    if (fechaVenta.getMonth() === mesActual &&
+    if (semanaVenta === semanaActual &&
+        fechaVenta.getMonth() === mesActual &&
         fechaVenta.getFullYear() === añoActual) {
       if (Object.prototype.hasOwnProperty.call(sumas, emp)) sumas[emp] += m;
       global += m;
