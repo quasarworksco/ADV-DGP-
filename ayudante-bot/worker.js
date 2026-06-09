@@ -190,6 +190,10 @@ const historial = new Map();
 const MAX_HISTORIAL = 10; // últimos 10 turnos por chat
 
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(enviarResumenMensual(env));
+  },
+
   async fetch(request, env) {
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
@@ -270,4 +274,57 @@ async function sendMsg(token, chatId, text) {
       parse_mode: 'Markdown'
     })
   });
+}
+
+async function enviarResumenMensual(env) {
+  const TG_TOKEN = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_CHAT  = '8446165096';
+  const PROJECT  = env.FIREBASE_PROJECT || 'adv-dgp';
+
+  const now     = new Date();
+  const mes     = now.getMonth();
+  const año     = now.getFullYear();
+  const mesPrev = mes === 0 ? 11 : mes - 1;
+  const añoPrev = mes === 0 ? año - 1 : año;
+
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let docs = [];
+  try {
+    const url  = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/documentos?pageSize=300`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    docs = (data.documents || []).map(d => {
+      const f = d.fields || {};
+      return {
+        total:     parseFloat(f.total?.doubleValue || f.total?.integerValue || 0),
+        pagado:    f.pagado?.booleanValue === true,
+        cliente:   f.cli?.stringValue || f.cliente?.stringValue || '',
+        createdAt: f.createdAt?.timestampValue || null,
+      };
+    });
+  } catch (e) {
+    console.error('Firestore REST error:', e);
+    return;
+  }
+
+  const docsDelMes = docs.filter(d => {
+    if (!d.createdAt) return false;
+    const dt = new Date(d.createdAt);
+    return dt.getMonth() === mesPrev && dt.getFullYear() === añoPrev;
+  });
+
+  const totalFacturas  = docsDelMes.length;
+  const totalCobrado   = docsDelMes.filter(d => d.pagado).reduce((a, d) => a + d.total, 0);
+  const totalPendiente = docsDelMes.filter(d => !d.pagado).reduce((a, d) => a + d.total, 0);
+  const pagadas        = docsDelMes.filter(d => d.pagado).length;
+
+  const texto = `📊 *RESUMEN MENSUAL — ${MESES[mesPrev]} ${añoPrev}*\n\n` +
+    `📋 Facturas generadas: *${totalFacturas}*\n` +
+    `✅ Facturas cobradas: *${pagadas}*\n` +
+    `💰 Total cobrado: *$${totalCobrado.toFixed(2)}*\n` +
+    `⏳ Pendiente de cobro: *$${totalPendiente.toFixed(2)}*\n\n` +
+    `_Resumen automático · DGP Group_`;
+
+  await sendMsg(TG_TOKEN, TG_CHAT, texto);
 }
