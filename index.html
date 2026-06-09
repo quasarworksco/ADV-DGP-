@@ -1239,13 +1239,19 @@
         </div>
 
         <div class="ff" id="field-contrato">
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;">
-            <input type="checkbox" id="contrato-toggle" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;">
-            <div>
-              <div style="font-size:12px;font-weight:600;color:var(--black);display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Requiere firma de contrato</div>
-              <div style="font-size:10px;color:var(--text-soft);margin-top:1px;">El cliente deberá firmar antes de poder pagar</div>
+          <div id="contrato-btn" onclick="toggleContrato()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;user-select:none;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--black);">Requiere firma de contrato</div>
+                <div style="font-size:10px;color:var(--text-soft);margin-top:1px;">El cliente deberá firmar antes de poder pagar</div>
+              </div>
             </div>
-          </label>
+            <div id="contrato-pill" style="width:42px;height:24px;border-radius:20px;background:#e2e8f0;position:relative;flex-shrink:0;transition:background 0.2s;">
+              <div id="contrato-knob" style="width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+            </div>
+          </div>
+          <input type="hidden" id="contrato-toggle" value="0">
         </div>
 
         <div style="border-top:1px solid var(--border); margin:16px 0 16px;"></div>
@@ -2757,7 +2763,7 @@ async function saveDoc() {
     marca:      marcaSeleccionada,
     metodoPago: document.getElementById('metodo-pago').value || null,
     infoPago:   getInfoPago(),
-    contrato:   document.getElementById('contrato-toggle').checked,
+    contrato:   document.getElementById('contrato-toggle').value === '1',
     items:      [...cart],
     pagado:     type === 'recibo',
     fechaPago:  type === 'recibo' ? fecha : null,
@@ -2770,7 +2776,8 @@ async function saveDoc() {
     document.getElementById('cli-nom').value  = '';
     document.getElementById('pago-ref').value = '';
     document.getElementById('doc-nota').value = '';
-    document.getElementById('contrato-toggle').checked = false;
+    const ct = document.getElementById('contrato-toggle');
+    if (ct.value === '1') toggleContrato();
     resetMetodoPago();
     selectMarca('dgp');
     btn.disabled = false;
@@ -4033,6 +4040,19 @@ function resetMetodoPago() {
 /* ═══════════════════════════════════════════════════════
    LINK PÚBLICO DE FACTURA
 ═══════════════════════════════════════════════════════ */
+function toggleContrato() {
+  const input = document.getElementById('contrato-toggle');
+  const pill  = document.getElementById('contrato-pill');
+  const knob  = document.getElementById('contrato-knob');
+  const btn   = document.getElementById('contrato-btn');
+  const active = input.value === '1';
+  input.value = active ? '0' : '1';
+  pill.style.background  = active ? '#e2e8f0' : 'var(--blue)';
+  knob.style.left        = active ? '3px'     : '21px';
+  btn.style.borderColor  = active ? 'var(--border)' : 'var(--blue)';
+  btn.style.background   = active ? 'var(--off)'    : '#eff3ff';
+}
+
 function copiarLinkEncuesta(fsId) {
   const url = `https://adv.dgp-link.com/encuesta.html?id=${fsId}`;
   if (navigator.clipboard) {
