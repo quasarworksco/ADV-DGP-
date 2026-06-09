@@ -1238,6 +1238,16 @@
           <textarea id="doc-nota" placeholder="Ej: Realizar pago vía Zelle al correo pagos@dgpgroup.com..."></textarea>
         </div>
 
+        <div class="ff" id="field-contrato">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;" onclick="document.getElementById('contrato-toggle').click()">
+            <input type="checkbox" id="contrato-toggle" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;" onclick="event.stopPropagation()">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--black);display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Requiere firma de contrato</div>
+              <div style="font-size:10px;color:var(--text-soft);margin-top:1px;">El cliente deberá firmar antes de poder pagar</div>
+            </div>
+          </div>
+        </div>
+
         <div style="border-top:1px solid var(--border); margin:16px 0 16px;"></div>
         <div class="panel-title-f" style="margin-bottom:14px;">Añadir Servicio</div>
 
@@ -2747,6 +2757,7 @@ async function saveDoc() {
     marca:      marcaSeleccionada,
     metodoPago: document.getElementById('metodo-pago').value || null,
     infoPago:   getInfoPago(),
+    contrato:   document.getElementById('contrato-toggle').checked,
     items:      [...cart],
     pagado:     type === 'recibo',
     fechaPago:  type === 'recibo' ? fecha : null,
@@ -2759,6 +2770,7 @@ async function saveDoc() {
     document.getElementById('cli-nom').value  = '';
     document.getElementById('pago-ref').value = '';
     document.getElementById('doc-nota').value = '';
+    document.getElementById('contrato-toggle').checked = false;
     resetMetodoPago();
     selectMarca('dgp');
     btn.disabled = false;
@@ -2809,6 +2821,7 @@ function openSheet(doc) {
       <div class="sheet-title">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO DE PAGO','PAYMENT RECEIPT')}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
       <div class="sheet-status-badge ${statusClass}">${statusText}</div>
+      ${doc.contrato ? `<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);color:white;font-size:9px;font-weight:600;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-top:6px;margin-left:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${doc.contratoFirmado ? `CONTRATO FIRMADO · ${esc(doc.contratoFirmadoPor||'')}` : 'FIRMA PENDIENTE'}</div>` : ''}
       <button onclick="toggleSheetLang()" id="btn-sheet-lang" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${sheetLang === 'es' ? 'EN' : 'ES'}</button>
     </div>`;
   document.getElementById('sheet-zigzag').innerHTML =
@@ -2907,6 +2920,7 @@ function openSheet(doc) {
       <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
       <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
       <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
+      <button class="btn-sheet" style="background:#f0fdf4;color:#059669;border-color:rgba(5,150,105,0.3);display:inline-flex;align-items:center;gap:6px;" onclick="copiarLinkEncuesta('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Encuesta</button>
       <button class="btn-sheet email"  onclick="enviarEmail('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
       <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
@@ -4019,6 +4033,18 @@ function resetMetodoPago() {
 /* ═══════════════════════════════════════════════════════
    LINK PÚBLICO DE FACTURA
 ═══════════════════════════════════════════════════════ */
+function copiarLinkEncuesta(fsId) {
+  const url = `https://adv.dgp-link.com/encuesta.html?id=${fsId}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('Link de encuesta copiado ✍️'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Link de encuesta copiado ✍️');
+  }
+}
+
 function copiarLinkFactura(fsId) {
   const url = `https://adv.dgp-link.com/factura-publica.html?id=${fsId}`;
   if (navigator.clipboard) {

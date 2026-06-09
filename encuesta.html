@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encuesta de Satisfacción · DGP Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px 48px; }
+    .card { background: white; border-radius: 20px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); max-width: 480px; width: 100%; overflow: hidden; }
+    .enc-header { background: linear-gradient(135deg, #0f172a, #1e3a5f); padding: 28px 28px 22px; }
+    .enc-brand { font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+    .enc-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: white; letter-spacing: 1px; margin-bottom: 4px; }
+    .enc-sub { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+    .enc-body { padding: 28px; }
+    .enc-cliente { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 24px; }
+    .enc-cliente-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; margin-bottom: 3px; }
+    .enc-cliente-val { font-size: 13px; font-weight: 600; color: #0a0f1e; }
+    .enc-section { margin-bottom: 24px; }
+    .enc-q { font-size: 13px; font-weight: 600; color: #0a0f1e; margin-bottom: 12px; }
+    .enc-q span { color: #ef4444; }
+    /* Stars */
+    .stars { display: flex; gap: 6px; }
+    .star { width: 40px; height: 40px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 20px; }
+    .star:hover, .star.sel { background: #fff7ed; border-color: #f59e0b; }
+    .star.sel { background: #fef3c7; border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+    .star svg { pointer-events: none; }
+    /* Yes/No */
+    .enc-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .enc-opt { padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; transition: all 0.15s; }
+    .enc-opt:hover { border-color: #1438cc; color: #1438cc; background: #eff3ff; }
+    .enc-opt.sel-yes { background: #f0fdf4; border-color: #059669; color: #059669; }
+    .enc-opt.sel-no  { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
+    /* Textarea */
+    .enc-textarea { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #0a0f1e; resize: vertical; min-height: 80px; outline: none; transition: border-color 0.2s; }
+    .enc-textarea:focus { border-color: #1438cc; }
+    /* Testimonio */
+    .enc-testimonio { background: #eff3ff; border: 1.5px solid rgba(20,56,204,0.2); border-radius: 12px; padding: 14px 16px; display: none; }
+    .enc-testimonio.show { display: block; }
+    .enc-testimonio label { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 11px; color: #1438cc; line-height: 1.6; }
+    .enc-testimonio input { width: 15px; height: 15px; accent-color: #1438cc; margin-top: 1px; flex-shrink: 0; }
+    /* Submit */
+    .enc-submit { width: 100%; padding: 14px; background: #1438cc; color: white; border: none; border-radius: 12px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+    .enc-submit:hover { background: #0f2ba8; }
+    .enc-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+    .enc-err { display: none; color: #ef4444; font-size: 11px; text-align: center; margin-top: 8px; }
+    /* Done */
+    .enc-done { display: none; padding: 40px 28px; text-align: center; }
+    .enc-done-icon { width: 56px; height: 56px; background: #f0fdf4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .enc-done h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; color: #0a0f1e; margin-bottom: 8px; }
+    .enc-done p { font-size: 12px; color: #64748b; line-height: 1.7; }
+    .enc-loading { padding: 48px 28px; text-align: center; color: #94a3b8; font-size: 13px; }
+    @media (max-width: 480px) {
+      body { padding: 0; align-items: flex-start; }
+      .card { border-radius: 0; min-height: 100vh; }
+      .enc-header { padding: 24px 20px 18px; }
+      .enc-body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card" id="enc-card">
+  <div class="enc-loading">Cargando...</div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
+    authDomain:        "dgp-group.firebaseapp.com",
+    projectId:         "dgp-group",
+    storageBucket:     "dgp-group.firebasestorage.app",
+    messagingSenderId: "492620738391",
+    appId:             "1:492620738391:web:e497fdfe134e6e781b5812"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  let docData = null;
+  let fsId    = null;
+  let ratings = { calidad: 0, comunicacion: 0 };
+  let recomienda = null;
+
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    fsId = params.get('id');
+    const card = document.getElementById('enc-card');
+
+    if (!fsId) {
+      card.innerHTML = '<div class="enc-loading">Enlace inválido.</div>'; return;
+    }
+
+    try {
+      const snap = await db.collection('documentos').doc(fsId).get();
+      if (!snap.exists) { card.innerHTML = '<div class="enc-loading">Factura no encontrada.</div>'; return; }
+      docData = snap.data();
+
+      if (docData.encuestaCompletada) {
+        renderDone(true); return;
+      }
+
+      renderForm(card, docData);
+    } catch(e) {
+      card.innerHTML = '<div class="enc-loading">Error al cargar. Intenta de nuevo.</div>';
+    }
+  }
+
+  function renderForm(card, doc) {
+    const isVanguard = doc.marca === 'vanguard';
+    const brand = isVanguard ? 'Vanguard Business Solutions' : 'DGP Group USA';
+    const color = isVanguard ? '#b8960c' : '#1438cc';
+    const headerBg = isVanguard ? 'linear-gradient(135deg,#0a0f1e,#1a140a)' : 'linear-gradient(135deg,#0f172a,#1e3a5f)';
+    const servicios = (doc.items||[]).map(i=>i.s).join(', ') || '—';
+
+    card.innerHTML = `
+      <div class="enc-header" style="background:${headerBg};">
+        <div class="enc-brand">${brand}</div>
+        <div class="enc-title">¿Cómo fue tu experiencia?</div>
+        <div class="enc-sub">Tu opinión nos ayuda a mejorar. Solo toma 1 minuto.</div>
+      </div>
+      <div class="enc-body" id="enc-body">
+        <div class="enc-cliente">
+          <div class="enc-cliente-label">Servicio contratado</div>
+          <div class="enc-cliente-val">${esc(servicios)}</div>
+        </div>
+
+        <div class="enc-section">
+          <div class="enc-q">¿Cómo calificarías la calidad del servicio? <span>*</span></div>
+          <div class="stars" id="stars-calidad">
+            ${[1,2,3,4,5].map(n => `<div class="star" data-n="${n}" data-group="calidad" onclick="setStar('calidad',${n})">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="enc-section">
+          <div class="enc-q">¿Qué tal la comunicación con el equipo? <span>*</span></div>
+          <div class="stars" id="stars-comunicacion">
+            ${[1,2,3,4,5].map(n => `<div class="star" data-n="${n}" data-group="comunicacion" onclick="setStar('comunicacion',${n})">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="enc-section">
+          <div class="enc-q">¿Lo recomendarías a otras personas? <span>*</span></div>
+          <div class="enc-yesno">
+            <div class="enc-opt" id="opt-si" onclick="setRecomienda(true)">👍 Sí, claro</div>
+            <div class="enc-opt" id="opt-no" onclick="setRecomienda(false)">No por ahora</div>
+          </div>
+        </div>
+
+        <div class="enc-section">
+          <div class="enc-q">¿Quieres dejarnos algún comentario? <small style="font-weight:400;color:#94a3b8;">(opcional)</small></div>
+          <textarea class="enc-textarea" id="enc-comentario" placeholder="Cuéntanos tu experiencia..."></textarea>
+        </div>
+
+        <div class="enc-testimonio" id="enc-testimonio-box">
+          <div style="font-size:11px;font-weight:700;color:#1438cc;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            ¡Gracias por tu buena calificación!
+          </div>
+          <label>
+            <input type="checkbox" id="testimonio-check">
+            Autorizo a ${brand} a usar mi opinión como testimonio en su sitio web y redes sociales.
+          </label>
+        </div>
+
+        <button class="enc-submit" id="enc-btn" onclick="enviarEncuesta()" style="background:${color};">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Enviar encuesta
+        </button>
+        <div class="enc-err" id="enc-err"></div>
+      </div>`;
+  }
+
+  function setStar(group, n) {
+    ratings[group] = n;
+    const container = document.getElementById(`stars-${group}`);
+    container.querySelectorAll('.star').forEach(s => {
+      s.classList.toggle('sel', parseInt(s.dataset.n) <= n);
+    });
+    checkTestimonio();
+  }
+
+  function setRecomienda(val) {
+    recomienda = val;
+    document.getElementById('opt-si').className = 'enc-opt' + (val ? ' sel-yes' : '');
+    document.getElementById('opt-no').className = 'enc-opt' + (!val ? ' sel-no' : '');
+    checkTestimonio();
+  }
+
+  function checkTestimonio() {
+    const avg = (ratings.calidad + ratings.comunicacion) / 2;
+    const box = document.getElementById('enc-testimonio-box');
+    if (box) box.classList.toggle('show', avg >= 4 && recomienda === true);
+  }
+
+  async function enviarEncuesta() {
+    const errEl = document.getElementById('enc-err');
+    if (!ratings.calidad || !ratings.comunicacion) {
+      errEl.style.display='block'; errEl.textContent='Por favor califica la calidad y la comunicación.'; return;
+    }
+    if (recomienda === null) {
+      errEl.style.display='block'; errEl.textContent='Por favor indica si lo recomendarías.'; return;
+    }
+    errEl.style.display = 'none';
+    const btn = document.getElementById('enc-btn');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+
+    try {
+      const comentario = document.getElementById('enc-comentario')?.value.trim() || '';
+      const testimonioAprobado = document.getElementById('testimonio-check')?.checked || false;
+      const avg = (ratings.calidad + ratings.comunicacion) / 2;
+
+      await db.collection('encuestas').add({
+        docId:              fsId,
+        cliente:            docData.cli || '—',
+        marca:              docData.marca || 'dgp',
+        servicios:          (docData.items||[]).map(i=>i.s),
+        estrellas_calidad:  ratings.calidad,
+        estrellas_comunicacion: ratings.comunicacion,
+        promedio:           avg,
+        recomienda,
+        comentario,
+        testimonioAprobado,
+        fecha:              firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      await db.collection('documentos').doc(fsId).update({ encuestaCompletada: true });
+
+      renderDone(false, testimonioAprobado);
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Enviar encuesta';
+      errEl.style.display='block'; errEl.textContent='Error al enviar. Intenta de nuevo.';
+    }
+  }
+
+  function renderDone(yaHecha, testimonioAprobado) {
+    const card = document.getElementById('enc-card');
+    const msg = yaHecha
+      ? 'Ya enviaste tu encuesta anteriormente. ¡Gracias!'
+      : testimonioAprobado
+        ? '¡Gracias! Tu opinión fue registrada y usaremos tu testimonio pronto. Significa mucho para nosotros.'
+        : '¡Gracias por tu tiempo! Tu opinión nos ayuda a seguir mejorando.';
+    card.innerHTML = `
+      <div class="enc-header">
+        <div class="enc-brand">DGP Group USA</div>
+        <div class="enc-title">Encuesta enviada</div>
+      </div>
+      <div class="enc-done" style="display:block;">
+        <div class="enc-done-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>¡Listo!</h2>
+        <p>${msg}</p>
+      </div>`;
+  }
+
+  init();
+</script>
+</body>
+</html>
