@@ -1730,6 +1730,43 @@ const EMPLEADOS = [
 ];
 
 /* ═══════════════════════════════════════════════════════
+   VENTAS — DATOS COMBINADOS (ventas manuales + facturas pagadas)
+═══════════════════════════════════════════════════════ */
+function resolveEmpleado(emailOrName) {
+  if (!emailOrName) return '—';
+  const lower = emailOrName.toLowerCase();
+  for (const e of EMPLEADOS) {
+    const firstName = e.nombre.split(' ')[0].toLowerCase();
+    if (lower.includes(firstName)) return e.nombre;
+  }
+  return emailOrName.split('@')[0];
+}
+
+function getMergedVentas() {
+  // IDs de facturas ya vinculadas a ventas manuales
+  const vinculados = new Set(DATOS.filter(v => v.facturaId).map(v => v.facturaId));
+
+  // Ventas manuales (todas)
+  const manuales = DATOS;
+
+  // Facturas pagadas no ya vinculadas → convertir a formato venta
+  const fromFacturas = Object.values(docsMap)
+    .filter(d => (d.pagado || d.pagadoParcial) && !vinculados.has(d._fsId))
+    .map(d => ({
+      _id:         '_fac_' + d._fsId,
+      empleado:    resolveEmpleado(d.createdBy || ''),
+      cliente:     d.cli || d.cliente || '',
+      servicio:    d.items && d.items[0] ? d.items[0].s : '—',
+      monto:       d.pagado ? (d.total || 0) : (d.montoPagado || 0),
+      fecha:       d.createdAt,   // Firestore Timestamp
+      facturaId:   d._fsId,
+      _fromFactura: true
+    }));
+
+  return [...manuales, ...fromFacturas];
+}
+
+/* ═══════════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════════ */
 function esc(s) {
@@ -2389,7 +2426,7 @@ function render() {
 
   let lastVenta = null;
 
-  DATOS.forEach(f => {
+  getMergedVentas().forEach(f => {
     const fechaVenta = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     const m   = parseFloat(f.monto) || 0;
     const emp = f.empleado || '';
@@ -2705,6 +2742,7 @@ function initDocs() {
       docsMap = newMap;
       updateHistorialBadge();
       if (document.getElementById('subtab-historial').style.display !== 'none') renderHistorial();
+      if (document.getElementById('page-ventas').classList.contains('active')) render();
       if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
     }, err => {
       console.error('Docs listener error:', err);
@@ -3455,7 +3493,7 @@ function renderDashboard() {
   const mesActual    = now.getMonth();
   const añoActual    = now.getFullYear();
 
-  const ventasFiltradas = DATOS.filter(f => {
+  const ventasFiltradas = getMergedVentas().filter(f => {
     if (dashPeriod === 'todo') return true;
     const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     if (dashPeriod === 'mes')    return fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
@@ -3857,7 +3895,7 @@ function renderCalendario() {
   const hoy = new Date();
 
   const ventasPorDia = {};
-  DATOS.forEach(f => {
+  getMergedVentas().forEach(f => {
     const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     if (fd.getFullYear() === calYear && fd.getMonth() === calMonth) {
       const d = fd.getDate();
