@@ -1743,27 +1743,25 @@ function resolveEmpleado(emailOrName) {
 }
 
 function getMergedVentas() {
-  // IDs de facturas ya vinculadas a ventas manuales
-  const vinculados = new Set(DATOS.filter(v => v.facturaId).map(v => v.facturaId));
-
-  // Ventas manuales (todas)
-  const manuales = DATOS;
-
-  // Facturas pagadas no ya vinculadas → convertir a formato venta
+  // Fuente de verdad financiera: solo facturas pagadas (total) o con pago parcial
+  // Las ventas manuales (DATOS) quedan para registro rápido sin factura
   const fromFacturas = Object.values(docsMap)
-    .filter(d => (d.pagado || d.pagadoParcial) && !vinculados.has(d._fsId))
+    .filter(d => d.pagado || d.pagadoParcial)
     .map(d => ({
       _id:         '_fac_' + d._fsId,
       empleado:    resolveEmpleado(d.createdBy || ''),
       cliente:     d.cli || d.cliente || '',
       servicio:    d.items && d.items[0] ? d.items[0].s : '—',
       monto:       d.pagado ? (d.total || 0) : (d.montoPagado || 0),
-      fecha:       d.createdAt,   // Firestore Timestamp
+      fecha:       d.createdAt,
       facturaId:   d._fsId,
       _fromFactura: true
     }));
 
-  return [...manuales, ...fromFacturas];
+  // Ventas manuales sin factura vinculada (registros que no tienen factura)
+  const sinFactura = DATOS.filter(v => !v.facturaId);
+
+  return [...fromFacturas, ...sinFactura];
 }
 
 /* ═══════════════════════════════════════════════════════
