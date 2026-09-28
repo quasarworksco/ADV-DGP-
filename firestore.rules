@@ -34,6 +34,18 @@ service cloud.firestore {
       ]);
     }
 
+    // ── Cotizaciones ──
+    // Público: abrir UNA cotización por su link y aceptarla o rechazarla una sola vez.
+    match /cotizaciones/{id} {
+      allow get: if true;
+      allow list, create, delete: if isStaff();
+      allow update: if isStaff() || (
+        resource.data.estado == 'enviada'
+        && request.resource.data.estado in ['aceptada', 'rechazada']
+        && onlyChanges(['estado', 'respondidoAt', 'respuestaNota', 'respondidoPor'])
+      );
+    }
+
     // ── Encuestas de satisfacción ──
     match /encuestas/{id} {
       allow create: if true;

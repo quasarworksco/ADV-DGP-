@@ -516,6 +516,46 @@
       </div>`;
   }
 
+
+  /* ── Verificación automática del comprobante (IA) ── */
+  const VERIFY_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/verificar';
+  const IA_ESTILOS = {
+    coincide:          ['#059669', '#f0fdf4', 'rgba(5,150,105,0.25)',  'Monto verificado'],
+    menor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto menor al pendiente'],
+    mayor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto mayor al pendiente'],
+    otra_moneda:       ['#1d4ed8', '#eff6ff', 'rgba(29,78,216,0.2)',   'Revisión manual'],
+    ilegible:          ['#475569', '#f8fafc', 'rgba(71,85,105,0.2)',   'Revisión manual'],
+    no_es_comprobante: ['#dc2626', '#fef2f2', 'rgba(220,38,38,0.25)',  'Revisa la imagen']
+  };
+  function iaBox(v) {
+    if (!v || !v.estado) return '';
+    const [c, bg, bd, titulo] = IA_ESTILOS[v.estado] || IA_ESTILOS.ilegible;
+    return `<div style="margin-top:10px;padding:12px 14px;border-radius:12px;background:${bg};border:1px solid ${bd};color:${c};text-align:left;font-size:12px;line-height:1.5;">
+      <div style="display:flex;align-items:center;gap:6px;font-weight:700;margin-bottom:3px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+        Verificación automática · ${titulo}
+      </div>
+      <div style="color:#334155;">${esc(v.mensaje || '')}</div>
+      <div style="color:#94a3b8;font-size:10.5px;margin-top:4px;">Lectura hecha por IA. Nuestro equipo confirmará el pago.</div>
+    </div>`;
+  }
+  async function verificarComprobanteIA(fsId, url, cont) {
+    if (cont) cont.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #cbd5e1;color:#64748b;font-size:12px;text-align:center;">Verificando el monto de tu comprobante…</div>`;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 45000);
+      const res = await fetch(VERIFY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fsId, url }), signal: ctrl.signal });
+      clearTimeout(t);
+      const v = await res.json();
+      if (!res.ok || !v.estado) throw new Error(v.error || 'sin resultado');
+      if (cont) cont.innerHTML = iaBox(v);
+      return v;
+    } catch (e) {
+      if (cont) cont.innerHTML = '';
+      return null;
+    }
+  }
+
   function renderComprobante(doc, fsId) {
     const equipoNombre = 'DGP Group';
     if (doc.comprobante_url) {
@@ -525,6 +565,7 @@
             <img src="${esc(doc.comprobante_url)}" alt="Comprobante">
             <p style="display:inline-flex;align-items:center;gap:5px;margin-bottom:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado!</p>
             <small style="font-size:11px;color:#64748b;font-weight:400;">El equipo de ${equipoNombre} lo revisará pronto.</small>
+            ${doc.verificacionIA && doc.verificacionIA.url === doc.comprobante_url ? iaBox(doc.verificacionIA) : ''}
           </div>
         </div>`;
     }
@@ -539,7 +580,7 @@
             <div class="pub-comp-bar" id="pub-comp-bar"></div>
           </div>
         </div>
-        <div class="pub-comp-ok" id="pub-comp-ok" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
+        <div class="pub-comp-ok" id="pub-comp-ok" style="align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
       </div>`;
   }
 
@@ -623,6 +664,9 @@
       progress.style.display = 'none';
       document.getElementById('pub-comp-ok').style.display = 'flex';
       document.querySelector('.pub-comp-area').style.display = 'none';
+      let iaCont = document.getElementById('pub-comp-ia');
+      if (!iaCont) { iaCont = document.createElement('div'); iaCont.id = 'pub-comp-ia'; document.getElementById('pub-comp-ok').insertAdjacentElement('afterend', iaCont); }
+      verificarComprobanteIA(fsId, url, iaCont);
     } catch(e) {
       progress.style.display = 'none';
       alert('Error al subir el comprobante. Intenta de nuevo.');

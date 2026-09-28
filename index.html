@@ -2695,6 +2695,7 @@ function openSheet(doc) {
     compEl.innerHTML = `
       <div style="font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">Comprobante de Pago</div>
       <img src="${esc(doc.comprobante_url)}" style="width:100%;border-radius:10px;display:block;margin-bottom:8px;" alt="Comprobante">
+      ${iaAdminBox(doc)}
       <a href="${esc(doc.comprobante_url)}" download="comprobante_${esc(doc.docId||fsId)}.jpg" target="_blank" class="btn-sheet print" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;text-decoration:none;width:100%;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar comprobante</a>`;
     document.getElementById('sheet-actions').insertAdjacentElement('beforebegin', compEl);
   }
@@ -3252,6 +3253,32 @@ function renderDashboard() {
   renderCalendario();
   renderActividad();
   renderMetaBar();
+}
+
+/* ═══════════════════════════════════════════════════════
+   VERIFICACIÓN IA DEL COMPROBANTE (resultado guardado por el Worker)
+═══════════════════════════════════════════════════════ */
+const IA_ADMIN = {
+  coincide:          ['#059669', '#f0fdf4', 'Coincide con el saldo'],
+  menor:             ['#b45309', '#fffbeb', 'Monto menor al saldo'],
+  mayor:             ['#b45309', '#fffbeb', 'Monto mayor al saldo'],
+  otra_moneda:       ['#1d4ed8', '#eff6ff', 'Otra moneda'],
+  ilegible:          ['#475569', '#f8fafc', 'No se pudo leer'],
+  no_es_comprobante: ['#dc2626', '#fef2f2', 'No parece un comprobante']
+};
+function iaAdminBox(doc) {
+  const v = doc.verificacionIA;
+  if (!v || v.url !== doc.comprobante_url) return '';
+  const [c, bg, titulo] = IA_ADMIN[v.estado] || IA_ADMIN.ilegible;
+  const det = [v.plataforma, v.referencia ? 'Ref ' + v.referencia : '', v.remitente ? 'De ' + v.remitente : '', v.fecha].filter(Boolean).map(esc).join(' · ');
+  const puedeRegistrar = !doc.pagado && typeof v.monto === 'number' && ['menor', 'coincide'].includes(v.estado);
+  return `<div style="background:${bg};border:1px solid ${c}33;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-family:'IBM Plex Sans',sans-serif;">
+    <div style="font-size:11px;font-weight:700;color:${c};">IA: ${titulo}${typeof v.monto === 'number' ? ` · leyó $${v.monto.toFixed(2)} ${esc(v.moneda || '')}` : ''}</div>
+    <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${esc(v.mensaje || '')}</div>
+    ${det ? `<div style="font-size:10px;color:var(--text-soft);margin-top:2px;">${det}</div>` : ''}
+    <div style="font-size:10px;color:var(--text-soft);margin-top:4px;">Verifica en tu banco antes de confirmar.</div>
+    ${puedeRegistrar ? `<button class="btn-sm" style="margin-top:8px;background:white;color:${c};border-color:${c}55;" onclick="${v.estado === 'coincide' && !doc.pagadoParcial ? `marcarPagado('${esc(doc._fsId)}')` : `abrirPagoParcial('${esc(doc._fsId)}');setTimeout(()=>{const i=document.getElementById('pp-monto');if(i)i.value='${v.monto.toFixed(2)}'},50)`}">${v.estado === 'coincide' && !doc.pagadoParcial ? 'Confirmar y marcar pagado' : `Registrar pago de $${v.monto.toFixed(2)}`}</button>` : ''}
+  </div>`;
 }
 
 /* ═══════════════════════════════════════════════════════

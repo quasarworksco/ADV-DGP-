@@ -155,7 +155,7 @@
     .btn.block { width: 100%; }
 
     /* ── FACTURAS ── */
-    .inv { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+    .inv { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
     .inv + .inv { margin-top: 10px; }
     .inv-ico { width: 40px; height: 40px; border-radius: 10px; background: var(--blue-x); color: var(--blue); display: flex; align-items: center; justify-content: center; }
     .inv-body { flex: 1; min-width: 0; }
@@ -232,6 +232,15 @@
     .upload-bar { height: 5px; background: #eef2f7; border-radius: 5px; overflow: hidden; margin-top: 10px; }
     .upload-bar div { height: 100%; width: 0; background: var(--blue); transition: width .2s; }
 
+    .ia { margin-top: 10px; padding: 11px 13px; border-radius: 11px; font-size: 12px; line-height: 1.5; border: 1px solid; }
+    .ia-title { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 2px; }
+    .ia-note { font-size: 10.5px; color: var(--faint); margin-top: 3px; }
+    .ia.coincide { background: var(--green-x); border-color: rgba(5,150,105,.25); color: var(--green); }
+    .ia.menor, .ia.mayor { background: var(--amber-x); border-color: rgba(217,119,6,.3); color: #b45309; }
+    .ia.otra_moneda { background: var(--blue-x); border-color: rgba(20,56,204,.2); color: var(--blue); }
+    .ia.ilegible { background: #f8fafc; border-color: var(--line); color: var(--mid); }
+    .ia.no_es_comprobante { background: var(--red-x); border-color: rgba(220,38,38,.25); color: var(--red); }
+    .ia .ia-msg { color: var(--mid); }
     .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 13px; z-index: 80; opacity: 0; transition: all .25s; pointer-events: none; max-width: calc(100vw - 32px); }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.err { background: var(--red); }
@@ -359,6 +368,7 @@
   const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
   const TG_CHAT_ID = '8446165096';
   const ADMIN_URL  = 'https://adv.dgp-link.com/';
+  const VERIFY_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/verificar';
   const CONTACTO = {
     nombre:   'Andrés Espina',
     telefono: '+1 (239) 823-1738',
@@ -471,6 +481,27 @@
     } catch (e) { /* silencioso: el cliente nunca debe ver un error por esto */ }
   }
 
+  /* ═════════ VERIFICACIÓN IA ═════════ */
+  const IA_TITULOS = { coincide: 'Monto verificado', menor: 'Monto menor al pendiente', mayor: 'Monto mayor al pendiente',
+    otra_moneda: 'Revisión manual', ilegible: 'Revisión manual', no_es_comprobante: 'Revisa la imagen' };
+  const I_BOT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>';
+  function iaBox(v) {
+    if (!v || !v.estado) return '';
+    const est = IA_TITULOS[v.estado] ? v.estado : 'ilegible';
+    return `<div class="ia ${est}"><div class="ia-title">${I_BOT} Verificación automática · ${IA_TITULOS[est]}</div>
+      <div class="ia-msg">${esc(v.mensaje || '')}</div><div class="ia-note">Lectura hecha por IA. Nuestro equipo confirmará el pago.</div></div>`;
+  }
+  async function verificarIA(fsId, url) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 45000);
+      const res = await fetch(VERIFY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fsId, url }), signal: ctrl.signal });
+      clearTimeout(t);
+      const v = await res.json();
+      return res.ok && v.estado ? v : null;
+    } catch (e) { return null; }
+  }
+
   /* ═════════ LOGIN ═════════ */
   async function login(codeFromUrl) {
     const input = document.getElementById('code-input');
@@ -492,7 +523,9 @@
       if (location.search) history.replaceState(null, '', location.pathname);
       start(code);
     } catch (e) {
-      err.textContent = 'No pudimos conectar. Revisa tu internet e intenta de nuevo.';
+      err.textContent = e && e.code === 'permission-denied'
+        ? 'El portal se está configurando. Intenta de nuevo en unos minutos o escríbenos por WhatsApp.'
+        : 'No pudimos conectar. Revisa tu internet e intenta de nuevo.';
     } finally {
       btn.disabled = false; btn.textContent = 'Entrar';
     }
@@ -798,6 +831,7 @@
             ${saldo > 0 && d.comprobante_url ? `<span style="font-size:11px;color:var(--green);font-weight:600;">Comprobante enviado</span>` : ''}
           </div>
         </div>
+        ${saldo > 0 && d.comprobante_url && d.verificacionIA && d.verificacionIA.url === d.comprobante_url ? `<div style="flex-basis:100%;order:3;">${iaBox(d.verificacionIA)}</div>` : ''}
         <div class="inv-right">
           <div>
             <div class="inv-amt">${money(saldo > 0 ? saldo : d.total)}</div>
@@ -877,8 +911,15 @@
             caption: `💳 Nuevo comprobante (desde el portal)\n\n👤 ${portal.nombre}\n🧾 ${d.docId || fsId}\n💰 ${money(saldoFactura(d))}\n\n${location.origin}${linkFactura(fsId)}` })
         });
       } catch (e) {}
-      closeModal();
-      toast('¡Comprobante enviado! Lo revisaremos pronto.');
+      const m = document.querySelector('.modal');
+      if (m) m.innerHTML = `<h3>Comprobante enviado</h3>
+        <p>Estamos verificando el monto automáticamente…</p>
+        <div class="loading" style="min-height:90px;"><div class="spinner"></div> Leyendo tu comprobante</div>`;
+      const v = await verificarIA(fsId, url);
+      if (m && document.body.contains(m)) m.innerHTML = `<h3>Comprobante enviado</h3>
+        <p>Recibimos tu captura de la factura ${esc(d.docId || '')}.</p>
+        ${v ? iaBox(v) : '<div class="ia ilegible"><div class="ia-msg">Nuestro equipo revisará tu comprobante y confirmará el pago pronto.</div></div>'}
+        <button class="btn primary block" style="margin-top:14px;" onclick="closeModal()">Entendido</button>`;
     } catch (e) {
       btn.disabled = false; btn.innerHTML = `${I.upload} Enviar comprobante`;
       toast('Error al subir el comprobante. Intenta de nuevo.', 'err');

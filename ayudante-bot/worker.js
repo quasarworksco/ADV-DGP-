@@ -192,6 +192,7 @@ export default {
   },
 
   async fetch(request, env) {
+    if (new URL(request.url).pathname === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -342,4 +343,217 @@ async function firebaseLogin(env) {
   const data = await res.json();
   if (!res.ok) throw new Error('Login Firebase: ' + (data.error?.message || res.status));
   return data.idToken;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Verificación de comprobantes con IA (Groq visión)
+//  POST /verificar  { fsId, url }
+//  Lee el monto de la captura, lo compara con el saldo de la factura,
+//  guarda el resultado en documentos/{fsId}.verificacionIA y avisa por Telegram.
+//  La IA NO confirma que el dinero llegó: es una pre-verificación.
+// ══════════════════════════════════════════════════════════════
+
+const PROJECT_DEFAULT = 'dgp-group';
+const CLOUDINARY_PREFIX = 'https://res.cloudinary.com/dgden7fws/';
+const MODELOS_DEFAULT = ['qwen/qwen3.8-27b', 'qwen/qwen3.6-27b'];
+const ORIGENES = ['https://adv.dgp-link.com', 'http://localhost:8765'];
+const TG_CHAT = '8446165096';
+
+const PROMPT = `Eres un verificador de comprobantes de pago (Zelle, PayPal, Binance, USDT, transferencias bancarias, Pago Móvil, Western Union, etc.).
+Analiza la imagen y responde SOLO con un objeto JSON válido, sin texto adicional, con esta forma exacta:
+{"es_comprobante": true|false, "legible": true|false, "monto": número o null, "moneda": "USD"|"USDT"|"EUR"|"VES"|otra o null, "fecha": "YYYY-MM-DD" o null, "referencia": texto o null, "remitente": texto o null, "destinatario": texto o null, "plataforma": texto o null, "estado_pago": "completado"|"pendiente"|"fallido"|null, "confianza": número de 0 a 1}
+Reglas:
+- "monto" es el monto enviado o transferido en esta operación. No uses saldos de cuenta, comisiones ni límites.
+- Usa punto decimal (ej. 1250.50). Si ves "Bs" o "Bs.S" la moneda es "VES". "$" sin más contexto es "USD".
+- Si la imagen no es un comprobante de pago, "es_comprobante": false.
+- Si no puedes leer el monto con seguridad, "monto": null y "legible": false.
+- No inventes datos: usa null cuando algo no aparezca.`;
+
+/* ── Respuesta con CORS ── */
+function cors(request) {
+  const origin = request.headers.get('Origin') || '';
+  return {
+    'Access-Control-Allow-Origin': ORIGENES.includes(origin) ? origin : ORIGENES[0],
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin'
+  };
+}
+function json(request, data, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...cors(request) } });
+}
+
+/* ── Firestore REST ── */
+function fromValue(v) {
+  if (!v) return null;
+  if ('stringValue' in v) return v.stringValue;
+  if ('integerValue' in v) return Number(v.integerValue);
+  if ('doubleValue' in v) return v.doubleValue;
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('nullValue' in v) return null;
+  if ('timestampValue' in v) return v.timestampValue;
+  if ('mapValue' in v) return fromFields(v.mapValue.fields || {});
+  if ('arrayValue' in v) return (v.arrayValue.values || []).map(fromValue);
+  return null;
+}
+function fromFields(fields) {
+  const o = {};
+  for (const k in fields) o[k] = fromValue(fields[k]);
+  return o;
+}
+function toValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
+  if (typeof v === 'object') return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, toValue(x)])) } };
+  return { stringValue: String(v) };
+}
+function docUrl(env, path) {
+  return `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents/${path}`;
+}
+async function fsGet(env, path, token) {
+  const res = await fetch(docUrl(env, path), { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 404) return null;
+  const data = await res.json();
+  if (!res.ok) throw new Error('Firestore: ' + (data.error?.message || res.status));
+  return fromFields(data.fields || {});
+}
+async function fsSetField(env, path, field, value, token) {
+  const res = await fetch(`${docUrl(env, path)}?updateMask.fieldPaths=${encodeURIComponent(field)}&currentDocument.exists=true`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { [field]: toValue(value) } })
+  });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
+}
+
+/* ── Groq visión ── */
+function extraerJSON(texto) {
+  const limpio = String(texto || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  try { return JSON.parse(limpio); } catch (e) {}
+  const m = limpio.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
+  return null;
+}
+async function leerComprobante(env, imageUrl) {
+  const modelos = env.GROQ_VISION_MODEL ? [env.GROQ_VISION_MODEL, ...MODELOS_DEFAULT] : MODELOS_DEFAULT;
+  let ultimoError = null;
+  for (const modelo of [...new Set(modelos)]) {
+    // Primero con JSON mode + razonamiento oculto; si el modelo no acepta esos parámetros, sin ellos.
+    for (const extra of [{ response_format: { type: 'json_object' }, reasoning_format: 'hidden' }, {}]) {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelo,
+          temperature: 0,
+          max_completion_tokens: 1200,
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: PROMPT },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ] }],
+          ...extra
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const lectura = extraerJSON(data.choices?.[0]?.message?.content);
+        if (lectura) return { lectura, modelo };
+        ultimoError = 'respuesta sin JSON';
+        continue;
+      }
+      ultimoError = data.error?.message || `HTTP ${res.status}`;
+      if (res.status !== 400) break; // modelo no disponible / límite → probar el siguiente modelo
+    }
+  }
+  throw new Error('IA: ' + ultimoError);
+}
+
+/* ── Comparación con la factura ── */
+function evaluar(doc, lectura) {
+  const saldo = (doc.pagado || doc.type === 'recibo') ? 0 : Math.max((Number(doc.total) || 0) - (Number(doc.montoPagado) || 0), 0);
+  const monto = typeof lectura.monto === 'number' && isFinite(lectura.monto) ? Math.round(lectura.monto * 100) / 100 : null;
+  const moneda = String(lectura.moneda || '').toUpperCase().trim();
+  const monedaFactura = doc.moneda === 'eur' ? 'EUR' : 'USD';
+  const equivalentes = monedaFactura === 'USD' ? ['USD', 'USDT', 'US$', ''] : ['EUR', '€', ''];
+
+  let estado, mensaje;
+  const diferencia = monto === null ? null : Math.round((monto - saldo) * 100) / 100;
+  if (!lectura.es_comprobante && lectura.es_comprobante !== undefined) {
+    estado = 'no_es_comprobante'; mensaje = 'La imagen no parece un comprobante de pago.';
+  } else if (monto === null || lectura.legible === false) {
+    estado = 'ilegible'; mensaje = 'No se pudo leer el monto con claridad. Lo revisaremos manualmente.';
+  } else if (!equivalentes.includes(moneda)) {
+    estado = 'otra_moneda'; mensaje = `El comprobante está en ${moneda}. Lo revisaremos manualmente para aplicar la tasa de cambio.`;
+  } else if (Math.abs(diferencia) <= Math.max(0.5, saldo * 0.01)) {
+    estado = 'coincide'; mensaje = `El monto del comprobante ($${monto.toFixed(2)}) coincide con el saldo pendiente.`;
+  } else if (diferencia < 0) {
+    estado = 'menor'; mensaje = `El comprobante es por $${monto.toFixed(2)}. Quedarían pendientes $${Math.abs(diferencia).toFixed(2)}.`;
+  } else {
+    estado = 'mayor'; mensaje = `El comprobante es por $${monto.toFixed(2)}, $${diferencia.toFixed(2)} más que el saldo pendiente.`;
+  }
+  if (lectura.estado_pago === 'pendiente' || lectura.estado_pago === 'fallido') {
+    mensaje += ` Ojo: la captura indica que el pago está "${lectura.estado_pago}".`;
+  }
+  return { estado, mensaje, saldo, monto, diferencia };
+}
+
+/* ── Handler ── */
+async function handleVerificar(request, env, firebaseLogin) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+
+  let body;
+  try { body = await request.json(); } catch (e) { return json(request, { error: 'JSON inválido' }, 400); }
+  const fsId = String(body.fsId || '');
+  const url = String(body.url || '');
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(fsId)) return json(request, { error: 'Factura inválida' }, 400);
+  if (!url.startsWith(CLOUDINARY_PREFIX)) return json(request, { error: 'Imagen no permitida' }, 400);
+  if (!env.GROQ_API_KEY) return json(request, { error: 'Falta GROQ_API_KEY' }, 500);
+
+  try {
+    const token = await firebaseLogin(env);
+    const doc = await fsGet(env, `documentos/${fsId}`, token);
+    if (!doc) return json(request, { error: 'Factura no encontrada' }, 404);
+    // Solo se analiza la imagen que realmente está adjunta a esa factura
+    if (doc.comprobante_url !== url) return json(request, { error: 'El comprobante no corresponde a esta factura' }, 409);
+    if (doc.verificacionIA && doc.verificacionIA.url === url) return json(request, doc.verificacionIA);
+
+    const { lectura, modelo } = await leerComprobante(env, url);
+    const ev = evaluar(doc, lectura);
+    const verificacion = {
+      ...ev,
+      moneda: lectura.moneda || null,
+      fecha: lectura.fecha || null,
+      referencia: lectura.referencia || null,
+      remitente: lectura.remitente || null,
+      destinatario: lectura.destinatario || null,
+      plataforma: lectura.plataforma || null,
+      estadoPago: lectura.estado_pago || null,
+      confianza: typeof lectura.confianza === 'number' ? lectura.confianza : null,
+      url, modelo,
+      analizadoAt: new Date().toISOString()
+    };
+    await fsSetField(env, `documentos/${fsId}`, 'verificacionIA', verificacion, token);
+
+    const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
+    const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+    await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
+        `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
+        `Leído: ${ev.monto !== null ? '$' + ev.monto.toFixed(2) : '—'} ${lectura.moneda || ''}\n` +
+        `Saldo pendiente: $${ev.saldo.toFixed(2)}\n` +
+        `${lectura.plataforma ? 'Plataforma: ' + lectura.plataforma + '\n' : ''}` +
+        `${lectura.referencia ? 'Ref: ' + lectura.referencia + '\n' : ''}` +
+        `${lectura.remitente ? 'De: ' + lectura.remitente + '\n' : ''}` +
+        `\n${ev.mensaje}\n\nConfirma el pago manualmente antes de marcarlo como pagado.` })
+    }).catch(() => {});
+
+    return json(request, verificacion);
+  } catch (e) {
+    console.error('verificar:', e);
+    return json(request, { error: e.message || 'Error' }, 502);
+  }
 }
