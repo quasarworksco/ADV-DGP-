@@ -8,9 +8,9 @@
   <meta name="robots" content="noindex, nofollow">
 
   <!-- Favicon -->
-  <link rel="icon"             href="/favicon.svg" type="image/svg+xml">
-  <link rel="shortcut icon"    href="/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="icon"             href="/logo.png" type="image/png">
+  <link rel="shortcut icon"    href="/logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
 
   <!-- PWA -->
   <meta name="theme-color" content="#1438cc">
@@ -240,6 +240,7 @@
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(16px);
     }
+    .brand-mark { width:34px; height:34px; object-fit:contain; background:#fff; border-radius:9px; padding:3px; box-shadow:0 1px 4px rgba(10,15,30,0.12); flex-shrink:0; }
     .logo-text {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 20px; letter-spacing: 3px; color: var(--black);
@@ -248,13 +249,6 @@
     .logo-sub { font-size: 9px; color: var(--text-soft); letter-spacing: 3px; text-transform: uppercase; font-weight: 300; margin-top: 1px; }
 
     .header-right { display: flex; gap: 12px; align-items: center; }
-    .badge-bono {
-      border: 1px solid var(--border);
-      color: var(--black); padding: 5px 14px;
-      font-size: 11px; font-weight: 500; letter-spacing: 1px;
-      text-transform: uppercase;
-      background: var(--off);
-    }
     .live-dot {
       display: flex; align-items: center; gap: 6px;
       font-size: 11px; color: var(--green); font-weight: 500; letter-spacing: 1px;
@@ -720,7 +714,6 @@
       /* Header */
       .header { padding: 12px 16px; }
       .logo-text { font-size: 18px; letter-spacing: 2px; }
-      .badge-bono { display: none; }
       .live-dot { display: none; }
       .btn-logout span { display: none; }
       .btn-logout { padding: 6px 10px; }
@@ -988,11 +981,7 @@
     .moneda-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
     .moneda-btn { padding:8px; border:1.5px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; text-align:center; }
     .moneda-btn.active { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
-    .marca-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
-    .marca-btn { padding:10px 8px; border:1.5px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; background:var(--white); color:var(--text-soft); transition:all 0.2s; text-align:center; line-height:1.4; }
-    .marca-btn.active-dgp { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
-    .marca-btn.active-vng { border-color:#b8960c; background:#fffbeb; color:#92400e; }
-    .marca-badge-vng { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; background:#fffbeb; color:#b8960c; border:1px solid rgba(184,150,12,0.3); vertical-align:middle; margin-left:4px; }
+    .emisor-tag { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; background:var(--blue-xlight); color:var(--blue); border:1px solid rgba(20,56,204,0.2); vertical-align:middle; margin-left:6px; text-transform:uppercase; }
     .metodo-fields { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
     .metodo-fields .ff { margin:0; }
   </style>
@@ -1001,6 +990,7 @@
 
 <!-- ─── LOGIN SCREEN ─── -->
 <div id="splash-screen">
+  <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:72px;height:72px;border-radius:18px;padding:8px;margin-bottom:14px;">
   <div class="splash-logo-text">DGP GROUP <span>USA</span></div>
   <div class="splash-logo-sub">Sistema de Gestión</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
@@ -1009,6 +999,7 @@
 <div id="login-screen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">
+      <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:60px;height:60px;border-radius:15px;padding:6px;margin:0 auto 12px;display:block;">
       <div class="login-logo-text">DGP GROUP <span>USA</span></div>
       <div class="login-logo-sub">Sistema de Gestión</div>
     </div>
@@ -1042,12 +1033,14 @@
 
 <!-- HEADER -->
 <header class="header">
-  <div>
-    <div class="logo-text">DGP GROUP <span>USA</span></div>
-    <div class="logo-sub">Sistema de Gestión</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="/logo.png" alt="DGP Group" class="brand-mark">
+    <div>
+      <div class="logo-text">DGP GROUP <span>USA</span></div>
+      <div class="logo-sub">Sistema de Gestión</div>
+    </div>
   </div>
   <div class="header-right">
-    <div class="badge-bono"><i class="fa-solid fa-gift" style="color:var(--blue);margin-right:6px"></i> BONO $30</div>
     <div class="live-dot">EN VIVO</div>
     <div class="user-avatar" id="user-avatar-init">?</div>
     <button class="btn-logout" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
@@ -1056,10 +1049,7 @@
 
 <!-- NAVIGATION -->
 <nav class="nav-tabs">
-  <button class="nav-tab active" onclick="switchPage('ventas', this)">
-    <i class="fa-solid fa-chart-line"></i> Panel de Ventas
-  </button>
-  <button class="nav-tab" onclick="switchPage('facturacion', this); _clearNotifBadge();">
+  <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
     <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
@@ -1076,66 +1066,11 @@
   </button>
 </nav>
 
-<!-- TICKER -->
-<div id="ticker" class="ticker">
-  <span class="ticker-inner" id="tickerText"></span>
-</div>
-
-<!-- ══════════════════════════════════════
-     PAGE: PANEL DE VENTAS
-══════════════════════════════════════ -->
-<div id="page-ventas" class="page active">
-  <div class="ventas-main">
-
-    <!-- META HERO -->
-    <div class="meta-hero">
-      <div class="meta-top">
-        <div>
-          <div class="semana-label">Periodo Activo</div>
-          <div class="semana-title" id="txtSemana">CARGANDO...</div>
-        </div>
-        <div class="meta-amounts">
-          <div class="amount-block">
-            <div class="amount-label">Recaudado</div>
-            <div class="amount-value"><em>$</em><span id="valActual">0.00</span></div>
-            <span class="amount-faltante" id="txtFaltante">Calculando...</span>
-          </div>
-          <div class="amount-block" style="text-align:right">
-            <div class="amount-label">Progreso</div>
-            <div class="amount-value" id="valPorcentaje" style="color:var(--white)">0%</div>
-            <span class="amount-faltante">META $1,000</span>
-          </div>
-        </div>
-      </div>
-      <div class="progress-track">
-        <div id="barFill" class="progress-fill"></div>
-      </div>
-      <div class="progress-labels">
-        <span>$0</span><span>$250</span><span>$500</span><span>$750</span><span>$1,000</span>
-      </div>
-    </div>
-
-    <!-- RANKING (generated by JS) -->
-    <div class="ranking-grid" id="rankingGrid"></div>
-
-    <!-- BOTTOM ROW -->
-    <div class="bottom-row">
-      <!-- TABLE -->
-      <div class="panel-v">
-        <div class="panel-title-v">Movimientos</div>
-        <div class="filtros" id="filtrosContainer"></div>
-        <div id="listaVentas"></div>
-      </div>
-    </div>
-
-  </div><!-- /ventas-main -->
-</div><!-- /page-ventas -->
-
 
 <!-- ══════════════════════════════════════
      PAGE: FACTURACIÓN
 ══════════════════════════════════════ -->
-<div id="page-facturacion" class="page">
+<div id="page-facturacion" class="page active">
   <div class="fact-main">
 
     <!-- SUBTABS -->
@@ -1152,11 +1087,8 @@
         <div class="panel-title-f" id="form-panel-title">Datos del Documento</div>
 
         <div class="ff">
-          <label>Empresa emisora</label>
-          <div class="marca-toggle">
-            <button type="button" class="marca-btn active-dgp" id="btn-marca-dgp" onclick="selectMarca('dgp');event.preventDefault();event.stopPropagation();" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> DGP Global Group</button>
-            <button type="button" class="marca-btn" id="btn-marca-vng" onclick="selectMarca('vanguard');event.preventDefault();event.stopPropagation();" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Vanguard Business Solutions</button>
-          </div>
+          <label>Emisor de la factura</label>
+          <select id="doc-emisor"></select>
         </div>
 
         <div class="ff">
@@ -1276,11 +1208,7 @@
             <button class="hist-filter-btn" data-filter="parcial" onclick="setHistFilter('parcial',this)">Parciales</button>
             <button class="hist-filter-btn" data-filter="recibo" onclick="setHistFilter('recibo',this)">Pagados</button>
           </div>
-          <div class="hist-filters" style="margin-top:6px;">
-            <button class="hist-filter-btn active" data-marcaf="todas" onclick="setHistMarcaFilter('todas',this)">Ambas marcas</button>
-            <button class="hist-filter-btn" data-marcaf="dgp" onclick="setHistMarcaFilter('dgp',this)" style="color:#1438cc;display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> DGP</button>
-            <button class="hist-filter-btn" data-marcaf="vanguard" onclick="setHistMarcaFilter('vanguard',this)" style="color:#b8960c;display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Vanguard</button>
-          </div>
+          <div class="hist-filters" id="hist-emisor-filters" style="margin-top:6px;"></div>
         </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
       </div>
@@ -1469,7 +1397,6 @@
 </div><!-- /app-shell -->
 
 
-<!-- ─── MODAL: VENTA REGISTRADA ─── -->
 <!-- ─── MODAL: DOCUMENTO ─── -->
 <div class="modal-overlay" id="modalDoc">
   <div class="doc-sheet" id="doc-sheet">
@@ -1561,40 +1488,6 @@
   </div>
 </div>
 
-<!-- ─── MODAL: EDITAR VENTA ─── -->
-<div class="modal-overlay" id="modalEditVenta">
-  <div class="edit-sheet" id="edit-venta-sheet">
-    <div class="edit-sheet-header">
-      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDITAR VENTA</h3>
-      <p id="edit-venta-id-label">—</p>
-    </div>
-    <div class="edit-sheet-body">
-      <div class="ff">
-        <label>Empleado</label>
-        <select id="ev-emp"></select>
-      </div>
-      <div class="ff">
-        <label>Cliente</label>
-        <input type="text" id="ev-cli" placeholder="Nombre cliente" list="clientes-list">
-      </div>
-      <div class="ff">
-        <label>Servicio</label>
-        <select id="ev-ser"></select>
-      </div>
-      <div class="ff">
-        <label>Monto ($)</label>
-        <input type="number" id="ev-mon" placeholder="0.00" step="0.01">
-      </div>
-      <div class="ff">
-        <label>Fecha</label>
-        <input type="date" id="ev-fec">
-      </div>
-      <button class="btn-edit-save" onclick="saveEditVenta()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cambios</button>
-      <button class="btn-edit-cancel" onclick="closeEditVentaModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ─── MODAL: PAGO PARCIAL ─── -->
 <div class="modal-overlay" id="modalPagoParcial">
   <div class="edit-sheet" style="max-width:380px;">
@@ -1677,8 +1570,6 @@ const EMPLEADOS = [
   { nombre: 'Angel Rosales',     ini: 'A', id: 'Angel'  },
   { nombre: 'Jose Acosta',       ini: 'J', id: 'Jose'   },
   { nombre: 'Paul Espina',       ini: 'P', id: 'Paul'   },
-  { nombre: 'Carlos de Vicente', ini: 'C', id: 'Carlos' },
-  { nombre: 'Lisnay Gimenez',    ini: 'L', id: 'Lisnay' },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -1700,7 +1591,7 @@ function getMergedVentas() {
     .filter(d => d.pagado || d.pagadoParcial)
     .map(d => ({
       _id:          '_fac_' + d._fsId,
-      empleado:     resolveEmpleado(d.createdBy || ''),
+      empleado:     d.emisor || resolveEmpleado(d.createdBy || ''),
       cliente:      d.cli || d.cliente || '',
       servicio:     d.items && d.items[0] ? d.items[0].s : '—',
       monto:        d.pagado ? (d.total || 0) : (d.montoPagado || 0),
@@ -1741,7 +1632,6 @@ function fmtDate(d) {
    SERVICES OPTIONS HTML (shared)
 ═══════════════════════════════════════════════════════ */
 let monedaSeleccionada = 'usd';
-let marcaSeleccionada  = 'dgp';
 
 const METODOS_CAMPOS = {
   zelle:        [
@@ -1922,27 +1812,22 @@ function initPage() {
   initDocs();
   initClientes();
   initClientesCRM();
-  setSemanaLabel();
   onTypeChange();
 }
 
-/* ─── Build employee selects, ranking cards, filter buttons ─── */
+/* ─── Selector de emisor + filtros del historial ─── */
 function buildEmployeeUI() {
-  /* Ranking cards */
-  const grid = document.getElementById('rankingGrid');
-  grid.innerHTML = EMPLEADOS.map(e => `
-    <div class="rank-card" id="card-${esc(e.id)}">
-      <div class="rank-avatar">${esc(e.ini)}</div>
-      <div class="rank-name">${esc(e.id)}</div>
-      <div class="rank-total" id="total-${esc(e.id)}">$0.00</div>
-    </div>`).join('');
+  const sel = document.getElementById('doc-emisor');
+  sel.innerHTML = EMPLEADOS.map(e =>
+    `<option value="${esc(e.nombre)}">${esc(e.nombre)}</option>`
+  ).join('');
+  const propio = currentUser ? resolveEmpleado(currentUser.email || '') : '';
+  if (EMPLEADOS.some(e => e.nombre === propio)) sel.value = propio;
 
-  /* Filter buttons */
-  const filtros = document.getElementById('filtrosContainer');
-  filtros.innerHTML =
-    `<button class="btn-filter active" onclick="filtrar('Todos',this)">Todos</button>` +
+  document.getElementById('hist-emisor-filters').innerHTML =
+    `<button class="hist-filter-btn active" data-emisorf="todos" onclick="setHistEmisorFilter('todos',this)">Todos los emisores</button>` +
     EMPLEADOS.map(e =>
-      `<button class="btn-filter" onclick="filtrar('${esc(e.id)}',this)">${esc(e.id)}</button>`
+      `<button class="hist-filter-btn" data-emisorf="${esc(e.nombre)}" onclick="setHistEmisorFilter(this.dataset.emisorf,this)">${esc(e.id)}</button>`
     ).join('');
 }
 
@@ -1950,13 +1835,6 @@ function populateServiceSelects() {
   const html = servicesOptionsHTML();
   document.getElementById('srv-sel').innerHTML      = html;
   document.getElementById('edit-srv-sel').innerHTML = html;
-}
-
-function setSemanaLabel() {
-  const h = new Date();
-  const numSemana = Math.ceil(h.getDate() / 7);
-  const mes = h.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-  document.getElementById('txtSemana').textContent = `${mes} — SEMANA ${numSemana}`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2322,228 +2200,6 @@ function switchSubTab(tab, btn) {
   if (tab === 'historial') renderHistorial();
 }
 
-/* ═══════════════════════════════════════════════════════
-   PANEL DE VENTAS
-═══════════════════════════════════════════════════════ */
-let filtroActivo = 'Todos';
-
-function render() {
-  const sumas   = {};
-  const rachas  = {};
-  EMPLEADOS.forEach(e => { sumas[e.nombre] = 0; });
-
-  let global = 0;
-  const hoy  = new Date();
-  const hoyStr       = hoy.toLocaleDateString();
-  const semanaActual = Math.ceil(hoy.getDate() / 7);
-  const mesActual    = hoy.getMonth();
-  const añoActual    = hoy.getFullYear();
-
-  let lastVenta = null;
-
-  getMergedVentas().forEach(f => {
-    const fechaVenta = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
-    const m   = parseFloat(f.monto) || 0;
-    const emp = f.empleado || '';
-    const semanaVenta = Math.ceil(fechaVenta.getDate() / 7);
-
-    if (semanaVenta === semanaActual &&
-        fechaVenta.getMonth() === mesActual &&
-        fechaVenta.getFullYear() === añoActual) {
-      if (Object.prototype.hasOwnProperty.call(sumas, emp)) sumas[emp] += m;
-      global += m;
-      if (fechaVenta.toLocaleDateString() === hoyStr) rachas[emp] = true;
-    }
-    lastVenta = f;
-  });
-
-  /* Ticker */
-  if (lastVenta) {
-    const tickEl   = document.getElementById('ticker');
-    const tickText = document.getElementById('tickerText');
-    const emp  = lastVenta.empleado || '';
-    const m    = parseFloat(lastVenta.monto) || 0;
-    const cli  = lastVenta.cliente || '';
-    const msg  = `ÚLTIMA VENTA — ${emp.split(' ')[0]} cerró $${m.toFixed(2)} con ${cli}`;
-    tickText.textContent = msg + '   ·   ' + msg;
-    tickEl.style.display = 'block';
-  }
-
-  /* Progress */
-  const p = Math.min((global / 1000) * 100, 100);
-  document.getElementById('barFill').style.width      = p + '%';
-  document.getElementById('valActual').textContent    = global.toFixed(2);
-  document.getElementById('valPorcentaje').textContent = p.toFixed(1) + '%';
-  const faltante = 1000 - global;
-  document.getElementById('txtFaltante').textContent = faltante > 0
-    ? `Faltan $${faltante.toFixed(2)} para el bono`
-    : '¡BONO ALCANZADO!';
-
-  /* Ranking cards */
-  const vals = Object.values(sumas);
-  const max  = vals.length ? Math.max(...vals) : 0;
-  EMPLEADOS.forEach(emp => {
-    const card = document.getElementById(`card-${emp.id}`);
-    if (!card) return;
-    document.getElementById(`total-${emp.id}`).textContent = `$${(sumas[emp.nombre] || 0).toFixed(2)}`;
-    card.classList.remove('leader');
-    card.querySelectorAll('.rank-medal, .rank-streak').forEach(el => el.remove());
-    if (rachas[emp.nombre]) {
-      const s = document.createElement('span');
-      s.className = 'rank-streak';
-      s.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
-      card.appendChild(s);
-    }
-    if ((sumas[emp.nombre] || 0) === max && max > 0) {
-      card.classList.add('leader');
-      const m2 = document.createElement('span');
-      m2.className = 'rank-medal';
-      m2.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
-      card.appendChild(m2);
-    }
-  });
-
-  renderLista(getMergedVentas());
-}
-
-function renderLista(data) {
-  const el = document.getElementById('listaVentas');
-  const filtered = filtroActivo === 'Todos'
-    ? data
-    : data.filter(d => {
-        const emp = d.empleado || '';
-        return emp.toLowerCase().includes(filtroActivo.toLowerCase());
-      });
-
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>Sin movimientos aún</div>';
-    return;
-  }
-
-  let html = '';
-  filtered.slice().reverse().forEach((f, i) => {
-    const emp     = f.empleado || '';
-    const empObj  = EMPLEADOS.find(e => e.nombre === emp);
-    const ini     = empObj ? empObj.ini : (emp[0] || '?').toUpperCase();
-    const nombre  = emp.split(' ')[0];
-    const cliente = f.cliente  || '';
-    const servicio= f.servicio || '';
-    const monto   = parseFloat(f.monto) || 0;
-    const fechaRaw = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
-    const fecha   = fechaRaw.toLocaleDateString('es-ES', { day:'2-digit', month:'short' });
-    const vid     = esc(f._id || '');
-    html += `
-      <div class="venta-row" style="animation-delay:${i*0.05}s">
-        <div class="venta-avatar">${esc(ini)}</div>
-        <div class="venta-info">
-          <div class="venta-name">${esc(nombre)} <span style="font-weight:300;color:var(--text-soft)">· ${esc(cliente)}</span></div>
-          <div class="venta-client">${esc(servicio)}</div>
-        </div>
-        <span class="venta-service">${esc(servicio)}</span>
-        <span class="venta-date">${esc(fecha)}</span>
-        <span class="venta-amount">$${monto.toFixed(2)}</span>
-        <div class="venta-actions">
-          <button class="btn-sm" onclick='openSheet(docsMap["${esc(f.facturaId||"")}"])' style="display:inline-flex;align-items:center;gap:4px;background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,0.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Ver</button>
-        </div>
-      </div>`;
-  });
-  el.innerHTML = html;
-}
-
-function filtrar(nom, btn) {
-  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filtroActivo = nom;
-  renderLista(getMergedVentas());
-}
-
-/* ═══════════════════════════════════════════════════════
-   EDITAR / ELIMINAR VENTAS
-═══════════════════════════════════════════════════════ */
-let editVentaId = null;
-
-function openEditVentaModal(id) {
-  const f = getMergedVentas().find(d => d._id === id);
-  if (!f) return;
-  editVentaId = id;
-
-  const evEmp = document.getElementById('ev-emp');
-  evEmp.innerHTML = EMPLEADOS.map(e => `<option value="${esc(e.nombre)}">${esc(e.nombre)}</option>`).join('');
-  evEmp.value = f.empleado || '';
-
-  const evSer = document.getElementById('ev-ser');
-  const serviciosVenta = [
-    'Web Plan Básico','Web Plan Estándar','Web Plan Premium',
-    'Identidad Visual','Tarjeta de Presentación','Post / Flyers RRSS',
-    'Office Pack','Paquete Básico','Paquete Intermedio','Paquete Avanzado',
-    'WhatsApp Bronce','WhatsApp Plata','WhatsApp Oro','WhatsApp Pro','WhatsApp Enterprise',
-    '1,000 Seguidores','3,000 Seguidores','5,000 Seguidores','10,000 Seguidores',
-    'Publicidad Masiva','Otro'
-  ];
-  const servicioActual = f.servicio || '';
-  let optsHtml = serviciosVenta.map(s => `<option value="${esc(s)}"${s===servicioActual?' selected':''}>${esc(s)}</option>`).join('');
-  if (servicioActual && !serviciosVenta.includes(servicioActual)) {
-    optsHtml += `<option value="${esc(servicioActual)}" selected>${esc(servicioActual)}</option>`;
-  }
-  evSer.innerHTML = optsHtml;
-
-  document.getElementById('ev-cli').value = f.cliente || '';
-  document.getElementById('ev-mon').value = f.monto || '';
-
-  const fechaRaw = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
-  const iso = `${fechaRaw.getFullYear()}-${String(fechaRaw.getMonth()+1).padStart(2,'0')}-${String(fechaRaw.getDate()).padStart(2,'0')}`;
-  document.getElementById('ev-fec').value = iso;
-
-  document.getElementById('edit-venta-id-label').textContent = id.slice(-6).toUpperCase();
-  document.getElementById('modalEditVenta').classList.add('show');
-}
-
-function closeEditVentaModal() {
-  document.getElementById('modalEditVenta').classList.remove('show');
-  editVentaId = null;
-}
-
-async function saveEditVenta() {
-  const emp = document.getElementById('ev-emp').value;
-  const cli = document.getElementById('ev-cli').value.trim();
-  const ser = document.getElementById('ev-ser').value;
-  const mon = parseFloat(document.getElementById('ev-mon').value);
-  const fecVal = document.getElementById('ev-fec').value || todayISO();
-
-  if (!cli || isNaN(mon) || mon <= 0) {
-    toast('⚠️ Ingresa cliente y monto válido.', 'err'); return;
-  }
-
-  const fechaTS = firebase.firestore.Timestamp.fromDate(new Date(fecVal + 'T12:00:00'));
-  try {
-    await db.collection('ventas').doc(editVentaId).update({
-      empleado: emp, cliente: cli, servicio: ser, monto: mon, fecha: fechaTS
-    });
-    logActividad('Venta editada', `${emp} · ${cli}`);
-    toast('Venta actualizada ✅');
-    closeEditVentaModal();
-  } catch(e) {
-    toast('Error al guardar.', 'err');
-  }
-}
-
-async function deleteVenta(id) {
-  const f = getMergedVentas().find(d => d._id === id);
-  const name = f ? (f.cliente || id) : id;
-  if (!confirm(`¿Eliminar la venta de "${name}"? Esta acción no se puede deshacer.`)) return;
-  try {
-    await db.collection('ventas').doc(id).delete();
-    logActividad('Venta eliminada', `${f?.empleado||''} · ${f?.cliente||''}`);
-    toast('Venta eliminada.');
-  } catch(e) {
-    toast('Error al eliminar.', 'err');
-  }
-}
-
-document.getElementById('modalEditVenta').addEventListener('click', function(e) {
-  if (e.target === this) closeEditVentaModal();
-});
-
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -2593,7 +2249,6 @@ function initDocs() {
       docsMap = newMap;
       updateHistorialBadge();
       if (document.getElementById('subtab-historial').style.display !== 'none') renderHistorial();
-      if (document.getElementById('page-ventas').classList.contains('active')) render();
       if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
     }, err => {
       console.error('Docs listener error:', err);
@@ -2709,7 +2364,7 @@ async function saveDoc() {
     fecha,
     total,
     moneda:     monedaSeleccionada,
-    marca:      marcaSeleccionada,
+    emisor:     document.getElementById('doc-emisor').value,
     metodoPago: document.getElementById('metodo-pago').value || null,
     infoPago:   getInfoPago(),
     contrato:   document.getElementById('contrato-toggle').value === '1',
@@ -2728,7 +2383,6 @@ async function saveDoc() {
     const ct = document.getElementById('contrato-toggle');
     if (ct.value === '1') toggleContrato();
     resetMetodoPago();
-    selectMarca('dgp');
     btn.disabled = false;
     btn.innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
@@ -2773,6 +2427,7 @@ function openSheet(doc) {
   const topEl = document.getElementById('sheet-top');
   topEl.innerHTML = `
     <div class="${headerClass}" style="position:relative;">
+      <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:40px;height:40px;margin-bottom:10px;">
       <div class="sheet-doc-type">DGP GROUP USA · dgp-link.com</div>
       <div class="sheet-title">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO DE PAGO','PAYMENT RECEIPT')}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
@@ -2786,7 +2441,7 @@ function openSheet(doc) {
   document.getElementById('s-id').textContent    = doc.docId || doc._fsId || '—';
   document.getElementById('s-fecha').textContent = doc.fecha || '—';
   document.getElementById('s-cli').textContent   = doc.cli  || '—';
-  document.getElementById('s-ref').textContent   = doc.ref && doc.ref !== '—' ? 'Ref: ' + doc.ref : '';
+  document.getElementById('s-ref').textContent   = [doc.ref && doc.ref !== '—' ? 'Ref: ' + doc.ref : '', doc.emisor ? L('Emitida por: ','Issued by: ') + doc.emisor : ''].filter(Boolean).join(' · ');
 
   const clientBlock = document.getElementById('s-client-block');
   const clientLabel = document.getElementById('s-client-label');
@@ -3009,18 +2664,18 @@ async function confirmarPagoParcial() {
 }
 
 let histFilter      = 'todos';
-let histMarcaFilter = 'todas';
+let histEmisorFilter = 'todos';
 
-function setHistMarcaFilter(f, btn) {
-  histMarcaFilter = f;
-  document.querySelectorAll('[data-marcaf]').forEach(b => b.classList.remove('active'));
+function setHistEmisorFilter(f, btn) {
+  histEmisorFilter = f;
+  document.querySelectorAll('[data-emisorf]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderHistorial();
 }
 
 function setHistFilter(f, btn) {
   histFilter = f;
-  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderHistorial();
 }
@@ -3044,8 +2699,7 @@ function renderHistorial() {
   if (histFilter === 'factura') allDocs = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
   else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial);
   else if (histFilter === 'recibo')  allDocs = allDocs.filter(d => d.pagado || d.type === 'recibo');
-  if (histMarcaFilter === 'dgp')      allDocs = allDocs.filter(d => !d.marca || d.marca === 'dgp');
-  else if (histMarcaFilter === 'vanguard') allDocs = allDocs.filter(d => d.marca === 'vanguard');
+  if (histEmisorFilter !== 'todos') allDocs = allDocs.filter(d => d.emisor === histEmisorFilter);
 
   if (allDocs.length === 0) {
     container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">${search || histFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
@@ -3088,14 +2742,13 @@ function renderHistorial() {
       <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'     style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pagado total</button>`;
     }
 
-    const vngBadge = doc.marca === 'vanguard'
-      ? `<span class="marca-badge-vng">VBS</span>` : '';
+    const emisorTag = doc.emisor ? `<span class="emisor-tag">${esc(doc.emisor.split(' ')[0])}</span>` : '';
 
     return `
     <div class="doc-item">
       <div class="doc-badge ${badgeClass}">${badgeText}</div>
       <div class="doc-info">
-        <div class="doc-id">${esc(doc.docId || fsId)}${vngBadge}</div>
+        <div class="doc-id">${esc(doc.docId || fsId)}${emisorTag}</div>
         <div class="doc-name">${esc(doc.cli || '—')}</div>
         <div class="doc-date">${esc(doc.fecha || '—')}</div>
         ${extraInfo}
@@ -3480,7 +3133,7 @@ function duplicarFactura(fsId) {
   const notaEl = document.getElementById('doc-nota');
   if (notaEl) notaEl.value = doc.nota || '';
 
-  if (doc.marca) selectMarca(doc.marca);
+  if (doc.emisor) document.getElementById('doc-emisor').value = doc.emisor;
 
   const metEl = document.getElementById('metodo-pago');
   if (metEl && doc.metodoPago) { metEl.value = doc.metodoPago; onMetodoPagoChange(); }
@@ -3969,110 +3622,8 @@ document.getElementById('modalPlantillas').addEventListener('click', function(e)
 });
 
 /* ═══════════════════════════════════════════════════════
-   COMPROBANTE DE PAGO
-═══════════════════════════════════════════════════════ */
-let comprobanteVentaId = null;
-
-function openComprobanteModal(ventaId) {
-  comprobanteVentaId = ventaId;
-  const f = getMergedVentas().find(d => d._id === ventaId);
-  if (!f) return;
-  const info = `${f.empleado?.split(' ')[0] || ''} · ${f.cliente || ''} · $${(parseFloat(f.monto)||0).toFixed(2)}`;
-  document.getElementById('comp-venta-info').textContent = info;
-  document.getElementById('comp-file-input').value = '';
-  document.getElementById('upload-progress').style.display = 'none';
-  document.getElementById('upload-progress-bar').style.width = '0';
-
-  const imgContainer = document.getElementById('comp-img-container');
-  if (f.comprobante_url) {
-    document.getElementById('comp-img').src = f.comprobante_url;
-    const dl = document.getElementById('comp-download');
-    dl.href = f.comprobante_url;
-    dl.download = `comprobante_${ventaId}.jpg`;
-    imgContainer.style.display = 'block';
-  } else {
-    imgContainer.style.display = 'none';
-  }
-  document.getElementById('modalComprobante').classList.add('show');
-}
-
-async function uploadComprobante(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { toast('La imagen no puede superar 5MB.', 'err'); return; }
-  if (!comprobanteVentaId) return;
-
-  const progressWrap = document.getElementById('upload-progress');
-  const progressBar  = document.getElementById('upload-progress-bar');
-  progressWrap.style.display = 'block';
-  progressBar.style.width = '0%';
-
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', 'comprobantes');
-    formData.append('public_id', `${comprobanteVentaId}_${Date.now()}`);
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener('progress', e => {
-      if (e.lengthComputable) {
-        progressBar.style.width = Math.round(e.loaded / e.total * 100) + '%';
-      }
-    });
-
-    const url = await new Promise((resolve, reject) => {
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
-      xhr.onload = () => {
-        const res = JSON.parse(xhr.responseText);
-        if (xhr.status === 200) resolve(res.secure_url);
-        else reject(new Error(res.error?.message || 'Error Cloudinary'));
-      };
-      xhr.onerror = () => reject(new Error('Error de red'));
-      xhr.send(formData);
-    });
-
-    await db.collection('ventas').doc(comprobanteVentaId).update({ comprobante_url: url });
-    toast('Comprobante guardado ✅');
-    document.getElementById('comp-img').src = url;
-    const dl = document.getElementById('comp-download');
-    dl.href = url;
-    dl.download = `comprobante_${comprobanteVentaId}.jpg`;
-    document.getElementById('comp-img-container').style.display = 'block';
-  } catch(e) {
-    toast('Error al subir imagen.', 'err');
-    console.error(e);
-  } finally {
-    progressWrap.style.display = 'none';
-  }
-}
-
-async function eliminarComprobante() {
-  if (!comprobanteVentaId || !confirm('¿Eliminar el comprobante?')) return;
-  try {
-    await db.collection('ventas').doc(comprobanteVentaId).update({ comprobante_url: null });
-    document.getElementById('comp-img-container').style.display = 'none';
-    document.getElementById('comp-img').src = '';
-    toast('Comprobante eliminado.');
-  } catch(e) { toast('Error al eliminar.', 'err'); }
-}
-
-document.getElementById('modalComprobante').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('show');
-});
-
-/* ═══════════════════════════════════════════════════════
    MÉTODO DE PAGO
 ═══════════════════════════════════════════════════════ */
-function selectMarca(val) {
-  marcaSeleccionada = val;
-  const btnDgp = document.getElementById('btn-marca-dgp');
-  const btnVng = document.getElementById('btn-marca-vng');
-  if (!btnDgp || !btnVng) return;
-  btnDgp.className = 'marca-btn' + (val === 'dgp'      ? ' active-dgp' : '');
-  btnVng.className = 'marca-btn' + (val === 'vanguard' ? ' active-vng' : '');
-}
-
 function selectMoneda(val) {
   monedaSeleccionada = val;
   document.getElementById('btn-usd').classList.toggle('active', val === 'usd');
@@ -4164,36 +3715,6 @@ function copiarLinkFactura(fsId) {
 <datalist id="clientes-list"></datalist>
 
 <!-- COMPROBANTE DE PAGO MODAL -->
-<div class="modal-overlay" id="modalComprobante">
-  <div class="edit-sheet" style="max-width:440px;">
-    <div class="edit-sheet-header">
-      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> COMPROBANTE DE PAGO</h3>
-      <p id="comp-venta-info">—</p>
-    </div>
-    <div class="edit-sheet-body">
-      <div id="comp-img-container" style="display:none;">
-        <img id="comp-img" src="" alt="Comprobante" class="comprobante-modal-img">
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <a id="comp-download" href="#" download="comprobante.jpg" target="_blank" class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,0.2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar</a>
-          <button class="btn-sm del" onclick="eliminarComprobante()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Eliminar</button>
-        </div>
-        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
-        <p style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">Subir nuevo comprobante (reemplaza el actual):</p>
-      </div>
-      <div class="upload-area" onclick="document.getElementById('comp-file-input').click()">
-        <div style="margin-bottom:8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
-        <div style="font-size:13px;color:var(--text-mid);font-weight:500;">Haz clic para seleccionar imagen</div>
-        <div style="font-size:11px;color:var(--text-soft);margin-top:4px;">JPG, PNG, WebP — máx. 5MB</div>
-        <input type="file" id="comp-file-input" accept="image/*" onchange="uploadComprobante(this)">
-        <div class="upload-progress" id="upload-progress">
-          <div class="upload-progress-bar" id="upload-progress-bar"></div>
-        </div>
-      </div>
-      <button class="btn-edit-cancel" style="margin-top:14px;" onclick="document.getElementById('modalComprobante').classList.remove('show')">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
