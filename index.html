@@ -984,6 +984,71 @@
     .emisor-tag { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:20px; background:var(--blue-xlight); color:var(--blue); border:1px solid rgba(20,56,204,0.2); vertical-align:middle; margin-left:6px; text-transform:uppercase; }
     .metodo-fields { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
     .metodo-fields .ff { margin:0; }
+/* ═══ PORTAL DE CLIENTES (admin) ═══ */
+.pt-main { max-width:1180px; margin:0 auto; padding:24px; display:grid; grid-template-columns:300px 1fr; gap:20px; }
+.pt-side { background:white; border:1px solid var(--border); border-radius:14px; padding:14px; align-self:start; position:sticky; top:12px; max-height:calc(100vh - 140px); display:flex; flex-direction:column; }
+.pt-side-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+.pt-search { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:12px; outline:none; margin-bottom:10px; font-family:'IBM Plex Sans',sans-serif; }
+.pt-search:focus { border-color:var(--blue); }
+.pt-list { overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+.pt-item { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; cursor:pointer; border:1.5px solid transparent; transition:all .15s; }
+.pt-item:hover { background:var(--off); }
+.pt-item.active { border-color:var(--blue); background:var(--blue-xlight); }
+.pt-av { width:34px; height:34px; border-radius:50%; background:var(--blue); color:white; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pt-item-body { flex:1; min-width:0; }
+.pt-item-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pt-item-sub { font-size:11px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pt-unread { background:#ef4444; color:white; border-radius:20px; font-size:10px; font-weight:700; padding:1px 7px; }
+.pt-detail { min-width:0; }
+.pt-empty { background:white; border:1px dashed var(--border); border-radius:14px; padding:48px 20px; text-align:center; color:var(--text-soft); font-size:13px; }
+.pt-head { background:linear-gradient(135deg,#0a0f1e,#1438cc); color:white; border-radius:14px; padding:20px 22px; }
+.pt-head-name { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px; line-height:1.1; }
+.pt-head-sub { font-size:12px; opacity:.75; margin-top:2px; }
+.pt-code { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.12); border-radius:9px; padding:7px 12px; font-family:'IBM Plex Sans',monospace; font-weight:700; letter-spacing:2px; font-size:14px; margin-top:12px; }
+.pt-head-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.pt-hbtn { display:inline-flex; align-items:center; gap:5px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:white; border-radius:8px; padding:7px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; text-decoration:none; }
+.pt-hbtn:hover { background:rgba(255,255,255,.18); }
+.pt-tabs { display:flex; gap:4px; margin:16px 0 14px; overflow-x:auto; border-bottom:1px solid var(--border); }
+.pt-tab { border:0; background:none; padding:10px 14px; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; font-family:'IBM Plex Sans',sans-serif; display:inline-flex; align-items:center; gap:6px; }
+.pt-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.pt-card { background:white; border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+.pt-card + .pt-card { margin-top:10px; }
+.pt-row { display:flex; align-items:center; gap:12px; }
+.pt-grow { flex:1; min-width:0; }
+.pt-title { font-size:14px; font-weight:600; }
+.pt-sub { font-size:12px; color:var(--text-soft); margin-top:2px; }
+.pt-pill { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:#f1f5f9; color:var(--text-soft); white-space:nowrap; }
+.pt-pill.solicitado { background:#f5f3ff; color:#7c3aed; } .pt-pill.en_progreso { background:var(--blue-xlight); color:var(--blue); }
+.pt-pill.en_revision, .pt-pill.pausada, .pt-pill.porpagar { background:var(--amber-light); color:var(--amber); }
+.pt-pill.completado, .pt-pill.activa, .pt-pill.pagado { background:var(--green-light); color:var(--green-dark); }
+.pt-pill.pausado { background:#fef2f2; color:#dc2626; } .pt-pill.parcial { background:#fff7ed; color:#ea580c; }
+.pt-bar { height:6px; background:#eef2f7; border-radius:6px; overflow:hidden; margin-top:10px; }
+.pt-bar div { height:100%; background:var(--blue); border-radius:6px; }
+.pt-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.pt-toolbar-title { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); }
+.pt-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.pt-stat { background:white; border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+.pt-stat-l { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); }
+.pt-stat-v { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; margin-top:2px; }
+.pt-chat { background:white; border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; height:520px; overflow:hidden; }
+.pt-chat-body { flex:1; overflow-y:auto; padding:14px; background:#f8fafc; display:flex; flex-direction:column; gap:8px; }
+.pt-msg { max-width:78%; padding:9px 12px; border-radius:14px; font-size:13px; line-height:1.45; word-wrap:break-word; }
+.pt-msg-text { white-space:pre-wrap; }
+.pt-msg.cliente { align-self:flex-start; background:white; border:1px solid var(--border); border-bottom-left-radius:4px; }
+.pt-msg.admin { align-self:flex-end; background:var(--blue); color:white; border-bottom-right-radius:4px; }
+.pt-msg-meta { font-size:9px; opacity:.6; margin-top:3px; }
+.pt-chat-foot { display:flex; gap:8px; padding:10px; border-top:1px solid var(--border); }
+.pt-chat-foot textarea { flex:1; resize:none; border:1.5px solid var(--border); border-radius:10px; padding:10px 12px; font-size:13px; height:44px; outline:none; font-family:'IBM Plex Sans',sans-serif; }
+.pt-chat-foot textarea:focus { border-color:var(--blue); }
+.pt-send { border:0; background:var(--blue); color:white; border-radius:10px; padding:0 16px; font-weight:600; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Sans',sans-serif; }
+.pt-hint { font-size:11px; margin-top:6px; color:var(--green-dark); display:flex; align-items:center; gap:5px; }
+.pt-hint.none { color:var(--text-soft); }
+@media (max-width:900px) {
+  .pt-main { grid-template-columns:1fr; padding:14px 12px; }
+  .pt-side { position:static; max-height:340px; }
+  .pt-stats { grid-template-columns:repeat(2,1fr); }
+  .pt-chat { height:460px; }
+}
   </style>
 </head>
 <body>
@@ -1052,6 +1117,9 @@
   <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
     <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
+  <button class="nav-tab" onclick="switchPage('portal', this)">
+    <i class="fa-solid fa-user-shield"></i> Portal<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
     <i class="fa-solid fa-chart-pie"></i> Dashboard
   </button>
@@ -1104,7 +1172,8 @@
 
         <div class="ff">
           <label>Nombre del cliente</label>
-          <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez" list="clientes-list">
+          <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez" list="clientes-list" oninput="updatePortalHint()">
+          <div id="cli-portal-hint" class="pt-hint" style="display:none;"></div>
         </div>
         <div class="ff">
           <label>Referencia de pago</label>
@@ -1394,6 +1463,25 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     PAGE: PORTAL DE CLIENTES
+══════════════════════════════════════ -->
+<div id="page-portal" class="page">
+  <div class="pt-main">
+    <aside class="pt-side">
+      <div class="pt-side-head">
+        <div class="panel-title-v" style="margin:0;">Portales</div>
+        <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openNuevoPortal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo</button>
+      </div>
+      <input class="pt-search" id="pt-search" placeholder="Buscar cliente o código..." oninput="renderPortalList()">
+      <div class="pt-list" id="pt-list"></div>
+    </aside>
+    <section class="pt-detail" id="pt-detail">
+      <div class="pt-empty">Selecciona un cliente para ver su portal, o crea uno nuevo.</div>
+    </section>
+  </div>
+</div>
+
 </div><!-- /app-shell -->
 
 
@@ -1523,6 +1611,17 @@
       <button class="btn-edit-save" onclick="saveCliente2()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cliente</button>
       <button class="btn-edit-cancel" onclick="closeClienteModal()">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: PORTAL (formularios) ─── -->
+<div class="modal-overlay" id="modalPortal">
+  <div class="edit-sheet" style="max-width:480px;">
+    <div class="edit-sheet-header">
+      <h3 id="mp-title">Portal</h3>
+      <p id="mp-sub"></p>
+    </div>
+    <div class="edit-sheet-body" id="mp-body"></div>
   </div>
 </div>
 
@@ -1812,6 +1911,7 @@ function initPage() {
   initDocs();
   initClientes();
   initClientesCRM();
+  initPortales();
   onTypeChange();
 }
 
@@ -1849,6 +1949,7 @@ function switchPage(page, btn) {
   if (page === 'clientes')   renderClientes();
   if (page === 'proyectos')  renderProyectos();
   if (page === 'encuestas')  renderEncuestas();
+  if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2374,10 +2475,14 @@ async function saveDoc() {
     createdBy:  currentUser ? currentUser.email : 'desconocido',
     createdAt:  firebase.firestore.FieldValue.serverTimestamp()
   };
+    const portalCli = portalParaCliente(cli);
+    if (portalCli) docData.portalCodigo = portalCli._id;
     const added = await db.collection('documentos').add(docData);
+    if (portalCli) registrarFacturaEnPortal(added.id, portalCli._id);
     cart = [];
     renderCart();
     document.getElementById('cli-nom').value  = '';
+    updatePortalHint();
     document.getElementById('pago-ref').value = '';
     document.getElementById('doc-nota').value = '';
     const ct = document.getElementById('contrato-toggle');
@@ -2796,6 +2901,7 @@ async function deleteDoc(fsId) {
   if (!confirm(`¿Eliminar el documento de "${name}"? Esta acción no se puede deshacer.`)) return;
   try {
     await db.collection('documentos').doc(fsId).delete();
+    if (doc?.portalCodigo) ptRef(doc.portalCodigo).update({ facturaIds: firebase.firestore.FieldValue.arrayRemove(fsId) }).catch(() => {});
     logActividad('Documento eliminado', doc?.docId || fsId);
     toast('Documento eliminado.');
   } catch(err) {
@@ -3129,6 +3235,7 @@ function duplicarFactura(fsId) {
 
   const cliEl = document.getElementById('cli-nom');
   if (cliEl) cliEl.value = doc.cliente || doc.cli || '';
+  updatePortalHint();
 
   const notaEl = document.getElementById('doc-nota');
   if (notaEl) notaEl.value = doc.nota || '';
@@ -3476,6 +3583,7 @@ function renderClientes() {
       </div>
       <div class="cliente-actions">
         ${c.telefono ? `<button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,0.2);display:inline-flex;align-items:center;justify-content:center;" onclick="window.open('https://wa.me/${encodeURIComponent((c.telefono||'').replace(/\D/g,''))}','_blank')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>` : ''}
+        <button class="btn-sm" title="${c.portalCodigo ? 'Abrir su portal' : 'Crear portal'}" onclick="abrirPortalDeCliente('${esc(c._id)}')" style="background:${c.portalCodigo ? 'var(--blue-xlight)' : 'var(--off)'};color:${c.portalCodigo ? 'var(--blue)' : 'var(--text-mid)'};border-color:${c.portalCodigo ? 'rgba(20,56,204,.2)' : 'var(--border)'};display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-user-shield"></i> ${c.portalCodigo ? 'Portal' : 'Crear portal'}</button>
         <button class="btn-sm edit" onclick="openClienteModal('${esc(c._id)}')" style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn-sm del"  onclick="deleteCliente('${esc(c._id)}')"  style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
@@ -3542,6 +3650,741 @@ async function deleteCliente(id) {
 
 document.getElementById('modalCliente').addEventListener('click', function(e) {
   if (e.target === this) closeClienteModal();
+});
+
+/* ═══════════════════════════════════════════════════════
+   PORTAL DE CLIENTES (admin)
+═══════════════════════════════════════════════════════ */
+const PORTAL_URL = 'https://adv.dgp-link.com/portal.html';
+const PT_ESTADOS = { solicitado:'Solicitado', pendiente:'Por iniciar', en_progreso:'En progreso', en_revision:'En revisión', completado:'Completado', pausado:'En pausa' };
+const PT_SUSC    = { activa:'Activa', pausada:'En pausa', cancelada:'Cancelada' };
+const PT_CICLOS  = { semanal:'Semanal', mensual:'Mensual', trimestral:'Trimestral', semestral:'Semestral', anual:'Anual' };
+const PT_ARCH    = { reporte:'Reporte', contrato:'Contrato', entregable:'Entregable', otro:'Otro' };
+
+let portalesList = [];
+let portalSel = null;          // código seleccionado
+let portalTab = 'resumen';
+let _ptSub = { proyectos:[], suscripciones:[], archivos:[], mensajes:[] };
+let _ptUnsubs = [];
+let _ptPrevUnread = null;
+let _ptEdit = null;            // id en edición dentro del modal
+
+const PT_ICON = {
+  copy: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  wa:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  ext:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+  plus: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  edit: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  del:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  send: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  link: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
+};
+
+function ptNorm(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+function ptDate(v) {
+  if (!v) return null;
+  if (v.toDate) return v.toDate();
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v + 'T12:00:00');
+  const d = new Date(v); return isNaN(d) ? null : d;
+}
+function ptFmt(v) { const d = ptDate(v); return d ? d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' }) : '—'; }
+function ptFmtTime(v) { const d = ptDate(v); return d ? d.toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : ''; }
+function ptMoney(n) { return '$' + (Number(n) || 0).toFixed(2); }
+function ptRef(code) { return db.collection('portal').doc(code || portalSel); }
+function portalActual() { return portalesList.find(p => p._id === portalSel) || null; }
+
+/* Código único: DGP-XXXX-XXXX (sin letras confusas como O/0, I/1) */
+async function generarCodigoPortal() {
+  const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  for (let intento = 0; intento < 5; intento++) {
+    let out = '';
+    while (out.length < 8) {
+      const b = crypto.getRandomValues(new Uint8Array(16));
+      for (const x of b) { if (x < 248 && out.length < 8) out += ABC[x % 31]; }
+    }
+    const code = `DGP-${out.slice(0, 4)}-${out.slice(4)}`;
+    const snap = await ptRef(code).get();
+    if (!snap.exists) return code;
+  }
+  throw new Error('No se pudo generar un código único');
+}
+
+/* ── Escucha de portales (lista + no leídos) ── */
+function initPortales() {
+  db.collection('portal').onSnapshot(snap => {
+    portalesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    const unread = {};
+    portalesList.forEach(p => { unread[p._id] = p.chatNoLeidoAdmin || 0; });
+    if (_ptPrevUnread) {
+      portalesList.forEach(p => {
+        if ((unread[p._id] || 0) > (_ptPrevUnread[p._id] || 0) && p.ultimoMensajeDe === 'cliente') {
+          if (!(portalSel === p._id && portalTab === 'chat' && document.getElementById('page-portal').classList.contains('active'))) {
+            toast(`Nuevo mensaje de ${p.nombre || 'un cliente'}`, 'ok');
+          }
+        }
+      });
+    }
+    _ptPrevUnread = unread;
+    updatePortalBadge();
+    renderPortalList();
+    if (portalSel && document.getElementById('page-portal').classList.contains('active')) {
+      if (!portalActual()) { portalSel = null; }
+      renderPortalDetail();
+    }
+    updatePortalHint();
+  }, err => console.error('Portal listener error:', err));
+}
+
+function updatePortalBadge() {
+  const total = portalesList.reduce((a, p) => a + (p.chatNoLeidoAdmin || 0), 0);
+  const b = document.getElementById('portal-badge');
+  if (!b) return;
+  b.textContent = total;
+  b.style.display = total ? 'inline' : 'none';
+}
+
+function renderPortalList() {
+  const el = document.getElementById('pt-list');
+  if (!el) return;
+  const q = ptNorm(document.getElementById('pt-search')?.value);
+  let list = portalesList.filter(p => p.activo !== false || portalSel === p._id);
+  if (q) list = list.filter(p => ptNorm(p.nombre).includes(q) || ptNorm(p._id).includes(q) || ptNorm(p.empresa).includes(q));
+  list.sort((a, b) =>
+    (b.chatNoLeidoAdmin || 0) - (a.chatNoLeidoAdmin || 0) ||
+    ((ptDate(b.ultimoMensajeAt)?.getTime() || 0) - (ptDate(a.ultimoMensajeAt)?.getTime() || 0)) ||
+    String(a.nombre || '').localeCompare(String(b.nombre || '')));
+  if (!list.length) {
+    el.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 8px;">${q ? 'Sin resultados.' : 'Aún no hay portales. Crea el primero con “Nuevo”.'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(p => `
+    <div class="pt-item ${p._id === portalSel ? 'active' : ''}" onclick="selectPortal('${esc(p._id)}')">
+      <div class="pt-av">${esc((p.nombre || '?')[0].toUpperCase())}</div>
+      <div class="pt-item-body">
+        <div class="pt-item-name">${esc(p.nombre || '—')}</div>
+        <div class="pt-item-sub">${p.ultimoMensaje ? (p.ultimoMensajeDe === 'admin' ? 'Tú: ' : '') + esc(p.ultimoMensaje) : esc(p._id)}</div>
+      </div>
+      ${p.chatNoLeidoAdmin ? `<span class="pt-unread">${p.chatNoLeidoAdmin}</span>` : ''}
+    </div>`).join('');
+}
+
+function selectPortal(code, tab) {
+  if (portalSel !== code) {
+    _ptUnsubs.forEach(u => u()); _ptUnsubs = [];
+    _ptSub = { proyectos:[], suscripciones:[], archivos:[], mensajes:[] };
+    portalSel = code;
+    const ref = ptRef(code);
+    const sub = (name, sorter) => _ptUnsubs.push(ref.collection(name).onSnapshot(s => {
+      let arr = s.docs.map(d => ({ _id: d.id, ...d.data() }));
+      if (sorter) arr.sort(sorter);
+      _ptSub[name] = arr;
+      renderPortalDetail();
+    }));
+    const byCreated = (a, b) => (ptDate(b.createdAt)?.getTime() || 0) - (ptDate(a.createdAt)?.getTime() || 0);
+    sub('proyectos', byCreated);
+    sub('suscripciones', byCreated);
+    sub('archivos', byCreated);
+    _ptUnsubs.push(ref.collection('mensajes').orderBy('fecha').onSnapshot(s => {
+      _ptSub.mensajes = s.docs.map(d => ({ _id: d.id, ...d.data() }));
+      renderPortalDetail();
+    }));
+  }
+  portalTab = tab || (portalActual()?.chatNoLeidoAdmin ? 'chat' : (portalTab || 'resumen'));
+  renderPortalList();
+  renderPortalDetail();
+}
+
+function setPortalTab(t) { portalTab = t; renderPortalDetail(); }
+
+/* ── Detalle ── */
+function portalFacturas(p) {
+  return (p.facturaIds || []).map(id => docsMap[id]).filter(Boolean)
+    .sort((a, b) => (ptDate(b.createdAt)?.getTime() || 0) - (ptDate(a.createdAt)?.getTime() || 0));
+}
+function ptSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((d.total || 0) - (d.montoPagado || 0), 0); }
+function ptEstadoFac(d) {
+  if (d.pagado || d.type === 'recibo') return ['pagado', 'Pagada'];
+  if (d.pagadoParcial) return ['parcial', 'Parcial'];
+  return ['porpagar', 'Por pagar'];
+}
+
+function renderPortalDetail() {
+  const el = document.getElementById('pt-detail');
+  if (!el) return;
+  const p = portalActual();
+  if (!p) { el.innerHTML = '<div class="pt-empty">Selecciona un cliente para ver su portal, o crea uno nuevo.</div>'; return; }
+
+  // Mantener el borrador del chat entre renders
+  const draft = document.getElementById('pt-chat-input')?.value || '';
+
+  const facs = portalFacturas(p);
+  const deuda = facs.reduce((a, d) => a + ptSaldo(d), 0);
+  const solicitudes = _ptSub.proyectos.filter(x => x.estado === 'solicitado').length;
+  const tabs = [
+    ['resumen', 'Resumen', 0],
+    ['proyectos', 'Proyectos', solicitudes],
+    ['facturas', 'Facturas', 0],
+    ['suscripciones', 'Suscripciones', 0],
+    ['archivos', 'Documentos', 0],
+    ['chat', 'Chat', p.chatNoLeidoAdmin || 0]
+  ];
+  const acceso = `${PORTAL_URL}?c=${encodeURIComponent(p._id)}`;
+  const tel = String(p.telefono || '').replace(/[^0-9]/g, '');
+  const waMsg = encodeURIComponent(`Hola ${(p.nombre || '').split(' ')[0]}! Ya tienes tu portal de cliente de DGP Group, donde puedes ver tus proyectos, facturas y escribirnos por chat.\n\nEntra aquí: ${PORTAL_URL}\nTu código de acceso: ${p._id}\n\nGuárdalo, es personal.`);
+
+  let body = '';
+  if (portalTab === 'resumen') body = ptVResumen(p, facs, deuda);
+  else if (portalTab === 'proyectos') body = ptVProyectos();
+  else if (portalTab === 'facturas') body = ptVFacturas(p, facs);
+  else if (portalTab === 'suscripciones') body = ptVSusc();
+  else if (portalTab === 'archivos') body = ptVArchivos();
+  else if (portalTab === 'chat') body = ptVChat(p);
+
+  el.innerHTML = `
+    <div class="pt-head">
+      <div class="pt-head-name">${esc(p.nombre || '—')}</div>
+      <div class="pt-head-sub">${[p.empresa, p.correo, p.telefono].filter(Boolean).map(esc).join(' · ') || 'Sin datos de contacto'}${p.activo === false ? ' · <strong>DESACTIVADO</strong>' : ''}</div>
+      <div class="pt-code">${esc(p._id)}</div>
+      <div class="pt-head-actions">
+        <button class="pt-hbtn" onclick="navigator.clipboard.writeText('${esc(p._id)}');toast('Código copiado')">${PT_ICON.copy} Copiar código</button>
+        <button class="pt-hbtn" onclick="navigator.clipboard.writeText('${esc(acceso)}');toast('Link de acceso copiado')">${PT_ICON.link} Copiar link directo</button>
+        <a class="pt-hbtn" href="https://wa.me/${tel}?text=${waMsg}" target="_blank" rel="noopener">${PT_ICON.wa} Enviar por WhatsApp</a>
+        <a class="pt-hbtn" href="${esc(acceso)}" target="_blank" rel="noopener">${PT_ICON.ext} Ver como cliente</a>
+      </div>
+    </div>
+    <div class="pt-tabs">${tabs.map(([id, lbl, n]) => `<button class="pt-tab ${portalTab === id ? 'active' : ''}" onclick="setPortalTab('${id}')">${lbl}${n ? ` <span class="pt-unread">${n}</span>` : ''}</button>`).join('')}</div>
+    ${body}`;
+
+  if (portalTab === 'chat') {
+    const input = document.getElementById('pt-chat-input');
+    if (input) { input.value = draft; }
+    const cb = document.getElementById('pt-chat-body');
+    if (cb) cb.scrollTop = cb.scrollHeight;
+    if ((p.chatNoLeidoAdmin || 0) > 0) ptRef(p._id).update({ chatNoLeidoAdmin: 0 }).catch(() => {});
+  }
+}
+
+function ptVResumen(p, facs, deuda) {
+  const activos = _ptSub.proyectos.filter(x => x.estado !== 'completado');
+  const suscAct = _ptSub.suscripciones.filter(s => s.estado === 'activa');
+  return `
+    <div class="pt-stats">
+      <div class="pt-stat"><div class="pt-stat-l">Por cobrar</div><div class="pt-stat-v" style="color:${deuda ? 'var(--amber)' : 'var(--green-dark)'}">${ptMoney(deuda)}</div></div>
+      <div class="pt-stat"><div class="pt-stat-l">Facturas</div><div class="pt-stat-v">${facs.length}</div></div>
+      <div class="pt-stat"><div class="pt-stat-l">Proyectos activos</div><div class="pt-stat-v">${activos.length}</div></div>
+      <div class="pt-stat"><div class="pt-stat-l">Suscripciones</div><div class="pt-stat-v">${suscAct.length}</div></div>
+    </div>
+    <div class="pt-card" style="margin-top:12px;">
+      <div class="pt-toolbar" style="margin-bottom:6px;"><div class="pt-toolbar-title">Datos del cliente</div>
+        <button class="btn-sm edit" onclick="openEditPortalDatos()" style="display:inline-flex;align-items:center;gap:4px;">${PT_ICON.edit} Editar</button></div>
+      <div class="pt-sub">Nombre: <strong>${esc(p.nombre || '—')}</strong></div>
+      <div class="pt-sub">Correo: ${esc(p.correo || '—')} · Teléfono: ${esc(p.telefono || '—')}${p.empresa ? ' · Empresa: ' + esc(p.empresa) : ''}</div>
+      <div class="pt-sub">Portal creado: ${ptFmt(p.createdAt)} · Último acceso del cliente: ${p.ultimoAcceso ? ptFmtTime(p.ultimoAcceso) : 'nunca'}</div>
+    </div>
+    <div class="pt-card">
+      <div class="pt-toolbar-title" style="margin-bottom:8px;">Acceso</div>
+      <div class="pt-sub">Las facturas que crees con el nombre <strong>${esc(p.nombre)}</strong> se registran solas en este portal.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="regenerarCodigoPortal()">Cambiar código</button>
+        <button class="btn-sm" style="background:${p.activo === false ? 'var(--green-light)' : '#fef2f2'};color:${p.activo === false ? 'var(--green-dark)' : '#dc2626'};border-color:${p.activo === false ? 'rgba(5,150,105,.25)' : 'rgba(220,38,38,.25)'};" onclick="togglePortalActivo()">${p.activo === false ? 'Reactivar portal' : 'Desactivar acceso'}</button>
+      </div>
+    </div>`;
+}
+
+/* ── Proyectos ── */
+function ptVProyectos() {
+  const list = _ptSub.proyectos;
+  return `
+    <div class="pt-toolbar"><div class="pt-toolbar-title">Proyectos (${list.length})</div>
+      <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openProyectoForm()">${PT_ICON.plus} Nuevo proyecto</button></div>
+    ${list.length ? list.map(x => {
+      const prog = Math.max(0, Math.min(100, Number(x.progreso) || 0));
+      const last = Array.isArray(x.actualizaciones) && x.actualizaciones.length ? x.actualizaciones[x.actualizaciones.length - 1] : null;
+      return `<div class="pt-card">
+        <div class="pt-row">
+          <div class="pt-grow">
+            <div class="pt-title">${esc(x.nombre || 'Proyecto')} ${x.solicitadoPorCliente ? '<span class="pt-pill solicitado" style="margin-left:4px;">Pedido por el cliente</span>' : ''}</div>
+            <div class="pt-sub">${esc(x.servicio || '')}${x.fechaEntrega ? ' · Entrega ' + ptFmt(x.fechaEntrega) : ''}</div>
+          </div>
+          <span class="pt-pill ${esc(x.estado || 'pendiente')}">${esc(PT_ESTADOS[x.estado] || x.estado || '—')}</span>
+        </div>
+        ${x.descripcion ? `<div class="pt-sub" style="margin-top:8px;">${esc(x.descripcion)}</div>` : ''}
+        ${x.estado !== 'solicitado' ? `<div class="pt-bar"><div style="width:${prog}%"></div></div><div class="pt-sub" style="font-size:11px;">${prog}% completado${last ? ' · Última nota: ' + esc(last.texto) : ''}</div>` : ''}
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          ${x.estado === 'solicitado' ? `<button class="btn-sm" style="background:var(--green-light);color:var(--green-dark);border-color:rgba(5,150,105,.25);" onclick="aceptarSolicitud('${esc(x._id)}')">Aceptar solicitud</button>` : ''}
+          <button class="btn-sm edit" style="display:inline-flex;align-items:center;gap:4px;" onclick="openProyectoForm('${esc(x._id)}')">${PT_ICON.edit} Actualizar</button>
+          <button class="btn-sm del" style="display:inline-flex;align-items:center;gap:4px;" onclick="borrarSub('proyectos','${esc(x._id)}')">${PT_ICON.del}</button>
+        </div>
+      </div>`;
+    }).join('') : '<div class="pt-empty">Sin proyectos todavía.</div>'}`;
+}
+function openProyectoForm(id) {
+  const x = id ? _ptSub.proyectos.find(p => p._id === id) : null;
+  _ptEdit = id || null;
+  const opts = (obj, sel) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${v}</option>`).join('');
+  ptModal(x ? 'Actualizar proyecto' : 'Nuevo proyecto', portalActual()?.nombre || '', `
+    <div class="ff"><label>Nombre del proyecto</label><input id="pp-nombre" maxlength="200" value="${esc(x?.nombre || '')}" placeholder="Ej. Sitio web corporativo"></div>
+    <div class="ff"><label>Servicio</label><input id="pp-servicio" maxlength="120" value="${esc(x?.servicio || '')}" placeholder="Ej. Web Plan Estándar"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Estado</label><select id="pp-estado">${opts(PT_ESTADOS, x?.estado || 'pendiente')}</select></div>
+      <div class="ff"><label>Avance: <span id="pp-prog-v">${Number(x?.progreso) || 0}</span>%</label><input type="range" id="pp-progreso" min="0" max="100" step="5" value="${Number(x?.progreso) || 0}" oninput="document.getElementById('pp-prog-v').textContent=this.value" style="padding:0;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Fecha de inicio</label><input type="date" id="pp-inicio" value="${esc(x?.fechaInicio || '')}"></div>
+      <div class="ff"><label>Entrega estimada</label><input type="date" id="pp-entrega" value="${esc(x?.fechaEntrega || '')}"></div>
+    </div>
+    <div class="ff"><label>Descripción (la ve el cliente)</label><textarea id="pp-desc" maxlength="1500" style="height:70px;resize:none;">${esc(x?.descripcion || '')}</textarea></div>
+    <div class="ff"><label>Nueva actualización para el cliente (opcional)</label><input id="pp-update" maxlength="300" placeholder="Ej. Terminamos el diseño de la página de inicio"></div>
+    <button class="btn-edit-save" onclick="guardarProyecto()">Guardar</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+}
+async function guardarProyecto() {
+  const nombre = document.getElementById('pp-nombre').value.trim();
+  if (!nombre) { toast('Ponle un nombre al proyecto.', 'err'); return; }
+  const estado = document.getElementById('pp-estado').value;
+  let progreso = parseInt(document.getElementById('pp-progreso').value) || 0;
+  if (estado === 'completado') progreso = 100;
+  const data = {
+    nombre, estado, progreso,
+    servicio:     document.getElementById('pp-servicio').value.trim(),
+    fechaInicio:  document.getElementById('pp-inicio').value || '',
+    fechaEntrega: document.getElementById('pp-entrega').value || '',
+    descripcion:  document.getElementById('pp-desc').value.trim(),
+    updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const nota = document.getElementById('pp-update').value.trim();
+  if (nota) data.actualizaciones = firebase.firestore.FieldValue.arrayUnion({ texto: nota, fecha: new Date().toISOString() });
+  try {
+    const col = ptRef().collection('proyectos');
+    if (_ptEdit) await col.doc(_ptEdit).update(data);
+    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await col.add(data); }
+    toast('Proyecto guardado ✅');
+    closePortalModal();
+  } catch (e) { console.error(e); toast('Error al guardar el proyecto.', 'err'); }
+}
+async function aceptarSolicitud(id) {
+  try {
+    await ptRef().collection('proyectos').doc(id).update({
+      estado: 'pendiente',
+      fechaInicio: todayISO(),
+      actualizaciones: firebase.firestore.FieldValue.arrayUnion({ texto: 'Solicitud aceptada. Pronto comenzamos.', fecha: new Date().toISOString() })
+    });
+    toast('Solicitud aceptada');
+  } catch (e) { toast('Error al actualizar.', 'err'); }
+}
+
+/* ── Facturas ── */
+function ptVFacturas(p, facs) {
+  const vinculadas = new Set();
+  portalesList.forEach(x => (x.facturaIds || []).forEach(id => vinculadas.add(id)));
+  const libres = Object.values(docsMap).filter(d => !vinculadas.has(d._fsId))
+    .sort((a, b) => (ptNorm(a.cli) === ptNorm(p.nombre) ? -1 : 0) - (ptNorm(b.cli) === ptNorm(p.nombre) ? -1 : 0));
+  return `
+    <div class="pt-toolbar"><div class="pt-toolbar-title">Facturas en el portal (${facs.length})</div>
+      <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="nuevaFacturaPortal()">${PT_ICON.plus} Nueva factura</button></div>
+    ${facs.length ? facs.map(d => {
+      const [cls, lbl] = ptEstadoFac(d);
+      return `<div class="pt-card"><div class="pt-row">
+        <div class="pt-grow">
+          <div class="pt-title">${esc(d.docId || d._fsId)} · ${ptMoney(d.total)}</div>
+          <div class="pt-sub">${esc((d.items || []).map(i => i.s).join(', '))} · ${esc(d.fecha || '')}${d.comprobante_url ? ' · <span style="color:var(--green-dark);font-weight:600;">con comprobante</span>' : ''}</div>
+        </div>
+        <span class="pt-pill ${cls}">${lbl}</span>
+        <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="openSheet(docsMap['${esc(d._fsId)}'])">Ver</button>
+        <button class="btn-sm del" title="Quitar del portal" onclick="desvincularFactura('${esc(d._fsId)}')">${PT_ICON.del}</button>
+      </div></div>`;
+    }).join('') : '<div class="pt-empty">Aún no hay facturas registradas en este portal.</div>'}
+    <div class="pt-card" style="margin-top:14px;">
+      <div class="pt-toolbar-title" style="margin-bottom:8px;">Agregar una factura existente</div>
+      ${libres.length ? `<div style="display:flex;gap:8px;">
+        <select id="pt-vincular" style="flex:1;padding:9px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;">
+          ${libres.slice(0, 200).map(d => `<option value="${esc(d._fsId)}">${esc(d.docId || '')} · ${esc(d.cli || '—')} · ${ptMoney(d.total)}</option>`).join('')}
+        </select>
+        <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);" onclick="vincularFactura(document.getElementById('pt-vincular').value)">Agregar</button>
+      </div>` : '<div class="pt-sub">Todas las facturas ya están asignadas a un portal.</div>'}
+    </div>`;
+}
+async function vincularFactura(fsId, code) {
+  code = code || portalSel;
+  if (!fsId || !code) return;
+  try {
+    await ptRef(code).update({ facturaIds: firebase.firestore.FieldValue.arrayUnion(fsId) });
+    await db.collection('documentos').doc(fsId).update({ portalCodigo: code });
+    toast('Factura agregada al portal');
+  } catch (e) { toast('Error al vincular.', 'err'); }
+}
+async function desvincularFactura(fsId) {
+  if (!confirm('¿Quitar esta factura del portal del cliente? La factura no se borra.')) return;
+  try {
+    await ptRef().update({ facturaIds: firebase.firestore.FieldValue.arrayRemove(fsId) });
+    await db.collection('documentos').doc(fsId).update({ portalCodigo: firebase.firestore.FieldValue.delete() });
+    toast('Factura quitada del portal');
+  } catch (e) { toast('Error al quitar.', 'err'); }
+}
+function nuevaFacturaPortal() {
+  const p = portalActual(); if (!p) return;
+  const tab = document.querySelector('.nav-tab[onclick*="facturacion"]');
+  if (tab) switchPage('facturacion', tab);
+  const nuevoBtn = document.querySelector('.subtab-btn');
+  if (nuevoBtn) switchSubTab('nuevo', nuevoBtn);
+  document.getElementById('cli-nom').value = p.nombre || '';
+  updatePortalHint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* Registro automático: factura → portal del cliente (por nombre) */
+function portalParaCliente(nombre) {
+  const n = ptNorm(nombre);
+  if (!n) return null;
+  return portalesList.find(p => p.activo !== false && ptNorm(p.nombre) === n) || null;
+}
+function updatePortalHint() {
+  const input = document.getElementById('cli-nom');
+  const hint = document.getElementById('cli-portal-hint');
+  if (!input || !hint) return;
+  const val = input.value.trim();
+  const p = portalParaCliente(val);
+  if (!val) { hint.style.display = 'none'; return; }
+  hint.style.display = 'flex';
+  hint.className = 'pt-hint' + (p ? '' : ' none');
+  hint.innerHTML = p
+    ? `${PT_ICON.link} Se registrará en el portal de ${esc(p.nombre)} (${esc(p._id)})`
+    : 'Este cliente no tiene portal: la factura no aparecerá en ningún portal.';
+}
+async function registrarFacturaEnPortal(fsId, code) {
+  if (!fsId || !code) return;
+  try { await ptRef(code).update({ facturaIds: firebase.firestore.FieldValue.arrayUnion(fsId) }); }
+  catch (e) { console.error('No se pudo registrar la factura en el portal:', e); toast('La factura se guardó, pero no se pudo agregar al portal del cliente.', 'err'); }
+}
+
+/* ── Suscripciones ── */
+function ptVSusc() {
+  const list = _ptSub.suscripciones;
+  return `
+    <div class="pt-toolbar"><div class="pt-toolbar-title">Suscripciones (${list.length})</div>
+      <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openSuscForm()">${PT_ICON.plus} Nueva suscripción</button></div>
+    ${list.length ? list.map(s => `<div class="pt-card"><div class="pt-row">
+      <div class="pt-grow">
+        <div class="pt-title">${esc(s.plan || 'Plan')} · ${ptMoney(s.precio)} / ${esc((PT_CICLOS[s.ciclo] || s.ciclo || '').toLowerCase())}</div>
+        <div class="pt-sub">${s.inicio ? 'Desde ' + ptFmt(s.inicio) : ''}${s.proximoPago ? ' · Próximo pago ' + ptFmt(s.proximoPago) : ''}${s.notas ? ' · ' + esc(s.notas) : ''}</div>
+      </div>
+      <span class="pt-pill ${esc(s.estado || 'activa')}">${esc(PT_SUSC[s.estado] || s.estado || '')}</span>
+      ${s.estado === 'activa' && s.proximoPago ? `<button class="btn-sm" style="background:var(--green-light);color:var(--green-dark);border-color:rgba(5,150,105,.25);" title="Marca el pago de este período y mueve la fecha al siguiente" onclick="renovarSusc('${esc(s._id)}')">Renovar</button>` : ''}
+      <button class="btn-sm edit" onclick="openSuscForm('${esc(s._id)}')">${PT_ICON.edit}</button>
+      <button class="btn-sm del" onclick="borrarSub('suscripciones','${esc(s._id)}')">${PT_ICON.del}</button>
+    </div></div>`).join('') : '<div class="pt-empty">Sin suscripciones.</div>'}`;
+}
+function openSuscForm(id) {
+  const s = id ? _ptSub.suscripciones.find(x => x._id === id) : null;
+  _ptEdit = id || null;
+  const opts = (obj, sel) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${v}</option>`).join('');
+  ptModal(s ? 'Editar suscripción' : 'Nueva suscripción', portalActual()?.nombre || '', `
+    <div class="ff"><label>Plan</label><input id="ps-plan" maxlength="120" value="${esc(s?.plan || '')}" placeholder="Ej. WhatsApp Marketing Oro"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Precio ($)</label><input type="number" step="0.01" id="ps-precio" value="${esc(s?.precio ?? '')}"></div>
+      <div class="ff"><label>Ciclo</label><select id="ps-ciclo">${opts(PT_CICLOS, s?.ciclo || 'mensual')}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Inicio</label><input type="date" id="ps-inicio" value="${esc(s?.inicio || todayISO())}"></div>
+      <div class="ff"><label>Próximo pago</label><input type="date" id="ps-prox" value="${esc(s?.proximoPago || '')}"></div>
+    </div>
+    <div class="ff"><label>Estado</label><select id="ps-estado">${opts(PT_SUSC, s?.estado || 'activa')}</select></div>
+    <div class="ff"><label>Notas (las ve el cliente)</label><input id="ps-notas" maxlength="200" value="${esc(s?.notas || '')}"></div>
+    <button class="btn-edit-save" onclick="guardarSusc()">Guardar</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+}
+function ptSumarCiclo(iso, ciclo) {
+  const d = new Date((iso || todayISO()) + 'T12:00:00');
+  const meses = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[ciclo];
+  if (ciclo === 'semanal') d.setDate(d.getDate() + 7);
+  else d.setMonth(d.getMonth() + (meses || 1));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+async function guardarSusc() {
+  const plan = document.getElementById('ps-plan').value.trim();
+  const precio = parseFloat(document.getElementById('ps-precio').value);
+  if (!plan || isNaN(precio)) { toast('Completa el plan y el precio.', 'err'); return; }
+  const ciclo = document.getElementById('ps-ciclo').value;
+  const inicio = document.getElementById('ps-inicio').value || todayISO();
+  const data = {
+    plan, precio, ciclo, inicio,
+    proximoPago: document.getElementById('ps-prox').value || ptSumarCiclo(inicio, ciclo),
+    estado: document.getElementById('ps-estado').value,
+    notas: document.getElementById('ps-notas').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    const col = ptRef().collection('suscripciones');
+    if (_ptEdit) await col.doc(_ptEdit).update(data);
+    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await col.add(data); }
+    toast('Suscripción guardada ✅');
+    closePortalModal();
+  } catch (e) { toast('Error al guardar.', 'err'); }
+}
+async function renovarSusc(id) {
+  const s = _ptSub.suscripciones.find(x => x._id === id); if (!s) return;
+  const nueva = ptSumarCiclo(s.proximoPago, s.ciclo);
+  if (!confirm(`¿Marcar pagado el período de ${s.plan}? El próximo pago pasará al ${ptFmt(nueva)}.`)) return;
+  try { await ptRef().collection('suscripciones').doc(id).update({ proximoPago: nueva, ultimoPago: todayISO() }); toast('Suscripción renovada'); }
+  catch (e) { toast('Error al renovar.', 'err'); }
+}
+
+/* ── Documentos ── */
+function ptVArchivos() {
+  const list = _ptSub.archivos;
+  return `
+    <div class="pt-toolbar"><div class="pt-toolbar-title">Documentos compartidos (${list.length})</div>
+      <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openArchivoForm()">${PT_ICON.plus} Subir documento</button></div>
+    ${list.length ? list.map(a => `<div class="pt-card"><div class="pt-row">
+      <div class="pt-grow">
+        <div class="pt-title">${esc(a.nombre || 'Documento')}</div>
+        <div class="pt-sub">${esc(PT_ARCH[a.tipo] || 'Documento')} · ${ptFmt(a.createdAt)}${a.descripcion ? ' · ' + esc(a.descripcion) : ''}</div>
+      </div>
+      ${a.url ? `<a class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);text-decoration:none;" href="${esc(a.url)}" target="_blank" rel="noopener">Abrir</a>` : ''}
+      <button class="btn-sm del" onclick="borrarSub('archivos','${esc(a._id)}')">${PT_ICON.del}</button>
+    </div></div>`).join('') : '<div class="pt-empty">No has compartido documentos con este cliente.</div>'}`;
+}
+function openArchivoForm() {
+  ptModal('Subir documento', portalActual()?.nombre || '', `
+    <div class="ff"><label>Nombre</label><input id="pa-nombre" maxlength="150" placeholder="Ej. Reporte de resultados — Junio"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Tipo</label><select id="pa-tipo">${Object.entries(PT_ARCH).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div class="ff"><label>Descripción (opcional)</label><input id="pa-desc" maxlength="200"></div>
+    </div>
+    <div class="ff"><label>Archivo (PDF, imagen… máx. 10 MB)</label><input type="file" id="pa-file"></div>
+    <div class="ff"><label>…o pega un link (Google Drive, Canva, etc.)</label><input id="pa-url" placeholder="https://"></div>
+    <div class="upload-progress" id="pa-progress"><div class="upload-progress-bar" id="pa-bar"></div></div>
+    <button class="btn-edit-save" id="pa-btn" onclick="guardarArchivo()">Compartir con el cliente</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+}
+async function guardarArchivo() {
+  const nombre = document.getElementById('pa-nombre').value.trim();
+  const file = document.getElementById('pa-file').files[0];
+  let url = document.getElementById('pa-url').value.trim();
+  if (!nombre) { toast('Ponle un nombre al documento.', 'err'); return; }
+  if (!file && !/^https?:\/\//i.test(url)) { toast('Sube un archivo o pega un link válido.', 'err'); return; }
+  if (file && file.size > 10 * 1024 * 1024) { toast('El archivo no puede superar 10 MB.', 'err'); return; }
+  const btn = document.getElementById('pa-btn');
+  btn.disabled = true; btn.textContent = 'Subiendo…';
+  try {
+    if (file) {
+      document.getElementById('pa-progress').style.display = 'block';
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      fd.append('folder', 'portal/' + portalSel);
+      url = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = e => { if (e.lengthComputable) document.getElementById('pa-bar').style.width = Math.round(e.loaded / e.total * 100) + '%'; };
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`);
+        xhr.onload = () => { const r = JSON.parse(xhr.responseText); xhr.status === 200 ? resolve(r.secure_url) : reject(new Error(r.error?.message)); };
+        xhr.onerror = () => reject(new Error('Error de red'));
+        xhr.send(fd);
+      });
+    }
+    await ptRef().collection('archivos').add({
+      nombre, url,
+      tipo: document.getElementById('pa-tipo').value,
+      descripcion: document.getElementById('pa-desc').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('Documento compartido ✅');
+    closePortalModal();
+  } catch (e) {
+    console.error(e);
+    toast('Error al subir: ' + (e.message || 'intenta de nuevo'), 'err');
+    btn.disabled = false; btn.textContent = 'Compartir con el cliente';
+  }
+}
+
+async function borrarSub(col, id) {
+  if (!confirm('¿Eliminar? El cliente dejará de verlo en su portal.')) return;
+  try { await ptRef().collection(col).doc(id).delete(); toast('Eliminado'); }
+  catch (e) { toast('Error al eliminar.', 'err'); }
+}
+
+/* ── Chat ── */
+function ptVChat(p) {
+  const msgs = _ptSub.mensajes;
+  return `
+    <div class="pt-chat">
+      <div class="pt-chat-body" id="pt-chat-body">
+        ${msgs.length ? msgs.map(m => `
+          <div class="pt-msg ${m.de === 'admin' ? 'admin' : 'cliente'}"><div class="pt-msg-text">${esc(m.texto)}</div>
+            <div class="pt-msg-meta">${m.de === 'admin' ? esc(m.autor || 'DGP Group') + ' · ' : ''}${ptFmtTime(m.fecha)}</div>
+          </div>`).join('') : `<div style="text-align:center;color:var(--text-soft);font-size:12px;margin:auto;">Todavía no hay mensajes con ${esc(p.nombre || 'este cliente')}.</div>`}
+      </div>
+      <div class="pt-chat-foot">
+        <textarea id="pt-chat-input" maxlength="2000" placeholder="Escribe tu respuesta… (Enter para enviar)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensajePortal();}"></textarea>
+        <button class="pt-send" onclick="enviarMensajePortal()">${PT_ICON.send} Enviar</button>
+      </div>
+    </div>`;
+}
+let _ptSending = false;
+async function enviarMensajePortal() {
+  const input = document.getElementById('pt-chat-input');
+  const texto = (input?.value || '').trim();
+  if (!texto || _ptSending || !portalSel) return;
+  _ptSending = true;
+  const emp = EMPLEADOS.find(e => e.nombre === resolveEmpleado(currentUser?.email || ''));
+  const autor = emp ? emp.nombre.split(' ')[0] + ' · DGP Group' : 'DGP Group';
+  try {
+    const ref = ptRef();
+    await ref.collection('mensajes').add({ de: 'admin', texto, autor, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+    input.value = '';
+    await ref.update({
+      chatNoLeidoCliente: firebase.firestore.FieldValue.increment(1),
+      chatNoLeidoAdmin: 0,
+      ultimoMensaje: texto.slice(0, 140),
+      ultimoMensajeAt: firebase.firestore.FieldValue.serverTimestamp(),
+      ultimoMensajeDe: 'admin'
+    });
+  } catch (e) { toast('No se pudo enviar.', 'err'); }
+  finally { _ptSending = false; document.getElementById('pt-chat-input')?.focus(); }
+}
+
+/* ── Crear / editar portal ── */
+function openNuevoPortal(clienteId) {
+  const conPortal = new Set(portalesList.map(p => p.clienteId).filter(Boolean));
+  const candidatos = clientesList.filter(c => !conPortal.has(c._id) && !c.portalCodigo);
+  _ptEdit = null;
+  ptModal('Nuevo portal de cliente', 'Se generará un código de acceso único', `
+    <div class="ff"><label>Cliente del CRM</label>
+      <select id="np-cliente" onchange="npFill()">
+        <option value="">— Cliente nuevo (escribir datos) —</option>
+        ${candidatos.map(c => `<option value="${esc(c._id)}" ${c._id === clienteId ? 'selected' : ''}>${esc([c.nombre, c.apellido].filter(Boolean).join(' '))}</option>`).join('')}
+      </select></div>
+    <div class="ff"><label>Nombre completo (debe coincidir con el de sus facturas)</label><input id="np-nombre" maxlength="120"></div>
+    <div class="ff"><label>Correo</label><input id="np-correo" type="email" maxlength="120"></div>
+    <div class="ff"><label>Teléfono / WhatsApp</label><input id="np-tel" maxlength="40"></div>
+    <div class="ff"><label>Empresa (opcional)</label><input id="np-empresa" maxlength="120"></div>
+    <button class="btn-edit-save" id="np-btn" onclick="crearPortal()">Crear portal</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+  npFill();
+}
+function npFill() {
+  const id = document.getElementById('np-cliente').value;
+  const c = clientesList.find(x => x._id === id);
+  if (!c) return;
+  document.getElementById('np-nombre').value  = [c.nombre, c.apellido].filter(Boolean).join(' ');
+  document.getElementById('np-correo').value  = c.correo || '';
+  document.getElementById('np-tel').value     = c.telefono || '';
+  document.getElementById('np-empresa').value = c.empresa || '';
+}
+async function crearPortal() {
+  const nombre = document.getElementById('np-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio.', 'err'); return; }
+  if (portalParaCliente(nombre)) { toast('Ya existe un portal con ese nombre.', 'err'); return; }
+  const btn = document.getElementById('np-btn');
+  btn.disabled = true; btn.textContent = 'Creando…';
+  try {
+    let clienteId = document.getElementById('np-cliente').value || null;
+    const correo = document.getElementById('np-correo').value.trim();
+    const telefono = document.getElementById('np-tel').value.trim();
+    const empresa = document.getElementById('np-empresa').value.trim();
+    const code = await generarCodigoPortal();
+    // Facturas existentes con el mismo nombre de cliente
+    const facturaIds = Object.values(docsMap).filter(d => ptNorm(d.cli) === ptNorm(nombre)).map(d => d._fsId);
+    if (!clienteId) {
+      const partes = nombre.split(' ');
+      clienteId = ptNorm(nombre).replace(/[^a-z0-9]+/g, '_') + '_' + Date.now().toString(36);
+      await db.collection('clientes').doc(clienteId).set({
+        nombre: partes[0], apellido: partes.slice(1).join(' '), correo, telefono, empresa, notas: '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || ''
+      });
+    }
+    await ptRef(code).set({
+      nombre, correo, telefono, empresa, clienteId, facturaIds, activo: true,
+      chatNoLeidoAdmin: 0, chatNoLeidoCliente: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      creadoPor: currentUser?.email || ''
+    });
+    await db.collection('clientes').doc(clienteId).set({ portalCodigo: code }, { merge: true });
+    await Promise.all(facturaIds.map(id => db.collection('documentos').doc(id).update({ portalCodigo: code }).catch(() => {})));
+    logActividad('Portal creado', `${nombre} · ${code}`);
+    closePortalModal();
+    const tab = document.querySelector('.nav-tab[onclick*="\'portal\'"]');
+    if (tab && !document.getElementById('page-portal').classList.contains('active')) switchPage('portal', tab);
+    selectPortal(code, 'resumen');
+    toast(`Portal creado · ${facturaIds.length} factura(s) registradas ✅`);
+  } catch (e) {
+    console.error(e);
+    toast('Error al crear el portal: ' + (e.message || ''), 'err');
+    btn.disabled = false; btn.textContent = 'Crear portal';
+  }
+}
+function openEditPortalDatos() {
+  const p = portalActual(); if (!p) return;
+  ptModal('Editar datos del cliente', p._id, `
+    <div class="ff"><label>Nombre completo</label><input id="ep-nombre" maxlength="120" value="${esc(p.nombre || '')}"></div>
+    <div class="ff"><label>Correo</label><input id="ep-correo" maxlength="120" value="${esc(p.correo || '')}"></div>
+    <div class="ff"><label>Teléfono</label><input id="ep-tel" maxlength="40" value="${esc(p.telefono || '')}"></div>
+    <div class="ff"><label>Empresa</label><input id="ep-empresa" maxlength="120" value="${esc(p.empresa || '')}"></div>
+    <button class="btn-edit-save" onclick="guardarPortalDatos()">Guardar</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+}
+async function guardarPortalDatos() {
+  const nombre = document.getElementById('ep-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio.', 'err'); return; }
+  try {
+    await ptRef().update({
+      nombre,
+      correo: document.getElementById('ep-correo').value.trim(),
+      telefono: document.getElementById('ep-tel').value.trim(),
+      empresa: document.getElementById('ep-empresa').value.trim()
+    });
+    toast('Datos actualizados ✅'); closePortalModal();
+  } catch (e) { toast('Error al guardar.', 'err'); }
+}
+async function togglePortalActivo() {
+  const p = portalActual(); if (!p) return;
+  const activar = p.activo === false;
+  if (!activar && !confirm(`¿Desactivar el acceso de ${p.nombre}? Su código dejará de funcionar hasta que lo reactives.`)) return;
+  try { await ptRef().update({ activo: activar }); toast(activar ? 'Portal reactivado' : 'Acceso desactivado'); }
+  catch (e) { toast('Error.', 'err'); }
+}
+/* Cambia el código (por ejemplo si el cliente lo compartió): copia todo al nuevo y borra el viejo */
+async function regenerarCodigoPortal() {
+  const p = portalActual(); if (!p) return;
+  if (!confirm(`¿Generar un código nuevo para ${p.nombre}? El código actual (${p._id}) dejará de funcionar.`)) return;
+  try {
+    const nuevo = await generarCodigoPortal();
+    const viejo = ptRef(p._id);
+    const { _id, ...data } = p;
+    await ptRef(nuevo).set(data);
+    for (const col of ['proyectos', 'suscripciones', 'archivos', 'mensajes']) {
+      const snap = await viejo.collection(col).get();
+      await Promise.all(snap.docs.map(async d => { await ptRef(nuevo).collection(col).doc(d.id).set(d.data()); await d.ref.delete(); }));
+    }
+    await Promise.all((p.facturaIds || []).map(id => db.collection('documentos').doc(id).update({ portalCodigo: nuevo }).catch(() => {})));
+    if (p.clienteId) await db.collection('clientes').doc(p.clienteId).set({ portalCodigo: nuevo }, { merge: true });
+    await viejo.delete();
+    selectPortal(nuevo, 'resumen');
+    toast(`Nuevo código: ${nuevo}`);
+  } catch (e) { console.error(e); toast('Error al cambiar el código.', 'err'); }
+}
+function abrirPortalDeCliente(clienteId) {
+  const p = portalesList.find(x => x.clienteId === clienteId);
+  const tab = document.querySelector('.nav-tab[onclick*="\'portal\'"]');
+  if (tab) switchPage('portal', tab);
+  if (p) selectPortal(p._id, 'resumen'); else openNuevoPortal(clienteId);
+}
+
+/* ── Modal genérico ── */
+function ptModal(title, sub, html) {
+  document.getElementById('mp-title').textContent = title;
+  document.getElementById('mp-sub').textContent = sub || '';
+  document.getElementById('mp-body').innerHTML = html;
+  document.getElementById('modalPortal').classList.add('show');
+}
+function closePortalModal() {
+  document.getElementById('modalPortal').classList.remove('show');
+  _ptEdit = null;
+}
+document.getElementById('modalPortal').addEventListener('click', function(e) {
+  if (e.target === this) closePortalModal();
 });
 
 /* ═══════════════════════════════════════════════════════

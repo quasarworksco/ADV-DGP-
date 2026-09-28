@@ -276,7 +276,7 @@ async function sendMsg(token, chatId, text) {
 async function enviarResumenMensual(env) {
   const TG_TOKEN = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
   const TG_CHAT  = '8446165096';
-  const PROJECT  = env.FIREBASE_PROJECT || 'adv-dgp';
+  const PROJECT  = env.FIREBASE_PROJECT || 'dgp-group';
 
   const now     = new Date();
   const mes     = now.getMonth();
@@ -288,9 +288,11 @@ async function enviarResumenMensual(env) {
 
   let docs = [];
   try {
+    const idToken = await firebaseLogin(env);
     const url  = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/documentos?pageSize=300`;
-    const res  = await fetch(url);
+    const res  = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
     docs = (data.documents || []).map(d => {
       const f = d.fields || {};
       return {
@@ -324,4 +326,20 @@ async function enviarResumenMensual(env) {
     `_Resumen automático · DGP Group_`;
 
   await sendMsg(TG_TOKEN, TG_CHAT, texto);
+}
+
+// Las reglas de Firestore solo dejan listar facturas al equipo: el bot inicia
+// sesión con una cuenta del equipo (registrada en /accesos).
+// Secretos en Cloudflare: FB_EMAIL y FB_PASSWORD.
+async function firebaseLogin(env) {
+  if (!env.FB_EMAIL || !env.FB_PASSWORD) throw new Error('Faltan los secretos FB_EMAIL / FB_PASSWORD');
+  const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: env.FB_EMAIL, password: env.FB_PASSWORD, returnSecureToken: true })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error('Login Firebase: ' + (data.error?.message || res.status));
+  return data.idToken;
 }

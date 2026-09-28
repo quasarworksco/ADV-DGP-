@@ -621,8 +621,8 @@
   async function notificarTelegram(fsId, imageUrl) {
     try {
       const doc       = _currentDoc || {};
-      const cliente   = doc.cliente  || 'Cliente';
-      const numero    = doc.numero   || fsId;
+      const cliente   = doc.cli || doc.cliente || 'Cliente';
+      const numero    = doc.docId || doc.numero || fsId;
       const total     = doc.total    ? `$${Number(doc.total).toFixed(2)}` : '';
       const factUrl   = `https://adv.dgp-link.com/factura-publica.html?id=${fsId}`;
       const caption   = `💳 *Nuevo comprobante de pago*\n\n👤 *Cliente:* ${cliente}\n🧾 *Factura:* #${numero}${total ? `\n💰 *Monto:* ${total}` : ''}\n\n🔗 [Ver factura](${factUrl})`;

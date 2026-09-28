@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Equipo interno: sesión iniciada Y correo registrado en /accesos
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && exists(/databases/$(database)/documents/accesos/$(request.auth.token.email));
+    }
+
+    // Solo cambian los campos indicados
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ── Lista de acceso del equipo (se edita desde la consola de Firebase) ──
+    match /accesos/{email} {
+      allow get: if request.auth != null && request.auth.token.email == email;
+    }
+
+    // ── Facturas y recibos ──
+    // Público: abrir UNA factura por su link (no listar todas).
+    match /documentos/{id} {
+      allow get: if true;
+      allow list, create, delete: if isStaff();
+      allow update: if isStaff() || onlyChanges([
+        'comprobante_url',
+        'brief',
+        'contratoFirmado',
+        'contratoFirmadoPor',
+        'contratoFechaFirma',
+        'encuestaCompletada'
+      ]);
+    }
+
+    // ── Encuestas de satisfacción ──
+    match /encuestas/{id} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    // ── Portal de clientes ──
+    // El código del cliente ES el ID del documento: quien tiene el código entra.
+    // Nadie de afuera puede listar portales (no se pueden adivinar códigos).
+    match /portal/{codigo} {
+      allow get: if true;
+      allow list, create, delete: if isStaff();
+      allow update: if isStaff() || onlyChanges([
+        'chatNoLeidoAdmin',
+        'chatNoLeidoCliente',
+        'ultimoMensaje',
+        'ultimoMensajeAt',
+        'ultimoMensajeDe',
+        'ultimoAcceso'
+      ]);
+
+      match /proyectos/{id} {
+        allow read: if true;
+        allow update, delete: if isStaff();
+        // El cliente puede solicitar un proyecto nuevo
+        allow create: if isStaff() || (
+          request.resource.data.solicitadoPorCliente == true
+          && request.resource.data.estado == 'solicitado'
+          && request.resource.data.nombre is string
+          && request.resource.data.nombre.size() <= 200
+        );
+      }
+
+      match /suscripciones/{id} {
+        allow read: if true;
+        allow write: if isStaff();
+      }
+
+      match /archivos/{id} {
+        allow read: if true;
+        allow write: if isStaff();
+      }
+
+      match /mensajes/{id} {
+        allow read: if true;
+        allow update, delete: if isStaff();
+        allow create: if isStaff() || (
+          request.resource.data.de == 'cliente'
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() > 0
+          && request.resource.data.texto.size() <= 2000
+        );
+      }
+    }
+
+    // ── Todo lo demás (clientes, plantillas, actividadLog, ventas...) ──
+    match /{document=**} {
+      allow read, write: if isStaff();
+    }
+
+  }
+}

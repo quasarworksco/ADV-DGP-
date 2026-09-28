@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mi Portal · DGP Group USA</title>
+  <meta name="theme-color" content="#1438cc">
+  <link rel="icon"             href="/logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #1438cc; --blue-2: #2a52e0; --blue-x: #eff3ff;
+      --ink: #0a0f1e; --mid: #334155; --soft: #64748b; --faint: #94a3b8;
+      --line: #e2e8f0; --bg: #f4f6fb; --white: #fff;
+      --green: #059669; --green-x: #ecfdf5;
+      --amber: #d97706; --amber-x: #fffbeb;
+      --red: #dc2626; --red-x: #fef2f2;
+      --violet: #7c3aed; --violet-x: #f5f3ff;
+      --radius: 14px;
+    }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    button { font-family: inherit; cursor: pointer; }
+    input, textarea, select { font-family: inherit; }
+    svg { flex-shrink: 0; }
+    .hidden { display: none !important; }
+
+    /* ── LOGIN ── */
+    #login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+      background: radial-gradient(ellipse at top, #1e3a8a 0%, #0a0f1e 60%); }
+    .login-card { background: var(--white); border-radius: 22px; padding: 36px 28px 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); text-align: center; }
+    .login-logo { width: 64px; height: 64px; object-fit: contain; margin: 0 auto 14px; display: block; }
+    .login-brand { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; }
+    .login-brand span { color: var(--blue); }
+    .login-sub { font-size: 12px; color: var(--soft); margin: 4px 0 24px; }
+    .login-label { display: block; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--soft); margin-bottom: 6px; }
+    .login-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 12px; font-size: 18px; font-weight: 600; letter-spacing: 3px; text-align: center; text-transform: uppercase; outline: none; transition: border-color .15s; }
+    .login-input:focus { border-color: var(--blue); }
+    .login-btn { width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius: 12px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; transition: background .15s; }
+    .login-btn:hover { background: var(--blue-2); }
+    .login-btn:disabled { opacity: .6; cursor: wait; }
+    .login-err { color: var(--red); font-size: 12px; margin-top: 10px; min-height: 16px; }
+    .login-help { font-size: 11px; color: var(--soft); margin-top: 18px; line-height: 1.6; }
+    .login-help a { color: var(--blue); font-weight: 600; text-decoration: none; }
+
+    /* ── APP SHELL ── */
+    .topbar { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; gap: 12px; }
+    .tb-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .tb-brand img { width: 34px; height: 34px; object-fit: contain; }
+    .tb-name { font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 2px; line-height: 1; }
+    .tb-name span { color: var(--blue); }
+    .tb-sub { font-size: 10px; color: var(--soft); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tb-right { display: flex; align-items: center; gap: 8px; }
+    .tb-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .tb-logout { border: 1px solid var(--line); background: #fff; color: var(--soft); border-radius: 20px; padding: 7px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+
+    .layout { display: grid; grid-template-columns: 230px 1fr; max-width: 1180px; margin: 0 auto; gap: 24px; padding: 24px 20px 100px; }
+    .sidenav { position: sticky; top: 82px; align-self: start; display: flex; flex-direction: column; gap: 4px; }
+    .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; border: 0; background: transparent; border-radius: 10px; color: var(--mid); font-size: 13px; font-weight: 500; text-align: left; transition: background .15s, color .15s; }
+    .nav-btn:hover { background: #fff; }
+    .nav-btn.active { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(20,56,204,0.25); }
+    .nav-count { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 7px; }
+    .nav-btn.active .nav-count { background: #fff; color: var(--blue); }
+
+    .bottomnav { display: none; }
+
+    main { min-width: 0; }
+    .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1.5px; line-height: 1.1; }
+    .page-sub { font-size: 13px; color: var(--soft); margin: 4px 0 20px; }
+
+    .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+    .card + .card { margin-top: 14px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--soft); margin: 26px 0 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .section-label a, .section-label button { font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--blue); font-weight: 600; background: none; border: 0; text-decoration: none; }
+
+    /* ── INICIO ── */
+    .hero { background: linear-gradient(135deg, #0a0f1e 0%, #1438cc 130%); color: #fff; border-radius: 18px; padding: 24px; position: relative; overflow: hidden; }
+    .hero::after { content: ''; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+    .hero-hi { font-size: 13px; opacity: .7; }
+    .hero-name { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 1.5px; line-height: 1.1; margin-top: 2px; }
+    .hero-msg { font-size: 13px; opacity: .85; margin-top: 8px; max-width: 520px; line-height: 1.5; }
+
+    .alerts { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .alert { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid; background: #fff; }
+    .alert-ico { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-title { font-size: 13px; font-weight: 700; }
+    .alert-text { font-size: 12px; color: var(--mid); margin-top: 1px; }
+    .alert-btn { border: 0; border-radius: 9px; padding: 8px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .alert.warn { border-color: rgba(217,119,6,.25); background: var(--amber-x); }
+    .alert.warn .alert-ico { background: #fde68a; color: var(--amber); }
+    .alert.warn .alert-btn { background: var(--amber); color: #fff; }
+    .alert.info { border-color: rgba(20,56,204,.2); background: var(--blue-x); }
+    .alert.info .alert-ico { background: #dbe4ff; color: var(--blue); }
+    .alert.info .alert-btn { background: var(--blue); color: #fff; }
+    .alert.ok { border-color: rgba(5,150,105,.2); background: var(--green-x); }
+    .alert.ok .alert-ico { background: #bbf7d0; color: var(--green); }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+    .stat { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: border-color .15s, transform .15s; }
+    .stat:hover { border-color: var(--blue); transform: translateY(-1px); }
+    .stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--soft); }
+    .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; margin-top: 4px; line-height: 1; }
+    .stat-note { font-size: 11px; color: var(--faint); margin-top: 4px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── PROYECTOS ── */
+    .proj { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+    .proj + .proj { margin-top: 12px; }
+    .proj-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .proj-name { font-size: 15px; font-weight: 700; }
+    .proj-srv { font-size: 12px; color: var(--soft); margin-top: 2px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+    .pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill.solicitado  { background: var(--violet-x); color: var(--violet); }
+    .pill.pendiente   { background: #f1f5f9; color: var(--soft); }
+    .pill.en_progreso { background: var(--blue-x); color: var(--blue); }
+    .pill.en_revision { background: var(--amber-x); color: var(--amber); }
+    .pill.completado  { background: var(--green-x); color: var(--green); }
+    .pill.pausado     { background: var(--red-x); color: var(--red); }
+    .pill.activa      { background: var(--green-x); color: var(--green); }
+    .pill.pausada     { background: var(--amber-x); color: var(--amber); }
+    .pill.cancelada   { background: #f1f5f9; color: var(--soft); }
+    .pill.pagado      { background: var(--green-x); color: var(--green); }
+    .pill.parcial     { background: #fff7ed; color: #ea580c; }
+    .pill.porpagar    { background: var(--amber-x); color: var(--amber); }
+    .progress { height: 8px; background: #eef2f7; border-radius: 8px; overflow: hidden; margin-top: 14px; }
+    .progress > div { height: 100%; background: linear-gradient(90deg, var(--blue), #38bdf8); border-radius: 8px; transition: width .6s ease; }
+    .progress-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--soft); margin-top: 6px; }
+    .steps { display: flex; gap: 4px; margin-top: 14px; }
+    .step { flex: 1; text-align: center; font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--faint); }
+    .step-bar { height: 4px; border-radius: 4px; background: #eef2f7; margin-bottom: 5px; }
+    .step.done { color: var(--blue); }
+    .step.done .step-bar { background: var(--blue); }
+    .proj-desc { font-size: 12px; color: var(--mid); margin-top: 10px; line-height: 1.55; }
+    .proj-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 11px; color: var(--soft); }
+    .proj-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .timeline { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+    .tl-item { display: flex; gap: 10px; font-size: 12px; padding: 5px 0; }
+    .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); margin-top: 5px; }
+    .tl-date { font-size: 10px; color: var(--faint); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid var(--line); background: #fff; color: var(--mid); border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 600; transition: all .15s; text-decoration: none; }
+    .btn:hover { border-color: var(--blue); color: var(--blue); }
+    .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn.primary:hover { background: var(--blue-2); color: #fff; }
+    .btn.green { background: var(--green); border-color: var(--green); color: #fff; }
+    .btn.block { width: 100%; }
+
+    /* ── FACTURAS ── */
+    .inv { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+    .inv + .inv { margin-top: 10px; }
+    .inv-ico { width: 40px; height: 40px; border-radius: 10px; background: var(--blue-x); color: var(--blue); display: flex; align-items: center; justify-content: center; }
+    .inv-body { flex: 1; min-width: 0; }
+    .inv-id { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; }
+    .inv-srv { font-size: 12px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .inv-right { text-align: right; }
+    .inv-amt { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: .5px; }
+    .inv-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .inv-actions .btn { padding: 6px 10px; font-size: 11px; }
+    .total-due { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--ink); color: #fff; border-radius: var(--radius); padding: 18px 20px; }
+    .total-due .lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: .6; }
+    .total-due .amt { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 1px; line-height: 1; margin-top: 4px; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .shot { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; }
+    .shot img { width: 100%; height: 130px; object-fit: cover; display: block; background: #f1f5f9; }
+    .shot div { padding: 7px 9px; font-size: 11px; color: var(--soft); }
+
+    /* ── ARCHIVOS / SUSCRIPCIONES ── */
+    .row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+    .row + .row { margin-top: 10px; }
+    .row-ico { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--mid); }
+    .row-body { flex: 1; min-width: 0; }
+    .row-title { font-size: 14px; font-weight: 600; }
+    .row-sub { font-size: 12px; color: var(--soft); margin-top: 1px; }
+
+    .empty { text-align: center; padding: 34px 16px; color: var(--soft); font-size: 13px; background: #fff; border: 1px dashed var(--line); border-radius: var(--radius); }
+    .empty svg { display: block; margin: 0 auto 8px; color: var(--faint); }
+
+    /* ── CUENTA / CONTACTO ── */
+    .kv { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+    .kv:last-child { border-bottom: 0; }
+    .kv span:first-child { color: var(--soft); }
+    .kv span:last-child { font-weight: 600; text-align: right; word-break: break-word; }
+    .contact { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; text-decoration: none; color: inherit; }
+    .contact:last-child { border-bottom: 0; }
+    .contact-ico { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .contact-title { font-size: 13px; font-weight: 600; }
+    .contact-sub { font-size: 12px; color: var(--soft); }
+
+    /* ── CHAT ── */
+    .chat-fab { position: fixed; right: 20px; bottom: 24px; z-index: 40; width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--blue); color: #fff; box-shadow: 0 10px 30px rgba(20,56,204,0.4); display: flex; align-items: center; justify-content: center; transition: transform .15s; }
+    .chat-fab:hover { transform: scale(1.05); }
+    .chat-fab .dot { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #fff; }
+    .chat-panel { position: fixed; right: 20px; bottom: 94px; z-index: 50; width: 370px; max-width: calc(100vw - 32px); height: 520px; max-height: calc(100vh - 130px); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(10,15,30,0.25); display: flex; flex-direction: column; overflow: hidden; }
+    .chat-head { background: linear-gradient(135deg, #0a0f1e, #1438cc); color: #fff; padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
+    .chat-head img { width: 36px; height: 36px; background: #fff; border-radius: 10px; padding: 3px; object-fit: contain; }
+    .chat-head-title { font-size: 14px; font-weight: 700; }
+    .chat-head-sub { font-size: 11px; opacity: .75; display: flex; align-items: center; gap: 5px; }
+    .chat-head-sub::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
+    .chat-close { margin-left: auto; background: rgba(255,255,255,.12); border: 0; color: #fff; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 82%; padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.45; word-wrap: break-word; }
+    .msg-text { white-space: pre-wrap; }
+    .msg.cliente { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.admin { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+    .msg-time { font-size: 9px; opacity: .6; margin-top: 3px; text-align: right; }
+    .msg-author { font-size: 10px; font-weight: 700; color: var(--blue); margin-bottom: 2px; }
+    .chat-welcome { text-align: center; font-size: 12px; color: var(--soft); padding: 18px 10px; line-height: 1.6; }
+    .chat-foot { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: #fff; }
+    .chat-foot textarea { flex: 1; resize: none; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 13px; outline: none; height: 44px; max-height: 110px; }
+    .chat-foot textarea:focus { border-color: var(--blue); }
+    .chat-send { width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .chat-send:disabled { opacity: .5; }
+
+    /* ── MODAL ── */
+    .modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(10,15,30,.55); display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+    .modal { background: #fff; border-radius: 18px; width: 100%; max-width: 460px; padding: 22px; max-height: 90vh; overflow-y: auto; margin: auto; }
+    .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; }
+    .modal p { font-size: 12px; color: var(--soft); margin: 2px 0 16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--soft); margin-bottom: 5px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13px; outline: none; background: #fff; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+    .upload-bar { height: 5px; background: #eef2f7; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+    .upload-bar div { height: 100%; width: 0; background: var(--blue); transition: width .2s; }
+
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 13px; z-index: 80; opacity: 0; transition: all .25s; pointer-events: none; max-width: calc(100vw - 32px); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.err { background: var(--red); }
+
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; color: var(--soft); font-size: 13px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border: 2.5px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; padding: 16px 16px 150px; gap: 0; }
+      .sidenav { display: none; }
+      .bottomnav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; background: #fff; border-top: 1px solid var(--line); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+      .bn-btn { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; color: var(--faint); padding: 6px 0; position: relative; }
+      .bn-btn.active { color: var(--blue); }
+      .bn-btn .nav-count { position: absolute; top: 0; right: 18%; margin: 0; font-size: 9px; padding: 0 5px; }
+      .chat-fab { bottom: calc(84px + env(safe-area-inset-bottom)); right: 16px; width: 54px; height: 54px; }
+      .chat-panel { right: 0; left: 0; bottom: 0; width: 100%; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .page-title { font-size: 26px; }
+      .hero { padding: 20px; }
+      .hero-name { font-size: 28px; }
+      .alert { flex-wrap: wrap; }
+      .alert-btn { margin-left: 48px; }
+      .inv { flex-wrap: wrap; }
+      .inv-right { width: 100%; display: flex; align-items: center; justify-content: space-between; padding-left: 54px; text-align: left; }
+      .inv-actions { margin-top: 0; }
+      .topbar { padding: 10px 16px; }
+      .tb-logout span { display: none; }
+      .total-due { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login" class="hidden">
+  <div class="login-card">
+    <img src="/logo.png" alt="DGP Group" class="login-logo">
+    <div class="login-brand">DGP GROUP <span>USA</span></div>
+    <div class="login-sub">Portal de clientes</div>
+    <label class="login-label" for="code-input">Tu código de acceso</label>
+    <input id="code-input" class="login-input" placeholder="DGP-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20">
+    <button id="login-btn" class="login-btn" onclick="login()">Entrar</button>
+    <div id="login-err" class="login-err"></div>
+    <div class="login-help">¿No tienes tu código? Escríbenos por
+      <a href="https://wa.me/12398231738?text=Hola%2C%20necesito%20mi%20c%C3%B3digo%20del%20portal%20de%20clientes" target="_blank" rel="noopener">WhatsApp</a>
+      y te lo enviamos.</div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="tb-brand">
+      <img src="/logo.png" alt="DGP Group">
+      <div style="min-width:0;">
+        <div class="tb-name">DGP GROUP <span>USA</span></div>
+        <div class="tb-sub" id="tb-sub">Portal de clientes</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-avatar" id="tb-avatar">?</div>
+      <button class="tb-logout" onclick="logout()" title="Salir">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Salir</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidenav" id="sidenav"></nav>
+    <main id="main"><div class="loading"><div class="spinner"></div> Cargando tu portal…</div></main>
+  </div>
+
+  <nav class="bottomnav" id="bottomnav"></nav>
+
+  <!-- Chat -->
+  <button class="chat-fab" id="chat-fab" onclick="toggleChat(true)" aria-label="Abrir chat">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="dot hidden" id="chat-dot">0</span>
+  </button>
+  <div class="chat-panel hidden" id="chat-panel">
+    <div class="chat-head">
+      <img src="/logo.png" alt="">
+      <div>
+        <div class="chat-head-title">Soporte DGP Group</div>
+        <div class="chat-head-sub">Te respondemos lo antes posible</div>
+      </div>
+      <button class="chat-close" onclick="toggleChat(false)" aria-label="Cerrar chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-foot">
+      <textarea id="chat-input" placeholder="Escribe tu mensaje…" maxlength="2000" onkeydown="chatKey(event)"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendMsg()" aria-label="Enviar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ═════════ CONFIG ═════════ */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
+    authDomain:        "dgp-group.firebaseapp.com",
+    projectId:         "dgp-group",
+    storageBucket:     "dgp-group.firebasestorage.app",
+    messagingSenderId: "492620738391",
+    appId:             "1:492620738391:web:e497fdfe134e6e781b5812"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const CLOUDINARY_CLOUD_NAME    = 'dgden7fws';
+  const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
+  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_CHAT_ID = '8446165096';
+  const ADMIN_URL  = 'https://adv.dgp-link.com/';
+  const CONTACTO = {
+    nombre:   'Andrés Espina',
+    telefono: '+1 (239) 823-1738',
+    wa:       '12398231738',
+    correo:   'dgpgroup.usa@gmail.com',
+    web:      'https://dgp-link.com'
+  };
+  const NUEVA_CONVERSACION_MS = 2 * 60 * 60 * 1000; // 2 h sin mensajes = conversación nueva
+
+  const ESTADOS_PROYECTO = {
+    solicitado:  'Solicitado',
+    pendiente:   'Por iniciar',
+    en_progreso: 'En progreso',
+    en_revision: 'En revisión',
+    completado:  'Completado',
+    pausado:     'En pausa'
+  };
+  const PASOS = ['pendiente', 'en_progreso', 'en_revision', 'completado'];
+  const ESTADOS_SUSC = { activa: 'Activa', pausada: 'En pausa', cancelada: 'Cancelada' };
+  const CICLOS = { mensual: 'mes', trimestral: 'trimestre', semestral: 'semestre', anual: 'año', semanal: 'semana' };
+
+  /* ═════════ ICONOS ═════════ */
+  const I = {
+    home:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+    folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    card:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+    repeat: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+    file:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    user:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    alert:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    check:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    chat:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    cal:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    upload: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    down:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    eye:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    plus:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    phone:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    mail:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    globe:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+    wa:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.05 21.5h-.01a9.4 9.4 0 0 1-4.8-1.31l-.34-.2-3.57.94.95-3.48-.22-.36a9.43 9.43 0 1 1 7.99 4.41zm8.03-17.46A11.36 11.36 0 0 0 12.05.7C5.8.7.7 5.8.7 12.05c0 2 .52 3.95 1.52 5.67L.6 23.3l5.72-1.5a11.34 11.34 0 0 0 5.72 1.46h.01c6.26 0 11.35-5.09 11.35-11.35 0-3.03-1.18-5.88-3.32-8.02z"/></svg>',
+    doc:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+  };
+
+  /* ═════════ ESTADO ═════════ */
+  let CODE = null;
+  let portal = null;
+  let facturas = {};        // fsId -> doc
+  let proyectos = [];
+  let suscripciones = [];
+  let archivos = [];
+  let mensajes = [];
+  let page = 'inicio';
+  let chatOpen = false;
+  const unsubs = [];
+  let facturaUnsubs = {};
+
+  /* ═════════ UTILIDADES ═════════ */
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function money(n) { return '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function toDate(v) {
+    if (!v) return null;
+    if (v.toDate) return v.toDate();
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v + 'T12:00:00');
+    if (typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) { const [d,m,y] = v.split('/'); return new Date(+y, +m - 1, +d, 12); }
+    const d = new Date(v); return isNaN(d) ? null : d;
+  }
+  function fmtDate(v, opts) {
+    const d = toDate(v); if (!d) return '—';
+    return d.toLocaleDateString('es-ES', opts || { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function fmtTime(v) {
+    const d = toDate(v); if (!d) return '';
+    const today = new Date().toDateString() === d.toDateString();
+    return today ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+                 : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+  function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast show' + (type === 'err' ? ' err' : '');
+    clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 3200);
+  }
+  function normalizeCode(raw) {
+    const c = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^DGP/, '');
+    if (c.length !== 8) return null;
+    return `DGP-${c.slice(0, 4)}-${c.slice(4)}`;
+  }
+  function primerNombre() { return (portal?.nombre || '').split(' ')[0] || 'cliente'; }
+  function saldoFactura(d) {
+    if (d.pagado || d.type === 'recibo') return 0;
+    return Math.max((d.total || 0) - (d.montoPagado || 0), 0);
+  }
+  function estadoFactura(d) {
+    if (d.pagado || d.type === 'recibo') return ['pagado', 'Pagada'];
+    if (d.pagadoParcial) return ['parcial', 'Pago parcial'];
+    return ['porpagar', 'Por pagar'];
+  }
+  function facturasOrdenadas() {
+    return Object.values(facturas).sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+  }
+  function linkFactura(id) { return `/factura-publica.html?id=${encodeURIComponent(id)}`; }
+  async function tg(text) {
+    try {
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHAT_ID, text, disable_web_page_preview: true })
+      });
+    } catch (e) { /* silencioso: el cliente nunca debe ver un error por esto */ }
+  }
+
+  /* ═════════ LOGIN ═════════ */
+  async function login(codeFromUrl) {
+    const input = document.getElementById('code-input');
+    const err   = document.getElementById('login-err');
+    const btn   = document.getElementById('login-btn');
+    const code  = normalizeCode(codeFromUrl || input.value);
+    err.textContent = '';
+    if (!code) { err.textContent = 'El código tiene el formato DGP-XXXX-XXXX.'; return; }
+    btn.disabled = true; btn.textContent = 'Verificando…';
+    try {
+      const snap = await db.collection('portal').doc(code).get();
+      if (!snap.exists || snap.data().activo === false) {
+        err.textContent = 'Código no válido. Revísalo o escríbenos por WhatsApp.';
+        try { localStorage.removeItem('dgp-portal-code'); } catch (e) {}
+        showLogin();
+        return;
+      }
+      try { localStorage.setItem('dgp-portal-code', code); } catch (e) {}
+      if (location.search) history.replaceState(null, '', location.pathname);
+      start(code);
+    } catch (e) {
+      err.textContent = 'No pudimos conectar. Revisa tu internet e intenta de nuevo.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  }
+  function showLogin() {
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+    setTimeout(() => document.getElementById('code-input').focus(), 50);
+  }
+  function logout() {
+    try { localStorage.removeItem('dgp-portal-code'); } catch (e) {}
+    unsubs.forEach(u => u()); unsubs.length = 0;
+    Object.values(facturaUnsubs).forEach(u => u()); facturaUnsubs = {};
+    location.reload();
+  }
+  document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  /* ═════════ DATOS EN TIEMPO REAL ═════════ */
+  function start(code) {
+    CODE = code;
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    const ref = db.collection('portal').doc(code);
+
+    unsubs.push(ref.onSnapshot(snap => {
+      if (!snap.exists || snap.data().activo === false) { logout(); return; }
+      portal = snap.data();
+      document.getElementById('tb-sub').textContent = portal.nombre || 'Portal de clientes';
+      document.getElementById('tb-avatar').textContent = (portal.nombre || '?')[0].toUpperCase();
+      syncFacturas(portal.facturaIds || []);
+      updateChatBadge();
+      render();
+    }, () => toast('Se perdió la conexión. Recarga la página.', 'err')));
+
+    unsubs.push(ref.collection('proyectos').onSnapshot(s => {
+      proyectos = s.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+      render();
+    }));
+    unsubs.push(ref.collection('suscripciones').onSnapshot(s => {
+      suscripciones = s.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    }));
+    unsubs.push(ref.collection('archivos').onSnapshot(s => {
+      archivos = s.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+      render();
+    }));
+    unsubs.push(ref.collection('mensajes').orderBy('fecha').onSnapshot(s => {
+      mensajes = s.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderChat();
+    }));
+
+    ref.update({ ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+    buildNav();
+  }
+
+  // Una escucha por factura: el estado (pagada/pendiente) se actualiza solo
+  function syncFacturas(ids) {
+    const set = new Set(ids);
+    Object.keys(facturaUnsubs).forEach(id => {
+      if (!set.has(id)) { facturaUnsubs[id](); delete facturaUnsubs[id]; delete facturas[id]; }
+    });
+    ids.forEach(id => {
+      if (facturaUnsubs[id]) return;
+      facturaUnsubs[id] = db.collection('documentos').doc(id).onSnapshot(s => {
+        if (s.exists) facturas[id] = { _fsId: id, ...s.data() }; else delete facturas[id];
+        render();
+      }, () => {});
+    });
+  }
+
+  /* ═════════ NAVEGACIÓN ═════════ */
+  const PAGES = [
+    { id: 'inicio',        label: 'Inicio',        short: 'Inicio',    icon: 'home' },
+    { id: 'proyectos',     label: 'Mis proyectos', short: 'Proyectos', icon: 'folder' },
+    { id: 'facturacion',   label: 'Facturación',   short: 'Pagos',     icon: 'card' },
+    { id: 'suscripciones', label: 'Suscripciones', short: null,        icon: 'repeat' },
+    { id: 'archivos',      label: 'Documentos',    short: 'Docs',      icon: 'file' },
+    { id: 'cuenta',        label: 'Mi cuenta',     short: 'Cuenta',    icon: 'user' }
+  ];
+  function buildNav() {
+    const counts = navCounts();
+    document.getElementById('sidenav').innerHTML = PAGES.map(p => `
+      <button class="nav-btn ${page === p.id ? 'active' : ''}" onclick="go('${p.id}')">
+        ${I[p.icon]} ${p.label} ${counts[p.id] ? `<span class="nav-count">${counts[p.id]}</span>` : ''}
+      </button>`).join('');
+    document.getElementById('bottomnav').innerHTML = PAGES.filter(p => p.short).map(p => `
+      <button class="bn-btn ${page === p.id || (p.id === 'cuenta' && page === 'suscripciones') ? 'active' : ''}" onclick="go('${p.id}')">
+        ${I[p.icon]} ${p.short} ${counts[p.id] ? `<span class="nav-count">${counts[p.id]}</span>` : ''}
+      </button>`).join('');
+  }
+  function navCounts() {
+    const pend = Object.values(facturas).filter(d => saldoFactura(d) > 0).length;
+    return { facturacion: pend };
+  }
+  function go(p) {
+    page = p;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ═════════ RENDER ═════════ */
+  let renderQueued = false;
+  function render() {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      if (!portal) return;
+      buildNav();
+      const main = document.getElementById('main');
+      const views = { inicio: vInicio, proyectos: vProyectos, facturacion: vFacturacion, suscripciones: vSuscripciones, archivos: vArchivos, cuenta: vCuenta };
+      main.innerHTML = (views[page] || vInicio)();
+    });
+  }
+
+  function empty(icon, text) { return `<div class="empty">${I[icon]}${text}</div>`; }
+
+  /* ── INICIO ── */
+  function vInicio() {
+    const docs      = facturasOrdenadas();
+    const pendientes = docs.filter(d => saldoFactura(d) > 0);
+    const deuda     = pendientes.reduce((a, d) => a + saldoFactura(d), 0);
+    const activos   = proyectos.filter(p => p.estado !== 'completado');
+    const suscAct   = suscripciones.filter(s => s.estado === 'activa');
+    const proxPago  = suscAct.map(s => ({ s, d: toDate(s.proximoPago) })).filter(x => x.d).sort((a, b) => a.d - b.d)[0];
+    const noLeidos  = portal.chatNoLeidoCliente || 0;
+    const sinComp   = pendientes.filter(d => !d.comprobante_url);
+
+    const alerts = [];
+    if (deuda > 0) alerts.push(`
+      <div class="alert warn">
+        <div class="alert-ico">${I.alert}</div>
+        <div class="alert-body">
+          <div class="alert-title">Tienes ${money(deuda)} pendiente por pagar</div>
+          <div class="alert-text">${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''} por pagar${sinComp.length ? ` · ${sinComp.length} sin comprobante` : ' · comprobante enviado, en revisión'}</div>
+        </div>
+        <button class="alert-btn" onclick="go('facturacion')">Ver y pagar</button>
+      </div>`);
+    if (noLeidos > 0) alerts.push(`
+      <div class="alert info">
+        <div class="alert-ico">${I.chat}</div>
+        <div class="alert-body">
+          <div class="alert-title">Tienes ${noLeidos} mensaje${noLeidos !== 1 ? 's' : ''} nuevo${noLeidos !== 1 ? 's' : ''}</div>
+          <div class="alert-text">El equipo de DGP Group te respondió.</div>
+        </div>
+        <button class="alert-btn" onclick="toggleChat(true)">Abrir chat</button>
+      </div>`);
+    if (proxPago && (proxPago.d - Date.now()) < 7 * 864e5) alerts.push(`
+      <div class="alert info">
+        <div class="alert-ico">${I.repeat}</div>
+        <div class="alert-body">
+          <div class="alert-title">Renovación próxima: ${esc(proxPago.s.plan)}</div>
+          <div class="alert-text">${money(proxPago.s.precio)} el ${fmtDate(proxPago.d, { day: '2-digit', month: 'long' })}</div>
+        </div>
+        <button class="alert-btn" onclick="go('suscripciones')">Ver</button>
+      </div>`);
+    if (!alerts.length) alerts.push(`
+      <div class="alert ok">
+        <div class="alert-ico">${I.check}</div>
+        <div class="alert-body">
+          <div class="alert-title">Todo al día</div>
+          <div class="alert-text">No tienes pagos pendientes ni avisos por revisar.</div>
+        </div>
+      </div>`);
+
+    return `
+      <div class="hero">
+        <div class="hero-hi">Hola de nuevo,</div>
+        <div class="hero-name">${esc(portal.nombre || 'Cliente')}</div>
+        <div class="hero-msg">Aquí ves el estado de tus proyectos, tus pagos y tus documentos con DGP Group. Si necesitas algo, escríbenos por el chat.</div>
+      </div>
+
+      <div class="alerts">${alerts.join('')}</div>
+
+      <div class="stats">
+        <div class="stat" onclick="go('proyectos')">
+          <div class="stat-label">Proyectos activos</div>
+          <div class="stat-value">${activos.length}</div>
+          <div class="stat-note">${proyectos.filter(p => p.estado === 'completado').length} completados</div>
+        </div>
+        <div class="stat" onclick="go('facturacion')">
+          <div class="stat-label">Por pagar</div>
+          <div class="stat-value" style="color:${deuda > 0 ? 'var(--amber)' : 'var(--green)'}">${money(deuda)}</div>
+          <div class="stat-note">${pendientes.length} pendiente${pendientes.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="stat" onclick="go('suscripciones')">
+          <div class="stat-label">Suscripciones</div>
+          <div class="stat-value">${suscAct.length}</div>
+          <div class="stat-note">${proxPago ? 'Próx. pago ' + fmtDate(proxPago.d, { day: '2-digit', month: 'short' }) : 'Sin renovaciones'}</div>
+        </div>
+        <div class="stat" onclick="go('archivos')">
+          <div class="stat-label">Documentos</div>
+          <div class="stat-value">${archivos.length}</div>
+          <div class="stat-note">Reportes y entregables</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="section-label">Proyectos en curso <button onclick="go('proyectos')">Ver todos</button></div>
+          ${activos.length ? activos.slice(0, 3).map(projCard).join('') : empty('folder', 'No tienes proyectos activos.')}
+        </div>
+        <div>
+          <div class="section-label">Pagos pendientes <button onclick="go('facturacion')">Ver facturación</button></div>
+          ${pendientes.length ? pendientes.slice(0, 3).map(invRow).join('') : empty('check', 'No tienes pagos pendientes.')}
+          <div class="section-label">¿Necesitas ayuda?</div>
+          <div class="card">${contactList()}</div>
+        </div>
+      </div>`;
+  }
+
+  /* ── PROYECTOS ── */
+  function projCard(p) {
+    const estado = p.estado || 'pendiente';
+    const prog = Math.max(0, Math.min(100, Number(p.progreso) || (estado === 'completado' ? 100 : 0)));
+    const idx = PASOS.indexOf(estado);
+    const updates = Array.isArray(p.actualizaciones) ? p.actualizaciones.slice(-3).reverse() : [];
+    return `
+      <div class="proj">
+        <div class="proj-top">
+          <div style="min-width:0;">
+            <div class="proj-name">${esc(p.nombre || 'Proyecto')}</div>
+            ${p.servicio ? `<div class="proj-srv">${esc(p.servicio)}</div>` : ''}
+          </div>
+          <span class="pill ${esc(estado)}">${esc(ESTADOS_PROYECTO[estado] || estado)}</span>
+        </div>
+        ${estado === 'solicitado' ? `<div class="proj-desc" style="color:var(--violet);">Recibimos tu solicitud. Te contactaremos para confirmar los detalles.</div>` : `
+        <div class="progress"><div style="width:${prog}%"></div></div>
+        <div class="progress-row"><span>Avance</span><strong>${prog}%</strong></div>
+        ${estado !== 'pausado' ? `<div class="steps">${PASOS.map((s, i) => `<div class="step ${idx >= i ? 'done' : ''}"><div class="step-bar"></div>${ESTADOS_PROYECTO[s]}</div>`).join('')}</div>` : ''}`}
+        ${p.descripcion ? `<div class="proj-desc">${esc(p.descripcion)}</div>` : ''}
+        <div class="proj-meta">
+          ${p.fechaInicio ? `<span>${I.cal} Inicio ${fmtDate(p.fechaInicio)}</span>` : ''}
+          ${p.fechaEntrega ? `<span>${I.cal} Entrega estimada ${fmtDate(p.fechaEntrega)}</span>` : ''}
+        </div>
+        ${updates.length ? `<div class="timeline">${updates.map(u => `
+          <div class="tl-item"><div class="tl-dot"></div><div><div>${esc(u.texto)}</div><div class="tl-date">${fmtDate(u.fecha)}</div></div></div>`).join('')}</div>` : ''}
+      </div>`;
+  }
+  function vProyectos() {
+    const activos = proyectos.filter(p => p.estado !== 'completado');
+    const hechos  = proyectos.filter(p => p.estado === 'completado');
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div><div class="page-title">Mis proyectos</div><div class="page-sub">Sigue el avance de cada trabajo que hacemos contigo.</div></div>
+        <button class="btn primary" onclick="openSolicitud()">${I.plus} Solicitar nuevo proyecto</button>
+      </div>
+      <div class="section-label">En curso (${activos.length})</div>
+      ${activos.length ? activos.map(projCard).join('') : empty('folder', 'No tienes proyectos en curso.')}
+      ${hechos.length ? `<div class="section-label">Completados (${hechos.length})</div>${hechos.map(projCard).join('')}` : ''}`;
+  }
+  function openSolicitud() {
+    modal(`
+      <h3>Solicitar nuevo proyecto</h3>
+      <p>Cuéntanos qué necesitas y te contactamos para cotizarlo.</p>
+      <div class="field"><label>Servicio</label>
+        <select id="sol-srv">
+          <option>Sitio web</option><option>Tienda online</option><option>Identidad visual / Logo</option>
+          <option>Diseño para redes sociales</option><option>Seguidores</option><option>WhatsApp Marketing</option>
+          <option>Publicidad (Ads)</option><option>Otro</option>
+        </select></div>
+      <div class="field"><label>Nombre del proyecto</label><input id="sol-nom" maxlength="120" placeholder="Ej. Web para mi restaurante"></div>
+      <div class="field"><label>Detalles</label><textarea id="sol-desc" rows="4" maxlength="1500" placeholder="¿Qué quieres lograr? ¿Tienes una fecha en mente?"></textarea></div>
+      <button class="btn primary block" id="sol-btn" onclick="enviarSolicitud()">Enviar solicitud</button>
+      <button class="btn block" style="margin-top:8px;" onclick="closeModal()">Cancelar</button>`);
+  }
+  async function enviarSolicitud() {
+    const servicio = document.getElementById('sol-srv').value;
+    const nombre = document.getElementById('sol-nom').value.trim() || servicio;
+    const descripcion = document.getElementById('sol-desc').value.trim();
+    const btn = document.getElementById('sol-btn');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      await db.collection('portal').doc(CODE).collection('proyectos').add({
+        nombre, servicio, descripcion, estado: 'solicitado', progreso: 0,
+        solicitadoPorCliente: true, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      tg(`🆕 Nueva solicitud de proyecto\n\n👤 ${portal.nombre}\n💼 ${servicio}\n📝 ${nombre}${descripcion ? '\n\n' + descripcion : ''}\n\nCódigo: ${CODE}\n${ADMIN_URL}`);
+      closeModal();
+      toast('¡Solicitud enviada! Te contactaremos pronto.');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Enviar solicitud';
+      toast('No se pudo enviar. Intenta de nuevo.', 'err');
+    }
+  }
+
+  /* ── FACTURACIÓN ── */
+  function invRow(d) {
+    const [cls, lbl] = estadoFactura(d);
+    const saldo = saldoFactura(d);
+    const servicios = (d.items || []).map(i => i.s).join(', ') || '—';
+    return `
+      <div class="inv">
+        <div class="inv-ico">${I.doc}</div>
+        <div class="inv-body">
+          <div class="inv-id">${esc(d.docId || d._fsId)}</div>
+          <div class="inv-srv">${esc(servicios)}</div>
+          <div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span class="pill ${cls}">${lbl}</span>
+            <span style="font-size:11px;color:var(--faint);">${esc(d.fecha || fmtDate(d.createdAt))}</span>
+            ${saldo > 0 && d.comprobante_url ? `<span style="font-size:11px;color:var(--green);font-weight:600;">Comprobante enviado</span>` : ''}
+          </div>
+        </div>
+        <div class="inv-right">
+          <div>
+            <div class="inv-amt">${money(saldo > 0 ? saldo : d.total)}</div>
+            ${saldo > 0 && d.pagadoParcial ? `<div style="font-size:10px;color:var(--faint);">de ${money(d.total)}</div>` : ''}
+          </div>
+          <div class="inv-actions">
+            <a class="btn" href="${linkFactura(d._fsId)}" target="_blank" rel="noopener">${I.eye} Ver</a>
+            ${saldo > 0 && !d.comprobante_url ? `<button class="btn primary" onclick="openComprobante('${esc(d._fsId)}')">${I.upload} Subir pago</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+  function vFacturacion() {
+    const docs = facturasOrdenadas();
+    const pend = docs.filter(d => saldoFactura(d) > 0);
+    const pag  = docs.filter(d => saldoFactura(d) === 0);
+    const deuda = pend.reduce((a, d) => a + saldoFactura(d), 0);
+    const pagado = docs.reduce((a, d) => a + (d.pagado || d.type === 'recibo' ? (d.total || 0) : (d.montoPagado || 0)), 0);
+    const comps = docs.filter(d => d.comprobante_url);
+    return `
+      <div class="page-title">Facturación</div>
+      <div class="page-sub">Tus facturas, pagos y comprobantes en un solo lugar.</div>
+      <div class="total-due">
+        <div><div class="lbl">Pendiente por pagar</div><div class="amt">${money(deuda)}</div></div>
+        <div style="text-align:right;"><div class="lbl">Total pagado</div><div class="amt" style="color:#4ade80;">${money(pagado)}</div></div>
+      </div>
+      <div class="section-label">Por pagar (${pend.length})</div>
+      ${pend.length ? pend.map(invRow).join('') : empty('check', 'No tienes facturas pendientes.')}
+      <div class="section-label">Pagadas (${pag.length})</div>
+      ${pag.length ? pag.map(invRow).join('') : empty('doc', 'Aún no hay facturas pagadas.')}
+      <div class="section-label">Mis comprobantes de pago (${comps.length})</div>
+      ${comps.length ? `<div class="gallery">${comps.map(d => `
+        <a class="shot" href="${esc(d.comprobante_url)}" target="_blank" rel="noopener">
+          <img src="${esc(d.comprobante_url)}" alt="Comprobante ${esc(d.docId || '')}" loading="lazy">
+          <div>${esc(d.docId || '')} · ${money(d.total)}</div>
+        </a>`).join('')}</div>` : empty('upload', 'Aquí aparecerán las capturas de pago que envíes.')}`;
+  }
+  function openComprobante(fsId) {
+    const d = facturas[fsId]; if (!d) return;
+    modal(`
+      <h3>Subir comprobante</h3>
+      <p>Factura ${esc(d.docId || '')} · ${money(saldoFactura(d))}. Sube la captura de tu pago y lo confirmamos.</p>
+      <div class="field"><label>Captura del pago (JPG o PNG, máx. 5 MB)</label>
+        <input type="file" id="comp-file" accept="image/*"></div>
+      <div class="upload-bar hidden" id="comp-bar"><div></div></div>
+      <button class="btn primary block" id="comp-btn" style="margin-top:12px;" onclick="subirComprobante('${esc(fsId)}')">${I.upload} Enviar comprobante</button>
+      <a class="btn block" style="margin-top:8px;" href="${linkFactura(fsId)}" target="_blank" rel="noopener">Ver métodos de pago</a>
+      <button class="btn block" style="margin-top:8px;" onclick="closeModal()">Cancelar</button>`);
+  }
+  async function subirComprobante(fsId) {
+    const file = document.getElementById('comp-file').files[0];
+    if (!file) { toast('Selecciona la imagen del comprobante.', 'err'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast('La imagen no puede superar 5 MB.', 'err'); return; }
+    const btn = document.getElementById('comp-btn');
+    const bar = document.getElementById('comp-bar');
+    btn.disabled = true; btn.textContent = 'Subiendo…'; bar.classList.remove('hidden');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      fd.append('folder', 'comprobantes');
+      fd.append('public_id', `${fsId}_portal_${Date.now()}`);
+      const url = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = e => { if (e.lengthComputable) bar.firstElementChild.style.width = Math.round(e.loaded / e.total * 100) + '%'; };
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+        xhr.onload = () => { const r = JSON.parse(xhr.responseText); xhr.status === 200 ? resolve(r.secure_url) : reject(new Error(r.error?.message)); };
+        xhr.onerror = () => reject(new Error('red'));
+        xhr.send(fd);
+      });
+      await db.collection('documentos').doc(fsId).update({ comprobante_url: url });
+      const d = facturas[fsId] || {};
+      try {
+        await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: TG_CHAT_ID, photo: url,
+            caption: `💳 Nuevo comprobante (desde el portal)\n\n👤 ${portal.nombre}\n🧾 ${d.docId || fsId}\n💰 ${money(saldoFactura(d))}\n\n${location.origin}${linkFactura(fsId)}` })
+        });
+      } catch (e) {}
+      closeModal();
+      toast('¡Comprobante enviado! Lo revisaremos pronto.');
+    } catch (e) {
+      btn.disabled = false; btn.innerHTML = `${I.upload} Enviar comprobante`;
+      toast('Error al subir el comprobante. Intenta de nuevo.', 'err');
+    }
+  }
+
+  /* ── SUSCRIPCIONES ── */
+  function vSuscripciones() {
+    const orden = { activa: 0, pausada: 1, cancelada: 2 };
+    const list = suscripciones.slice().sort((a, b) => (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3));
+    return `
+      <div class="page-title">Suscripciones</div>
+      <div class="page-sub">Tus planes recurrentes y la fecha de su próximo pago.</div>
+      ${list.length ? list.map(s => {
+        const est = s.estado || 'activa';
+        const prox = toDate(s.proximoPago);
+        const dias = prox ? Math.ceil((prox - Date.now()) / 864e5) : null;
+        return `
+        <div class="row">
+          <div class="row-ico" style="background:var(--blue-x);color:var(--blue);">${I.repeat}</div>
+          <div class="row-body">
+            <div class="row-title">${esc(s.plan || 'Plan')}</div>
+            <div class="row-sub">${money(s.precio)} / ${esc(CICLOS[s.ciclo] || s.ciclo || 'mes')}${s.inicio ? ' · desde ' + fmtDate(s.inicio) : ''}</div>
+            ${est === 'activa' && prox ? `<div class="row-sub" style="color:${dias <= 3 ? 'var(--amber)' : 'var(--mid)'};font-weight:600;margin-top:3px;">Próximo pago: ${fmtDate(prox, { day: '2-digit', month: 'long', year: 'numeric' })}${dias >= 0 ? ` (en ${dias} día${dias !== 1 ? 's' : ''})` : ' (vencido)'}</div>` : ''}
+            ${s.notas ? `<div class="row-sub" style="margin-top:3px;">${esc(s.notas)}</div>` : ''}
+          </div>
+          <span class="pill ${esc(est)}">${esc(ESTADOS_SUSC[est] || est)}</span>
+        </div>`;
+      }).join('') : empty('repeat', 'No tienes suscripciones activas.')}`;
+  }
+
+  /* ── ARCHIVOS ── */
+  const TIPOS_ARCHIVO = { reporte: 'Reporte', contrato: 'Contrato', entregable: 'Entregable', otro: 'Documento' };
+  function vArchivos() {
+    return `
+      <div class="page-title">Documentos</div>
+      <div class="page-sub">Reportes, contratos y entregables que compartimos contigo.</div>
+      ${archivos.length ? archivos.map(a => `
+        <div class="row">
+          <div class="row-ico">${I.doc}</div>
+          <div class="row-body">
+            <div class="row-title">${esc(a.nombre || 'Documento')}</div>
+            <div class="row-sub">${esc(TIPOS_ARCHIVO[a.tipo] || 'Documento')} · ${fmtDate(a.createdAt)}${a.descripcion ? ' · ' + esc(a.descripcion) : ''}</div>
+          </div>
+          ${a.url ? `<a class="btn" href="${esc(a.url)}" target="_blank" rel="noopener">${I.down} Abrir</a>` : ''}
+        </div>`).join('') : empty('file', 'Aún no hay documentos compartidos.')}`;
+  }
+
+  /* ── CUENTA ── */
+  function contactList() {
+    return `
+      <a class="contact" href="https://wa.me/${CONTACTO.wa}" target="_blank" rel="noopener">
+        <div class="contact-ico" style="background:#dcfce7;color:#15803d;">${I.wa}</div>
+        <div><div class="contact-title">WhatsApp</div><div class="contact-sub">${CONTACTO.telefono}</div></div>
+      </a>
+      <a class="contact" href="tel:+${CONTACTO.wa}">
+        <div class="contact-ico" style="background:var(--blue-x);color:var(--blue);">${I.phone}</div>
+        <div><div class="contact-title">Llamar</div><div class="contact-sub">${CONTACTO.nombre} · ${CONTACTO.telefono}</div></div>
+      </a>
+      <a class="contact" href="mailto:${CONTACTO.correo}">
+        <div class="contact-ico" style="background:#fef3c7;color:#b45309;">${I.mail}</div>
+        <div><div class="contact-title">Correo</div><div class="contact-sub">${CONTACTO.correo}</div></div>
+      </a>
+      <a class="contact" href="#" onclick="toggleChat(true);return false;">
+        <div class="contact-ico" style="background:#ede9fe;color:var(--violet);">${I.chat}</div>
+        <div><div class="contact-title">Chat en vivo</div><div class="contact-sub">Escríbenos aquí mismo</div></div>
+      </a>`;
+  }
+  function vCuenta() {
+    const oculto = CODE.slice(0, 4) + '••••-' + CODE.slice(-4);
+    return `
+      <div class="page-title">Mi cuenta</div>
+      <div class="page-sub">Tus datos registrados con DGP Group.</div>
+      <div class="grid-2">
+        <div>
+          <div class="card">
+            <div class="kv"><span>Nombre</span><span>${esc(portal.nombre || '—')}</span></div>
+            ${portal.empresa ? `<div class="kv"><span>Empresa</span><span>${esc(portal.empresa)}</span></div>` : ''}
+            <div class="kv"><span>Correo</span><span>${esc(portal.correo || '—')}</span></div>
+            <div class="kv"><span>Teléfono</span><span>${esc(portal.telefono || '—')}</span></div>
+            <div class="kv"><span>Código de acceso</span><span>${esc(oculto)}</span></div>
+            <div class="kv"><span>Cliente desde</span><span>${fmtDate(portal.createdAt, { month: 'long', year: 'numeric' })}</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--soft);margin-top:10px;line-height:1.6;">¿Algún dato está mal? Escríbenos por el chat y lo actualizamos. No compartas tu código de acceso: da entrada a tu portal.</div>
+          <div class="card" style="margin-top:14px;cursor:pointer;" onclick="go('suscripciones')">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="row-ico" style="background:var(--blue-x);color:var(--blue);">${I.repeat}</div>
+              <div style="flex:1;"><div class="row-title">Suscripciones</div><div class="row-sub">${suscripciones.filter(s => s.estado === 'activa').length} activa(s)</div></div>
+            </div>
+          </div>
+          <button class="btn block" style="margin-top:14px;" onclick="logout()">Cerrar sesión</button>
+        </div>
+        <div>
+          <div class="card">
+            <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--soft);margin-bottom:4px;">Contacto y soporte</div>
+            ${contactList()}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /* ═════════ CHAT ═════════ */
+  function toggleChat(open) {
+    chatOpen = open;
+    document.getElementById('chat-panel').classList.toggle('hidden', !open);
+    document.getElementById('chat-fab').classList.toggle('hidden', open && window.innerWidth <= 760);
+    if (open) {
+      renderChat();
+      setTimeout(() => document.getElementById('chat-input').focus(), 50);
+      if ((portal?.chatNoLeidoCliente || 0) > 0) {
+        db.collection('portal').doc(CODE).update({ chatNoLeidoCliente: 0 }).catch(() => {});
+      }
+    }
+  }
+  function updateChatBadge() {
+    const n = portal?.chatNoLeidoCliente || 0;
+    const dot = document.getElementById('chat-dot');
+    dot.textContent = n; dot.classList.toggle('hidden', !n);
+    if (chatOpen && n) db.collection('portal').doc(CODE).update({ chatNoLeidoCliente: 0 }).catch(() => {});
+  }
+  function renderChat() {
+    const body = document.getElementById('chat-body');
+    if (!body) return;
+    const welcome = `<div class="chat-welcome">Hola ${esc(primerNombre())} 👋<br>Escríbenos tu consulta y te responderemos por aquí mismo.<br>También puedes llamarnos al ${CONTACTO.telefono}.</div>`;
+    body.innerHTML = welcome + mensajes.map(m => `
+      <div class="msg ${m.de === 'admin' ? 'admin' : 'cliente'}">
+        ${m.de === 'admin' ? `<div class="msg-author">${esc(m.autor || 'DGP Group')}</div>` : ''}<div class="msg-text">${esc(m.texto)}</div>
+        <div class="msg-time">${fmtTime(m.fecha)}</div>
+      </div>`).join('');
+    body.scrollTop = body.scrollHeight;
+  }
+  function chatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  }
+  let sending = false;
+  async function sendMsg() {
+    const input = document.getElementById('chat-input');
+    const texto = input.value.trim();
+    if (!texto || sending) return;
+    sending = true;
+    document.getElementById('chat-send').disabled = true;
+    const ultima = toDate(portal.ultimoMensajeAt);
+    const esNueva = !mensajes.length || !ultima || (Date.now() - ultima.getTime()) > NUEVA_CONVERSACION_MS;
+    try {
+      const ref = db.collection('portal').doc(CODE);
+      await ref.collection('mensajes').add({ de: 'cliente', texto, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+      await ref.update({
+        chatNoLeidoAdmin: firebase.firestore.FieldValue.increment(1),
+        ultimoMensaje: texto.slice(0, 140),
+        ultimoMensajeAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ultimoMensajeDe: 'cliente'
+      });
+      input.value = '';
+      tg(`${esNueva ? '💬 NUEVA CONVERSACIÓN en el portal' : '💬 Nuevo mensaje en el portal'}\n\n👤 ${portal.nombre}\n\n"${texto.slice(0, 900)}"\n\nResponde desde la pestaña Portal:\n${ADMIN_URL}`);
+    } catch (e) {
+      toast('No se pudo enviar el mensaje. Intenta de nuevo.', 'err');
+    } finally {
+      sending = false;
+      document.getElementById('chat-send').disabled = false;
+      input.focus();
+    }
+  }
+
+  /* ═════════ MODAL ═════════ */
+  function modal(html) {
+    document.getElementById('modal-root').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+  }
+  function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+  /* ═════════ ARRANQUE ═════════ */
+  (function boot() {
+    const fromUrl = new URLSearchParams(location.search).get('c');
+    let saved = null;
+    try { saved = localStorage.getItem('dgp-portal-code'); } catch (e) {}
+    if (fromUrl) { document.getElementById('code-input').value = fromUrl; login(fromUrl); }
+    else if (saved) { start(saved); }
+    else showLogin();
+  })();
+</script>
+</body>
+</html>
