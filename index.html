@@ -1133,6 +1133,21 @@
       .hr-main { grid-area:main; } .hr-monto { grid-area:monto; } .hr-pill { grid-area:pill; width:78px; } .hr-acc { grid-area:acc; } .hr-fecha { display:none; }
       .hr-btn span { display:none; }
     }
+    .cl-bar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 0 8px; flex-wrap:wrap; font-family:'IBM Plex Sans',sans-serif; }
+    .cl-orden { padding:5px 8px; border:1px solid var(--border); border-radius:8px; font-size:11px; font-weight:600; color:var(--text-mid); background:white; font-family:inherit; }
+    .cl-row { display:grid; grid-template-columns:40px 1fr 96px 96px 72px 100px; gap:12px; align-items:center; padding:11px 14px; border-top:1px solid #f1f5f9; cursor:pointer; transition:background .12s; font-family:'IBM Plex Sans',sans-serif; }
+    .cl-row:first-child { border-top:0; }
+    .cl-row:hover { background:#f8fafc; }
+    .cl-av { width:38px; height:38px; border-radius:50%; color:white; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .cl-num { text-align:right; font-size:13px; font-weight:700; color:var(--black); font-variant-numeric:tabular-nums; }
+    .cl-num small { display:block; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); }
+    .cl-num.debe { color:#b91c1c; }
+    .cl-ult { font-size:11px; font-weight:600; color:var(--text-mid); }
+    @media (max-width:700px) {
+      .cl-row { grid-template-columns:38px 1fr auto; grid-template-areas:'av main acc' 'av c d'; row-gap:4px; }
+      .cl-av { grid-area:av; } .cl-row .hr-main { grid-area:main; } .cl-row .hr-acc { grid-area:acc; }
+      .cl-row .cl-c { grid-area:c; text-align:left; } .cl-row .cl-d { grid-area:d; } .cl-row .cl-ult { display:none; }
+    }
     .db-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:26px 0 10px; flex-wrap:wrap; }
     .dash-main > .db-head:first-child { margin-top:4px; }
     .db-pills { display:flex; gap:6px; }
@@ -1541,12 +1556,24 @@
         <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
       </div>
     </div>
+    <div class="cb-tiles" id="cl-resumen" style="margin-bottom:14px;"></div>
     <div class="clientes-search-row">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="clientes-search" placeholder="Buscar por nombre, apellido, teléfono, correo o etiqueta..." oninput="renderClientes()" autocomplete="off">
       <button class="cl-clear" id="cl-clear" onclick="document.getElementById('clientes-search').value='';renderClientes();document.getElementById('clientes-search').focus();" aria-label="Borrar búsqueda">×</button>
     </div>
     <div class="cl-tags-row" id="clientes-tags"></div>
+    <div class="cl-bar">
+      <span id="cl-bar-n" style="font-size:11px;color:var(--text-soft);"></span>
+      <label style="font-size:11px;color:var(--text-soft);display:inline-flex;align-items:center;gap:6px;">Ordenar por
+        <select id="cl-orden" onchange="renderClientes()" class="cl-orden">
+          <option value="reciente">Actividad reciente</option>
+          <option value="comprado">Más compró</option>
+          <option value="debe">Más debe</option>
+          <option value="nombre">Nombre (A–Z)</option>
+        </select>
+      </label>
+    </div>
     <div id="clientes-list-container"></div>
   </div>
 </div>
@@ -3910,6 +3937,67 @@ function renderClienteTags() {
     + clTodasEtiquetas().map(([t, n]) => chip(t, t, n)).join('');
 }
 
+/* ── Estadísticas por cliente (desde las facturas) y ficha ── */
+let _clStats = {};
+function clCalcularStats() {
+  const out = {};
+  Object.values(docsMap).forEach(d => {
+    const k = ptNorm(d.cli); if (!k) return;
+    const x = out[k] || (out[k] = { comprado: 0, debe: 0, n: 0, ultima: null, docs: [] });
+    x.n++; x.docs.push(d);
+    x.comprado += (d.pagado || d.type === 'recibo') ? (d.total || 0) : (d.montoPagado || 0);
+    x.debe += cbSaldo(d);
+    const f = cbFecha(d.createdAt) || cbFecha(d.fecha);
+    if (f && (!x.ultima || f > x.ultima)) x.ultima = f;
+  });
+  return out;
+}
+function clStatsDe(c) { return _clStats[ptNorm(clNombre(c))] || { comprado: 0, debe: 0, n: 0, ultima: null, docs: [] }; }
+function clIniciales(n) { const p = String(n).trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+function clColor(n) {
+  const tonos = ['#1438cc', '#0f766e', '#7c3aed', '#b45309', '#be185d', '#0369a1', '#4d7c0f', '#9333ea'];
+  let h = 0; for (const ch of ptNorm(n)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return tonos[h % tonos.length];
+}
+function abrirFichaCliente(id) {
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  _clStats = clCalcularStats();
+  const nombre = clNombre(c), x = clStatsDe(c);
+  const tel = String(c.telefono || '').replace(/[^0-9]/g, '');
+  const docs = x.docs.slice().sort((a, b) => (cbFecha(b.createdAt)?.getTime() || 0) - (cbFecha(a.createdAt)?.getTime() || 0));
+  const est = d => d.pagado || d.type === 'recibo' ? ['Pagado', 'hr-p-ok'] : d.pagadoParcial ? ['Parcial', 'hr-p-parc'] : ['Pendiente', 'hr-p-pend'];
+  ptModal(nombre, [c.empresa, c.telefono, c.correo].filter(Boolean).join(' · ') || 'Sin datos de contacto', `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Comprado</div><div class="cb-tile-v" style="font-size:22px;">${cbMoney(x.comprado)}</div></div>
+      <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Debe</div><div class="cb-tile-v" style="font-size:22px;color:${x.debe > 0.009 ? '#b91c1c' : 'var(--black)'}">${cbMoney(x.debe)}</div></div>
+      <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Facturas</div><div class="cb-tile-v" style="font-size:22px;">${x.n}</div></div>
+    </div>
+    ${(c.tags || []).length || c.notas ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:12px;font-family:'IBM Plex Sans',sans-serif;">${(c.tags || []).map(t => `<span class="cl-tag">${esc(t)}</span>`).join('')}${c.notas ? `<div style="margin-top:6px;font-style:italic;color:var(--text-soft);">${esc(c.notas)}</div>` : ''}</div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <button class="btn-edit-save" style="margin:0;" onclick="closePortalModal();nuevaFacturaPara('${esc(c._id)}')">+ Nueva factura</button>
+      ${tel ? `<button class="btn-edit-save" style="margin:0;background:#16a34a;" onclick="window.open('https://wa.me/${tel}','_blank')">WhatsApp</button>` : `<button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();openClienteModal('${esc(c._id)}')">Agregar teléfono</button>`}
+      <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();abrirPortalDeCliente('${esc(c._id)}')">${c.portalCodigo ? 'Abrir su portal' : 'Crear portal'}</button>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();openClienteModal('${esc(c._id)}')">Editar datos</button>
+    </div>
+    <div class="cb-title" style="margin-bottom:8px;">Facturas (${docs.length})</div>
+    ${docs.length ? `<div class="hr-list">${docs.map(d => `<div class="hr-row" style="grid-template-columns:78px 1fr auto;" onclick="closePortalModal();openSheetById('${esc(d._fsId)}')">
+      <span class="hr-pill ${est(d)[1]}">${est(d)[0]}</span>
+      <div class="hr-main"><div class="hr-id">${esc(d.docId || '')}</div><div class="hr-srv">${esc((d.items || []).map(i => i.s).join(', '))} · ${esc(d.fecha || '')}</div></div>
+      <div class="hr-monto">$${(d.total || 0).toFixed(2)}${cbSaldo(d) > 0.009 && d.pagadoParcial ? `<small>Debe $${cbSaldo(d).toFixed(2)}</small>` : ''}</div>
+    </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-soft);padding:10px 0;">Aún no tiene facturas.</div>'}
+    <button class="btn-edit-cancel" style="margin-top:14px;" onclick="closePortalModal()">Cerrar</button>`);
+}
+function nuevaFacturaPara(id) {
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  const tab = document.querySelector('.nav-tab[onclick*="facturacion"]');
+  if (tab) switchPage('facturacion', tab);
+  const nuevoBtn = document.querySelector('.subtab-btn');
+  if (nuevoBtn) switchSubTab('nuevo', nuevoBtn);
+  document.getElementById('cli-nom').value = clNombre(c);
+  updatePortalHint(); actualizarResumenDoc();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function renderClientes() {
   const container = document.getElementById('clientes-list-container');
   if (!container) return;
@@ -3917,6 +4005,15 @@ function renderClientes() {
   const q = ptNorm(qRaw);
   document.getElementById('cl-clear').style.display = qRaw ? 'block' : 'none';
   renderClienteTags();
+  _clStats = clCalcularStats();
+  const conDeuda = clientesList.filter(c => clStatsDe(c).debe > 0.009);
+  const hoy = new Date();
+  const nuevos = clientesList.filter(c => { const f = cbFecha(c.createdAt); return f && f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear(); }).length;
+  document.getElementById('cl-resumen').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Clientes</div><div class="cb-tile-v">${clientesList.length}</div><div class="cb-tile-n">${nuevos} nuevo${nuevos !== 1 ? 's' : ''} este mes</div></div>
+    <div class="cb-tile" style="cursor:pointer;" onclick="setClTagFiltro('__portal')"><div class="cb-tile-l">Con portal</div><div class="cb-tile-v">${clientesList.filter(c => c.portalCodigo).length}</div><div class="cb-tile-n">Acceso a su plataforma</div></div>
+    <div class="cb-tile" style="cursor:pointer;" onclick="document.getElementById('cl-orden').value='debe';renderClientes()"><div class="cb-tile-l">Con deuda</div><div class="cb-tile-v" style="color:${conDeuda.length ? '#b91c1c' : 'var(--black)'}">${conDeuda.length}</div><div class="cb-tile-n">${cbMoney(conDeuda.reduce((a, c) => a + clStatsDe(c).debe, 0))} por cobrar</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Compra promedio</div><div class="cb-tile-v">${(() => { const cs = clientesList.map(c => clStatsDe(c).comprado).filter(v => v > 0); return cbMoney(cs.length ? cs.reduce((a, b) => a + b, 0) / cs.length : 0); })()}</div><div class="cb-tile-n">Por cliente que compró</div></div>`;
   const dup = clGruposDuplicados();
   const bu = document.getElementById('btn-unificar');
   if (bu) { bu.style.display = dup.length ? '' : 'none'; bu.textContent = `Unificar duplicados (${dup.length})`; }
@@ -3939,35 +4036,36 @@ function renderClientes() {
     container.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-soft);font-size:13px;">${q || clTagFiltro ? 'No se encontraron clientes con ese filtro.' : 'Aún no hay clientes. ¡Agrega el primero!'}</div>`;
     return;
   }
-  container.innerHTML = lista.map(c => {
-    const nombreCompleto = [c.nombre, c.apellido].filter(Boolean).join(' ');
-    const ini = (c.nombre||'?')[0].toUpperCase();
-    const ventasCliente = getMergedVentas().filter(v => ptNorm(v.cliente) === ptNorm(nombreCompleto));
-    const totalComprado = ventasCliente.reduce((a,v) => a + (parseFloat(v.monto)||0), 0);
-    return `<div class="cliente-card">
-      <div class="cliente-avatar">${esc(ini)}</div>
-      <div class="cliente-info">
-        <div class="cliente-nombre">${esc(nombreCompleto)}</div>
-        ${(c.tags || []).length ? `<div>${c.tags.map(t => `<span class="cl-tag" onclick="setClTagFiltro(this.dataset.t)" data-t="${esc(t)}">${esc(t)}</span>`).join('')}</div>` : ''}
-        <div class="cliente-meta">
-          ${c.telefono ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> ${esc(c.telefono)}</span>` : ''}
-          ${c.correo   ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(c.correo)}</span>`   : ''}
-          ${c.empresa  ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 21V8"/><path d="M16 21V8"/><path d="M2 8h20"/><rect x="6" y="12" width="4" height="9"/><rect x="14" y="12" width="4" height="9"/></svg> ${esc(c.empresa)}</span>`  : ''}
-        </div>
-        ${c.notas ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;font-style:italic;">${esc(c.notas)}</div>` : ''}
+  // Orden
+  const st = c => clStatsDe(c);
+  const orden = document.getElementById('cl-orden')?.value || 'reciente';
+  lista = lista.slice().sort((a, b) =>
+    orden === 'nombre'   ? clNombre(a).localeCompare(clNombre(b)) :
+    orden === 'comprado' ? st(b).comprado - st(a).comprado :
+    orden === 'debe'     ? st(b).debe - st(a).debe || st(b).comprado - st(a).comprado :
+    (st(b).ultima?.getTime() || cbFecha(b.updatedAt || b.createdAt || b.lastUsed)?.getTime() || 0) - (st(a).ultima?.getTime() || cbFecha(a.updatedAt || a.createdAt || a.lastUsed)?.getTime() || 0));
+  document.getElementById('cl-bar-n').textContent = `${lista.length} cliente${lista.length !== 1 ? 's' : ''}`;
+  const WA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.05 21.5a9.4 9.4 0 0 1-4.8-1.31l-.34-.2-3.57.94.95-3.48-.22-.36a9.43 9.43 0 1 1 7.99 4.41z"/></svg>';
+  container.innerHTML = `<div class="hr-list">${lista.map(c => {
+    const nombre = clNombre(c) || '—';
+    const x = st(c);
+    const tel = String(c.telefono || '').replace(/[^0-9]/g, '');
+    return `<div class="cl-row" onclick="abrirFichaCliente('${esc(c._id)}')">
+      <div class="cl-av" style="background:${clColor(nombre)};">${esc(clIniciales(nombre))}</div>
+      <div class="hr-main">
+        <div class="hr-top"><span class="hr-cli" style="white-space:normal;">${esc(nombre)}</span>${c.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${(c.tags || []).map(t => `<span class="cl-tag" style="margin:0;" onclick="event.stopPropagation();setClTagFiltro(this.dataset.t)" data-t="${esc(t)}">${esc(t)}</span>`).join('')}</div>
+        <div class="hr-srv">${[c.telefono, c.correo, c.empresa].filter(Boolean).map(esc).join(' · ') || 'Sin datos de contacto'}</div>
       </div>
-      <div class="cliente-stats">
-        <div class="cliente-stats-num">$${totalComprado.toFixed(0)}</div>
-        <div class="cliente-stats-label">${ventasCliente.length} venta${ventasCliente.length!==1?'s':''}</div>
-      </div>
-      <div class="cliente-actions">
-        ${c.telefono ? `<button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,0.2);display:inline-flex;align-items:center;justify-content:center;" onclick="window.open('https://wa.me/${encodeURIComponent((c.telefono||'').replace(/\D/g,''))}','_blank')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>` : ''}
-        <button class="btn-sm" title="${c.portalCodigo ? 'Abrir su portal' : 'Crear portal'}" onclick="abrirPortalDeCliente('${esc(c._id)}')" style="background:${c.portalCodigo ? 'var(--blue-xlight)' : 'var(--off)'};color:${c.portalCodigo ? 'var(--blue)' : 'var(--text-mid)'};border-color:${c.portalCodigo ? 'rgba(20,56,204,.2)' : 'var(--border)'};display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-user-shield"></i> ${c.portalCodigo ? 'Portal' : 'Crear portal'}</button>
-        <button class="btn-sm edit" onclick="openClienteModal('${esc(c._id)}')" style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn-sm del"  onclick="deleteCliente('${esc(c._id)}')"  style="display:inline-flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      <div class="cl-num cl-c"><small>Comprado</small>${cbMoney(x.comprado)}</div>
+      <div class="cl-num cl-d ${x.debe > 0.009 ? 'debe' : ''}"><small>Debe</small>${x.debe > 0.009 ? cbMoney(x.debe) : '—'}</div>
+      <div class="cl-num cl-ult"><small>Última</small>${x.ultima ? x.ultima.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</div>
+      <div class="hr-acc">
+        ${tel ? `<button class="hr-ico" title="WhatsApp" style="color:#16a34a;" onclick="event.stopPropagation();window.open('https://wa.me/${tel}','_blank')">${WA}</button>` : ''}
+        <button class="hr-ico" title="Editar" onclick="event.stopPropagation();openClienteModal('${esc(c._id)}')">${HR_ICON.edit}</button>
+        <button class="hr-ico del" title="Eliminar" onclick="event.stopPropagation();deleteCliente('${esc(c._id)}')">${HR_ICON.del}</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 
 function openClienteModal(id) {
