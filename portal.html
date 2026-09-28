@@ -441,6 +441,8 @@
   let chatOpen = false;
   const unsubs = [];
   let facturaUnsubs = {};
+  let cotizaciones = {};      // id -> cotización
+  let cotUnsubs = {};
 
   /* ═════════ UTILIDADES ═════════ */
   function esc(s) {
@@ -625,6 +627,7 @@
     try { localStorage.removeItem('dgp-portal-code'); } catch (e) {}
     unsubs.forEach(u => u()); unsubs.length = 0;
     Object.values(facturaUnsubs).forEach(u => u()); facturaUnsubs = {};
+    Object.values(cotUnsubs).forEach(u => u()); cotUnsubs = {};
     location.reload();
   }
   document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
@@ -642,6 +645,7 @@
       document.getElementById('tb-sub').textContent = portal.nombre || 'Portal de clientes';
       document.getElementById('tb-avatar').textContent = (portal.nombre || '?')[0].toUpperCase();
       syncFacturas(portal.facturaIds || []);
+      syncCotizaciones(portal.cotizacionIds || []);
       updateChatBadge();
       render();
     }, () => toast('Se perdió la conexión. Recarga la página.', 'err')));
@@ -684,6 +688,64 @@
     });
   }
 
+  function syncCotizaciones(ids) {
+    const set = new Set(ids);
+    Object.keys(cotUnsubs).forEach(id => { if (!set.has(id)) { cotUnsubs[id](); delete cotUnsubs[id]; delete cotizaciones[id]; } });
+    ids.forEach(id => {
+      if (cotUnsubs[id]) return;
+      cotUnsubs[id] = db.collection('cotizaciones').doc(id).onSnapshot(s => {
+        if (s.exists) cotizaciones[id] = { _id: id, ...s.data() }; else delete cotizaciones[id];
+        render();
+      }, () => {});
+    });
+  }
+  function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function cotEstado(c) { return c.estado === 'enviada' && c.venceEl && c.venceEl < hoyISO() ? 'vencida' : (c.estado || 'enviada'); }
+  function cotPorRevisar() { return Object.values(cotizaciones).filter(c => cotEstado(c) === 'enviada'); }
+  const COT_LABEL = { enviada: ['porpagar', 'Por revisar'], aceptada: ['pagado', 'Aceptada'], facturada: ['pagado', 'Facturada'], rechazada: ['cancelada', 'Rechazada'], vencida: ['pausada', 'Vencida'] };
+  function cotRow(c) {
+    const est = cotEstado(c);
+    const [cls, lbl] = COT_LABEL[est] || COT_LABEL.enviada;
+    return `
+      <div class="inv">
+        <div class="inv-ico" style="background:var(--violet-x);color:var(--violet);">${I.file}</div>
+        <div class="inv-body">
+          <div class="inv-id">${esc(c.docId || c._id)}</div>
+          <div class="inv-srv">${esc((c.items || []).map(i => i.s).join(', ') || '—')}</div>
+          <div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span class="pill ${cls}">${lbl}</span>
+            ${c.venceEl && est === 'enviada' ? `<span style="font-size:11px;color:var(--faint);">Válida hasta ${fmtDate(c.venceEl)}</span>` : ''}
+          </div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-amt">${money(c.total)}</div>
+          <div class="inv-actions">
+            <a class="btn" href="/cotizacion.html?id=${encodeURIComponent(c._id)}" target="_blank" rel="noopener">${I.eye} Ver</a>
+            ${est === 'enviada' ? `<button class="btn green" onclick="responderCot('${esc(c._id)}','aceptada')">${I.check} Aceptar</button>
+              <button class="btn" onclick="responderCot('${esc(c._id)}','rechazada')">Rechazar</button>` : ''}
+            ${est === 'facturada' && c.facturaId ? `<a class="btn primary" href="${linkFactura(c.facturaId)}" target="_blank" rel="noopener">Ver factura</a>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+  async function responderCot(id, estado) {
+    const c = cotizaciones[id]; if (!c) return;
+    const ok = estado === 'aceptada'
+      ? confirm(`¿Aceptar la cotización ${c.docId || ''} por ${money(c.total)}? Te enviaremos la factura para comenzar.`)
+      : confirm(`¿Rechazar la cotización ${c.docId || ''}?`);
+    if (!ok) return;
+    try {
+      await db.collection('cotizaciones').doc(id).update({ estado, respondidoPor: portal.nombre || '', respuestaNota: 'Respondida desde el portal', respondidoAt: firebase.firestore.FieldValue.serverTimestamp() });
+      tg(`${estado === 'aceptada' ? '✅ COTIZACIÓN ACEPTADA (portal)' : '❌ Cotización rechazada (portal)'}
+
+🧾 ${c.docId || id} · ${money(c.total)}
+👤 ${portal.nombre}
+
+${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotizaciones:\n' + ADMIN_URL : ''}`);
+      toast(estado === 'aceptada' ? '¡Cotización aceptada! Te enviaremos la factura.' : 'Cotización rechazada.');
+    } catch (e) { toast('No se pudo guardar tu respuesta.', 'err'); }
+  }
+
   /* ═════════ NAVEGACIÓN ═════════ */
   const PAGES = [
     { id: 'inicio',        label: 'Inicio',        short: 'Inicio',    icon: 'home' },
@@ -705,7 +767,7 @@
       </button>`).join('');
   }
   function navCounts() {
-    const pend = Object.values(facturas).filter(d => saldoFactura(d) > 0).length;
+    const pend = Object.values(facturas).filter(d => saldoFactura(d) > 0).length + cotPorRevisar().length;
     return { facturacion: pend };
   }
   function go(p) {
@@ -760,6 +822,16 @@
           <div class="alert-text">El equipo de DGP Group te respondió.</div>
         </div>
         <button class="alert-btn" onclick="toggleChat(true)">Abrir chat</button>
+      </div>`);
+    const cr = cotPorRevisar();
+    if (cr.length) alerts.push(`
+      <div class="alert info">
+        <div class="alert-ico">${I.file}</div>
+        <div class="alert-body">
+          <div class="alert-title">Tienes ${cr.length === 1 ? 'una cotización' : cr.length + ' cotizaciones'} por revisar</div>
+          <div class="alert-text">${esc(cr.map(c => (c.docId || '') + ' · ' + money(c.total)).join(', '))}</div>
+        </div>
+        <button class="alert-btn" onclick="go('facturacion')">Revisar</button>
       </div>`);
     const bp = briefsPendientes();
     if (bp.length) alerts.push(`
@@ -956,6 +1028,8 @@
         <div><div class="lbl">Pendiente por pagar</div><div class="amt">${money(deuda)}</div></div>
         <div style="text-align:right;"><div class="lbl">Total pagado</div><div class="amt" style="color:#4ade80;">${money(pagado)}</div></div>
       </div>
+      ${Object.keys(cotizaciones).length ? `<div class="section-label">Cotizaciones (${Object.keys(cotizaciones).length})</div>
+        ${Object.values(cotizaciones).sort((a, b) => (cotEstado(a) === 'enviada' ? -1 : 0) - (cotEstado(b) === 'enviada' ? -1 : 0)).map(cotRow).join('')}` : ''}
       <div class="section-label">Por pagar (${pend.length})</div>
       ${pend.length ? pend.map(invRow).join('') : empty('check', 'No tienes facturas pendientes.')}
       <div class="section-label">Pagadas (${pag.length})</div>

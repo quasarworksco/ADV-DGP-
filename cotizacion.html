@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotización — DGP Group USA</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon"             href="/logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#f1f5f9; font-family:'IBM Plex Sans',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px; color:#0a0f1e; }
+    .card { background:white; max-width:540px; width:100%; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.12); }
+    .head { background:linear-gradient(135deg,#0f172a,#312e81); padding:30px 32px 26px; position:relative; }
+    .head.ok { background:linear-gradient(135deg,#065f46,#059669); }
+    .head.no { background:linear-gradient(135deg,#334155,#64748b); }
+    .brandrow { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+    .brandrow img { width:42px; height:42px; object-fit:contain; display:block; }
+    .brand { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:white; line-height:1; }
+    .brand-sub { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.55); margin-top:3px; }
+    .title { font-family:'Bebas Neue',sans-serif; font-size:36px; color:white; letter-spacing:1px; line-height:1; }
+    .docnum { font-family:'Bebas Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.5); margin-top:6px; letter-spacing:2px; }
+    .badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.15); color:white; font-size:10px; font-weight:600; letter-spacing:2px; padding:4px 14px; border-radius:20px; margin-top:12px; text-transform:uppercase; }
+    .badge::before { content:''; width:6px; height:6px; border-radius:50%; background:#a5b4fc; }
+    .head.ok .badge::before { background:#6ee7b7; }
+    .zig { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#312e81; background-size:14px 14px; background-repeat:repeat-x; }
+    .zig.ok { background-color:#059669; } .zig.no { background-color:#64748b; }
+    .body { padding:26px 32px 0; }
+    .meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #eef2f7; }
+    .meta-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; margin-bottom:3px; }
+    .meta-value { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:.5px; }
+    .meta-value.warn { color:#b45309; }
+    .client { border-radius:10px; padding:13px 16px; margin-bottom:20px; background:#f8fafc; border:1px solid #eef2f7; border-left:3px solid #312e81; }
+    .client-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#475569; margin-bottom:3px; }
+    .client-name { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:.5px; }
+    .nota { background:#f5f3ff; border:1px solid rgba(124,58,237,0.2); border-radius:10px; padding:10px 14px; margin-bottom:20px; font-size:12px; color:#5b21b6; line-height:1.5; white-space:pre-wrap; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:#64748b; padding:9px 10px; text-align:left; background:#f8fafc; border-top:1px solid #eef2f7; border-bottom:1px solid #eef2f7; }
+    thead th:first-child { padding-left:12px; border-left:1px solid #eef2f7; border-radius:8px 0 0 8px; }
+    thead th:last-child { padding-right:12px; border-right:1px solid #eef2f7; border-radius:0 8px 8px 0; }
+    tbody td { padding:12px 10px; font-size:12.5px; color:#475569; border-bottom:1px solid #eef2f7; vertical-align:top; }
+    tbody td:first-child { padding-left:12px; color:#0a0f1e; font-weight:500; }
+    tbody td:last-child { padding-right:12px; font-weight:600; color:#0a0f1e; }
+    .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+    .ctr { text-align:center; }
+    .total { margin:16px 32px 0; padding:18px 22px; border-radius:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; background:#0a0f1e; }
+    .total-label { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
+    .total-amount { font-family:'Bebas Neue',sans-serif; font-size:34px; color:white; line-height:1; }
+    .resp { margin:22px 32px 0; }
+    .resp h3 { font-size:14px; font-weight:700; margin-bottom:4px; }
+    .resp p { font-size:12px; color:#64748b; line-height:1.5; margin-bottom:12px; }
+    .field { margin-bottom:10px; }
+    .field label { display:block; font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:#64748b; margin-bottom:5px; }
+    .field input, .field textarea { width:100%; padding:11px 13px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; font-family:inherit; outline:none; }
+    .field input:focus, .field textarea:focus { border-color:#312e81; }
+    .btns { display:grid; grid-template-columns:2fr 1fr; gap:10px; margin-top:6px; }
+    .btn { padding:13px; border-radius:11px; font-family:inherit; font-size:12px; font-weight:700; letter-spacing:1px; cursor:pointer; border:1.5px solid; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+    .btn.si { background:#059669; border-color:#059669; color:white; }
+    .btn.si:hover { background:#047857; }
+    .btn.no { background:white; border-color:#e2e8f0; color:#64748b; }
+    .btn.no:hover { border-color:#dc2626; color:#dc2626; }
+    .btn.wa { background:#dcfce7; border-color:rgba(5,150,105,0.25); color:#15803d; }
+    .btn.blue { background:#1438cc; border-color:#1438cc; color:white; }
+    .btn:disabled { opacity:.6; cursor:wait; }
+    .estado { margin:22px 32px 0; padding:16px 18px; border-radius:14px; font-size:13px; line-height:1.55; }
+    .estado strong { display:block; font-size:14px; margin-bottom:3px; }
+    .estado.ok { background:#ecfdf5; border:1px solid rgba(5,150,105,.25); color:#065f46; }
+    .estado.no { background:#f8fafc; border:1px solid #e2e8f0; color:#475569; }
+    .estado.warn { background:#fffbeb; border:1px solid rgba(217,119,6,.3); color:#92400e; }
+    .estado .btn { margin-top:12px; }
+    .foot { padding:22px 32px 26px; text-align:center; font-size:11px; color:#94a3b8; line-height:1.6; }
+    .foot strong { color:#0a0f1e; }
+    .err { font-size:12px; color:#dc2626; margin-top:8px; min-height:14px; }
+    .loading, .missing { padding:60px 24px; text-align:center; color:#64748b; font-size:13px; }
+    @media (max-width:560px) {
+      body { padding:0; }
+      .card { border-radius:0; min-height:100vh; }
+      .head { padding:24px 20px 18px; }
+      .body { padding:20px 20px 0; }
+      .total, .resp, .estado { margin-left:20px; margin-right:20px; }
+      .foot { padding:18px 20px 22px; }
+      .col-precio { display:none; }
+      .total-amount { font-size:26px; }
+      .btns { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card"><div class="loading">Cargando cotización…</div></div>
+
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc",
+    authDomain:        "dgp-group.firebaseapp.com",
+    projectId:         "dgp-group",
+    storageBucket:     "dgp-group.firebasestorage.app",
+    messagingSenderId: "492620738391",
+    appId:             "1:492620738391:web:e497fdfe134e6e781b5812"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_CHAT_ID = '8446165096';
+  const WA = '12398231738';
+
+  const id = new URLSearchParams(location.search).get('id');
+  let cot = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function money(n) { return '$' + (Number(n) || 0).toFixed(2); }
+  function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function fechaLarga(iso) { return iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' }) : '—'; }
+  function estadoActual(c) { return c.estado === 'enviada' && c.venceEl && c.venceEl < hoyISO() ? 'vencida' : (c.estado || 'enviada'); }
+
+  async function cargar() {
+    const card = document.getElementById('card');
+    if (!id) { card.innerHTML = '<div class="missing">Link de cotización no válido.</div>'; return; }
+    try {
+      const snap = await db.collection('cotizaciones').doc(id).get();
+      if (!snap.exists) {
+        card.innerHTML = `<div class="missing">Esta cotización no existe o fue retirada.<br><br><a class="btn wa" href="https://wa.me/${WA}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></div>`;
+        return;
+      }
+      cot = { _id: id, ...snap.data() };
+      render();
+    } catch (e) {
+      card.innerHTML = '<div class="missing">No pudimos cargar la cotización. Revisa tu conexión e intenta de nuevo.</div>';
+    }
+  }
+
+  function render() {
+    const c = cot;
+    const est = estadoActual(c);
+    const headCls = est === 'aceptada' || est === 'facturada' ? 'ok' : (est === 'rechazada' || est === 'vencida' ? 'no' : '');
+    const badge = { enviada:'Pendiente de aprobación', aceptada:'Aceptada', rechazada:'Rechazada', facturada:'Aprobada · facturada', vencida:'Vencida' }[est];
+    const items = (c.items || []).map(it => `
+      <tr>
+        <td>${esc(it.s)}</td>
+        <td class="ctr">${it.c || 1}</td>
+        <td class="num col-precio">${money(it.p)}</td>
+        <td class="num">${money(it.t)}</td>
+      </tr>`).join('');
+
+    let accion = '';
+    if (est === 'enviada') {
+      accion = `
+        <div class="resp" id="resp">
+          <h3>¿Te parece bien esta propuesta?</h3>
+          <p>Al aceptarla, te enviaremos la factura para comenzar. Si tienes dudas o quieres ajustar algo, escríbenos.</p>
+          <div class="field"><label>Tu nombre</label><input id="r-nombre" maxlength="80" value="${esc(c.cli || '')}"></div>
+          <div class="field"><label>Comentario (opcional)</label><textarea id="r-nota" rows="2" maxlength="300" placeholder="Ej. ¿Podemos empezar el lunes?"></textarea></div>
+          <div class="btns">
+            <button class="btn si" id="btn-si" onclick="responder('aceptada')">Aceptar cotización</button>
+            <button class="btn no" id="btn-no" onclick="responder('rechazada')">Rechazar</button>
+          </div>
+          <div class="err" id="r-err"></div>
+        </div>`;
+    } else if (est === 'aceptada') {
+      accion = `<div class="estado ok"><strong>¡Cotización aceptada!</strong>Gracias${c.respondidoPor ? ', ' + esc(c.respondidoPor.split(' ')[0]) : ''}. En breve te enviaremos la factura para comenzar.</div>`;
+    } else if (est === 'facturada') {
+      accion = `<div class="estado ok"><strong>Cotización aprobada</strong>Ya generamos tu factura.${c.facturaId ? `<br><a class="btn blue" href="/factura-publica.html?id=${encodeURIComponent(c.facturaId)}">Ver mi factura</a>` : ''}</div>`;
+    } else if (est === 'rechazada') {
+      accion = `<div class="estado no"><strong>Cotización rechazada</strong>Si cambias de opinión o quieres otra propuesta, escríbenos.<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent('Hola, sobre la cotización ' + (c.docId || '') + '...')}" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>`;
+    } else if (est === 'vencida') {
+      accion = `<div class="estado warn"><strong>Esta cotización venció el ${fechaLarga(c.venceEl)}</strong>Los precios pueden haber cambiado. Escríbenos y te la actualizamos.<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent('Hola, quiero actualizar la cotización ' + (c.docId || ''))}" target="_blank" rel="noopener">Pedir cotización actualizada</a></div>`;
+    }
+
+    document.title = `Cotización ${c.docId || ''} — DGP Group USA`;
+    document.getElementById('card').innerHTML = `
+      <div class="head ${headCls}">
+        <div class="brandrow">
+          <img src="/logo-white.png" alt="DGP Group">
+          <div><div class="brand">DGP GROUP USA</div><div class="brand-sub">dgp-link.com · Servicios digitales</div></div>
+        </div>
+        <div class="title">COTIZACIÓN</div>
+        <div class="docnum">N° ${esc(c.docId || id)}</div>
+        <div class="badge">${badge}</div>
+      </div>
+      <div class="zig ${headCls}"></div>
+      <div class="body">
+        <div class="meta">
+          <div><div class="meta-label">Fecha</div><div class="meta-value">${esc(c.fecha || '—')}</div></div>
+          ${c.emisor ? `<div style="text-align:center"><div class="meta-label">Preparada por</div><div class="meta-value">${esc(c.emisor)}</div></div>` : ''}
+          ${c.venceEl && est !== 'facturada' ? `<div style="text-align:right"><div class="meta-label">Válida hasta</div><div class="meta-value ${est === 'vencida' ? 'warn' : ''}">${fechaLarga(c.venceEl)}</div></div>` : ''}
+        </div>
+        <div class="client"><div class="client-label">Preparada para</div><div class="client-name">${esc(c.cli || '—')}</div></div>
+        ${c.nota ? `<div class="nota">${esc(c.nota)}</div>` : ''}
+        <table>
+          <thead><tr><th>Descripción</th><th class="ctr">Cant.</th><th class="num col-precio">Precio</th><th class="num">Importe</th></tr></thead>
+          <tbody>${items}</tbody>
+        </table>
+      </div>
+      <div class="total"><span class="total-label">Total</span><span class="total-amount">${money(c.total)}</span></div>
+      ${accion}
+      <div class="foot">Esta cotización no es una factura. Los precios son válidos hasta la fecha indicada.<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></div>`;
+  }
+
+  async function responder(estado) {
+    const nombre = (document.getElementById('r-nombre').value || '').trim();
+    const nota = (document.getElementById('r-nota').value || '').trim();
+    const err = document.getElementById('r-err');
+    err.textContent = '';
+    if (estado === 'aceptada' && !nombre) { err.textContent = 'Escribe tu nombre para aceptar.'; return; }
+    if (estado === 'rechazada' && !confirm('¿Seguro que quieres rechazar esta cotización?')) return;
+    document.getElementById('btn-si').disabled = true;
+    document.getElementById('btn-no').disabled = true;
+    try {
+      await db.collection('cotizaciones').doc(id).update({
+        estado, respondidoPor: nombre.slice(0, 80), respuestaNota: nota.slice(0, 300),
+        respondidoAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      Object.assign(cot, { estado, respondidoPor: nombre, respuestaNota: nota });
+      fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHAT_ID, disable_web_page_preview: true, text:
+          `${estado === 'aceptada' ? '✅ COTIZACIÓN ACEPTADA' : '❌ Cotización rechazada'}\n\n` +
+          `🧾 ${cot.docId || id} · ${money(cot.total)}\n👤 ${cot.cli || '—'}${nombre && nombre !== cot.cli ? ' (' + nombre + ')' : ''}` +
+          `${nota ? '\n💬 "' + nota + '"' : ''}\n\n${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotizaciones:\nhttps://adv.dgp-link.com/' : ''}` })
+      }).catch(() => {});
+      render();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } catch (e) {
+      err.textContent = 'No se pudo guardar tu respuesta. Intenta de nuevo o escríbenos por WhatsApp.';
+      document.getElementById('btn-si').disabled = false;
+      document.getElementById('btn-no').disabled = false;
+    }
+  }
+
+  cargar();
+</script>
+</body>
+</html>

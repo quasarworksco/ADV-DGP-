@@ -1176,6 +1176,7 @@
     <!-- SUBTABS -->
     <div class="subtabs">
       <button class="subtab-btn active" onclick="switchSubTab('nuevo', this)" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo Documento</button>
+      <button class="subtab-btn" id="tab-cot-btn" onclick="switchSubTab('cotizaciones', this)" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Cotizaciones<span id="cot-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 6px;margin-left:2px;"></span></button>
       <button class="subtab-btn" id="tab-historial-btn" onclick="switchSubTab('historial', this)" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Historial</button>
     </div>
 
@@ -1196,6 +1197,15 @@
           <select id="doc-type" onchange="onTypeChange()">
             <option value="factura">🧾 Factura (pendiente de pago)</option>
             <option value="recibo">✅ Recibo (pago ya recibido)</option>
+            <option value="cotizacion">📋 Cotización (presupuesto para aprobar)</option>
+          </select>
+        </div>
+        <div class="ff" id="field-validez" style="display:none;">
+          <label>Válida por</label>
+          <select id="cot-validez">
+            <option value="7">7 días</option>
+            <option value="15" selected>15 días</option>
+            <option value="30">30 días</option>
           </select>
         </div>
         <div class="ff" id="plantillas-wrap" style="margin-top:-8px;">
@@ -1313,6 +1323,23 @@
           <div class="hist-filters" id="hist-emisor-filters" style="margin-top:6px;"></div>
         </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
+      </div>
+    </div>
+
+    <div id="subtab-cotizaciones" style="display:none;">
+      <div class="panel-f panel-f-full">
+        <div class="panel-title-f">Cotizaciones</div>
+        <div class="hist-search-bar">
+          <input type="text" id="cot-search" placeholder="Buscar por cliente o N° de cotización..." oninput="renderCotizaciones()">
+          <div class="hist-filters">
+            <button class="hist-filter-btn active" data-cotf="todas" onclick="setCotFiltro('todas',this)">Todas</button>
+            <button class="hist-filter-btn" data-cotf="enviada" onclick="setCotFiltro('enviada',this)">Esperando respuesta</button>
+            <button class="hist-filter-btn" data-cotf="aceptada" onclick="setCotFiltro('aceptada',this)">Aceptadas</button>
+            <button class="hist-filter-btn" data-cotf="facturada" onclick="setCotFiltro('facturada',this)">Facturadas</button>
+            <button class="hist-filter-btn" data-cotf="rechazada" onclick="setCotFiltro('rechazada',this)">Rechazadas</button>
+          </div>
+        </div>
+        <div id="cot-list"></div>
       </div>
     </div>
 
@@ -1954,6 +1981,7 @@ function initPage() {
   initClientesCRM();
   initPortales();
   initCuentasPago();
+  initCotizaciones();
   onTypeChange();
 }
 
@@ -2340,7 +2368,9 @@ function switchSubTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('subtab-nuevo').style.display     = tab === 'nuevo'    ? 'grid'  : 'none';
   document.getElementById('subtab-historial').style.display = tab === 'historial' ? 'block' : 'none';
+  document.getElementById('subtab-cotizaciones').style.display = tab === 'cotizaciones' ? 'block' : 'none';
   if (tab === 'historial') renderHistorial();
+  if (tab === 'cotizaciones') renderCotizaciones();
 }
 
 function todayISO() {
@@ -2425,7 +2455,12 @@ function updateHistorialBadge() {
 /* ─── Type change ─── */
 function onTypeChange() {
   const type = document.getElementById('doc-type').value;
-  document.getElementById('field-nota').style.display = type === 'factura' ? 'block' : 'none';
+  document.getElementById('field-nota').style.display = (type === 'factura' || type === 'cotizacion') ? 'block' : 'none';
+  document.getElementById('field-validez').style.display = type === 'cotizacion' ? 'block' : 'none';
+  if (type === 'cotizacion') {
+    document.getElementById('btn-submit').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Generar Cotización';
+    return;
+  }
   document.getElementById('btn-submit').innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
 }
 
@@ -2492,6 +2527,8 @@ async function saveDoc() {
     toast('⚠️ Completa el cliente y añade al menos un servicio.', 'err');
     return;
   }
+
+  if (type === 'cotizacion') return guardarCotizacion();
 
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
@@ -4767,6 +4804,183 @@ function closePortalModal() {
 document.getElementById('modalPortal').addEventListener('click', function(e) {
   if (e.target === this) closePortalModal();
 });
+
+/* ═══════════════════════════════════════════════════════
+   COTIZACIONES
+═══════════════════════════════════════════════════════ */
+const COT_URL = 'https://adv.dgp-link.com/cotizacion.html?id=';
+const COT_ESTADOS = {
+  enviada:   ['Esperando respuesta', '#1438cc', '#eff6ff'],
+  aceptada:  ['Aceptada',            '#059669', '#ecfdf5'],
+  rechazada: ['Rechazada',           '#dc2626', '#fef2f2'],
+  facturada: ['Facturada',           '#475569', '#f1f5f9'],
+  vencida:   ['Vencida',             '#b45309', '#fffbeb']
+};
+let cotizacionesList = [];
+let _cotPrev = null;
+let cotFiltro = 'todas';
+
+function cotEstado(c) {
+  if (c.estado === 'enviada' && c.venceEl && c.venceEl < todayISO()) return 'vencida';
+  return c.estado || 'enviada';
+}
+function initCotizaciones() {
+  db.collection('cotizaciones').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    cotizacionesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    if (_cotPrev) {
+      cotizacionesList.forEach(c => {
+        const antes = _cotPrev[c._id];
+        if (antes && antes !== c.estado && (c.estado === 'aceptada' || c.estado === 'rechazada')) {
+          toast(`Cotización ${c.estado} — ${c.cli || c.docId}`, c.estado === 'aceptada' ? 'ok' : 'err');
+          _addNotifBadge();
+        }
+      });
+    }
+    _cotPrev = Object.fromEntries(cotizacionesList.map(c => [c._id, c.estado]));
+    const pendientes = cotizacionesList.filter(c => c.estado === 'aceptada').length;
+    const b = document.getElementById('cot-badge');
+    if (b) { b.textContent = pendientes; b.style.display = pendientes ? 'inline' : 'none'; }
+    if (document.getElementById('subtab-cotizaciones').style.display !== 'none') renderCotizaciones();
+  }, err => console.error('Cotizaciones:', err));
+}
+function setCotFiltro(f, btn) {
+  cotFiltro = f;
+  document.querySelectorAll('[data-cotf]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCotizaciones();
+}
+function renderCotizaciones() {
+  const el = document.getElementById('cot-list');
+  if (!el) return;
+  const q = ptNorm(document.getElementById('cot-search')?.value);
+  let list = cotizacionesList;
+  if (cotFiltro !== 'todas') list = list.filter(c => cotEstado(c) === cotFiltro || (cotFiltro === 'enviada' && cotEstado(c) === 'vencida'));
+  if (q) list = list.filter(c => ptNorm(c.cli).includes(q) || ptNorm(c.docId).includes(q));
+  if (!list.length) {
+    el.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:28px 0;">${cotizacionesList.length ? 'No hay cotizaciones con ese filtro.' : 'Aún no hay cotizaciones. Créalas desde "Nuevo documento" eligiendo el tipo Cotización.'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const est = cotEstado(c);
+    const [lbl, col, bg] = COT_ESTADOS[est] || COT_ESTADOS.enviada;
+    const venc = c.venceEl ? new Date(c.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
+    return `<div class="doc-item" style="align-items:center;">
+      <div class="doc-badge" style="background:${bg};color:${col};border:1px solid ${col}33;">${lbl.toUpperCase()}</div>
+      <div class="doc-info">
+        <div class="doc-id">${esc(c.docId || c._id)}${c.emisor ? `<span class="emisor-tag">${esc(c.emisor.split(' ')[0])}</span>` : ''}${c.portalCodigo ? '<span class="emisor-tag">Portal</span>' : ''}</div>
+        <div class="doc-name">${esc(c.cli || '—')}</div>
+        <div class="doc-date">${esc(c.fecha || '')}${venc && est !== 'facturada' ? ' · vence ' + venc : ''}${c.respuestaNota ? ' · “' + esc(c.respuestaNota) + '”' : ''}</div>
+      </div>
+      <div class="doc-amount" style="font-family:'Bebas Neue',sans-serif;font-size:20px;">$${(c.total || 0).toFixed(2)}</div>
+      <div class="doc-actions" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="window.open('${COT_URL}${esc(c._id)}','_blank')">Ver</button>
+        <button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="navigator.clipboard.writeText('${COT_URL}${esc(c._id)}');toast('Link copiado 🔗')">Link</button>
+        <button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,.2);" onclick="enviarCotizacionWA('${esc(c._id)}')">WhatsApp</button>
+        ${est === 'facturada'
+          ? (c.facturaId && docsMap[c.facturaId] ? `<button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="openSheet(docsMap['${esc(c.facturaId)}'])">Ver factura</button>` : '')
+          : `<button class="btn-sm" style="background:${est === 'aceptada' ? 'var(--green-dark)' : 'var(--blue)'};color:white;border-color:transparent;" onclick="convertirCotizacion('${esc(c._id)}')">Convertir en factura</button>`}
+        <button class="btn-sm del" onclick="borrarCotizacion('${esc(c._id)}')" title="Eliminar">${PT_ICON.del}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function cotTelefono(nombre) {
+  const c = clientesList.find(x => ptNorm([x.nombre, x.apellido].filter(Boolean).join(' ')) === ptNorm(nombre));
+  const p = portalParaCliente(nombre);
+  return String(c?.telefono || p?.telefono || '').replace(/[^0-9]/g, '');
+}
+function enviarCotizacionWA(id) {
+  const c = cotizacionesList.find(x => x._id === id) || { _id: id };
+  const txt = encodeURIComponent(`Hola${c.cli ? ' ' + c.cli.split(' ')[0] : ''}! Aquí está tu cotización de DGP Group por $${(c.total || 0).toFixed(2)}:\n${COT_URL}${id}\n\nPuedes revisarla y aceptarla directamente desde el enlace.`);
+  window.open(`https://wa.me/${cotTelefono(c.cli)}?text=${txt}`, '_blank');
+}
+async function guardarCotizacion() {
+  const cli  = document.getElementById('cli-nom').value.trim();
+  const btn  = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+  try {
+    const dias = parseInt(document.getElementById('cot-validez').value) || 15;
+    const vence = new Date(); vence.setDate(vence.getDate() + dias);
+    const portalCli = portalParaCliente(cli);
+    const data = {
+      docId:      genId('COT'),
+      cli,
+      ref:        document.getElementById('pago-ref').value.trim() || '—',
+      nota:       document.getElementById('doc-nota').value.trim(),
+      fecha:      fmtDate(),
+      total:      parseFloat(cart.reduce((a, b) => a + b.t, 0).toFixed(2)),
+      moneda:     monedaSeleccionada,
+      emisor:     document.getElementById('doc-emisor').value,
+      metodoPago: document.getElementById('metodo-pago').value || null,
+      infoPago:   getInfoPago(),
+      items:      [...cart],
+      estado:     'enviada',
+      venceEl:    `${vence.getFullYear()}-${String(vence.getMonth() + 1).padStart(2, '0')}-${String(vence.getDate()).padStart(2, '0')}`,
+      portalCodigo: portalCli ? portalCli._id : null,
+      createdBy:  currentUser ? currentUser.email : 'desconocido',
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const added = await db.collection('cotizaciones').add(data);
+    if (portalCli) ptRef(portalCli._id).update({ cotizacionIds: firebase.firestore.FieldValue.arrayUnion(added.id) }).catch(() => {});
+    guardarCuentaPago(data.metodoPago, data.infoPago);
+    saveCliente(cli);
+    logActividad('Nueva cotización', `${data.docId} · ${cli} · $${data.total.toFixed(2)}`);
+    // Limpiar formulario
+    cart = []; renderCart();
+    ['cli-nom', 'pago-ref', 'doc-nota'].forEach(i => document.getElementById(i).value = '');
+    updatePortalHint(); resetMetodoPago();
+    document.getElementById('doc-type').value = 'factura'; onTypeChange();
+    btn.disabled = false;
+    // Mostrar opciones para enviarla
+    ptModal('Cotización creada', `${data.docId} · ${cli} · $${data.total.toFixed(2)}`, `
+      <p style="font-size:12px;color:var(--text-soft);margin-bottom:12px;line-height:1.5;">Envíale el link al cliente: podrá revisarla y aceptarla o rechazarla.${portalCli ? ' También le aparece en su portal.' : ''} Vence el ${new Date(data.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}.</p>
+      <div class="ff"><label>Link de la cotización</label><input readonly value="${COT_URL}${esc(added.id)}" onclick="this.select()"></div>
+      <button class="btn-edit-save" style="background:#16a34a;" onclick="enviarCotizacionWA('${esc(added.id)}')">Enviar por WhatsApp</button>
+      <button class="btn-edit-cancel" onclick="navigator.clipboard.writeText('${COT_URL}${esc(added.id)}');toast('Link copiado 🔗')">Copiar link</button>
+      <button class="btn-edit-cancel" onclick="closePortalModal();switchSubTab('cotizaciones', document.getElementById('tab-cot-btn'))">Ver cotizaciones</button>`);
+  } catch (e) {
+    console.error(e);
+    toast('Error al guardar la cotización.', 'err');
+    btn.disabled = false; onTypeChange();
+  }
+}
+async function convertirCotizacion(id) {
+  const c = cotizacionesList.find(x => x._id === id);
+  if (!c) return;
+  if (c.estado === 'facturada') { toast('Esta cotización ya se convirtió en factura.'); return; }
+  const aviso = c.estado === 'aceptada' ? '' : '\n\nOjo: el cliente todavía no la ha aceptado.';
+  if (!confirm(`¿Crear la factura de ${c.cli} por $${(c.total || 0).toFixed(2)} a partir de ${c.docId}?${aviso}`)) return;
+  try {
+    const docData = {
+      docId: genId('FAC'), type: 'factura', cli: c.cli, ref: c.ref || '—', nota: c.nota || '',
+      fecha: fmtDate(), total: c.total || 0, moneda: c.moneda || 'usd', emisor: c.emisor || '',
+      metodoPago: c.metodoPago || null, infoPago: c.infoPago || {}, contrato: false,
+      items: c.items || [], pagado: false, fechaPago: null, cotizacionId: id,
+      createdBy: currentUser ? currentUser.email : 'desconocido',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const portalCli = (c.portalCodigo && portalesList.find(p => p._id === c.portalCodigo && p.activo !== false)) || portalParaCliente(c.cli);
+    if (portalCli) docData.portalCodigo = portalCli._id;
+    const added = await db.collection('documentos').add(docData);
+    if (portalCli) {
+      registrarFacturaEnPortal(added.id, portalCli._id);
+      crearProyectoDesdeFactura(portalCli._id, added.id, docData);
+    }
+    await db.collection('cotizaciones').doc(id).update({ estado: 'facturada', facturaId: added.id, facturadaAt: firebase.firestore.FieldValue.serverTimestamp() });
+    logActividad('Cotización facturada', `${c.docId} → ${docData.docId} · ${c.cli}`);
+    toast('Factura creada desde la cotización ✅');
+    openSheet({ _fsId: added.id, ...docData });
+  } catch (e) { console.error(e); toast('Error al crear la factura.', 'err'); }
+}
+async function borrarCotizacion(id) {
+  const c = cotizacionesList.find(x => x._id === id);
+  if (!confirm(`¿Eliminar la cotización ${c?.docId || ''}? El link dejará de funcionar.`)) return;
+  try {
+    await db.collection('cotizaciones').doc(id).delete();
+    if (c?.portalCodigo) ptRef(c.portalCodigo).update({ cotizacionIds: firebase.firestore.FieldValue.arrayRemove(id) }).catch(() => {});
+    toast('Cotización eliminada.');
+  } catch (e) { toast('Error al eliminar.', 'err'); }
+}
 
 /* ═══════════════════════════════════════════════════════
    FACTURA EN INGLÉS — Sheet language toggle
