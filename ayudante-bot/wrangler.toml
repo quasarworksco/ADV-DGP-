@@ -2,9 +2,10 @@ name = "ayudante-dgp-bot"
 main = "worker.js"
 compatibility_date = "2024-09-23"
 
-# Ejecutar cerca de Groq (EE. UU.): Groq bloquea algunas regiones
+# Ejecutar SIEMPRE en EE. UU. (junto a Firebase, us-central): Groq bloquea
+# algunas regiones (p. ej. cuando el Worker corre cerca de Venezuela).
 [placement]
-mode = "smart"
+region = "gcp:us-central1"
 
 [triggers]
 crons = ["0 9 1 * *"]
