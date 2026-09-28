@@ -1081,6 +1081,28 @@
     .cp-chip.sel .cp-use { color:var(--blue); }
     .cp-x { padding:0 10px 0 6px; color:var(--text-soft); font-size:14px; line-height:1; }
     .cp-x:hover { color:#dc2626; }
+    @media (max-width:600px) { .hide-m { display:none; } .header-right { gap:6px !important; } .header-right .btn-logout { padding:7px 9px; } }
+    .color-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); background:white; border:1px solid var(--border); border-radius:12px; padding:12px; box-shadow:0 10px 30px rgba(10,15,30,.12); z-index:50; }
+    .color-menu.open { display:block; }
+    .color-menu-t { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; font-family:'IBM Plex Sans',sans-serif; white-space:nowrap; }
+    .color-menu button { width:26px; height:26px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 1px var(--border); cursor:pointer; }
+    .color-menu button:hover { transform:scale(1.1); }
+    .db-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:26px 0 10px; flex-wrap:wrap; }
+    .dash-main > .db-head:first-child { margin-top:4px; }
+    .db-pills { display:flex; gap:6px; }
+    .db-pills .dash-period-btn { border-radius:20px; padding:6px 14px; }
+    .db-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .db-meta-input { display:inline-flex; align-items:center; gap:2px; font-size:11px; color:var(--text-soft); font-family:'IBM Plex Sans',sans-serif; }
+    .db-meta-input input { width:70px; padding:3px 6px; border:1px solid var(--border); border-radius:6px; font-size:11px; font-weight:600; color:var(--black); background:var(--off); outline:none; font-family:inherit; }
+    .db-meta-input input:focus { border-color:var(--blue); background:white; }
+    .db-meta-track { height:6px; background:#f1f5f9; border-radius:6px; overflow:hidden; margin-top:8px; }
+    .dash-main .cal-day { min-height:40px; border-radius:8px; border-color:#eef2f7; }
+    .dash-main .cal-grid { gap:3px; }
+    .dash-main .cal-day.empty { border-color:transparent; background:transparent; }
+    .dash-main .cal-day.today { border-color:var(--blue); }
+    .dash-main .dash-top-row { border-bottom-color:#f1f5f9; }
+    .dash-main .actividad-row { border-bottom-color:#f1f5f9; }
+    @media (max-width:900px) { .db-grid-2 { grid-template-columns:1fr; } }
     .cb-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:12px; }
     .cb-tile { background:white; border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
     .cb-tile-l { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); font-family:'IBM Plex Sans',sans-serif; }
@@ -1165,7 +1187,21 @@
     </div>
   </div>
   <div class="header-right">
-    <button class="btn-logout" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Probar sistema</button>
+    <button class="btn-logout" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
+    <div style="position:relative;">
+      <button class="btn-logout" onclick="document.getElementById('color-menu').classList.toggle('open')" title="Color del sistema" aria-label="Color del sistema" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"/></svg></button>
+      <div id="color-menu" class="color-menu">
+        <div class="color-menu-t">Color del sistema</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="setColor('#1438cc')" style="background:#1438cc" title="Azul"></button>
+          <button onclick="setColor('#7c3aed')" style="background:#7c3aed" title="Violeta"></button>
+          <button onclick="setColor('#059669')" style="background:#059669" title="Verde"></button>
+          <button onclick="setColor('#dc2626')" style="background:#dc2626" title="Rojo"></button>
+          <button onclick="setColor('#d97706')" style="background:#d97706" title="Ámbar"></button>
+          <button onclick="setColor('#0891b2')" style="background:#0891b2" title="Cyan"></button>
+        </div>
+      </div>
+    </div>
     <div class="live-dot">EN VIVO</div>
     <div class="user-avatar" id="user-avatar-init">?</div>
     <button class="btn-logout" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
@@ -1378,122 +1414,73 @@
   <div class="dash-main">
 
     <!-- COBRANZA -->
-    <div class="dash-section-label">Cobranza</div>
+    <div class="db-head"><div class="dash-section-label" style="margin:0;">Cobranza</div></div>
     <div id="dash-cobranza"></div>
 
-    <!-- Period selector — solo afecta ventas -->
-    <div class="dash-period-row">
-      <button class="dash-period-btn active" onclick="setDashPeriod('semana',this)">Esta semana</button>
-      <button class="dash-period-btn" onclick="setDashPeriod('mes',this)">Este mes</button>
-      <button class="dash-period-btn" onclick="setDashPeriod('todo',this)">Todo</button>
-    </div>
-
-    <!-- KPI ventas (filtradas por período) -->
-    <div class="dash-section-label">Ventas registradas</div>
-    <div class="dash-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Monto Total</div>
-        <div class="dash-kpi-value" id="dash-total-ventas">$0.00</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">N° de Ventas</div>
-        <div class="dash-kpi-value" id="dash-num-ventas">0</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Promedio/Venta</div>
-        <div class="dash-kpi-value" id="dash-avg-venta">$0.00</div>
+    <!-- VENTAS (filtradas por período) -->
+    <div class="db-head">
+      <div class="dash-section-label" style="margin:0;">Ventas</div>
+      <div class="db-pills">
+        <button class="dash-period-btn active" onclick="setDashPeriod('semana',this)">Esta semana</button>
+        <button class="dash-period-btn" onclick="setDashPeriod('mes',this)">Este mes</button>
+        <button class="dash-period-btn" onclick="setDashPeriod('todo',this)">Todo</button>
       </div>
     </div>
-
-    <!-- KPI facturas (siempre totales, no filtran por período) -->
-    <div class="dash-section-label" style="margin-top:16px;">Estado de facturación (total)</div>
-    <div class="dash-kpi-grid" style="margin-bottom:16px;">
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Facturas Emitidas</div>
-        <div class="dash-kpi-value" id="dash-total-facturas">0</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Cobrado</div>
-        <div class="dash-kpi-value green" id="dash-cobrado">$0.00</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Por Cobrar</div>
-        <div class="dash-kpi-value amber" id="dash-pendiente">$0.00</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Pago Parcial</div>
-        <div class="dash-kpi-value" id="dash-parciales">0</div>
-      </div>
-    </div>
-    <!-- Meta mensual -->
-    <div class="panel-f" style="margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="panel-title-f" style="margin-bottom:0;">Meta del mes</div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:var(--text-soft);">$</span>
-          <input type="number" id="meta-input" min="0" step="100"
-            style="width:90px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:var(--black);background:var(--off);outline:none;"
-            onchange="guardarMeta(this.value)" oninput="actualizarMeta(this.value)">
+    <div class="cb-tiles">
+      <div class="cb-tile"><div class="cb-tile-l">Monto total</div><div class="cb-tile-v" id="dash-total-ventas">$0.00</div><div class="cb-tile-n">Facturas cobradas en el período</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">N° de ventas</div><div class="cb-tile-v" id="dash-num-ventas">0</div><div class="cb-tile-n">Facturas con pago</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Promedio por venta</div><div class="cb-tile-v" id="dash-avg-venta">$0.00</div><div class="cb-tile-n">Ticket promedio</div></div>
+      <div class="cb-tile">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div class="cb-tile-l">Meta del mes</div>
+          <label class="db-meta-input" title="Editar meta">$<input type="number" id="meta-input" min="0" step="100" onchange="guardarMeta(this.value)" oninput="actualizarMeta(this.value)"></label>
         </div>
+        <div class="cb-tile-v" id="meta-pct-label">0%</div>
+        <div class="db-meta-track"><div id="meta-bar" style="height:100%;background:var(--blue);border-radius:6px;width:0%;transition:width .4s ease;"></div></div>
+        <div class="cb-tile-n"><span id="meta-amt-label">$0 / $0</span> · <span id="meta-msg"></span></div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span id="meta-pct-label" style="font-size:11px;font-weight:700;color:var(--blue);">0%</span>
-        <span id="meta-amt-label" style="font-size:11px;color:var(--text-soft);">$0 / $0</span>
+    </div>
+    <div class="db-grid-2">
+      <div class="cb-card">
+        <div class="cb-title">Ventas por empleado</div>
+        <div class="cb-sub">Según el emisor de cada factura</div>
+        <div id="dash-emp-bars"></div>
       </div>
-      <div style="height:8px;background:var(--off);border-radius:20px;overflow:hidden;border:1px solid var(--border);">
-        <div id="meta-bar" style="height:100%;background:var(--blue);border-radius:20px;width:0%;transition:width 0.4s ease;"></div>
+      <div class="cb-card">
+        <div class="cb-title">Top clientes</div>
+        <div class="cb-sub">Los que más compraron en el período</div>
+        <div id="dash-top-clients"></div>
+        <div class="cb-title" style="margin-top:18px;">Servicios más vendidos</div>
+        <div class="cb-sub">Por cantidad de ventas</div>
+        <div id="dash-top-services"></div>
       </div>
-      <div id="meta-msg" style="font-size:11px;color:var(--text-soft);margin-top:6px;text-align:right;"></div>
     </div>
 
-    <!-- Sales by employee -->
-    <div class="panel-f" style="margin-bottom:12px;">
-      <div class="panel-title-f">Ventas por empleado</div>
-      <div id="dash-emp-bars"></div>
+    <!-- HISTÓRICO -->
+    <div class="db-head"><div class="dash-section-label" style="margin:0;">Histórico de facturación</div></div>
+    <div class="cb-tiles" style="grid-template-columns:repeat(3,1fr);">
+      <div class="cb-tile"><div class="cb-tile-l">Facturas emitidas</div><div class="cb-tile-v" id="dash-total-facturas">0</div><div class="cb-tile-n">Desde el inicio</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Cobrado en total</div><div class="cb-tile-v" id="dash-cobrado" style="color:var(--green-dark);">$0.00</div><div class="cb-tile-n">Pagos completos y parciales</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Con pago parcial</div><div class="cb-tile-v" id="dash-parciales">0</div><div class="cb-tile-n">Facturas abonadas a medias</div></div>
     </div>
-
-    <!-- Top clients -->
-    <div class="panel-f" style="margin-bottom:12px;">
-      <div class="panel-title-f">Top clientes</div>
-      <div id="dash-top-clients"></div>
-    </div>
-
-    <!-- Top services -->
-    <div class="panel-f">
-      <div class="panel-title-f">Servicios más vendidos</div>
-      <div id="dash-top-services"></div>
-    </div>
-
-    <!-- Calendario -->
-    <div class="panel-f" style="margin-top:12px;">
-      <div class="panel-title-f">Calendario de ventas</div>
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calPrevMonth()">&#9664;</button>
-        <span id="cal-titulo" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--black);"></span>
-        <button class="cal-nav-btn" onclick="calNextMonth()">&#9658;</button>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div class="cal-legend"><span class="cal-dot" style="background:var(--blue);"></span> Día con ventas</div>
-    </div>
-
-    <!-- Actividad reciente -->
-    <div class="panel-f" style="margin-top:12px;">
-      <div class="panel-title-f">Actividad reciente</div>
-      <div id="actividad-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:16px;">Cargando...</div></div>
-    </div>
-
-    <!-- Color del sistema -->
-    <div class="panel-f" style="margin-top:12px;">
-      <div class="panel-title-f">Personalización</div>
-      <div class="ff" style="margin-top:10px;"><label style="font-size:11px;color:var(--text-soft);font-weight:600;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:8px;">Color principal del sistema</label>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button onclick="setColor('#1438cc')" style="width:32px;height:32px;border-radius:50%;background:#1438cc;border:3px solid #1438cc;cursor:pointer;" title="Azul (default)"></button>
-          <button onclick="setColor('#7c3aed')" style="width:32px;height:32px;border-radius:50%;background:#7c3aed;border:3px solid #7c3aed;cursor:pointer;" title="Violeta"></button>
-          <button onclick="setColor('#059669')" style="width:32px;height:32px;border-radius:50%;background:#059669;border:3px solid #059669;cursor:pointer;" title="Verde"></button>
-          <button onclick="setColor('#dc2626')" style="width:32px;height:32px;border-radius:50%;background:#dc2626;border:3px solid #dc2626;cursor:pointer;" title="Rojo"></button>
-          <button onclick="setColor('#d97706')" style="width:32px;height:32px;border-radius:50%;background:#d97706;border:3px solid #d97706;cursor:pointer;" title="Ámbar"></button>
-          <button onclick="setColor('#0891b2')" style="width:32px;height:32px;border-radius:50%;background:#0891b2;border:3px solid #0891b2;cursor:pointer;" title="Cyan"></button>
+    <span id="dash-pendiente" hidden></span>
+    <div class="db-grid-2">
+      <div class="cb-card">
+        <div class="cal-nav">
+          <div><div class="cb-title">Calendario de ventas</div></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="cal-nav-btn" onclick="calPrevMonth()" aria-label="Mes anterior">&#9664;</button>
+            <span id="cal-titulo" style="font-size:13px;font-weight:600;color:var(--black);min-width:120px;text-align:center;font-family:'IBM Plex Sans',sans-serif;"></span>
+            <button class="cal-nav-btn" onclick="calNextMonth()" aria-label="Mes siguiente">&#9658;</button>
+          </div>
         </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend"><span class="cal-dot" style="background:var(--blue);"></span> Día con ventas</div>
+      </div>
+      <div class="cb-card">
+        <div class="cb-title">Actividad reciente</div>
+        <div class="cb-sub">Últimos movimientos del equipo</div>
+        <div id="actividad-list" style="max-height:380px;overflow-y:auto;"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:16px;">Cargando...</div></div>
       </div>
     </div>
 
@@ -3673,6 +3660,10 @@ function renderActividad() {
 /* ═══════════════════════════════════════════════════════
    PERSONALIZACIÓN DE COLORES
 ═══════════════════════════════════════════════════════ */
+document.addEventListener('click', e => {
+  const m = document.getElementById('color-menu');
+  if (m && m.classList.contains('open') && !m.parentElement.contains(e.target)) m.classList.remove('open');
+});
 function setColor(hex) {
   document.documentElement.style.setProperty('--blue', hex);
   localStorage.setItem('dgp-color', hex);
