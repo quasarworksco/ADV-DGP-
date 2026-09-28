@@ -212,6 +212,16 @@
     .pub-comp-uploaded { background:#f0fdf4; border:1px solid rgba(5,150,105,0.25); border-radius:12px; padding:14px 18px; text-align:center; }
     .pub-comp-uploaded img { width:100%; border-radius:8px; margin-bottom:10px; display:block; }
     .pub-comp-uploaded p { font-size:12px; color:#059669; font-weight:600; }
+    .pub-comp-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+    .pub-comp-item { display:flex; gap:12px; align-items:flex-start; background:#f8fafc; border:1px solid #eef2f7; border-radius:12px; padding:10px; }
+    .pub-comp-item img { width:72px; height:72px; object-fit:cover; border-radius:8px; cursor:zoom-in; flex-shrink:0; background:#e2e8f0; }
+    .pub-comp-item-body { flex:1; min-width:0; }
+    .pub-comp-item-title { font-size:12px; font-weight:700; color:#0a0f1e; }
+    .pub-comp-item-sub { font-size:11px; color:#94a3b8; }
+    .pub-comp-head { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#64748b; margin-bottom:8px; }
+    .lb { position:fixed; inset:0; z-index:9999; background:rgba(10,15,30,.88); display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
+    .lb img { max-width:100%; max-height:100%; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.5); cursor:default; }
+    .lb-close { position:fixed; top:14px; right:14px; width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.15); color:#fff; font-size:22px; cursor:pointer; }
     .pub-comp-area { border:2px dashed #e2e8f0; border-radius:12px; padding:24px; text-align:center; cursor:pointer; transition:all 0.2s; }
     .pub-comp-area:hover { border-color:#1438cc; background:#eff3ff; }
     .pub-comp-area input { display:none; }
@@ -556,31 +566,65 @@
     }
   }
 
+  /* ── Varios comprobantes por factura (pagos parciales) ── */
+  function iaKey(url) {
+    let h = 5381;
+    for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) >>> 0;
+    return 'k' + h.toString(36);
+  }
+  function listaComprobantes(d) {
+    const out = [], vistos = new Set();
+    (Array.isArray(d.comprobantes) ? d.comprobantes : []).forEach(c => { if (c && c.url && !vistos.has(c.url)) { vistos.add(c.url); out.push(c); } });
+    if (d.comprobante_url && !vistos.has(d.comprobante_url)) out.unshift({ url: d.comprobante_url });
+    return out;
+  }
+  function iaDe(d, url) {
+    return (d.verificaciones || {})[iaKey(url)] || (d.verificacionIA && d.verificacionIA.url === url ? d.verificacionIA : null);
+  }
+  function fechaCorta(iso) {
+    const d = iso ? new Date(iso) : null;
+    return d && !isNaN(d) ? d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' }) : '';
+  }
+  function compItem(d, c, i) {
+    return `<div class="pub-comp-item">
+      <img src="${esc(c.url)}" alt="Comprobante ${i + 1}" onclick="verImagen(this.src)" loading="lazy">
+      <div class="pub-comp-item-body">
+        <div class="pub-comp-item-title">Comprobante ${i + 1}</div>
+        <div class="pub-comp-item-sub">${c.fecha ? 'Enviado el ' + fechaCorta(c.fecha) : 'Enviado'}</div>
+        ${iaBox(iaDe(d, c.url))}
+      </div>
+    </div>`;
+  }
+  /* Visor de imágenes dentro de la página */
+  function verImagen(src) {
+    const lb = document.createElement('div');
+    lb.className = 'lb';
+    lb.innerHTML = `<button class="lb-close" aria-label="Cerrar">×</button><img src="${esc(src)}" alt="Comprobante">`;
+    lb.addEventListener('click', e => { if (e.target.tagName !== 'IMG') lb.remove(); });
+    document.addEventListener('keydown', function esc_(e) { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', esc_); } });
+    document.body.appendChild(lb);
+  }
+
   function renderComprobante(doc, fsId) {
-    const equipoNombre = 'DGP Group';
-    if (doc.comprobante_url) {
-      return `
-        <div class="pub-comp-wrap">
-          <div class="pub-comp-uploaded">
-            <img src="${esc(doc.comprobante_url)}" alt="Comprobante">
-            <p style="display:inline-flex;align-items:center;gap:5px;margin-bottom:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado!</p>
-            <small style="font-size:11px;color:#64748b;font-weight:400;">El equipo de ${equipoNombre} lo revisará pronto.</small>
-            ${doc.verificacionIA && doc.verificacionIA.url === doc.comprobante_url ? iaBox(doc.verificacionIA) : ''}
-          </div>
-        </div>`;
-    }
+    const comps = listaComprobantes(doc);
+    const saldo = (doc.pagado || doc.type === 'recibo') ? 0 : Math.max((doc.total || 0) - (doc.montoPagado || 0), 0);
+    const lista = comps.length ? `
+        <div class="pub-comp-head" id="pub-comp-head">Comprobantes enviados (${comps.length})</div>
+        <div class="pub-comp-list" id="pub-comp-list">${comps.map((c, i) => compItem(doc, c, i)).join('')}</div>` : '<div class="pub-comp-list" id="pub-comp-list" style="margin:0;"></div>';
+    if (saldo <= 0) return comps.length ? `<div class="pub-comp-wrap">${lista}</div>` : '';
     return `
       <div class="pub-comp-wrap">
+        ${lista}
         <div class="pub-comp-area" onclick="document.getElementById('pub-comp-input').click()">
           <div class="pub-comp-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
-          <div class="pub-comp-txt">Subir comprobante de pago</div>
-          <div class="pub-comp-sub">JPG, PNG, WebP — máx. 5MB</div>
+          <div class="pub-comp-txt">${comps.length ? 'Subir otro comprobante' : 'Subir comprobante de pago'}</div>
+          <div class="pub-comp-sub">${comps.length ? '¿Hiciste otro pago? Súbelo aquí' : 'JPG, PNG, WebP — máx. 5MB'}</div>
           <input type="file" id="pub-comp-input" accept="image/*" onchange="subirComprobantePublico(this,'${fsId}')">
           <div class="pub-comp-progress" id="pub-comp-progress">
             <div class="pub-comp-bar" id="pub-comp-bar"></div>
           </div>
         </div>
-        <div class="pub-comp-ok" id="pub-comp-ok" style="align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de ${equipoNombre} lo revisará pronto.</div>
+        <div class="pub-comp-ok" id="pub-comp-ok" style="align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de DGP Group lo revisará pronto.</div>
       </div>`;
   }
 
@@ -659,14 +703,30 @@
         xhr.onerror = () => reject(new Error('Error de red'));
         xhr.send(formData);
       });
-      await db.collection('documentos').doc(fsId).update({ comprobante_url: url });
+      const actual = _currentDoc || {};
+      const nuevo = { url, fecha: new Date().toISOString(), origen: 'factura' };
+      const previos = listaComprobantes(actual).filter(c => !Array.isArray(actual.comprobantes) || !actual.comprobantes.some(x => x.url === c.url));
+      await db.collection('documentos').doc(fsId).update({
+        comprobante_url: url,
+        comprobantes: firebase.firestore.FieldValue.arrayUnion(...previos.map(c => ({ url: c.url, fecha: c.fecha || null, origen: 'anterior' })), nuevo)
+      });
+      actual.comprobantes = [...listaComprobantes(actual), nuevo];
+      actual.comprobante_url = url;
       notificarTelegram(fsId, url);
       progress.style.display = 'none';
+      input.value = '';
       document.getElementById('pub-comp-ok').style.display = 'flex';
-      document.querySelector('.pub-comp-area').style.display = 'none';
-      let iaCont = document.getElementById('pub-comp-ia');
-      if (!iaCont) { iaCont = document.createElement('div'); iaCont.id = 'pub-comp-ia'; document.getElementById('pub-comp-ok').insertAdjacentElement('afterend', iaCont); }
-      verificarComprobanteIA(fsId, url, iaCont);
+      const listEl = document.getElementById('pub-comp-list');
+      const idx = actual.comprobantes.length - 1;
+      listEl.style.margin = '';
+      listEl.insertAdjacentHTML('beforeend', compItem(actual, nuevo, idx));
+      const iaCont = listEl.lastElementChild.querySelector('.pub-comp-item-body');
+      const ph = document.createElement('div'); iaCont.appendChild(ph);
+      document.querySelector('.pub-comp-txt').textContent = 'Subir otro comprobante';
+      const head = document.getElementById('pub-comp-head');
+      if (head) head.textContent = `Comprobantes enviados (${actual.comprobantes.length})`;
+      else listEl.insertAdjacentHTML('beforebegin', `<div class="pub-comp-head" id="pub-comp-head">Comprobantes enviados (${actual.comprobantes.length})</div>`);
+      verificarComprobanteIA(fsId, url, ph);
     } catch(e) {
       progress.style.display = 'none';
       alert('Error al subir el comprobante. Intenta de nuevo.');

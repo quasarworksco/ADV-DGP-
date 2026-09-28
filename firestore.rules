@@ -24,14 +24,23 @@ service cloud.firestore {
     match /documentos/{id} {
       allow get: if true;
       allow list, create, delete: if isStaff();
-      allow update: if isStaff() || onlyChanges([
-        'comprobante_url',
-        'brief',
-        'contratoFirmado',
-        'contratoFirmadoPor',
-        'contratoFechaFirma',
-        'encuestaCompletada'
-      ]);
+      allow update: if isStaff() || (
+        onlyChanges([
+          'comprobante_url',
+          'comprobantes',
+          'brief',
+          'contratoFirmado',
+          'contratoFirmadoPor',
+          'contratoFechaFirma',
+          'encuestaCompletada'
+        ])
+        // Los comprobantes solo se pueden agregar, nunca borrar (máx. 30)
+        && (!('comprobantes' in request.resource.data) || (
+          request.resource.data.comprobantes is list
+          && request.resource.data.comprobantes.size() <= 30
+          && request.resource.data.comprobantes.hasAll(resource.data.get('comprobantes', []))
+        ))
+      );
     }
 
     // ── Cotizaciones ──

@@ -241,6 +241,10 @@
     .ia.ilegible { background: #f8fafc; border-color: var(--line); color: var(--mid); }
     .ia.no_es_comprobante { background: var(--red-x); border-color: rgba(220,38,38,.25); color: var(--red); }
     .ia .ia-msg { color: var(--mid); }
+    .lb { position: fixed; inset: 0; z-index: 90; background: rgba(10,15,30,.88); display: flex; align-items: center; justify-content: center; padding: 20px; cursor: zoom-out; }
+    .lb img { max-width: 100%; max-height: 100%; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.5); cursor: default; }
+    .lb-close { position: fixed; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 22px; }
+    .shot { cursor: zoom-in; }
     .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 13px; z-index: 80; opacity: 0; transition: all .25s; pointer-events: none; max-width: calc(100vw - 32px); }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.err { background: var(--red); }
@@ -482,6 +486,30 @@
     } catch (e) { /* silencioso: el cliente nunca debe ver un error por esto */ }
   }
 
+  /* ═════════ COMPROBANTES (varios por factura) ═════════ */
+  function iaKey(url) {
+    let h = 5381;
+    for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) >>> 0;
+    return 'k' + h.toString(36);
+  }
+  function listaComprobantes(d) {
+    const out = [], vistos = new Set();
+    (Array.isArray(d.comprobantes) ? d.comprobantes : []).forEach(c => { if (c && c.url && !vistos.has(c.url)) { vistos.add(c.url); out.push(c); } });
+    if (d.comprobante_url && !vistos.has(d.comprobante_url)) out.unshift({ url: d.comprobante_url });
+    return out;
+  }
+  function iaDe(d, url) {
+    return (d.verificaciones || {})[iaKey(url)] || (d.verificacionIA && d.verificacionIA.url === url ? d.verificacionIA : null);
+  }
+  function verImagen(src) {
+    const lb = document.createElement('div');
+    lb.className = 'lb';
+    lb.innerHTML = `<button class="lb-close" aria-label="Cerrar">×</button><img src="${esc(src)}" alt="Comprobante">`;
+    lb.addEventListener('click', e => { if (e.target.tagName !== 'IMG') lb.remove(); });
+    document.addEventListener('keydown', function cerrar(e) { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', cerrar); } });
+    document.body.appendChild(lb);
+  }
+
   /* ═════════ VERIFICACIÓN IA ═════════ */
   const IA_TITULOS = { coincide: 'Monto verificado', menor: 'Monto menor al pendiente', mayor: 'Monto mayor al pendiente',
     otra_moneda: 'Revisión manual', ilegible: 'Revisión manual', no_es_comprobante: 'Revisa la imagen' };
@@ -655,7 +683,7 @@
     const suscAct   = suscripciones.filter(s => s.estado === 'activa');
     const proxPago  = suscAct.map(s => ({ s, d: toDate(s.proximoPago) })).filter(x => x.d).sort((a, b) => a.d - b.d)[0];
     const noLeidos  = portal.chatNoLeidoCliente || 0;
-    const sinComp   = pendientes.filter(d => !d.comprobante_url);
+    const sinComp   = pendientes.filter(d => !listaComprobantes(d).length);
 
     const alerts = [];
     if (deuda > 0) alerts.push(`
@@ -829,10 +857,10 @@
           <div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span class="pill ${cls}">${lbl}</span>
             <span style="font-size:11px;color:var(--faint);">${esc(d.fecha || fmtDate(d.createdAt))}</span>
-            ${saldo > 0 && d.comprobante_url ? `<span style="font-size:11px;color:var(--green);font-weight:600;">Comprobante enviado</span>` : ''}
+            ${saldo > 0 && listaComprobantes(d).length ? `<span style="font-size:11px;color:var(--green);font-weight:600;">${listaComprobantes(d).length > 1 ? listaComprobantes(d).length + ' comprobantes enviados' : 'Comprobante enviado'}</span>` : ''}
           </div>
         </div>
-        ${saldo > 0 && d.comprobante_url && d.verificacionIA && d.verificacionIA.url === d.comprobante_url ? `<div style="flex-basis:100%;order:3;">${iaBox(d.verificacionIA)}</div>` : ''}
+        ${(() => { const cs = listaComprobantes(d); const v = saldo > 0 && cs.length ? iaDe(d, cs[cs.length - 1].url) : null; return v ? `<div style="flex-basis:100%;order:3;">${iaBox(v)}</div>` : ''; })()}
         <div class="inv-right">
           <div>
             <div class="inv-amt">${money(saldo > 0 ? saldo : d.total)}</div>
@@ -840,7 +868,7 @@
           </div>
           <div class="inv-actions">
             <a class="btn" href="${linkFactura(d._fsId)}" target="_blank" rel="noopener">${I.eye} Ver</a>
-            ${saldo > 0 && !d.comprobante_url ? `<button class="btn primary" onclick="openComprobante('${esc(d._fsId)}')">${I.upload} Subir pago</button>` : ''}
+            ${saldo > 0 ? `<button class="btn primary" onclick="openComprobante('${esc(d._fsId)}')">${I.upload} ${listaComprobantes(d).length ? 'Subir otro pago' : 'Subir pago'}</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -851,7 +879,7 @@
     const pag  = docs.filter(d => saldoFactura(d) === 0);
     const deuda = pend.reduce((a, d) => a + saldoFactura(d), 0);
     const pagado = docs.reduce((a, d) => a + (d.pagado || d.type === 'recibo' ? (d.total || 0) : (d.montoPagado || 0)), 0);
-    const comps = docs.filter(d => d.comprobante_url);
+    const comps = docs.flatMap(d => listaComprobantes(d).map(c => ({ d, c })));
     return `
       <div class="page-title">Facturación</div>
       <div class="page-sub">Tus facturas, pagos y comprobantes en un solo lugar.</div>
@@ -864,17 +892,19 @@
       <div class="section-label">Pagadas (${pag.length})</div>
       ${pag.length ? pag.map(invRow).join('') : empty('doc', 'Aún no hay facturas pagadas.')}
       <div class="section-label">Mis comprobantes de pago (${comps.length})</div>
-      ${comps.length ? `<div class="gallery">${comps.map(d => `
-        <a class="shot" href="${esc(d.comprobante_url)}" target="_blank" rel="noopener">
-          <img src="${esc(d.comprobante_url)}" alt="Comprobante ${esc(d.docId || '')}" loading="lazy">
-          <div>${esc(d.docId || '')} · ${money(d.total)}</div>
-        </a>`).join('')}</div>` : empty('upload', 'Aquí aparecerán las capturas de pago que envíes.')}`;
+      ${comps.length ? `<div class="gallery">${comps.map(({ d, c }) => {
+        const v = iaDe(d, c.url);
+        return `<div class="shot" onclick="verImagen('${esc(c.url)}')">
+          <img src="${esc(c.url)}" alt="Comprobante ${esc(d.docId || '')}" loading="lazy">
+          <div>${esc(d.docId || '')}${v && typeof v.monto === 'number' ? ' · ' + money(v.monto) : ''}${c.fecha ? '<br>' + fmtDate(c.fecha) : ''}</div>
+        </div>`; }).join('')}</div>` : empty('upload', 'Aquí aparecerán las capturas de pago que envíes.')}`;
   }
   function openComprobante(fsId) {
     const d = facturas[fsId]; if (!d) return;
     modal(`
       <h3>Subir comprobante</h3>
-      <p>Factura ${esc(d.docId || '')} · ${money(saldoFactura(d))}. Sube la captura de tu pago y lo confirmamos.</p>
+      <p>Factura ${esc(d.docId || '')} · Pendiente ${money(saldoFactura(d))}. Sube la captura de tu pago (total o parcial) y lo confirmamos.</p>
+      ${listaComprobantes(d).length ? `<div style="font-size:11px;color:var(--soft);margin:-8px 0 12px;">Ya enviaste ${listaComprobantes(d).length} comprobante(s) para esta factura.</div>` : ''}
       <div class="field"><label>Captura del pago (JPG o PNG, máx. 5 MB)</label>
         <input type="file" id="comp-file" accept="image/*"></div>
       <div class="upload-bar hidden" id="comp-bar"><div></div></div>
@@ -903,8 +933,13 @@
         xhr.onerror = () => reject(new Error('red'));
         xhr.send(fd);
       });
-      await db.collection('documentos').doc(fsId).update({ comprobante_url: url });
       const d = facturas[fsId] || {};
+      const nuevo = { url, fecha: new Date().toISOString(), origen: 'portal' };
+      const previos = listaComprobantes(d).filter(c => !Array.isArray(d.comprobantes) || !d.comprobantes.some(x => x.url === c.url));
+      await db.collection('documentos').doc(fsId).update({
+        comprobante_url: url,
+        comprobantes: firebase.firestore.FieldValue.arrayUnion(...previos.map(c => ({ url: c.url, fecha: c.fecha || null, origen: 'anterior' })), nuevo)
+      });
       try {
         await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },

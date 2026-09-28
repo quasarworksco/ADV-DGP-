@@ -2371,7 +2371,7 @@ function initDocs() {
         Object.entries(newMap).forEach(([id, doc]) => {
           const prev = _prevDocsSnapshot[id];
           if (!prev) return;
-          if (doc.comprobante_url && !prev.comprobante_url) {
+          if (listaComprobantes(doc).length > listaComprobantes(prev).length) {
             toast(`Comprobante recibido — ${doc.cliente || doc.docId || ''}`, 'ok');
             _addNotifBadge();
           }
@@ -2701,15 +2701,24 @@ function openSheet(doc) {
   /* ── Comprobante del cliente (subido desde factura pública) ── */
   let existingComp = document.getElementById('s-comp-block');
   if (existingComp) existingComp.remove();
-  if (doc.comprobante_url) {
+  const comps = listaComprobantes(doc);
+  if (comps.length) {
     const compEl = document.createElement('div');
     compEl.id = 's-comp-block';
-    compEl.style.cssText = 'padding:0 28px 16px;';
+    compEl.style.cssText = 'padding:0 30px 16px;';
     compEl.innerHTML = `
-      <div style="font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">Comprobante de Pago</div>
-      <img src="${esc(doc.comprobante_url)}" style="width:100%;border-radius:10px;display:block;margin-bottom:8px;" alt="Comprobante">
-      ${iaAdminBox(doc)}
-      <a href="${esc(doc.comprobante_url)}" download="comprobante_${esc(doc.docId||fsId)}.jpg" target="_blank" class="btn-sheet print" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;text-decoration:none;width:100%;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar comprobante</a>`;
+      <div style="font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">${comps.length > 1 ? `Comprobantes de pago (${comps.length})` : 'Comprobante de pago'}</div>
+      ${comps.map((c, i) => `
+        <div style="display:flex;gap:12px;align-items:flex-start;border:1px solid #eef2f7;background:#f8fafc;border-radius:12px;padding:10px;margin-bottom:8px;">
+          <img src="${esc(c.url)}" alt="Comprobante ${i + 1}" onclick="verImagen(this.src)" style="width:84px;height:84px;object-fit:cover;border-radius:8px;cursor:zoom-in;flex-shrink:0;background:#e2e8f0;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;">Comprobante ${i + 1}${c.fecha ? ` <span style="font-weight:400;color:var(--text-soft);font-size:11px;">· ${new Date(c.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short' })}${c.origen === 'portal' ? ' · portal' : ''}</span>` : ''}</div>
+              <a href="${esc(c.url)}" download="comprobante_${esc(doc.docId || fsId)}_${i + 1}.jpg" target="_blank" rel="noopener" title="Descargar" style="color:var(--blue);display:inline-flex;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            </div>
+            ${iaAdminBox(doc, c.url)}
+          </div>
+        </div>`).join('')}`;
     document.getElementById('sheet-actions').insertAdjacentElement('beforebegin', compEl);
   }
 
@@ -3279,9 +3288,32 @@ const IA_ADMIN = {
   ilegible:          ['#475569', '#f8fafc', 'No se pudo leer'],
   no_es_comprobante: ['#dc2626', '#fef2f2', 'No parece un comprobante']
 };
-function iaAdminBox(doc) {
-  const v = doc.verificacionIA;
-  if (!v || v.url !== doc.comprobante_url) return '';
+function iaKey(url) {
+  let h = 5381;
+  for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) >>> 0;
+  return 'k' + h.toString(36);
+}
+function listaComprobantes(d) {
+  const out = [], vistos = new Set();
+  (Array.isArray(d.comprobantes) ? d.comprobantes : []).forEach(c => { if (c && c.url && !vistos.has(c.url)) { vistos.add(c.url); out.push(c); } });
+  if (d.comprobante_url && !vistos.has(d.comprobante_url)) out.unshift({ url: d.comprobante_url });
+  return out;
+}
+function iaDe(d, url) {
+  return (d.verificaciones || {})[iaKey(url)] || (d.verificacionIA && d.verificacionIA.url === url ? d.verificacionIA : null);
+}
+/* Visor de imágenes dentro de la página */
+function verImagen(src) {
+  const lb = document.createElement('div');
+  lb.style.cssText = 'position:fixed;inset:0;z-index:200000;background:rgba(10,15,30,.88);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
+  lb.innerHTML = `<button aria-label="Cerrar" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:22px;cursor:pointer;">×</button><img src="${esc(src)}" alt="Comprobante" style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default;">`;
+  lb.addEventListener('click', e => { if (e.target.tagName !== 'IMG') lb.remove(); });
+  document.addEventListener('keydown', function cerrar(e) { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', cerrar); } });
+  document.body.appendChild(lb);
+}
+function iaAdminBox(doc, url) {
+  const v = iaDe(doc, url || doc.comprobante_url || '');
+  if (!v) return '';
   const [c, bg, titulo] = IA_ADMIN[v.estado] || IA_ADMIN.ilegible;
   const det = [v.plataforma, v.referencia ? 'Ref ' + v.referencia : '', v.remitente ? 'De ' + v.remitente : '', v.fecha].filter(Boolean).map(esc).join(' · ');
   const puedeRegistrar = !doc.pagado && typeof v.monto === 'number' && ['menor', 'coincide'].includes(v.estado);
@@ -4254,7 +4286,7 @@ function ptVFacturas(p, facs) {
       return `<div class="pt-card"><div class="pt-row">
         <div class="pt-grow">
           <div class="pt-title">${esc(d.docId || d._fsId)} · ${ptMoney(d.total)}</div>
-          <div class="pt-sub">${esc((d.items || []).map(i => i.s).join(', '))} · ${esc(d.fecha || '')}${d.comprobante_url ? ' · <span style="color:var(--green-dark);font-weight:600;">con comprobante</span>' : ''}</div>
+          <div class="pt-sub">${esc((d.items || []).map(i => i.s).join(', '))} · ${esc(d.fecha || '')}${listaComprobantes(d).length ? ' · <span style="color:var(--green-dark);font-weight:600;">con comprobante</span>' : ''}</div>
         </div>
         <span class="pt-pill ${cls}">${lbl}</span>
         <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="openSheet(docsMap['${esc(d._fsId)}'])">Ver</button>

@@ -419,11 +419,13 @@ async function fsGet(env, path, token) {
   if (!res.ok) throw new Error('Firestore: ' + (data.error?.message || res.status));
   return fromFields(data.fields || {});
 }
-async function fsSetField(env, path, field, value, token) {
-  const res = await fetch(`${docUrl(env, path)}?updateMask.fieldPaths=${encodeURIComponent(field)}&currentDocument.exists=true`, {
+// fields: objeto anidado con los valores; mask: rutas a actualizar (ej. 'verificaciones.kabc')
+async function fsUpdate(env, path, fields, mask, token) {
+  const qs = mask.map(m => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
+  const res = await fetch(`${docUrl(env, path)}?${qs}&currentDocument.exists=true`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: { [field]: toValue(value) } })
+    body: JSON.stringify({ fields: toValue(fields).mapValue.fields })
   });
   if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
 }
@@ -470,33 +472,64 @@ async function leerComprobante(env, imageUrl) {
   throw new Error('IA: ' + ultimoError);
 }
 
-/* ── Comparación con la factura ── */
-function evaluar(doc, lectura) {
-  const saldo = (doc.pagado || doc.type === 'recibo') ? 0 : Math.max((Number(doc.total) || 0) - (Number(doc.montoPagado) || 0), 0);
-  const monto = typeof lectura.monto === 'number' && isFinite(lectura.monto) ? Math.round(lectura.monto * 100) / 100 : null;
+/* ── Clave estable por imagen (la misma función existe en las páginas) ── */
+function iaKey(url) {
+  let h = 5381;
+  for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) >>> 0;
+  return 'k' + h.toString(36);
+}
+function listaComprobantes(doc) {
+  const out = [], vistos = new Set();
+  (Array.isArray(doc.comprobantes) ? doc.comprobantes : []).forEach(c => { if (c && c.url && !vistos.has(c.url)) { vistos.add(c.url); out.push(c); } });
+  if (doc.comprobante_url && !vistos.has(doc.comprobante_url)) out.unshift({ url: doc.comprobante_url });
+  return out;
+}
+
+/* ── Comparación con la factura (suma todos los comprobantes leídos) ── */
+const r2 = n => Math.round(n * 100) / 100;
+function evaluar(doc, lectura, url) {
+  const total = Number(doc.total) || 0;
+  const monto = typeof lectura.monto === 'number' && isFinite(lectura.monto) ? r2(lectura.monto) : null;
   const moneda = String(lectura.moneda || '').toUpperCase().trim();
   const monedaFactura = doc.moneda === 'eur' ? 'EUR' : 'USD';
   const equivalentes = monedaFactura === 'USD' ? ['USD', 'USDT', 'US$', ''] : ['EUR', '€', ''];
+  const leidos = ['coincide', 'menor', 'mayor'];
 
-  let estado, mensaje;
-  const diferencia = monto === null ? null : Math.round((monto - saldo) * 100) / 100;
+  // Otros comprobantes de esta factura ya leídos por la IA
+  const verifs = doc.verificaciones || {};
+  const otros = listaComprobantes(doc).filter(c => c.url !== url)
+    .map(c => verifs[iaKey(c.url)] || (doc.verificacionIA && doc.verificacionIA.url === c.url ? doc.verificacionIA : null))
+    .filter(v => v && leidos.includes(v.estado) && typeof v.monto === 'number');
+  const sumaOtros = r2(otros.reduce((a, v) => a + v.monto, 0));
+  // Si registraste pagos sin comprobante (efectivo, etc.), se toman en cuenta
+  const previo = Math.max(sumaOtros, Number(doc.montoPagado) || 0);
+
+  let estado, mensaje, acumulado = null, saldo = r2(Math.max(total - previo, 0)), diferencia = null;
   if (!lectura.es_comprobante && lectura.es_comprobante !== undefined) {
     estado = 'no_es_comprobante'; mensaje = 'La imagen no parece un comprobante de pago.';
   } else if (monto === null || lectura.legible === false) {
     estado = 'ilegible'; mensaje = 'No se pudo leer el monto con claridad. Lo revisaremos manualmente.';
   } else if (!equivalentes.includes(moneda)) {
     estado = 'otra_moneda'; mensaje = `El comprobante está en ${moneda}. Lo revisaremos manualmente para aplicar la tasa de cambio.`;
-  } else if (Math.abs(diferencia) <= Math.max(0.5, saldo * 0.01)) {
-    estado = 'coincide'; mensaje = `El monto del comprobante ($${monto.toFixed(2)}) coincide con el saldo pendiente.`;
-  } else if (diferencia < 0) {
-    estado = 'menor'; mensaje = `El comprobante es por $${monto.toFixed(2)}. Quedarían pendientes $${Math.abs(diferencia).toFixed(2)}.`;
   } else {
-    estado = 'mayor'; mensaje = `El comprobante es por $${monto.toFixed(2)}, $${diferencia.toFixed(2)} más que el saldo pendiente.`;
+    acumulado = r2(previo + monto);
+    diferencia = r2(acumulado - total);
+    const conOtros = previo > 0 ? ` Con tus pagos anteriores llevas $${acumulado.toFixed(2)} de $${total.toFixed(2)}.` : '';
+    if (Math.abs(diferencia) <= Math.max(0.5, total * 0.01)) {
+      estado = 'coincide';
+      mensaje = previo > 0 ? `Recibimos $${monto.toFixed(2)}.${conOtros} Con este pago completas el total.` : `El monto del comprobante ($${monto.toFixed(2)}) coincide con el total de la factura.`;
+    } else if (diferencia < 0) {
+      estado = 'menor';
+      mensaje = `Recibimos $${monto.toFixed(2)}.${conOtros} Quedan pendientes $${Math.abs(diferencia).toFixed(2)}.`;
+    } else {
+      estado = 'mayor';
+      mensaje = `Recibimos $${monto.toFixed(2)}.${conOtros || ''} Es $${diferencia.toFixed(2)} más que el total de la factura.`;
+    }
   }
   if (lectura.estado_pago === 'pendiente' || lectura.estado_pago === 'fallido') {
     mensaje += ` Ojo: la captura indica que el pago está "${lectura.estado_pago}".`;
   }
-  return { estado, mensaje, saldo, monto, diferencia };
+  return { estado, mensaje, saldo, monto, acumulado, total, diferencia };
 }
 
 /* ── Handler ── */
@@ -516,12 +549,14 @@ async function handleVerificar(request, env, firebaseLogin) {
     const token = await firebaseLogin(env);
     const doc = await fsGet(env, `documentos/${fsId}`, token);
     if (!doc) return json(request, { error: 'Factura no encontrada' }, 404);
-    // Solo se analiza la imagen que realmente está adjunta a esa factura
-    if (doc.comprobante_url !== url) return json(request, { error: 'El comprobante no corresponde a esta factura' }, 409);
-    if (doc.verificacionIA && doc.verificacionIA.url === url) return json(request, doc.verificacionIA);
+    // Solo se analiza una imagen que realmente está adjunta a esa factura
+    if (!listaComprobantes(doc).some(c => c.url === url)) return json(request, { error: 'El comprobante no corresponde a esta factura' }, 409);
+    const key = iaKey(url);
+    const previa = (doc.verificaciones || {})[key] || (doc.verificacionIA && doc.verificacionIA.url === url ? doc.verificacionIA : null);
+    if (previa) return json(request, previa);
 
     const { lectura, modelo } = await leerComprobante(env, url);
-    const ev = evaluar(doc, lectura);
+    const ev = evaluar(doc, lectura, url);
     const verificacion = {
       ...ev,
       moneda: lectura.moneda || null,
@@ -535,7 +570,8 @@ async function handleVerificar(request, env, firebaseLogin) {
       url, modelo,
       analizadoAt: new Date().toISOString()
     };
-    await fsSetField(env, `documentos/${fsId}`, 'verificacionIA', verificacion, token);
+    await fsUpdate(env, `documentos/${fsId}`, { verificacionIA: verificacion, verificaciones: { [key]: verificacion } },
+      ['verificacionIA', `verificaciones.${key}`], token);
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
     const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
@@ -544,7 +580,7 @@ async function handleVerificar(request, env, firebaseLogin) {
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
         `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
         `Leído: ${ev.monto !== null ? '$' + ev.monto.toFixed(2) : '—'} ${lectura.moneda || ''}\n` +
-        `Saldo pendiente: $${ev.saldo.toFixed(2)}\n` +
+        `Total factura: $${ev.total.toFixed(2)}${ev.acumulado !== null ? ` · Pagado según comprobantes: $${ev.acumulado.toFixed(2)}` : ''}\n` +
         `${lectura.plataforma ? 'Plataforma: ' + lectura.plataforma + '\n' : ''}` +
         `${lectura.referencia ? 'Ref: ' + lectura.referencia + '\n' : ''}` +
         `${lectura.remitente ? 'De: ' + lectura.remitente + '\n' : ''}` +
