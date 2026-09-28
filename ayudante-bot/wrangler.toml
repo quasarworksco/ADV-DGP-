@@ -2,6 +2,10 @@ name = "ayudante-dgp-bot"
 main = "worker.js"
 compatibility_date = "2024-09-23"
 
+# Ejecutar cerca de Groq (EE. UU.): Groq bloquea algunas regiones
+[placement]
+mode = "smart"
+
 [triggers]
 crons = ["0 9 1 * *"]
 

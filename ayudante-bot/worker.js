@@ -600,13 +600,13 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-28';
+const WORKER_VERSION = '2026-09-28b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...cors(request), 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
   const q = new URL(request.url).searchParams;
-  const out = { version: WORKER_VERSION, checks: {} };
+  const out = { version: WORKER_VERSION, region: request.cf ? `${request.cf.colo || ''} (${request.cf.country || ''})` : null, checks: {} };
 
   const faltan = ['GROQ_API_KEY', 'TG_TOKEN', 'FB_EMAIL', 'FB_PASSWORD'].filter(k => !env[k]);
   out.checks.secretos = { ok: faltan.length === 0, faltan };
@@ -630,7 +630,8 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   try {
     const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${env.GROQ_API_KEY}` } });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) out.checks.groq = { ok: false, error: data.error?.message || 'HTTP ' + res.status };
+    if (res.status === 403) out.checks.groq = { ok: false, bloqueoRegion: true, error: 'Groq rechazó la conexión (Forbidden): bloquea la región desde donde corrió el Worker' };
+    else if (!res.ok) out.checks.groq = { ok: false, error: data.error?.message || 'HTTP ' + res.status };
     else {
       const ids = (data.data || []).map(m => m.id);
       const candidatos = env.GROQ_VISION_MODEL ? [env.GROQ_VISION_MODEL, ...MODELOS_DEFAULT] : MODELOS_DEFAULT;
@@ -640,7 +641,9 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   } catch (e) { out.checks.groq = { ok: false, error: e.message }; }
 
   // IA: leer el comprobante de prueba ($123.45)
-  if (q.get('ia')) {
+  if (q.get('ia') && out.checks.groq?.bloqueoRegion) {
+    out.checks.ia = { ok: false, bloqueoRegion: true, error: 'No se pudo probar: Groq bloquea la región del Worker' };
+  } else if (q.get('ia')) {
     try {
       const { lectura, modelo } = await leerComprobante(env, IMG_PRUEBA);
       const ok = typeof lectura.monto === 'number' && Math.abs(lectura.monto - 123.45) < 0.01;
