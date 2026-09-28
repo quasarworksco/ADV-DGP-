@@ -1087,6 +1087,52 @@
     .color-menu-t { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; font-family:'IBM Plex Sans',sans-serif; white-space:nowrap; }
     .color-menu button { width:26px; height:26px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 1px var(--border); cursor:pointer; }
     .color-menu button:hover { transform:scale(1.1); }
+    .fstep { display:flex; align-items:center; gap:10px; margin:22px 0 12px; padding-top:18px; border-top:1px solid var(--border); }
+    .panel-f > .fstep:first-child { margin-top:0; padding-top:0; border-top:0; }
+    .fstep-n { width:24px; height:24px; border-radius:50%; background:var(--blue); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'IBM Plex Sans',sans-serif; }
+    .fstep-t { font-size:13px; font-weight:700; color:var(--black); font-family:'IBM Plex Sans',sans-serif; }
+    .fstep-s { font-size:11px; color:var(--text-soft); font-family:'IBM Plex Sans',sans-serif; }
+    .fstep-s:empty { display:none; }
+    .ff-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+    #subtab-nuevo > .panel-f:last-child { position:sticky; top:16px; align-self:start; }
+    #subtab-nuevo #btn-submit { margin-top:18px !important; }
+    .prev-meta { display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 14px; }
+    .prev-meta span { font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--off); color:var(--text-mid); border:1px solid var(--border); font-family:'IBM Plex Sans',sans-serif; }
+    .prev-meta span.on { background:var(--blue-xlight); color:var(--blue); border-color:rgba(20,56,204,.2); }
+    @media (max-width:600px) { .ff-row-2 { grid-template-columns:1fr; } #subtab-nuevo > .panel-f:last-child { position:static; } }
+    .hr-sec { margin-top:18px; }
+    .hr-sec-t { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; font-family:'IBM Plex Sans',sans-serif; }
+    .hr-sec-t span { width:8px; height:8px; border-radius:50%; }
+    .hr-sec-t em { font-style:normal; background:var(--off); border:1px solid var(--border); border-radius:10px; padding:0 7px; letter-spacing:0; }
+    .hr-sec-t b { margin-left:auto; color:var(--black); letter-spacing:0; font-size:12px; font-variant-numeric:tabular-nums; }
+    .hr-list { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:white; }
+    .hr-row { display:grid; grid-template-columns:82px 1fr 84px 100px auto; gap:12px; align-items:center; padding:10px 14px; border-top:1px solid #f1f5f9; cursor:pointer; transition:background .12s; font-family:'IBM Plex Sans',sans-serif; }
+    .hr-row:first-child { border-top:0; }
+    .hr-row:hover { background:#f8fafc; }
+    .hr-pill { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 0; border-radius:20px; text-align:center; }
+    .hr-p-pend { background:#fef2f2; color:#b91c1c; } .hr-p-parc { background:#fff7ed; color:#c2410c; } .hr-p-ok { background:#ecfdf5; color:#047857; }
+    .hr-main { min-width:0; }
+    .hr-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .hr-id { font-size:11px; font-weight:700; letter-spacing:1px; color:var(--blue); }
+    .hr-clip { display:inline-flex; align-items:center; gap:2px; font-size:10px; font-weight:700; color:#b45309; background:#fffbeb; border:1px solid rgba(217,119,6,.25); border-radius:10px; padding:0 6px; }
+    .hr-cli { font-size:13px; font-weight:600; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hr-srv { font-size:11px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hr-fecha { font-size:11px; color:var(--text-soft); font-variant-numeric:tabular-nums; }
+    .hr-monto { text-align:right; font-size:14px; font-weight:700; color:var(--black); font-variant-numeric:tabular-nums; }
+    .hr-monto small { display:block; font-size:10px; font-weight:600; color:#c2410c; }
+    .hr-acc { display:flex; gap:4px; justify-content:flex-end; align-items:center; }
+    .hr-btn { display:inline-flex; align-items:center; gap:4px; border:1px solid; border-radius:8px; padding:5px 9px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; background:white; }
+    .hr-btn.ok { color:#047857; border-color:rgba(5,150,105,.3); } .hr-btn.ok:hover { background:#ecfdf5; }
+    .hr-btn.warn { color:#c2410c; border-color:rgba(234,88,12,.3); } .hr-btn.warn:hover { background:#fff7ed; }
+    .hr-ico { width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; border-radius:8px; background:none; color:var(--text-soft); cursor:pointer; }
+    .hr-ico:hover { background:var(--off); border-color:var(--border); color:var(--blue); }
+    .hr-ico.del:hover { color:#dc2626; background:#fef2f2; border-color:rgba(220,38,38,.2); }
+    .hr-mas { display:block; width:100%; margin-top:8px; padding:9px; border:1px dashed var(--border); border-radius:10px; background:none; color:var(--blue); font-size:12px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; }
+    @media (max-width:700px) {
+      .hr-row { grid-template-columns:1fr auto; grid-template-areas:'main monto' 'pill acc'; row-gap:6px; }
+      .hr-main { grid-area:main; } .hr-monto { grid-area:monto; } .hr-pill { grid-area:pill; width:78px; } .hr-acc { grid-area:acc; } .hr-fecha { display:none; }
+      .hr-btn span { display:none; }
+    }
     .db-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:26px 0 10px; flex-wrap:wrap; }
     .dash-main > .db-head:first-child { margin-top:4px; }
     .db-pills { display:flex; gap:6px; }
@@ -1249,20 +1295,20 @@
 
       <!-- FORM -->
       <div class="panel-f">
-        <div class="panel-title-f" id="form-panel-title">Datos del Documento</div>
-
-        <div class="ff">
+        <div class="fstep"><span class="fstep-n">1</span><div><div class="fstep-t">Documento y cliente</div><div class="fstep-s">Qué vas a emitir y para quién</div></div></div>
+        <div class="ff-row ff-row-2">
+        <div class="ff" style="margin:0">
+          <label>Tipo de documento</label>
+          <select id="doc-type" onchange="onTypeChange()">
+            <option value="factura">🧾 Factura (por cobrar)</option>
+            <option value="recibo">✅ Recibo (ya pagado)</option>
+            <option value="cotizacion">📋 Cotización</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0">
           <label>Emisor de la factura</label>
           <select id="doc-emisor"></select>
         </div>
-
-        <div class="ff">
-          <label>Tipo de documento</label>
-          <select id="doc-type" onchange="onTypeChange()">
-            <option value="factura">🧾 Factura (pendiente de pago)</option>
-            <option value="recibo">✅ Recibo (pago ya recibido)</option>
-            <option value="cotizacion">📋 Cotización (presupuesto para aprobar)</option>
-          </select>
         </div>
         <div class="ff" id="field-validez" style="display:none;">
           <label>Válida por</label>
@@ -1272,20 +1318,30 @@
             <option value="30">30 días</option>
           </select>
         </div>
-        <div class="ff" id="plantillas-wrap" style="margin-top:-8px;">
-          <button type="button" class="btn-add-f" style="background:var(--off);color:var(--text-mid);border:1.5px solid var(--border);font-size:10px;display:inline-flex;align-items:center;gap:6px;" onclick="openPlantillasModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Cargar plantilla guardada</button>
-        </div>
-
         <div class="ff">
           <label>Nombre del cliente</label>
           <input type="text" id="cli-nom" placeholder="Ej. Juan Pérez" list="clientes-list" oninput="updatePortalHint()">
           <div id="cli-portal-hint" class="pt-hint" style="display:none;"></div>
         </div>
-        <div class="ff">
-          <label>Referencia de pago</label>
-          <input type="text" id="pago-ref" placeholder="Ej. Zelle / Binance / Efectivo">
+        <div class="ff" id="plantillas-wrap" style="margin-top:-8px;">
+          <button type="button" class="btn-add-f" style="background:var(--off);color:var(--text-mid);border:1.5px solid var(--border);font-size:10px;display:inline-flex;align-items:center;gap:6px;" onclick="openPlantillasModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Cargar plantilla guardada</button>
         </div>
-
+        <div class="fstep"><span class="fstep-n">2</span><div><div class="fstep-t">Servicios</div><div class="fstep-s">Agrega uno o varios; aparecen en la vista previa</div></div></div>
+        <div class="ff">
+          <label>Servicio</label>
+          <select id="srv-sel" onchange="onSrvSelChange()">
+          </select>
+        </div>
+        <div class="ff" id="srv-otro-wrap" style="display:none;">
+          <label>Nombre del servicio</label>
+          <input type="text" id="srv-otro-txt" placeholder="Ej. Mantenimiento web, Consultoría...">
+        </div>
+        <div class="ff-row">
+          <div class="ff" style="margin:0"><label>Precio ($)</label><input type="number" id="srv-pre" placeholder="0.00" step="0.01"></div>
+          <div class="ff" style="margin:0"><label>Cant.</label><input type="number" id="srv-can" value="1" min="1"></div>
+        </div>
+        <button class="btn-add-f" onclick="addItem()">+ Añadir al documento</button>
+        <div class="fstep"><span class="fstep-n">3</span><div><div class="fstep-t">Pago</div><div class="fstep-s">Cómo te va a pagar el cliente</div></div></div>
         <div class="ff">
           <label>Moneda</label>
           <div class="moneda-toggle">
@@ -1293,7 +1349,6 @@
             <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur');event.preventDefault();event.stopPropagation();">🇪🇺 EUR — Euro</button>
           </div>
         </div>
-
         <div class="ff">
           <label>Método de pago (para la factura del cliente)</label>
           <select id="metodo-pago" onchange="onMetodoPagoChange()">
@@ -1310,12 +1365,15 @@
           <div id="metodo-pago-guardados"></div>
           <div class="metodo-fields" id="metodo-pago-fields"></div>
         </div>
-
+        <div class="ff">
+          <label>Referencia de pago</label>
+          <input type="text" id="pago-ref" placeholder="Ej. Zelle / Binance / Efectivo">
+        </div>
         <div class="ff" id="field-nota" style="display:none;">
           <label>Nota / Instrucción de pago</label>
           <textarea id="doc-nota" placeholder="Ej: Realizar pago vía Zelle al correo pagos@dgpgroup.com..."></textarea>
         </div>
-
+        <div class="fstep"><span class="fstep-n">4</span><div><div class="fstep-t">Opciones</div><div class="fstep-s"></div></div></div>
         <div class="ff" id="field-contrato">
           <div id="contrato-btn" onclick="toggleContrato()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--off);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;user-select:none;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1331,29 +1389,12 @@
           </div>
           <input type="hidden" id="contrato-toggle" value="0">
         </div>
-
-        <div style="border-top:1px solid var(--border); margin:16px 0 16px;"></div>
-        <div class="panel-title-f" style="margin-bottom:14px;">Añadir Servicio</div>
-
-        <div class="ff">
-          <label>Servicio</label>
-          <select id="srv-sel" onchange="onSrvSelChange()">
-          </select>
-        </div>
-        <div class="ff" id="srv-otro-wrap" style="display:none;">
-          <label>Nombre del servicio</label>
-          <input type="text" id="srv-otro-txt" placeholder="Ej. Mantenimiento web, Consultoría...">
-        </div>
-        <div class="ff-row">
-          <div class="ff" style="margin:0"><label>Precio ($)</label><input type="number" id="srv-pre" placeholder="0.00" step="0.01"></div>
-          <div class="ff" style="margin:0"><label>Cant.</label><input type="number" id="srv-can" value="1" min="1"></div>
-        </div>
-        <button class="btn-add-f" onclick="addItem()">+ Añadir al documento</button>
       </div>
 
       <!-- CART -->
       <div class="panel-f" style="display:flex;flex-direction:column;">
         <div class="panel-title-f">Vista Previa del Documento</div>
+        <div class="prev-meta" id="prev-meta"></div>
 
         <div id="cart-empty" class="empty-cart" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Añade servicios para comenzar</div>
         <table class="cart-table" id="cart-table" style="display:none;">
@@ -1376,8 +1417,9 @@
     <div id="subtab-historial" style="display:none;">
       <div class="panel-f panel-f-full">
         <div class="panel-title-f">Todos los documentos</div>
+        <div class="cb-tiles" id="hist-resumen" style="margin-bottom:16px;"></div>
         <div class="hist-search-bar">
-          <input type="text" id="hist-search" placeholder="Buscar por cliente o N° doc..." oninput="renderHistorial()">
+          <input type="text" id="hist-search" placeholder="Buscar por cliente, N° de factura o servicio..." oninput="renderHistorial()">
           <div class="hist-filters">
             <button class="hist-filter-btn active" data-filter="todos" onclick="setHistFilter('todos',this)">Todos</button>
             <button class="hist-filter-btn" data-filter="factura" onclick="setHistFilter('factura',this)">Pendientes</button>
@@ -2520,7 +2562,24 @@ function addItem() {
 
 function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
 
+/* Resumen de lo elegido arriba de la vista previa */
+function actualizarResumenDoc() {
+  const el = document.getElementById('prev-meta');
+  if (!el) return;
+  const tipo = { factura: 'Factura', recibo: 'Recibo', cotizacion: 'Cotización' }[document.getElementById('doc-type')?.value] || 'Documento';
+  const cli = (document.getElementById('cli-nom')?.value || '').trim();
+  const emisor = (document.getElementById('doc-emisor')?.value || '').split(' ')[0];
+  const portal = cli && typeof portalParaCliente === 'function' ? portalParaCliente(cli) : null;
+  el.innerHTML = `<span class="on">${esc(tipo)}</span>`
+    + `<span${cli ? ' class="on"' : ''}>${cli ? 'Para: ' + esc(cli) : 'Sin cliente'}</span>`
+    + (emisor ? `<span>Emite: ${esc(emisor)}</span>` : '')
+    + (portal ? '<span class="on">Se registra en su portal</span>' : '');
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'cli-nom') actualizarResumenDoc(); });
+document.addEventListener('change', e => { if (e.target && ['doc-type', 'doc-emisor', 'cli-nom'].includes(e.target.id)) actualizarResumenDoc(); });
+
 function renderCart() {
+  actualizarResumenDoc();
   const empty = cart.length === 0;
   document.getElementById('cart-empty').style.display = empty ? 'block' : 'none';
   document.getElementById('cart-table').style.display = empty ? 'none'  : 'table';
@@ -2912,108 +2971,89 @@ function setHistFilter(f, btn) {
   renderHistorial();
 }
 
+let _histVerTodo = false;
+const HR_ICON = {
+  edit: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  del:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  check:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  card: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  clip: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
+};
 function renderHistorial() {
   const container = document.getElementById('hist-list');
-  const search = (document.getElementById('hist-search')?.value || '').toLowerCase().trim();
+  const q = ptNorm(document.getElementById('hist-search')?.value);
+  const todos = Object.values(docsMap);
 
-  let allDocs = Object.values(docsMap).sort((a, b) => {
-    const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
-    const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
-    return tb - ta;
-  });
+  // Resumen (siempre sobre todas las facturas)
+  const pend = todos.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
+  const parc = todos.filter(d => d.type === 'factura' && !!d.pagadoParcial && !d.pagado);
+  const porRevisar = [...pend, ...parc].filter(d => listaComprobantes(d).length);
+  const hoy = new Date();
+  const cobradoMes = cbCobros().filter(x => x.f.getMonth() === hoy.getMonth() && x.f.getFullYear() === hoy.getFullYear()).reduce((a, x) => a + x.m, 0);
+  const sum = arr => arr.reduce((a, d) => a + cbSaldo(d), 0);
+  document.getElementById('hist-resumen').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Pendiente de pago</div><div class="cb-tile-v">${cbMoney(sum(pend))}</div><div class="cb-tile-n">${pend.length} factura${pend.length !== 1 ? 's' : ''}</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Saldo de parciales</div><div class="cb-tile-v">${cbMoney(sum(parc))}</div><div class="cb-tile-n">${parc.length} con abono</div></div>
+    <div class="cb-tile" style="cursor:pointer;" onclick="document.getElementById('hist-search').value='';setHistFilter('factura', document.querySelector('[data-filter=factura]'))"><div class="cb-tile-l">Comprobantes por revisar</div><div class="cb-tile-v" style="color:${porRevisar.length ? '#b45309' : 'var(--black)'}">${porRevisar.length}</div><div class="cb-tile-n">Pendientes con captura subida</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Cobrado este mes</div><div class="cb-tile-v" style="color:var(--green-dark);">${cbMoney(cobradoMes)}</div><div class="cb-tile-n">Pagos registrados</div></div>`;
 
-  if (search) {
-    allDocs = allDocs.filter(d =>
-      (d.cli || '').toLowerCase().includes(search) ||
-      (d.docId || '').toLowerCase().includes(search)
-    );
-  }
+  let allDocs = todos.slice().sort((a, b) => (cbFecha(b.createdAt)?.getTime() || 0) - (cbFecha(a.createdAt)?.getTime() || 0));
+  if (q) allDocs = allDocs.filter(d => ptNorm(d.cli).includes(q) || ptNorm(d.docId).includes(q) || ptNorm((d.items || []).map(i => i.s).join(' ')).includes(q));
   if (histFilter === 'factura') allDocs = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
-  else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial);
+  else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial && !d.pagado);
   else if (histFilter === 'recibo')  allDocs = allDocs.filter(d => d.pagado || d.type === 'recibo');
   if (histEmisorFilter !== 'todos') allDocs = allDocs.filter(d => d.emisor === histEmisorFilter);
 
-  if (allDocs.length === 0) {
-    container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">${search || histFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
+  if (!allDocs.length) {
+    container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:28px 0;">${q || histFilter !== 'todos' || histEmisorFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
     return;
   }
 
-  /* Classify into 3 groups */
   const pendientes = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
-  const parciales  = allDocs.filter(d => d.type === 'factura' && !!d.pagadoParcial);
+  const parciales  = allDocs.filter(d => d.type === 'factura' && !!d.pagadoParcial && !d.pagado);
   const pagados    = allDocs.filter(d => d.pagado || d.type === 'recibo');
 
-  function docItemHTML(doc, group) {
-    const fsId = doc._fsId || '';
-    let badgeClass, badgeText;
-    if (group === 'parcial') {
-      badgeClass = 'parcial'; badgeText = 'Parcial';
-    } else if (group === 'pagado') {
-      badgeClass = 'recibo'; badgeText = 'Recibo';
-    } else {
-      badgeClass = 'factura'; badgeText = 'Factura';
-    }
-
-    let extraInfo = '';
-    if (group === 'parcial') {
-      const pagado    = doc.montoPagado || 0;
-      const pendiente = (doc.total || 0) - pagado;
-      extraInfo = `<div class="doc-date" style="color:#ea580c;">Pagado: $${pagado.toFixed(2)} / Pendiente: $${pendiente.toFixed(2)}</div>`;
-    }
-
-    let actionsHTML = `
-      <button class="btn-sm outline" onclick='openSheetById("${esc(fsId)}")'>Ver</button>
-      <button class="btn-sm edit"    onclick='openEditModal("${esc(fsId)}")'  style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
-      <button class="btn-sm del"     onclick='deleteDoc("${esc(fsId)}")'      style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
-    if (group === 'pendiente') {
-      actionsHTML += `
-      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'     style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pagado</button>`;
-    } else if (group === 'parcial') {
-      actionsHTML += `
-      <button class="btn-sm" style="background:#fff7ed;border-color:rgba(251,146,60,0.3);color:#ea580c;display:inline-flex;align-items:center;gap:5px;" onclick='abrirPagoParcial("${esc(fsId)}")'><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pago</button>
-      <button class="btn-sm paid" onclick='marcarPagado("${esc(fsId)}")'     style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pagado total</button>`;
-    }
-
-    const emisorTag = doc.emisor ? `<span class="emisor-tag">${esc(doc.emisor.split(' ')[0])}</span>` : '';
-
-    return `
-    <div class="doc-item">
-      <div class="doc-badge ${badgeClass}">${badgeText}</div>
-      <div class="doc-info">
-        <div class="doc-id">${esc(doc.docId || fsId)}${emisorTag}</div>
-        <div class="doc-name">${esc(doc.cli || '—')}</div>
-        <div class="doc-date">${esc(doc.fecha || '—')}</div>
-        ${extraInfo}
+  const fila = (d, grupo) => {
+    const id = esc(d._fsId || '');
+    const comps = listaComprobantes(d).length;
+    const saldo = cbSaldo(d);
+    const pill = { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
+    const servicios = (d.items || []).map(i => i.s).join(', ');
+    const principal = grupo === 'pendiente'
+      ? `<button class="hr-btn ok" onclick="event.stopPropagation();marcarPagado('${id}')">${HR_ICON.check}<span>Pagado</span></button>`
+      : grupo === 'parcial'
+      ? `<button class="hr-btn warn" onclick="event.stopPropagation();abrirPagoParcial('${id}')">${HR_ICON.card}<span>Abono</span></button>`
+      : '';
+    return `<div class="hr-row" onclick="openSheetById('${id}')" title="Abrir ${esc(d.docId || '')}">
+      <span class="hr-pill ${pill[1]}">${pill[0]}</span>
+      <div class="hr-main">
+        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}</div>
+        <div class="hr-cli">${esc(d.cli || '—')}</div>
+        <div class="hr-srv">${esc(servicios)}</div>
       </div>
-      <div class="doc-amount">$${(doc.total || 0).toFixed(2)}</div>
-      <div class="doc-actions">${actionsHTML}</div>
+      <span class="hr-fecha">${esc(d.fecha || '—')}</span>
+      <div class="hr-monto">$${(d.total || 0).toFixed(2)}${grupo === 'parcial' ? `<small>Debe $${saldo.toFixed(2)}</small>` : ''}</div>
+      <div class="hr-acc">
+        ${principal}
+        <button class="hr-ico" title="Editar" onclick="event.stopPropagation();openEditModal('${id}')">${HR_ICON.edit}</button>
+        <button class="hr-ico del" title="Eliminar" onclick="event.stopPropagation();deleteDoc('${id}')">${HR_ICON.del}</button>
+      </div>
     </div>`;
-  }
-
-  let html = '';
-
-  if (pendientes.length) {
-    html += `<div class="hist-section">
-      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span> PENDIENTES DE PAGO <span class="hist-count">${pendientes.length}</span></div>
-      ${pendientes.map(d => docItemHTML(d, 'pendiente')).join('')}
+  };
+  const seccion = (titulo, color, docs, grupo, limite) => {
+    if (!docs.length) return '';
+    const visibles = limite && !_histVerTodo ? docs.slice(0, limite) : docs;
+    const total = docs.reduce((a, d) => a + (grupo === 'pagado' ? (d.total || 0) : cbSaldo(d)), 0);
+    return `<div class="hr-sec">
+      <div class="hr-sec-t"><span style="background:${color};"></span>${titulo}<em>${docs.length}</em><b>${cbMoney(total)}</b></div>
+      <div class="hr-list">${visibles.map(d => fila(d, grupo)).join('')}</div>
+      ${visibles.length < docs.length ? `<button class="hr-mas" onclick="_histVerTodo=true;renderHistorial()">Ver ${docs.length - visibles.length} más</button>` : ''}
     </div>`;
-  }
-
-  if (parciales.length) {
-    html += `<div class="hist-section">
-      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span> PAGO PARCIAL <span class="hist-count">${parciales.length}</span></div>
-      ${parciales.map(d => docItemHTML(d, 'parcial')).join('')}
-    </div>`;
-  }
-
-  if (pagados.length) {
-    html += `<div class="hist-section">
-      <div class="hist-section-title" style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> RECIBOS / PAGADOS <span class="hist-count">${pagados.length}</span></div>
-      ${pagados.map(d => docItemHTML(d, 'pagado')).join('')}
-    </div>`;
-  }
-
-  container.innerHTML = html;
+  };
+  container.innerHTML =
+    seccion('Pendientes de pago', '#ef4444', pendientes, 'pendiente') +
+    seccion('Pago parcial', '#f59e0b', parciales, 'parcial') +
+    seccion('Pagados', '#22c55e', pagados, 'pagado', 20);
 }
 
 function openSheetById(fsId) {
