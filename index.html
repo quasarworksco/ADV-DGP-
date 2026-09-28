@@ -1071,6 +1071,16 @@
   .pt-stats { grid-template-columns:repeat(2,1fr); }
   .pt-chat { height:460px; }
 }
+    .cp-wrap { margin:8px 0 10px; }
+    .cp-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); margin-bottom:6px; }
+    .cp-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .cp-chip { display:inline-flex; align-items:stretch; border:1.5px solid var(--border); border-radius:20px; background:white; overflow:hidden; max-width:100%; }
+    .cp-chip.sel { border-color:var(--blue); background:var(--blue-xlight); }
+    .cp-chip button { border:0; background:none; font-family:'IBM Plex Sans',sans-serif; cursor:pointer; }
+    .cp-use { padding:6px 4px 6px 12px; font-size:11px; font-weight:600; color:var(--text-mid); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; text-align:left; }
+    .cp-chip.sel .cp-use { color:var(--blue); }
+    .cp-x { padding:0 10px 0 6px; color:var(--text-soft); font-size:14px; line-height:1; }
+    .cp-x:hover { color:#dc2626; }
   </style>
 </head>
 <body>
@@ -1223,6 +1233,7 @@
             <option value="paypal">PayPal</option>
             <option value="westernunion">Western Union</option>
           </select>
+          <div id="metodo-pago-guardados"></div>
           <div class="metodo-fields" id="metodo-pago-fields"></div>
         </div>
 
@@ -1942,6 +1953,7 @@ function initPage() {
   initClientes();
   initClientesCRM();
   initPortales();
+  initCuentasPago();
   onTypeChange();
 }
 
@@ -2508,6 +2520,7 @@ async function saveDoc() {
     const portalCli = portalParaCliente(cli);
     if (portalCli) docData.portalCodigo = portalCli._id;
     const added = await db.collection('documentos').add(docData);
+    guardarCuentaPago(docData.metodoPago, docData.infoPago);
     if (portalCli) registrarFacturaEnPortal(added.id, portalCli._id);
     cart = [];
     renderCart();
@@ -3310,7 +3323,7 @@ function duplicarFactura(fsId) {
   if (doc.emisor) document.getElementById('doc-emisor').value = doc.emisor;
 
   const metEl = document.getElementById('metodo-pago');
-  if (metEl && doc.metodoPago) { metEl.value = doc.metodoPago; onMetodoPagoChange(); }
+  if (metEl && doc.metodoPago) { metEl.value = doc.metodoPago; onMetodoPagoChange(true); cpRellenar(doc.metodoPago, doc.infoPago || {}); }
 
   cart = (doc.items || []).map(item => ({ s: item.s, p: item.p, c: item.c || 1, t: item.t || parseFloat((item.p * (item.c || 1)).toFixed(2)) }));
   renderCart();
@@ -4711,16 +4724,111 @@ function selectMoneda(val) {
   if (s2) { const v = s2.value; s2.innerHTML = html; s2.value = v; }
 }
 
-function onMetodoPagoChange() {
+function onMetodoPagoChange(sinAutollenar) {
   const metodo = document.getElementById('metodo-pago').value;
   const wrap   = document.getElementById('metodo-pago-fields');
   if (metodo === 'bizum') selectMoneda('eur');
-  if (!metodo || !METODOS_CAMPOS[metodo]) { wrap.innerHTML = ''; return; }
+  if (!metodo || !METODOS_CAMPOS[metodo]) { wrap.innerHTML = ''; renderCuentasGuardadas(); return; }
   wrap.innerHTML = METODOS_CAMPOS[metodo].map(f => `
     <div class="ff" style="margin:0">
       <label style="font-size:10px">${f.label}</label>
-      <input type="text" id="${f.id}" placeholder="${f.placeholder}">
+      <input type="text" id="${f.id}" placeholder="${f.placeholder}" oninput="renderCuentasGuardadas()">
     </div>`).join('');
+  // Rellenar con los datos usados más recientemente para este método
+  const lista = cpLista(metodo);
+  if (!sinAutollenar && lista.length) cpRellenar(metodo, lista[0].info);
+  renderCuentasGuardadas();
+}
+
+/* ─── Datos de pago guardados (Zelle, PayPal, bancos…) para reutilizar ─── */
+let cuentasPago = {};   // id -> { metodo, info, ultimoUso, usos, oculto }
+function initCuentasPago() {
+  db.collection('cuentasPago').onSnapshot(snap => {
+    cuentasPago = {};
+    snap.docs.forEach(d => { cuentasPago[d.id] = d.data(); });
+    renderCuentasGuardadas();
+  }, () => {});
+}
+function cpLimpiar(info) {
+  const o = {};
+  Object.keys(info || {}).sort().forEach(k => { const v = String(info[k] || '').trim(); if (v) o[k] = v; });
+  return o;
+}
+function cpKey(metodo, info) {
+  const base = metodo + '|' + Object.entries(cpLimpiar(info)).map(([k, v]) => k + '=' + ptNorm(v)).join('|');
+  let h = 5381;
+  for (let i = 0; i < base.length; i++) h = ((h << 5) + h + base.charCodeAt(i)) >>> 0;
+  return `${metodo}_${h.toString(36)}`;
+}
+function cpMs(v) { return v?.toDate ? v.toDate().getTime() : (v ? new Date(v).getTime() || 0 : 0); }
+function cpLista(metodo) {
+  const map = {};
+  // 1) Datos usados en facturas anteriores
+  Object.values(docsMap).forEach(d => {
+    if (d.metodoPago !== metodo) return;
+    const info = cpLimpiar(d.infoPago);
+    if (!Object.keys(info).length) return;
+    const k = cpKey(metodo, info), t = cpMs(d.createdAt);
+    if (!map[k]) map[k] = { k, info, t: 0 };
+    map[k].t = Math.max(map[k].t, t);
+  });
+  // 2) Datos guardados (incluye los ocultados con la ×)
+  Object.entries(cuentasPago).forEach(([k, c]) => {
+    if (c.metodo !== metodo) return;
+    const info = cpLimpiar(c.info);
+    if (!map[k] && !Object.keys(info).length) return;
+    map[k] = { k, info: Object.keys(info).length ? info : map[k]?.info, t: Math.max(map[k]?.t || 0, cpMs(c.ultimoUso)), oculto: !!c.oculto };
+  });
+  return Object.values(map).filter(c => !c.oculto && c.info).sort((a, b) => b.t - a.t);
+}
+function cpEtiqueta(metodo, info) {
+  const orden = (METODOS_CAMPOS[metodo] || []).map(f => f.id.replace('mp-', ''));
+  const nombre = info.nombre;
+  const resto = orden.filter(k => k !== 'nombre' && info[k]).map(k => info[k]);
+  return [nombre, ...resto].filter(Boolean).join(' · ');
+}
+function cpRellenar(metodo, info) {
+  (METODOS_CAMPOS[metodo] || []).forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el) el.value = info[f.id.replace('mp-', '')] || '';
+  });
+  renderCuentasGuardadas();
+}
+function usarCuentaPago(k) {
+  const metodo = document.getElementById('metodo-pago').value;
+  const c = cpLista(metodo).find(x => x.k === k);
+  if (c) cpRellenar(metodo, c.info);
+}
+function renderCuentasGuardadas() {
+  const cont = document.getElementById('metodo-pago-guardados');
+  if (!cont) return;
+  const metodo = document.getElementById('metodo-pago')?.value;
+  const lista = metodo ? cpLista(metodo) : [];
+  if (!lista.length) { cont.innerHTML = ''; return; }
+  const actual = cpKey(metodo, getInfoPago());
+  cont.innerHTML = `<div class="cp-wrap"><div class="cp-label">Datos guardados</div><div class="cp-list">
+    ${lista.slice(0, 10).map(c => `<span class="cp-chip ${c.k === actual ? 'sel' : ''}">
+      <button type="button" class="cp-use" title="${esc(cpEtiqueta(metodo, c.info))}" onclick="usarCuentaPago('${esc(c.k)}')">${esc(cpEtiqueta(metodo, c.info))}</button>
+      <button type="button" class="cp-x" title="Quitar de la lista" onclick="ocultarCuentaPago('${esc(c.k)}')">×</button>
+    </span>`).join('')}
+  </div></div>`;
+}
+async function ocultarCuentaPago(k) {
+  const metodo = document.getElementById('metodo-pago').value;
+  const c = cpLista(metodo).find(x => x.k === k);
+  if (!confirm(`¿Quitar "${c ? cpEtiqueta(metodo, c.info) : ''}" de los datos guardados? Las facturas anteriores no cambian.`)) return;
+  try { await db.collection('cuentasPago').doc(k).set({ metodo, info: c?.info || {}, oculto: true }, { merge: true }); }
+  catch (e) { toast('No se pudo quitar.', 'err'); }
+}
+function guardarCuentaPago(metodo, info) {
+  info = cpLimpiar(info);
+  if (!metodo || !Object.keys(info).length) return;
+  db.collection('cuentasPago').doc(cpKey(metodo, info)).set({
+    metodo, info, oculto: false,
+    ultimoUso: firebase.firestore.FieldValue.serverTimestamp(),
+    usos: firebase.firestore.FieldValue.increment(1),
+    guardadoPor: currentUser?.email || ''
+  }, { merge: true }).catch(() => {});
 }
 
 function getInfoPago() {
@@ -4741,6 +4849,7 @@ function resetMetodoPago() {
   document.getElementById('btn-eur').classList.remove('active');
   document.getElementById('metodo-pago').value = '';
   document.getElementById('metodo-pago-fields').innerHTML = '';
+  renderCuentasGuardadas();
 }
 
 /* ═══════════════════════════════════════════════════════

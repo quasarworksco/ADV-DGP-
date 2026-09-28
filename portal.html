@@ -975,18 +975,7 @@
         <div class="contact-ico" style="background:#dcfce7;color:#15803d;">${I.wa}</div>
         <div><div class="contact-title">WhatsApp</div><div class="contact-sub">${CONTACTO.telefono}</div></div>
       </a>
-      <a class="contact" href="tel:+${CONTACTO.wa}">
-        <div class="contact-ico" style="background:var(--blue-x);color:var(--blue);">${I.phone}</div>
-        <div><div class="contact-title">Llamar</div><div class="contact-sub">${CONTACTO.nombre} · ${CONTACTO.telefono}</div></div>
-      </a>
-      <a class="contact" href="mailto:${CONTACTO.correo}">
-        <div class="contact-ico" style="background:#fef3c7;color:#b45309;">${I.mail}</div>
-        <div><div class="contact-title">Correo</div><div class="contact-sub">${CONTACTO.correo}</div></div>
-      </a>
-      <a class="contact" href="#" onclick="toggleChat(true);return false;">
-        <div class="contact-ico" style="background:#ede9fe;color:var(--violet);">${I.chat}</div>
-        <div><div class="contact-title">Chat en vivo</div><div class="contact-sub">Escríbenos aquí mismo</div></div>
-      </a>`;
+`;
   }
   function vCuenta() {
     const oculto = CODE.slice(0, 4) + '••••-' + CODE.slice(-4);
@@ -1043,7 +1032,7 @@
   function renderChat() {
     const body = document.getElementById('chat-body');
     if (!body) return;
-    const welcome = `<div class="chat-welcome">Hola ${esc(primerNombre())} 👋<br>Escríbenos tu consulta y te responderemos por aquí mismo.<br>También puedes llamarnos al ${CONTACTO.telefono}.</div>`;
+    const welcome = `<div class="chat-welcome">Hola ${esc(primerNombre())} 👋<br>Escríbenos tu consulta y te responderemos por aquí mismo.<br>También puedes escribirnos por WhatsApp al ${CONTACTO.telefono}.</div>`;
     body.innerHTML = welcome + mensajes.map(m => `
       <div class="msg ${m.de === 'admin' ? 'admin' : 'cliente'}">
         ${m.de === 'admin' ? `<div class="msg-author">${esc(m.autor || 'DGP Group')}</div>` : ''}<div class="msg-text">${esc(m.texto)}</div>
