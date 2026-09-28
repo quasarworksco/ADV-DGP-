@@ -267,17 +267,22 @@
       display: flex; border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.92);
       backdrop-filter: blur(12px);
-      padding: 0 32px;
+      padding: 0 24px;
+      justify-content: safe center;
+      overflow-x: auto; scrollbar-width: none;
     }
+    .nav-tabs::-webkit-scrollbar { display: none; }
     .nav-tab {
-      padding: 14px 24px;
+      padding: 14px 16px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 11px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
       color: var(--text-soft); background: none; border: none; cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: color 0.2s, border-color 0.2s;
       display: flex; align-items: center; gap: 8px;
     }
+    @media (max-width: 1000px) and (min-width: 701px) { .nav-tab > i, .nav-tab > svg { display: none; } .nav-tab { padding: 14px 13px; } }
     .nav-tab:hover { color: var(--blue); }
     .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 
@@ -727,7 +732,7 @@
       .btn-logout { padding: 6px 10px; }
 
       /* Nav */
-      .nav-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 0; }
+      .nav-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 0; justify-content: flex-start; padding: 0 8px; }
       .nav-tabs::-webkit-scrollbar { display: none; }
       .nav-tab { padding: 12px 14px; font-size: 10px; letter-spacing: 1px; white-space: nowrap; flex-shrink: 0; }
 
@@ -3601,7 +3606,15 @@ function renderEncuestas() {
       return;
     }
 
-    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // encuesta.html guarda: cliente, estrellas_calidad, estrellas_comunicacion, testimonioAprobado
+    const docs = snap.docs.map(d => {
+      const x = d.data();
+      return { id: d.id, ...x,
+        clienteNombre: x.clienteNombre || x.cliente || (x.docId && docsMap[x.docId]?.cli) || '—',
+        calidad: Number(x.calidad ?? x.estrellas_calidad) || 0,
+        comunicacion: Number(x.comunicacion ?? x.estrellas_comunicacion) || 0,
+        autorizaTestimonio: !!(x.autorizaTestimonio || x.testimonioAprobado) };
+    });
     const totalCal  = docs.reduce((a, d) => a + (d.calidad || 0), 0);
     const totalCom  = docs.reduce((a, d) => a + (d.comunicacion || 0), 0);
     const recomienda = docs.filter(d => d.recomienda === true).length;
