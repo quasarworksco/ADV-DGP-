@@ -1165,6 +1165,7 @@
     </div>
   </div>
   <div class="header-right">
+    <button class="btn-logout" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Probar sistema</button>
     <div class="live-dot">EN VIVO</div>
     <div class="user-avatar" id="user-avatar-init">?</div>
     <button class="btn-logout" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
@@ -2426,7 +2427,7 @@ function initDocs() {
     .orderBy('createdAt', 'desc')
     .onSnapshot(snap => {
       const newMap = {};
-      snap.docs.forEach(d => { newMap[d.id] = { _fsId: d.id, ...d.data() }; });
+      snap.docs.forEach(d => { if (!d.id.startsWith('__diag')) newMap[d.id] = { _fsId: d.id, ...d.data() }; });
 
       if (!_docsFirstLoad) {
         Object.entries(newMap).forEach(([id, doc]) => {
@@ -4858,7 +4859,7 @@ function cotEstado(c) {
 }
 function initCotizaciones() {
   db.collection('cotizaciones').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    cotizacionesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    cotizacionesList = snap.docs.filter(d => !d.id.startsWith('__diag')).map(d => ({ _id: d.id, ...d.data() }));
     if (_cotPrev) {
       cotizacionesList.forEach(c => {
         const antes = _cotPrev[c._id];
@@ -5163,6 +5164,133 @@ function recordarPago(i) {
   const links = x.docs.slice(0, 5).map(d => `• ${d.docId || ''}: ${cbMoney(cbSaldo(d))}\n  https://adv.dgp-link.com/factura-publica.html?id=${d._fsId}`).join('\n');
   const txt = `Hola ${x.nombre.split(' ')[0]}! Te escribimos de DGP Group para recordarte que tienes un saldo pendiente de ${cbMoney(x.saldo)}:\n\n${links}\n\nDesde cada enlace puedes ver los métodos de pago y subir tu comprobante. ¡Gracias!`;
   window.open(`https://wa.me/${cotTelefono(x.nombre)}?text=${encodeURIComponent(txt)}`, '_blank');
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROBAR SISTEMA — diagnóstico de reglas, Worker, IA y Telegram
+═══════════════════════════════════════════════════════ */
+const DIAG_WORKER = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev';
+let _diagApp = null;
+function dbPublico() {
+  // Conexión SIN sesión: así se comporta la página de un cliente
+  if (!_diagApp) _diagApp = firebase.initializeApp(firebaseConfig, 'diag-publico');
+  return _diagApp.firestore();
+}
+const DIAG_ICON = {
+  ok:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9.5"/></svg>',
+  fail: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+  wait: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10" stroke-dasharray="4 4"/></svg>'
+};
+let _diagRes = [];
+function diagRender() {
+  const el = document.getElementById('diag-list');
+  if (!el) return;
+  const hechos = _diagRes.filter(r => r.estado !== 'wait');
+  const fallos = hechos.filter(r => r.estado === 'fail').length;
+  el.innerHTML = `
+    ${hechos.length === _diagRes.length && _diagRes.length ? `<div style="padding:10px 12px;border-radius:10px;margin-bottom:10px;font-size:12px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;${fallos ? 'background:#fef2f2;color:#b91c1c;' : 'background:#ecfdf5;color:#047857;'}">${fallos ? `${fallos} cosa(s) por arreglar. Abajo te digo qué hacer en cada una.` : 'Todo funciona correctamente ✅'}</div>` : ''}
+    ${_diagRes.map(r => `<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-family:'IBM Plex Sans',sans-serif;">
+      <div style="flex-shrink:0;margin-top:1px;">${DIAG_ICON[r.estado]}</div>
+      <div style="min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--black);">${esc(r.titulo)}</div>
+        ${r.detalle ? `<div style="font-size:11px;color:var(--text-soft);margin-top:1px;">${esc(r.detalle)}</div>` : ''}
+        ${r.estado === 'fail' && r.ayuda ? `<div style="font-size:11.5px;color:#b91c1c;margin-top:4px;line-height:1.45;">${r.ayuda}</div>` : ''}
+      </div>
+    </div>`).join('')}`;
+}
+function abrirDiagnostico() {
+  ptModal('Probar sistema', 'Revisa reglas de Firestore, Worker, IA y Telegram', `
+    <div id="diag-list"></div>
+    <button class="btn-edit-save" id="diag-btn" style="margin-top:14px;" onclick="correrDiagnostico()">Volver a probar</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
+  correrDiagnostico();
+}
+async function correrDiagnostico() {
+  const btn = document.getElementById('diag-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Probando…'; }
+  const REGLAS = 'Firebase → Firestore Database → pestaña <b>Reglas</b>: borra todo, pega el archivo <b>firestore.rules</b> más reciente y dale a <b>Publicar</b>.';
+  const WORKER = 'Cloudflare → Workers → <b>ayudante-dgp-bot</b> → <b>Edit code</b>: pega el <b>ayudante-bot/worker.js</b> más reciente de GitHub y dale a <b>Deploy</b>.';
+  const tests = [
+    { id: 'acceso', titulo: 'Tu cuenta tiene acceso al sistema' },
+    { id: 'reglas', titulo: 'Reglas de Firestore publicadas (portal de clientes)' },
+    { id: 'privadas', titulo: 'Nadie de afuera puede listar tus facturas' },
+    { id: 'comprobantes', titulo: 'Clientes pueden subir varios comprobantes (y no borrarlos)' },
+    { id: 'cotizaciones', titulo: 'Clientes pueden aceptar cotizaciones' },
+    { id: 'worker', titulo: 'Worker de Cloudflare actualizado' },
+    { id: 'secretos', titulo: 'Secretos del Worker (GROQ_API_KEY, TG_TOKEN, FB_EMAIL, FB_PASSWORD)' },
+    { id: 'firebase', titulo: 'El bot puede leer las facturas' },
+    { id: 'groq', titulo: 'Groq (IA) conectado' },
+    { id: 'ia', titulo: 'La IA lee un comprobante de prueba ($123.45)' },
+    { id: 'telegram', titulo: 'Mensaje de prueba enviado a Telegram' }
+  ];
+  _diagRes = tests.map(t => ({ ...t, estado: 'wait' }));
+  diagRender();
+  const set = (id, ok, detalle, ayuda) => { Object.assign(_diagRes.find(r => r.id === id), { estado: ok ? 'ok' : 'fail', detalle, ayuda }); diagRender(); };
+  const denegado = e => e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+  const pub = dbPublico();
+  const sello = '__diag_' + Date.now().toString(36);
+
+  // 1) Acceso
+  try {
+    const a = await db.collection('accesos').doc(currentUser.email).get();
+    set('acceso', a.exists, currentUser.email, `Agrega un documento con ID <b>${esc(currentUser.email)}</b> en la colección <b>accesos</b>.`);
+  } catch (e) { set('acceso', false, e.message, REGLAS); }
+
+  // 2) Reglas publicadas: el público puede abrir un portal por su código
+  try { await pub.collection('portal').doc('__diagnostico').get(); set('reglas', true, 'Los clientes pueden entrar a su portal'); }
+  catch (e) { set('reglas', false, denegado(e) ? 'Siguen las reglas viejas' : e.message, REGLAS); }
+
+  // 3) Facturas privadas: el público NO puede listarlas
+  try { await pub.collection('documentos').limit(1).get(); set('privadas', false, 'Cualquiera puede ver la lista de tus facturas', REGLAS); }
+  catch (e) { set('privadas', denegado(e), denegado(e) ? 'Protegidas' : e.message, REGLAS); }
+
+  // 4) Varios comprobantes (documento temporal)
+  try {
+    await db.collection('documentos').doc(sello).set({ type: 'diagnostico', total: 1, comprobantes: [{ url: 'prueba-1' }], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    let agregar = false, borrarBloqueado = false;
+    try { await pub.collection('documentos').doc(sello).update({ comprobante_url: 'prueba-2', comprobantes: firebase.firestore.FieldValue.arrayUnion({ url: 'prueba-2' }) }); agregar = true; } catch (e) {}
+    try { await pub.collection('documentos').doc(sello).update({ comprobantes: [] }); } catch (e) { borrarBloqueado = denegado(e); }
+    set('comprobantes', agregar && borrarBloqueado,
+      !agregar ? 'Un cliente no pudo agregar un segundo comprobante' : !borrarBloqueado ? 'Un cliente podría borrar comprobantes' : 'Agregar: sí · Borrar: bloqueado', REGLAS);
+  } catch (e) { set('comprobantes', false, e.message, REGLAS); }
+  finally { db.collection('documentos').doc(sello).delete().catch(() => {}); }
+
+  // 5) Cotizaciones (documento temporal)
+  try {
+    await db.collection('cotizaciones').doc(sello).set({ estado: 'enviada', cli: 'Prueba del sistema', total: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    try {
+      await pub.collection('cotizaciones').doc(sello).update({ estado: 'aceptada', respondidoPor: 'Prueba', respondidoAt: firebase.firestore.FieldValue.serverTimestamp() });
+      set('cotizaciones', true, 'Aceptar desde el link: funciona');
+    } catch (e) { set('cotizaciones', false, denegado(e) ? 'Las reglas no incluyen cotizaciones' : e.message, REGLAS); }
+  } catch (e) { set('cotizaciones', false, e.message, REGLAS); }
+  finally { db.collection('cotizaciones').doc(sello).delete().catch(() => {}); }
+
+  // 6+) Worker
+  const pendientesWorker = ['secretos', 'firebase', 'groq', 'ia', 'telegram'];
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60000);
+    const res = await fetch(`${DIAG_WORKER}/diagnostico?ia=1&telegram=1`, { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(t);
+    const txt = await res.text();
+    let d = null; try { d = JSON.parse(txt); } catch (e) {}
+    if (!d || !d.checks) {
+      set('worker', false, 'Responde con el código viejo', WORKER);
+      pendientesWorker.forEach(id => set(id, false, 'No se pudo probar', 'Primero actualiza el Worker (punto anterior).'));
+    } else {
+      set('worker', true, 'Versión ' + d.version);
+      const c = d.checks;
+      const SECRETO = `Cloudflare → Workers → <b>ayudante-dgp-bot</b> → <b>Settings</b> → <b>Variables and Secrets</b> → <b>+ Add</b>, tipo <b>Secret</b>.`;
+      set('secretos', c.secretos?.ok, c.secretos?.ok ? 'Los 4 están configurados' : 'Faltan: ' + (c.secretos?.faltan || []).join(', '), SECRETO + ' Agrega: <b>' + esc((c.secretos?.faltan || []).join(', ')) + '</b>.');
+      set('firebase', c.firebase?.ok, c.firebase?.ok ? 'Inicia sesión y lee facturas' : c.firebase?.error, 'Revisa: 1) el usuario del bot existe en Firebase → <b>Authentication → Users</b>; 2) su correo está en la colección <b>accesos</b>; 3) <b>FB_EMAIL</b> y <b>FB_PASSWORD</b> en Cloudflare coinciden con ese usuario.');
+      set('groq', c.groq?.ok, c.groq?.ok ? 'Modelo de visión: ' + c.groq.modelo : c.groq?.error, 'Revisa el secreto <b>GROQ_API_KEY</b> en Cloudflare (que sea una clave válida de console.groq.com).');
+      set('ia', c.ia?.ok, c.ia?.ok ? `Leyó $${Number(c.ia.monto).toFixed(2)} con ${c.ia.modelo}` : c.ia?.error, 'Si Groq está bien, puede ser un fallo temporal: vuelve a probar en unos minutos.');
+      set('telegram', c.telegram?.ok, c.telegram?.ok ? 'Revisa tu Telegram: te llegó un mensaje de prueba' : c.telegram?.error, 'Asegúrate de que el bot de notificaciones siga activo en tu chat de Telegram (escríbele /start).');
+    }
+  } catch (e) {
+    set('worker', false, 'No responde', WORKER);
+    pendientesWorker.forEach(id => set(id, false, 'No se pudo probar', 'Primero haz que el Worker responda.'));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Volver a probar'; }
 }
 
 /* ═══════════════════════════════════════════════════════

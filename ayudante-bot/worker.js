@@ -192,7 +192,9 @@ export default {
   },
 
   async fetch(request, env) {
-    if (new URL(request.url).pathname === '/verificar') return handleVerificar(request, env, firebaseLogin);
+    const ruta = new URL(request.url).pathname;
+    if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
+    if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -592,4 +594,72 @@ async function handleVerificar(request, env, firebaseLogin) {
     console.error('verificar:', e);
     return json(request, { error: e.message || 'Error' }, 502);
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
+//  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
+// ══════════════════════════════════════════════════════════════
+const WORKER_VERSION = '2026-09-28';
+const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
+
+async function handleDiagnostico(request, env, firebaseLogin) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...cors(request), 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
+  const q = new URL(request.url).searchParams;
+  const out = { version: WORKER_VERSION, checks: {} };
+
+  const faltan = ['GROQ_API_KEY', 'TG_TOKEN', 'FB_EMAIL', 'FB_PASSWORD'].filter(k => !env[k]);
+  out.checks.secretos = { ok: faltan.length === 0, faltan };
+
+  // Firebase: iniciar sesión con la cuenta del bot y leer una factura
+  try {
+    const token = await firebaseLogin(env);
+    const res = await fetch(docUrl(env, 'documentos') + '?pageSize=1', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json().catch(() => ({}));
+    out.checks.firebase = res.ok ? { ok: true }
+      : { ok: false, error: res.status === 403 ? 'La cuenta del bot no está en la colección accesos (o las reglas no están publicadas)' : (data.error?.message || 'HTTP ' + res.status) };
+  } catch (e) {
+    const m = e.message || '';
+    out.checks.firebase = { ok: false, error:
+      /Faltan/.test(m) ? 'Faltan los secretos FB_EMAIL / FB_PASSWORD' :
+      /INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(m) ? 'Correo o contraseña del bot incorrectos (revisa FB_EMAIL / FB_PASSWORD y que el usuario exista en Authentication)' :
+      /OPERATION_NOT_ALLOWED|PASSWORD_LOGIN_DISABLED/.test(m) ? 'Activa "Correo/contraseña" en Firebase → Authentication → Sign-in method' : m };
+  }
+
+  // Groq: la clave funciona y hay modelo de visión disponible
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${env.GROQ_API_KEY}` } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) out.checks.groq = { ok: false, error: data.error?.message || 'HTTP ' + res.status };
+    else {
+      const ids = (data.data || []).map(m => m.id);
+      const candidatos = env.GROQ_VISION_MODEL ? [env.GROQ_VISION_MODEL, ...MODELOS_DEFAULT] : MODELOS_DEFAULT;
+      const vision = candidatos.filter(m => ids.includes(m));
+      out.checks.groq = vision.length ? { ok: true, modelo: vision[0] } : { ok: false, error: 'La clave funciona, pero no hay modelo de visión disponible (' + candidatos.join(', ') + ')' };
+    }
+  } catch (e) { out.checks.groq = { ok: false, error: e.message }; }
+
+  // IA: leer el comprobante de prueba ($123.45)
+  if (q.get('ia')) {
+    try {
+      const { lectura, modelo } = await leerComprobante(env, IMG_PRUEBA);
+      const ok = typeof lectura.monto === 'number' && Math.abs(lectura.monto - 123.45) < 0.01;
+      out.checks.ia = { ok, monto: lectura.monto, modelo, error: ok ? null : `Leyó ${lectura.monto} en vez de 123.45` };
+    } catch (e) { out.checks.ia = { ok: false, error: e.message }; }
+  }
+
+  // Telegram: mensaje de prueba al chat de notificaciones
+  if (q.get('telegram')) {
+    try {
+      const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+      const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHAT, text: '✅ Prueba del sistema DGP Group: las notificaciones llegan correctamente.' })
+      });
+      const data = await res.json().catch(() => ({}));
+      out.checks.telegram = data.ok ? { ok: true } : { ok: false, error: data.description || 'HTTP ' + res.status };
+    } catch (e) { out.checks.telegram = { ok: false, error: e.message }; }
+  }
+
+  return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(request) } });
 }
