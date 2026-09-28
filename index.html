@@ -849,7 +849,20 @@
 .clientes-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
 .btn-nuevo-cliente { padding:10px 20px; background:var(--blue); color:white; border:none; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
 .btn-nuevo-cliente:hover { background:var(--blue-light); transform:translateY(-1px); }
-.clientes-search-row { margin-bottom:16px; }
+.clientes-search-row { margin-bottom:12px; position:relative; }
+.clientes-search-row svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-soft); pointer-events:none; }
+.clientes-search-row #clientes-search { padding-left:40px !important; padding-right:40px !important; }
+.cl-clear { position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:var(--border); color:var(--text-mid); width:24px; height:24px; border-radius:50%; cursor:pointer; font-size:14px; line-height:24px; display:none; }
+.cl-tags-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.cl-chip { border:1.5px solid var(--border); background:white; color:var(--text-mid); border-radius:20px; padding:5px 12px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:5px; }
+.cl-chip:hover { border-color:var(--blue); color:var(--blue); }
+.cl-chip.active { background:var(--blue); border-color:var(--blue); color:white; }
+.cl-chip small { font-weight:500; opacity:.7; }
+.cl-tag { display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--blue-xlight); color:var(--blue); border:1px solid rgba(20,56,204,.15); cursor:pointer; margin:4px 4px 0 0; }
+.cl-tag:hover { background:var(--blue); color:white; }
+.cl-tag-sug { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.cl-tag-sug button { border:1px dashed var(--border); background:var(--off); color:var(--text-mid); border-radius:14px; padding:2px 9px; font-size:10px; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; }
+.cl-tag-sug button:hover { border-color:var(--blue); color:var(--blue); }
 .clientes-search-row input { width:100%; padding:10px 16px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--black); background:var(--off); outline:none; transition:border-color 0.2s; box-sizing:border-box; }
 .clientes-search-row input:focus { border-color:var(--blue); background:white; }
 .cliente-card { background:white; border:1px solid var(--border); padding:16px 20px; margin-bottom:8px; display:flex; align-items:center; gap:14px; transition:border-color 0.2s; border-radius:10px; }
@@ -1418,8 +1431,11 @@
       <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
     </div>
     <div class="clientes-search-row">
-      <input type="text" id="clientes-search" placeholder="Buscar por nombre, teléfono o correo..." oninput="renderClientes()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="clientes-search" placeholder="Buscar por nombre, apellido, teléfono, correo o etiqueta..." oninput="renderClientes()" autocomplete="off">
+      <button class="cl-clear" id="cl-clear" onclick="document.getElementById('clientes-search').value='';renderClientes();document.getElementById('clientes-search').focus();" aria-label="Borrar búsqueda">×</button>
     </div>
+    <div class="cl-tags-row" id="clientes-tags"></div>
     <div id="clientes-list-container"></div>
   </div>
 </div>
@@ -1607,6 +1623,7 @@
       <div class="ff"><label>Teléfono / WhatsApp</label><input type="tel" id="cl-telefono" placeholder="+1 555 000 0000"></div>
       <div class="ff"><label>Correo electrónico</label><input type="email" id="cl-correo" placeholder="cliente@ejemplo.com"></div>
       <div class="ff"><label>Empresa (opcional)</label><input type="text" id="cl-empresa" placeholder="Nombre de empresa"></div>
+      <div class="ff"><label>Etiquetas (separadas por coma)</label><input type="text" id="cl-tags" placeholder="Ej. VIP, Web, Seguidores" autocomplete="off"><div class="cl-tag-sug" id="cl-tag-sug"></div></div>
       <div class="ff"><label>Notas</label><textarea id="cl-notas" placeholder="Notas internas sobre este cliente..." style="height:70px;resize:none;"></textarea></div>
       <button class="btn-edit-save" onclick="saveCliente2()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cliente</button>
       <button class="btn-edit-cancel" onclick="closeClienteModal()">Cancelar</button>
@@ -3538,38 +3555,86 @@ let editClienteId = null;
 function initClientesCRM() {
   db.collection('clientes').orderBy('nombre').onSnapshot(snap => {
     clientesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    document.getElementById('clientes-count').textContent = clientesList.length;
     clientesCache = clientesList.map(c => [c.nombre, c.apellido].filter(Boolean).join(' '));
     refreshClientesDatalist();
     if (document.getElementById('page-clientes').classList.contains('active')) renderClientes();
   }, () => {});
 }
 
+let clTagFiltro = null;
+
+function clParseTags(str) {
+  const out = [];
+  String(str || '').split(',').map(t => t.trim().replace(/\s+/g, ' ')).filter(Boolean).forEach(t => {
+    t = t.slice(0, 24);
+    if (!out.some(x => ptNorm(x) === ptNorm(t))) out.push(t);
+  });
+  return out.slice(0, 10);
+}
+function clTodasEtiquetas() {
+  const cuenta = {};
+  clientesList.forEach(c => (c.tags || []).forEach(t => {
+    const k = ptNorm(t);
+    if (!cuenta[k]) cuenta[k] = [t, 0];
+    cuenta[k][1]++;
+  }));
+  return Object.values(cuenta).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+function clAgregarTag(t) {
+  const input = document.getElementById('cl-tags');
+  input.value = clParseTags(input.value + ',' + t).join(', ');
+}
+function setClTagFiltro(t) {
+  clTagFiltro = (clTagFiltro === t || t === '__todos') ? null : t;
+  renderClientes();
+}
+function renderClienteTags() {
+  const el = document.getElementById('clientes-tags');
+  if (!el) return;
+  const conPortal = clientesList.filter(c => c.portalCodigo).length;
+  const chip = (id, label, n) => `<button class="cl-chip ${clTagFiltro === id || (!clTagFiltro && id === '__todos') ? 'active' : ''}" onclick="setClTagFiltro(this.dataset.t)" data-t="${esc(id)}">${esc(label)}${n != null ? ` <small>${n}</small>` : ''}</button>`;
+  el.innerHTML = chip('__todos', 'Todos', clientesList.length)
+    + chip('__portal', 'Con portal', conPortal)
+    + chip('__sinportal', 'Sin portal', clientesList.length - conPortal)
+    + clTodasEtiquetas().map(([t, n]) => chip(t, t, n)).join('');
+}
+
 function renderClientes() {
   const container = document.getElementById('clientes-list-container');
   if (!container) return;
-  const q = (document.getElementById('clientes-search')?.value || '').toLowerCase();
+  const qRaw = document.getElementById('clientes-search')?.value || '';
+  const q = ptNorm(qRaw);
+  document.getElementById('cl-clear').style.display = qRaw ? 'block' : 'none';
+  renderClienteTags();
   let lista = clientesList;
-  if (q) lista = lista.filter(c =>
-    (c.nombre||'').toLowerCase().includes(q) ||
-    (c.apellido||'').toLowerCase().includes(q) ||
-    (c.telefono||'').includes(q) ||
-    (c.correo||'').toLowerCase().includes(q) ||
-    (c.empresa||'').toLowerCase().includes(q)
-  );
+  if (clTagFiltro === '__portal')        lista = lista.filter(c => c.portalCodigo);
+  else if (clTagFiltro === '__sinportal') lista = lista.filter(c => !c.portalCodigo);
+  else if (clTagFiltro)                  lista = lista.filter(c => (c.tags || []).some(t => ptNorm(t) === ptNorm(clTagFiltro)));
+  if (q) {
+    const palabras = q.split(' ');
+    const qTel = qRaw.replace(/[^0-9]/g, '');
+    lista = lista.filter(c => {
+      const texto = ptNorm([c.nombre, c.apellido, c.correo, c.empresa, ...(c.tags || [])].filter(Boolean).join(' '));
+      if (palabras.every(w => texto.includes(w))) return true;
+      return qTel.length >= 3 && String(c.telefono || '').replace(/[^0-9]/g, '').includes(qTel);
+    });
+  }
+  const total = clientesList.length;
+  document.getElementById('clientes-count').textContent = (q || clTagFiltro) ? `${lista.length} de ${total}` : total;
   if (!lista.length) {
-    container.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-soft);font-size:13px;">${q ? 'No se encontraron clientes.' : 'Aún no hay clientes. ¡Agrega el primero!'}</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-soft);font-size:13px;">${q || clTagFiltro ? 'No se encontraron clientes con ese filtro.' : 'Aún no hay clientes. ¡Agrega el primero!'}</div>`;
     return;
   }
   container.innerHTML = lista.map(c => {
     const nombreCompleto = [c.nombre, c.apellido].filter(Boolean).join(' ');
     const ini = (c.nombre||'?')[0].toUpperCase();
-    const ventasCliente = getMergedVentas().filter(v => (v.cliente||'').toLowerCase() === nombreCompleto.toLowerCase());
+    const ventasCliente = getMergedVentas().filter(v => ptNorm(v.cliente) === ptNorm(nombreCompleto));
     const totalComprado = ventasCliente.reduce((a,v) => a + (parseFloat(v.monto)||0), 0);
     return `<div class="cliente-card">
       <div class="cliente-avatar">${esc(ini)}</div>
       <div class="cliente-info">
         <div class="cliente-nombre">${esc(nombreCompleto)}</div>
+        ${(c.tags || []).length ? `<div>${c.tags.map(t => `<span class="cl-tag" onclick="setClTagFiltro(this.dataset.t)" data-t="${esc(t)}">${esc(t)}</span>`).join('')}</div>` : ''}
         <div class="cliente-meta">
           ${c.telefono ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> ${esc(c.telefono)}</span>` : ''}
           ${c.correo   ? `<span style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(c.correo)}</span>`   : ''}
@@ -3606,6 +3671,10 @@ function openClienteModal(id) {
   document.getElementById('cl-correo').value   = c?.correo   || '';
   document.getElementById('cl-empresa').value  = c?.empresa  || '';
   document.getElementById('cl-notas').value    = c?.notas    || '';
+  document.getElementById('cl-tags').value     = (c?.tags || []).join(', ');
+  const sug = clTodasEtiquetas().map(([t]) => t);
+  document.getElementById('cl-tag-sug').innerHTML = sug.length
+    ? sug.slice(0, 12).map(t => `<button type="button" onclick="clAgregarTag(this.dataset.t)" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('') : '';
   document.getElementById('modalCliente').classList.add('show');
 }
 
@@ -3622,7 +3691,8 @@ async function saveCliente2() {
   const empresa  = document.getElementById('cl-empresa').value.trim();
   const notas    = document.getElementById('cl-notas').value.trim();
   if (!nombre) { toast('El nombre es obligatorio.', 'err'); return; }
-  const data = { nombre, apellido, telefono, correo, empresa, notas, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const tags     = clParseTags(document.getElementById('cl-tags').value);
+  const data = { nombre, apellido, telefono, correo, empresa, notas, tags, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     if (editClienteId) {
       await db.collection('clientes').doc(editClienteId).update(data);
