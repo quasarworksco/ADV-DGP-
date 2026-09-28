@@ -2371,6 +2371,11 @@ function initDocs() {
         Object.entries(newMap).forEach(([id, doc]) => {
           const prev = _prevDocsSnapshot[id];
           if (!prev) return;
+          if (doc.brief && !prev.brief) {
+            toast(`Brief recibido — ${doc.cli || doc.docId || ''}`, 'ok');
+            _addNotifBadge();
+            if (doc.portalCodigo) crearProyectoDesdeFactura(doc.portalCodigo, id, doc);
+          }
           if (listaComprobantes(doc).length > listaComprobantes(prev).length) {
             toast(`Comprobante recibido — ${doc.cliente || doc.docId || ''}`, 'ok');
             _addNotifBadge();
@@ -2521,7 +2526,10 @@ async function saveDoc() {
     if (portalCli) docData.portalCodigo = portalCli._id;
     const added = await db.collection('documentos').add(docData);
     guardarCuentaPago(docData.metodoPago, docData.infoPago);
-    if (portalCli) registrarFacturaEnPortal(added.id, portalCli._id);
+    if (portalCli) {
+      registrarFacturaEnPortal(added.id, portalCli._id);
+      crearProyectoDesdeFactura(portalCli._id, added.id, docData);
+    }
     cart = [];
     renderCart();
     document.getElementById('cli-nom').value  = '';
@@ -4190,9 +4198,65 @@ function ptVResumen(p, facs, deuda) {
     </div>`;
 }
 
+/* ── Proyectos desde facturas y briefs ── */
+function ptNombreProyecto(items) {
+  const it = (items || []).filter(i => i && i.s);
+  if (!it.length) return 'Proyecto';
+  return it[0].s + (it.length > 1 ? ` + ${it.length - 1} más` : '');
+}
+async function crearProyectoDesdeFactura(code, fsId, docData) {
+  const d = docData || docsMap[fsId];
+  if (!code || !fsId || !d) return false;
+  try {
+    const col = ptRef(code).collection('proyectos');
+    const existe = await col.where('facturaId', '==', fsId).limit(1).get();
+    if (!existe.empty) return false;
+    await col.add({
+      nombre: ptNombreProyecto(d.items),
+      servicio: (d.items || []).map(i => i.s).join(', '),
+      estado: 'pendiente', progreso: 0,
+      facturaId: fsId, docId: d.docId || '', origen: 'factura',
+      fechaInicio: todayISO(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return true;
+  } catch (e) { console.error('No se pudo crear el proyecto:', e); return false; }
+}
+const PT_BRIEF_LABELS = {
+  negocio: 'Negocio', nombre: 'Contacto', correo: 'Correo', tel: 'Teléfono', ubicacion: 'Ubicación', descripcion: 'Descripción',
+  estilo: 'Estilo', colores: 'Colores', logo: 'Logo', paginas: 'Páginas', redes: 'Redes', referencias: 'Referencias',
+  objetivo: 'Objetivo', publico: 'Público', presupuesto: 'Presupuesto', plataformas: 'Plataformas', cuenta: 'Cuenta',
+  usuario: 'Usuario', red: 'Red social', cantidad: 'Cantidad', notas: 'Notas', comentarios: 'Comentarios'
+};
+function ptBriefValor(v) {
+  if (v === null || v === undefined || v === '') return '';
+  if (Array.isArray(v)) return v.filter(Boolean).map(ptBriefValor).join(', ');
+  if (typeof v === 'object') return Object.entries(v).filter(([, x]) => x).map(([k, x]) => `${PT_BRIEF_LABELS[k] || k}: ${ptBriefValor(x)}`).join(' · ');
+  if (v === 'si') return 'Sí';
+  return String(v);
+}
+function ptBriefBox(fsId) {
+  const f = docsMap[fsId];
+  if (!f) return '';
+  if (!f.brief) return `<div class="pt-sub" style="margin-top:8px;">Brief: <span style="color:var(--amber);font-weight:600;">pendiente del cliente</span></div>`;
+  const filas = Object.entries(f.brief)
+    .filter(([k]) => !['tipo', 'fechaEnvio', 'completado', 'completadoAt'].includes(k))
+    .map(([k, v]) => [PT_BRIEF_LABELS[k] || k, ptBriefValor(v)]).filter(([, v]) => v);
+  return `<details style="margin-top:10px;border:1px solid var(--border);border-radius:10px;background:var(--off);">
+    <summary style="cursor:pointer;padding:8px 12px;font-size:12px;font-weight:700;color:var(--green-dark);">Brief recibido${f.brief.fechaEnvio ? ' · ' + ptFmt(f.brief.fechaEnvio) : ''}</summary>
+    <div style="padding:0 12px 10px;">${filas.map(([k, v]) => `<div style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-top:1px solid var(--border);"><span style="color:var(--text-soft);min-width:110px;">${esc(k)}</span><span style="word-break:break-word;">${esc(v)}</span></div>`).join('')}
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="generarPromptBrief('${esc(fsId)}');switchPage('proyectos', document.querySelector('.nav-tab[onclick*=\'proyectos\']'))">Generar prompt</button>
+      </div>
+    </div>
+  </details>`;
+}
+
 /* ── Proyectos ── */
 function ptVProyectos() {
   const list = _ptSub.proyectos;
+  const p = portalActual();
+  const sinProyecto = p ? portalFacturas(p).filter(d => !list.some(x => x.facturaId === d._fsId)) : [];
   return `
     <div class="pt-toolbar"><div class="pt-toolbar-title">Proyectos (${list.length})</div>
       <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openProyectoForm()">${PT_ICON.plus} Nuevo proyecto</button></div>
@@ -4208,14 +4272,32 @@ function ptVProyectos() {
           <span class="pt-pill ${esc(x.estado || 'pendiente')}">${esc(PT_ESTADOS[x.estado] || x.estado || '—')}</span>
         </div>
         ${x.descripcion ? `<div class="pt-sub" style="margin-top:8px;">${esc(x.descripcion)}</div>` : ''}
+        ${x.facturaId ? ptBriefBox(x.facturaId) : ''}
         ${x.estado !== 'solicitado' ? `<div class="pt-bar"><div style="width:${prog}%"></div></div><div class="pt-sub" style="font-size:11px;">${prog}% completado${last ? ' · Última nota: ' + esc(last.texto) : ''}</div>` : ''}
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
           ${x.estado === 'solicitado' ? `<button class="btn-sm" style="background:var(--green-light);color:var(--green-dark);border-color:rgba(5,150,105,.25);" onclick="aceptarSolicitud('${esc(x._id)}')">Aceptar solicitud</button>` : ''}
           <button class="btn-sm edit" style="display:inline-flex;align-items:center;gap:4px;" onclick="openProyectoForm('${esc(x._id)}')">${PT_ICON.edit} Actualizar</button>
+          ${x.facturaId && docsMap[x.facturaId] ? `<button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="openSheet(docsMap['${esc(x.facturaId)}'])">Ver factura</button>` : ''}
           <button class="btn-sm del" style="display:inline-flex;align-items:center;gap:4px;" onclick="borrarSub('proyectos','${esc(x._id)}')">${PT_ICON.del}</button>
         </div>
       </div>`;
-    }).join('') : '<div class="pt-empty">Sin proyectos todavía.</div>'}`;
+    }).join('') : '<div class="pt-empty">Sin proyectos todavía.</div>'}
+    ${sinProyecto.length ? `<div class="pt-card" style="margin-top:14px;">
+      <div class="pt-toolbar-title" style="margin-bottom:8px;">Facturas sin proyecto (${sinProyecto.length})</div>
+      ${sinProyecto.map(d => `<div class="pt-row" style="padding:6px 0;border-top:1px solid var(--border);">
+        <div class="pt-grow"><div class="pt-title" style="font-size:13px;">${esc(ptNombreProyecto(d.items))}</div>
+          <div class="pt-sub">${esc(d.docId || '')} · ${esc(d.fecha || '')}${d.brief ? ' · <span style="color:var(--green-dark);font-weight:600;">con brief</span>' : ''}</div></div>
+        <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);" onclick="crearProyectoDesdeFactura(portalSel,'${esc(d._fsId)}').then(ok=>toast(ok?'Proyecto creado ✅':'Ya existía un proyecto para esa factura'))">Crear proyecto</button>
+      </div>`).join('')}
+      ${sinProyecto.length > 1 ? `<button class="btn-sm" style="margin-top:8px;background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="crearProyectosPendientes()">Crear todos (${sinProyecto.length})</button>` : ''}
+    </div>` : ''}`;
+}
+async function crearProyectosPendientes() {
+  const p = portalActual(); if (!p) return;
+  const sin = portalFacturas(p).filter(d => !_ptSub.proyectos.some(x => x.facturaId === d._fsId));
+  let n = 0;
+  for (const d of sin) if (await crearProyectoDesdeFactura(p._id, d._fsId)) n++;
+  toast(`${n} proyecto(s) creados ✅`);
 }
 function openProyectoForm(id) {
   const x = id ? _ptSub.proyectos.find(p => p._id === id) : null;
@@ -4601,6 +4683,7 @@ async function crearPortal() {
     });
     await db.collection('clientes').doc(clienteId).set({ portalCodigo: code }, { merge: true });
     await Promise.all(facturaIds.map(id => db.collection('documentos').doc(id).update({ portalCodigo: code }).catch(() => {})));
+    for (const id of facturaIds) if (docsMap[id]?.brief) await crearProyectoDesdeFactura(code, id);
     logActividad('Portal creado', `${nombre} · ${code}`);
     closePortalModal();
     const tab = document.querySelector('.nav-tab[onclick*="\'portal\'"]');
