@@ -440,7 +440,67 @@ function extraerJSON(texto) {
   if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
   return null;
 }
+/* ── Workers AI (IA de Cloudflare): no bloquea países, se usa primero ── */
+const MODELOS_CF = ['@cf/qwen/qwen3.8-27b', '@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/meta/llama-3.2-11b-vision-instruct'];
+function aBase64(buf) {
+  const bytes = new Uint8Array(buf); let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function imagenComoDataUrl(url) {
+  // Cloudinary: pedir una versión más liviana (1400px, JPG) para la IA
+  const u = url.includes('res.cloudinary.com/') && url.includes('/upload/') ? url.replace('/upload/', '/upload/w_1400,c_limit,q_80,f_jpg/') : url;
+  const res = await fetch(u);
+  if (!res.ok) throw new Error('No se pudo descargar la imagen (HTTP ' + res.status + ')');
+  const tipo = (res.headers.get('content-type') || 'image/jpeg').split(';')[0];
+  return `data:${tipo};base64,${aBase64(await res.arrayBuffer())}`;
+}
+function textoDeRespuestaAI(out) {
+  if (!out) return '';
+  if (typeof out === 'string') return out;
+  if (typeof out.response === 'string') return out.response;
+  if (out.response && typeof out.response === 'object') return JSON.stringify(out.response);
+  const c = out.choices?.[0]?.message?.content;
+  if (typeof c === 'string') return c;
+  return JSON.stringify(out);
+}
+async function leerConWorkersAI(env, imageUrl) {
+  if (!env.AI) throw new Error('Workers AI no está conectado (binding AI)');
+  const dataUrl = await imagenComoDataUrl(imageUrl);
+  let ultimo = null;
+  for (const modelo of MODELOS_CF) {
+    for (let intento = 0; intento < 2; intento++) {
+      try {
+        const out = await env.AI.run(modelo, {
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: PROMPT },
+            { type: 'image_url', image_url: { url: dataUrl } }
+          ] }],
+          max_tokens: 1200, temperature: 0
+        });
+        const lectura = extraerJSON(textoDeRespuestaAI(out));
+        if (lectura) return { lectura, modelo };
+        ultimo = 'respuesta sin JSON';
+        break;
+      } catch (e) {
+        ultimo = e.message || String(e);
+        // Algunos modelos de Meta piden aceptar su licencia una vez
+        if (/agree/i.test(ultimo) && intento === 0) { try { await env.AI.run(modelo, { prompt: 'agree' }); } catch (x) {} continue; }
+        break;
+      }
+    }
+  }
+  throw new Error('Workers AI: ' + ultimo);
+}
+
 async function leerComprobante(env, imageUrl) {
+  let errorCF = null;
+  try { return await leerConWorkersAI(env, imageUrl); } catch (e) { errorCF = e.message; }
+  try { return await leerConGroq(env, imageUrl); }
+  catch (e) { throw new Error(`${errorCF} · ${e.message}`); }
+}
+
+async function leerConGroq(env, imageUrl) {
   const modelos = env.GROQ_VISION_MODEL ? [env.GROQ_VISION_MODEL, ...MODELOS_DEFAULT] : MODELOS_DEFAULT;
   let ultimoError = null;
   for (const modelo of [...new Set(modelos)]) {
@@ -600,7 +660,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-28d';
+const WORKER_VERSION = '2026-09-28e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -641,14 +701,18 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   } catch (e) { out.checks.groq = { ok: false, error: e.message }; }
 
   // IA: leer el comprobante de prueba ($123.45)
-  if (q.get('ia') && out.checks.groq?.bloqueoRegion) {
-    out.checks.ia = { ok: false, bloqueoRegion: true, error: 'No se pudo probar: Groq bloquea la región del Worker' };
-  } else if (q.get('ia')) {
+  out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
+  if (q.get('ia')) {
     try {
       const { lectura, modelo } = await leerComprobante(env, IMG_PRUEBA);
       const ok = typeof lectura.monto === 'number' && Math.abs(lectura.monto - 123.45) < 0.01;
       out.checks.ia = { ok, monto: lectura.monto, modelo, error: ok ? null : `Leyó ${lectura.monto} en vez de 123.45` };
     } catch (e) { out.checks.ia = { ok: false, error: e.message }; }
+  }
+
+  // Si Groq está bloqueado por país pero la IA de Cloudflare funciona, no es un problema
+  if (out.checks.groq?.bloqueoRegion && (q.get('ia') ? out.checks.ia?.ok : out.checks.workersai?.ok)) {
+    out.checks.groq = { ok: true, aviso: 'Groq bloquea tu país; se usa la IA de Cloudflare (Workers AI)' };
   }
 
   // Telegram: mensaje de prueba al chat de notificaciones

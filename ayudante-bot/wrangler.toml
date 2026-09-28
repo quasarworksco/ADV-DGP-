@@ -7,6 +7,10 @@ compatibility_date = "2024-09-23"
 [placement]
 region = "gcp:us-central1"
 
+# IA de Cloudflare (Workers AI) para leer comprobantes: no bloquea países
+[ai]
+binding = "AI"
+
 [triggers]
 crons = ["0 9 1 * *"]
 
