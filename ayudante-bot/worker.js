@@ -188,13 +188,17 @@ const MAX_HISTORIAL = 10; // últimos 10 turnos por chat
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(enviarResumenMensual(env));
+    // Cron (UTC): mensual el día 1 · diario 11:00 (7:00 Venezuela) · domingo 12:00 (8:00 Venezuela)
+    if (event.cron === '0 11 * * *') ctx.waitUntil(tareaDiaria(env).catch(e => avisoError(env, 'Resumen diario', e)));
+    else if (event.cron === '0 12 * * 0') ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
+    else ctx.waitUntil(enviarResumenMensual(env));
   },
 
   async fetch(request, env) {
     const ruta = new URL(request.url).pathname;
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
+    if (ruta === '/tarea') return handleTarea(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -376,8 +380,8 @@ function cors(request) {
   const origin = request.headers.get('Origin') || '';
   return {
     'Access-Control-Allow-Origin': ORIGENES.includes(origin) ? origin : ORIGENES[0],
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Vary': 'Origin'
   };
 }
@@ -407,6 +411,7 @@ function toValue(v) {
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean') return { booleanValue: v };
   if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (v instanceof Date) return { timestampValue: v.toISOString() };
   if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
   if (typeof v === 'object') return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, toValue(x)])) } };
   return { stringValue: String(v) };
@@ -660,7 +665,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-28e';
+const WORKER_VERSION = '2026-09-29';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -729,4 +734,206 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   }
 
   return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(request) } });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAREAS AUTOMÁTICAS
+//  · Diaria: facturas de suscripciones + resumen de cobros a Telegram
+//  · Semanal: respaldo de toda la base de datos a Telegram
+//  · POST /tarea {tarea:'diaria'|'respaldo'} (solo equipo, con token de Firebase)
+// ══════════════════════════════════════════════════════════════
+const TG_NOTIF_DEFAULT = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+const SITIO = 'https://adv.dgp-link.com';
+const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+const CICLO_TXT = { semanal: 'semanal', mensual: 'mensual', trimestral: 'trimestral', semestral: 'semestral', anual: 'anual' };
+const RESPALDO_COLS = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'accesos', 'actividadLog', 'ventas'];
+
+const tgToken = env => env.TG_TOKEN_NOTIF || TG_NOTIF_DEFAULT;
+const hoyVE = () => new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);   // fecha en Venezuela (UTC-4)
+const isoADmy = iso => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const diasEntre = (a, b) => Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 864e5);
+const fechaCorta = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const escHtml = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const dinero = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const normNombre = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+function sumarCiclo(iso, ciclo) {
+  const d = new Date(iso + 'T12:00:00Z');
+  if (ciclo === 'semanal') d.setUTCDate(d.getUTCDate() + 7); else d.setUTCMonth(d.getUTCMonth() + (CICLO_MESES[ciclo] || 1));
+  return d.toISOString().slice(0, 10);
+}
+function fechaDoc(d) {
+  if (d.createdAt) return String(d.createdAt).slice(0, 10);
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d.fecha || '')) { const [dd, mm, yy] = d.fecha.split('/'); return `${yy}-${mm}-${dd}`; }
+  return null;
+}
+const saldoDoc = d => (d.pagado || d.type === 'recibo') ? 0 : Math.max((Number(d.total) || 0) - (Number(d.montoPagado) || 0), 0);
+
+/* ── Firestore REST: listar, crear, agregar a lista ── */
+async function fsList(env, path, token) {
+  const out = []; let pageToken = '';
+  do {
+    const res = await fetch(`${docUrl(env, path)}?pageSize=300${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(`Firestore (${path}): ` + (data.error?.message || res.status));
+    (data.documents || []).forEach(d => out.push({ _id: d.name.split('/').pop(), ...fromFields(d.fields || {}) }));
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return out;
+}
+async function fsCreate(env, path, obj, token) {
+  const res = await fetch(docUrl(env, path), {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toValue(obj).mapValue.fields })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error('Firestore (crear): ' + (data.error?.message || res.status));
+  return data.name.split('/').pop();
+}
+async function fsAgregarALista(env, docPath, campo, valor, token) {
+  const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+  const res = await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ writes: [{ transform: { document: `${base}/${docPath}`, fieldTransforms: [{ fieldPath: campo, appendMissingElements: { values: [toValue(valor)] } }] } }] })
+  });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore (lista): ' + (d.error?.message || res.status)); }
+}
+
+/* ── Telegram (HTML, dividido si es largo) ── */
+async function tgEnviar(env, html) {
+  const partes = []; let actual = '';
+  for (const linea of html.split('\n')) {
+    if ((actual + '\n' + linea).length > 3800) { partes.push(actual); actual = linea; } else actual = actual ? actual + '\n' + linea : linea;
+  }
+  if (actual) partes.push(actual);
+  for (const texto of partes) {
+    await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: texto, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+  }
+}
+async function avisoError(env, que, e) {
+  console.error(que, e);
+  await tgEnviar(env, `⚠️ <b>${escHtml(que)}</b> no se pudo completar:\n${escHtml(e.message || e)}\n\nRevisa "Probar sistema" en el panel.`).catch(() => {});
+}
+
+/* ── Tarea diaria ── */
+async function tareaDiaria(env) {
+  const token = await firebaseLogin(env);
+  const [docs, subs, clientes, portales] = await Promise.all(['documentos', 'suscripciones', 'clientes', 'portal'].map(c => fsList(env, c, token)));
+  const hoy = hoyVE();
+  const telDe = nombre => {
+    const n = normNombre(nombre);
+    const c = clientes.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n);
+    const p = portales.find(x => normNombre(x.nombre) === n);
+    return String(c?.telefono || p?.telefono || '').replace(/[^0-9]/g, '');
+  };
+  const wa = (nombre, texto) => `https://wa.me/${telDe(nombre)}?text=${encodeURIComponent(texto)}`;
+  const linkFac = id => `${SITIO}/factura-publica.html?id=${id}`;
+
+  // 1) Facturas automáticas de suscripciones
+  const creadas = [];
+  for (const s of subs) {
+    if (s.estado !== 'activa' || s.autoFactura === false || !s.proximoPago) continue;
+    if (diasEntre(hoy, s.proximoPago) > (Number.isFinite(Number(s.diasAntes)) ? Number(s.diasAntes) : 5)) continue;
+    if (s.ultimaFacturaPeriodo === s.proximoPago) continue;
+    const precio = Number(s.precio) || 0;
+    const nombre = [s.servicio, s.dominio].filter(Boolean).join(' · ') || 'Suscripción';
+    const periodoTxt = `${fechaCorta(s.proximoPago)} – ${fechaCorta(sumarCiclo(s.proximoPago, s.ciclo))}`;
+    const docData = {
+      docId: 'FAC-' + (Date.now().toString(36) + Math.random().toString(36).slice(2, 4)).toUpperCase().slice(-7),
+      type: 'factura', cli: s.cliente || '', ref: '—',
+      nota: `Suscripción ${CICLO_TXT[s.ciclo] || ''} · período ${periodoTxt}`,
+      fecha: isoADmy(hoy), total: precio, moneda: s.moneda || 'usd', emisor: s.emisor || '',
+      metodoPago: null, infoPago: {}, contrato: false,
+      items: [{ s: `${nombre} (${periodoTxt})`, p: precio, c: 1, t: precio }],
+      pagado: false, fechaPago: null, suscripcionId: s._id, periodo: s.proximoPago,
+      portalCodigo: s.portalCodigo || null, createdBy: 'bot', createdAt: new Date()
+    };
+    const id = await fsCreate(env, 'documentos', docData, token);
+    if (s.portalCodigo) await fsAgregarALista(env, `portal/${s.portalCodigo}`, 'facturaIds', id, token).catch(e => console.warn(e));
+    await fsUpdate(env, `suscripciones/${s._id}`, { ultimaFacturaId: id, ultimaFacturaPeriodo: s.proximoPago }, ['ultimaFacturaId', 'ultimaFacturaPeriodo'], token);
+    s.ultimaFacturaPeriodo = s.proximoPago;
+    creadas.push({ s, id, docData });
+  }
+
+  // 2) Resumen de cobros
+  const pendientes = docs.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
+  const atrasadas = pendientes.filter(x => x.dias >= 7).sort((a, b) => b.dias - a.dias);
+  const porRevisar = pendientes.filter(x => (Array.isArray(x.d.comprobantes) && x.d.comprobantes.length) || x.d.comprobante_url);
+  const activas = subs.filter(s => s.estado === 'activa' && s.proximoPago);
+  const subsAtrasadas = activas.filter(s => diasEntre(hoy, s.proximoPago) < 0);
+  const subsPronto = activas.filter(s => { const d = diasEntre(hoy, s.proximoPago); return d >= 0 && d <= 7; });
+
+  const L = [];
+  L.push(`☀️ <b>Resumen de cobros</b> · ${escHtml(fechaCorta(hoy))}`);
+  if (creadas.length) {
+    L.push('', `🧾 <b>Facturas de suscripción creadas (${creadas.length})</b>`);
+    creadas.forEach(({ s, id, docData }) => L.push(`• ${escHtml(s.cliente)} — ${escHtml(docData.items[0].s)} · ${dinero(docData.total)} · <a href="${linkFac(id)}">ver</a> · <a href="${wa(s.cliente, `Hola ${String(s.cliente).split(' ')[0]}! Te comparto la factura de tu ${[s.servicio, s.dominio].filter(Boolean).join(' ')} (${dinero(docData.total)}):\n${linkFac(id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">enviar por WhatsApp</a>`));
+  }
+  if (porRevisar.length) {
+    L.push('', `📎 <b>Comprobantes por revisar (${porRevisar.length})</b>`);
+    porRevisar.slice(0, 10).forEach(({ d }) => L.push(`• ${escHtml(d.cli)} · ${escHtml(d.docId || '')} · debe ${dinero(saldoDoc(d))} · <a href="${linkFac(d._id)}">ver</a>`));
+  }
+  if (atrasadas.length) {
+    const total = atrasadas.reduce((a, x) => a + saldoDoc(x.d), 0);
+    L.push('', `⏰ <b>Facturas atrasadas (${atrasadas.length} · ${dinero(total)})</b>`);
+    atrasadas.slice(0, 12).forEach(({ d, dias }) => L.push(`• ${dias >= 30 ? '🔴' : dias >= 15 ? '🟠' : '🟡'} ${escHtml(d.cli)} · ${escHtml(d.docId || '')} · ${dinero(saldoDoc(d))} · ${dias} días · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Te recordamos que tienes pendiente la factura ${d.docId || ''} por ${dinero(saldoDoc(d))}:\n${linkFac(d._id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">recordar</a>`));
+    if (atrasadas.length > 12) L.push(`…y ${atrasadas.length - 12} más (ver Dashboard → Cobranza)`);
+  }
+  if (subsAtrasadas.length || subsPronto.length) {
+    L.push('', `🔁 <b>Suscripciones</b>`);
+    subsAtrasadas.forEach(s => L.push(`• 🔴 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · atrasada ${-diasEntre(hoy, s.proximoPago)} días`));
+    subsPronto.forEach(s => L.push(`• 🟡 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · vence ${escHtml(fechaCorta(s.proximoPago))}${s.ultimaFacturaPeriodo === s.proximoPago ? ' (factura enviada)' : ''}`));
+  }
+  if (L.length === 1) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
+  L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
+  await tgEnviar(env, L.join('\n'));
+  return { creadas: creadas.length, atrasadas: atrasadas.length, porRevisar: porRevisar.length, suscripciones: subsAtrasadas.length + subsPronto.length };
+}
+
+/* ── Respaldo semanal ── */
+async function enviarRespaldo(env) {
+  const token = await firebaseLogin(env);
+  const out = { generado: new Date().toISOString(), proyecto: env.FIREBASE_PROJECT || PROJECT_DEFAULT, colecciones: {} };
+  for (const col of RESPALDO_COLS) {
+    out.colecciones[col] = await fsList(env, col, token).catch(() => []);
+    if (col === 'portal') for (const p of out.colecciones.portal) for (const sub of ['proyectos', 'suscripciones', 'archivos']) {
+      out.colecciones[`portal/${p._id}/${sub}`] = await fsList(env, `portal/${p._id}/${sub}`, token).catch(() => []);
+    }
+  }
+  const total = Object.values(out.colecciones).reduce((a, x) => a + x.length, 0);
+  const fd = new FormData();
+  fd.append('chat_id', TG_CHAT);
+  fd.append('caption', `🗄 Respaldo semanal de DGP Group · ${total} registros (${out.colecciones.documentos.length} facturas, ${out.colecciones.clientes.length} clientes).\nGuárdalo: si algo se borra, se restaura desde este archivo.`);
+  fd.append('document', new Blob([JSON.stringify(out)], { type: 'application/json' }), `respaldo-dgp-${hoyVE()}.json`);
+  const res = await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendDocument`, { method: 'POST', body: fd });
+  const d = await res.json().catch(() => ({}));
+  if (!d.ok) throw new Error('Telegram: ' + (d.description || res.status));
+  return { registros: total };
+}
+
+/* ── POST /tarea (solo equipo) ── */
+async function handleTarea(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+  try {
+    const idToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    if (!idToken) return json(request, { error: 'Falta la sesión' }, 401);
+    const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
+    const look = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken })
+    }).then(r => r.json());
+    const email = look.users?.[0]?.email;
+    if (!email) return json(request, { error: 'Sesión no válida' }, 401);
+    const acceso = await fsGet(env, `accesos/${email}`, await firebaseLogin(env));
+    if (!acceso) return json(request, { error: 'Sin acceso' }, 403);
+    const { tarea } = await request.json().catch(() => ({}));
+    if (tarea === 'respaldo') { const r = await enviarRespaldo(env); return json(request, { ok: true, mensaje: `Respaldo enviado a Telegram (${r.registros} registros) ✅` }); }
+    if (tarea === 'diaria') {
+      const r = await tareaDiaria(env);
+      return json(request, { ok: true, mensaje: `Resumen enviado a Telegram · ${r.creadas} factura(s) de suscripción creada(s) ✅` });
+    }
+    return json(request, { error: 'Tarea desconocida' }, 400);
+  } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
 }

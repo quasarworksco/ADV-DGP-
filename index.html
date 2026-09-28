@@ -1154,6 +1154,15 @@
     .enc-cal small { display:block; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); margin-bottom:2px; }
     .enc-cal span { display:inline-flex; gap:1px; }
     @media (max-width:760px) { .enc-row { grid-template-columns:1fr 1fr; } .enc-row .hr-main { grid-column:1 / -1; } .enc-row .hr-fecha { text-align:left !important; } }
+    .sus-row { display:grid; grid-template-columns:100px 1fr 90px 120px auto; gap:12px; align-items:center; padding:11px 14px; border-top:1px solid #f1f5f9; cursor:pointer; transition:background .12s; font-family:'IBM Plex Sans',sans-serif; }
+    .sus-row:first-child { border-top:0; }
+    .sus-row:hover { background:#f8fafc; }
+    .sus-tipo { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 0; border-radius:20px; text-align:center; }
+    @media (max-width:700px) {
+      .sus-row { grid-template-columns:1fr auto; grid-template-areas:'main num' 'tipo venc' 'acc acc'; row-gap:6px; }
+      .sus-row .hr-main { grid-area:main; } .sus-row .cl-num { grid-area:num; } .sus-row .sus-tipo { grid-area:tipo; width:96px; }
+      .sus-row > div:nth-child(4) { grid-area:venc; } .sus-row .hr-acc { grid-area:acc; }
+    }
     .db-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:26px 0 10px; flex-wrap:wrap; }
     .dash-main > .db-head:first-child { margin-top:4px; }
     .db-pills { display:flex; gap:6px; }
@@ -1288,6 +1297,9 @@
   </button>
   <button class="nav-tab" onclick="switchPage('clientes', this)">
     <i class="fa-solid fa-address-book"></i> Clientes
+  </button>
+  <button class="nav-tab" onclick="switchPage('suscripciones', this)">
+    <i class="fa-solid fa-rotate"></i> Suscripciones<span id="sus-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('proyectos', this)">
     <i class="fa-solid fa-layer-group"></i> Proyectos
@@ -1581,6 +1593,41 @@
       </label>
     </div>
     <div id="clientes-list-container"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: SUSCRIPCIONES
+══════════════════════════════════════ -->
+<div id="page-suscripciones" class="page">
+  <div class="clientes-main">
+    <div class="clientes-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Suscripciones</div>
+        <div style="font-size:11px;color:var(--text-soft);">Hosting, dominios y servicios que tus clientes pagan de forma recurrente</div>
+      </div>
+      <button class="btn-nuevo-cliente" onclick="openSuscripcionForm()">+ Nueva suscripción</button>
+    </div>
+    <div class="cb-tiles" id="sus-resumen" style="margin-bottom:14px;"></div>
+    <div class="clientes-search-row">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="sus-search" placeholder="Buscar por cliente, servicio o dominio..." oninput="renderSuscripciones()" autocomplete="off">
+    </div>
+    <div class="cl-tags-row" style="margin-bottom:8px;">
+      <button class="cl-chip active" data-susestado="activa" onclick="setSusFiltro('estado','activa',this)">Activas</button>
+      <button class="cl-chip" data-susestado="pausada" onclick="setSusFiltro('estado','pausada',this)">En pausa</button>
+      <button class="cl-chip" data-susestado="cancelada" onclick="setSusFiltro('estado','cancelada',this)">Canceladas</button>
+      <button class="cl-chip" data-susestado="todas" onclick="setSusFiltro('estado','todas',this)">Todas</button>
+    </div>
+    <div class="cl-tags-row">
+      <button class="cl-chip active" data-sustipo="todos" onclick="setSusFiltro('tipo','todos',this)">Todos los tipos</button>
+      <button class="cl-chip" data-sustipo="hosting" onclick="setSusFiltro('tipo','hosting',this)">Hosting</button>
+      <button class="cl-chip" data-sustipo="dominio" onclick="setSusFiltro('tipo','dominio',this)">Dominios</button>
+      <button class="cl-chip" data-sustipo="mantenimiento" onclick="setSusFiltro('tipo','mantenimiento',this)">Mantenimiento</button>
+      <button class="cl-chip" data-sustipo="marketing" onclick="setSusFiltro('tipo','marketing',this)">Marketing</button>
+      <button class="cl-chip" data-sustipo="otro" onclick="setSusFiltro('tipo','otro',this)">Otros</button>
+    </div>
+    <div id="sus-list"></div>
   </div>
 </div>
 
@@ -2086,6 +2133,7 @@ function initPage() {
   initPortales();
   initCuentasPago();
   initCotizaciones();
+  initSuscripciones();
   onTypeChange();
 }
 
@@ -2124,6 +2172,7 @@ function switchPage(page, btn) {
   if (page === 'proyectos')  renderProyectos();
   if (page === 'encuestas')  renderEncuestas();
   if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
+  if (page === 'suscripciones') renderSuscripciones();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2931,6 +2980,7 @@ async function marcarPagado(fsId) {
     });
     logActividad('Factura pagada', newDocId || fsId);
     toast('Marcado como pagado ✅');
+    alPagarFacturaSuscripcion(doc);
     /* Refresh the open sheet */
     const updated = { ...doc, type:'recibo', pagado:true, pagadoParcial:false, fechaPago, docId:newDocId };
     openSheet(updated);
@@ -2995,6 +3045,7 @@ async function confirmarPagoParcial() {
         pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
       });
       toast('Pago completo registrado ✅');
+      alPagarFacturaSuscripcion(doc);
     } else {
       /* Partial */
       await db.collection('documentos').doc(fsId).update({
@@ -3998,7 +4049,9 @@ function abrirFichaCliente(id) {
       <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();abrirPortalDeCliente('${esc(c._id)}')">${c.portalCodigo ? 'Abrir su portal' : 'Crear portal'}</button>
       <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();openClienteModal('${esc(c._id)}')">Editar datos</button>
     </div>
-    <div class="cb-title" style="margin-bottom:8px;">Facturas (${docs.length})</div>
+    <div class="cb-title" style="margin-bottom:8px;">Suscripciones (${susDeCliente(nombre, c.portalCodigo).length})</div>
+    ${susBloque(susDeCliente(nombre, c.portalCodigo), { cliente: nombre })}
+    <div class="cb-title" style="margin:18px 0 8px;">Facturas (${docs.length})</div>
     ${docs.length ? `<div class="hr-list">${docs.map(d => `<div class="hr-row" style="grid-template-columns:78px 1fr auto;" onclick="closePortalModal();openSheetById('${esc(d._fsId)}')">
       <span class="hr-pill ${est(d)[1]}">${est(d)[0]}</span>
       <div class="hr-main"><div class="hr-id">${esc(d.docId || '')}</div><div class="hr-srv">${esc((d.items || []).map(i => i.s).join(', '))} · ${esc(d.fecha || '')}</div></div>
@@ -4233,6 +4286,7 @@ function initPortales() {
       });
     }
     _ptPrevUnread = unread;
+    migrarSuscripcionesPortal();
     if (!_ptLimpiezaHecha) { _ptLimpiezaHecha = true; limpiarChatsViejos(); }
     updatePortalBadge();
     renderPortalList();
@@ -4656,41 +4710,11 @@ async function registrarFacturaEnPortal(fsId, code) {
   catch (e) { console.error('No se pudo registrar la factura en el portal:', e); toast('La factura se guardó, pero no se pudo agregar al portal del cliente.', 'err'); }
 }
 
-/* ── Suscripciones ── */
+/* ── Suscripciones (desde la sección Suscripciones) ── */
 function ptVSusc() {
-  const list = _ptSub.suscripciones;
-  return `
-    <div class="pt-toolbar"><div class="pt-toolbar-title">Suscripciones (${list.length})</div>
-      <button class="btn-sm" style="background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick="openSuscForm()">${PT_ICON.plus} Nueva suscripción</button></div>
-    ${list.length ? list.map(s => `<div class="pt-card"><div class="pt-row">
-      <div class="pt-grow">
-        <div class="pt-title">${esc(s.plan || 'Plan')} · ${ptMoney(s.precio)} / ${esc((PT_CICLOS[s.ciclo] || s.ciclo || '').toLowerCase())}</div>
-        <div class="pt-sub">${s.inicio ? 'Desde ' + ptFmt(s.inicio) : ''}${s.proximoPago ? ' · Próximo pago ' + ptFmt(s.proximoPago) : ''}${s.notas ? ' · ' + esc(s.notas) : ''}</div>
-      </div>
-      <span class="pt-pill ${esc(s.estado || 'activa')}">${esc(PT_SUSC[s.estado] || s.estado || '')}</span>
-      ${s.estado === 'activa' && s.proximoPago ? `<button class="btn-sm" style="background:var(--green-light);color:var(--green-dark);border-color:rgba(5,150,105,.25);" title="Marca el pago de este período y mueve la fecha al siguiente" onclick="renovarSusc('${esc(s._id)}')">Renovar</button>` : ''}
-      <button class="btn-sm edit" onclick="openSuscForm('${esc(s._id)}')">${PT_ICON.edit}</button>
-      <button class="btn-sm del" onclick="borrarSub('suscripciones','${esc(s._id)}')">${PT_ICON.del}</button>
-    </div></div>`).join('') : '<div class="pt-empty">Sin suscripciones.</div>'}`;
-}
-function openSuscForm(id) {
-  const s = id ? _ptSub.suscripciones.find(x => x._id === id) : null;
-  _ptEdit = id || null;
-  const opts = (obj, sel) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${v}</option>`).join('');
-  ptModal(s ? 'Editar suscripción' : 'Nueva suscripción', portalActual()?.nombre || '', `
-    <div class="ff"><label>Plan</label><input id="ps-plan" maxlength="120" value="${esc(s?.plan || '')}" placeholder="Ej. WhatsApp Marketing Oro"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="ff"><label>Precio ($)</label><input type="number" step="0.01" id="ps-precio" value="${esc(s?.precio ?? '')}"></div>
-      <div class="ff"><label>Ciclo</label><select id="ps-ciclo">${opts(PT_CICLOS, s?.ciclo || 'mensual')}</select></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="ff"><label>Inicio</label><input type="date" id="ps-inicio" value="${esc(s?.inicio || todayISO())}"></div>
-      <div class="ff"><label>Próximo pago</label><input type="date" id="ps-prox" value="${esc(s?.proximoPago || '')}"></div>
-    </div>
-    <div class="ff"><label>Estado</label><select id="ps-estado">${opts(PT_SUSC, s?.estado || 'activa')}</select></div>
-    <div class="ff"><label>Notas (las ve el cliente)</label><input id="ps-notas" maxlength="200" value="${esc(s?.notas || '')}"></div>
-    <button class="btn-edit-save" onclick="guardarSusc()">Guardar</button>
-    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+  const p = portalActual();
+  const lista = susDeCliente(p?.nombre, p?._id);
+  return `<div class="pt-toolbar"><div class="pt-toolbar-title">Suscripciones (${lista.length})</div></div>${susBloque(lista, { cliente: p?.nombre || '' })}`;
 }
 function ptSumarCiclo(iso, ciclo) {
   const d = new Date((iso || todayISO()) + 'T12:00:00');
@@ -4698,34 +4722,6 @@ function ptSumarCiclo(iso, ciclo) {
   if (ciclo === 'semanal') d.setDate(d.getDate() + 7);
   else d.setMonth(d.getMonth() + (meses || 1));
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-async function guardarSusc() {
-  const plan = document.getElementById('ps-plan').value.trim();
-  const precio = parseFloat(document.getElementById('ps-precio').value);
-  if (!plan || isNaN(precio)) { toast('Completa el plan y el precio.', 'err'); return; }
-  const ciclo = document.getElementById('ps-ciclo').value;
-  const inicio = document.getElementById('ps-inicio').value || todayISO();
-  const data = {
-    plan, precio, ciclo, inicio,
-    proximoPago: document.getElementById('ps-prox').value || ptSumarCiclo(inicio, ciclo),
-    estado: document.getElementById('ps-estado').value,
-    notas: document.getElementById('ps-notas').value.trim(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  try {
-    const col = ptRef().collection('suscripciones');
-    if (_ptEdit) await col.doc(_ptEdit).update(data);
-    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await col.add(data); }
-    toast('Suscripción guardada ✅');
-    closePortalModal();
-  } catch (e) { toast('Error al guardar.', 'err'); }
-}
-async function renovarSusc(id) {
-  const s = _ptSub.suscripciones.find(x => x._id === id); if (!s) return;
-  const nueva = ptSumarCiclo(s.proximoPago, s.ciclo);
-  if (!confirm(`¿Marcar pagado el período de ${s.plan}? El próximo pago pasará al ${ptFmt(nueva)}.`)) return;
-  try { await ptRef().collection('suscripciones').doc(id).update({ proximoPago: nueva, ultimoPago: todayISO() }); toast('Suscripción renovada'); }
-  catch (e) { toast('Error al renovar.', 'err'); }
 }
 
 /* ── Documentos ── */
@@ -5350,9 +5346,62 @@ function abrirDiagnostico() {
   ptModal('Probar sistema', 'Revisa reglas de Firestore, Worker, IA y Telegram', `
     <div id="diag-list"></div>
     <button class="btn-edit-save" id="diag-btn" style="margin-top:14px;" onclick="correrDiagnostico()">Volver a probar</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn-edit-cancel" style="margin:0;" id="resp-btn" onclick="descargarRespaldo()">Descargar respaldo</button>
+      <button class="btn-edit-cancel" style="margin:0;" id="tarea-btn" onclick="ejecutarTareaBot('diaria')">Enviar resumen diario</button>
+    </div>
     <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
   correrDiagnostico();
 }
+/* ── Respaldo: descarga toda la base de datos en un archivo JSON ── */
+const RESPALDO_COLECCIONES = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'accesos', 'actividadLog', 'ventas'];
+function respaldoValor(v) {
+  if (v && typeof v.toDate === 'function') return v.toDate().toISOString();
+  if (Array.isArray(v)) return v.map(respaldoValor);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, respaldoValor(x)]));
+  return v;
+}
+async function descargarRespaldo() {
+  const btn = document.getElementById('resp-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparando…'; }
+  try {
+    const out = { generado: new Date().toISOString(), por: currentUser?.email || '', colecciones: {} };
+    for (const col of RESPALDO_COLECCIONES) {
+      const snap = await db.collection(col).get();
+      out.colecciones[col] = snap.docs.map(d => ({ _id: d.id, ...respaldoValor(d.data()) }));
+      if (col === 'portal') {
+        for (const d of snap.docs) for (const sub of ['proyectos', 'suscripciones', 'archivos']) {
+          const s2 = await d.ref.collection(sub).get();
+          out.colecciones[`portal/${d.id}/${sub}`] = s2.docs.map(x => ({ _id: x.id, ...respaldoValor(x.data()) }));
+        }
+      }
+    }
+    const total = Object.values(out.colecciones).reduce((a, x) => a + x.length, 0);
+    const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `respaldo-dgp-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    logActividad('Respaldo descargado', `${total} registros`);
+    toast(`Respaldo descargado: ${total} registros ✅`);
+  } catch (e) { console.error(e); toast('Error al generar el respaldo: ' + (e.message || ''), 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Descargar respaldo'; } }
+}
+/* Pide al bot que ejecute una tarea ya (resumen diario / respaldo a Telegram) */
+async function ejecutarTareaBot(tarea) {
+  const btn = document.getElementById('tarea-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${DIAG_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    toast(d.mensaje || 'Listo: revisa tu Telegram ✅');
+  } catch (e) { toast('No se pudo: ' + e.message + '. ¿Está actualizado el Worker?', 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Enviar resumen diario'; } }
+}
+
 async function correrDiagnostico() {
   const btn = document.getElementById('diag-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Probando…'; }
@@ -5440,6 +5489,307 @@ async function correrDiagnostico() {
     pendientesWorker.forEach(id => set(id, false, 'No se pudo probar', 'Primero haz que el Worker responda.'));
   }
   if (btn) { btn.disabled = false; btn.textContent = 'Volver a probar'; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUSCRIPCIONES (hosting, dominios, mantenimiento, marketing…)
+   Colección principal: suscripciones/{id}
+   Si el cliente tiene portal se copia a portal/{codigo}/suscripciones/{id}
+   (campos que ve el cliente: plan, precio, ciclo, inicio, proximoPago, estado, notas)
+═══════════════════════════════════════════════════════ */
+const SUS_TIPOS = {
+  hosting:       ['Hosting',        '#1438cc', '#eff6ff'],
+  dominio:       ['Dominio',        '#0f766e', '#f0fdfa'],
+  mantenimiento: ['Mantenimiento',  '#7c3aed', '#f5f3ff'],
+  marketing:     ['Marketing',      '#b45309', '#fffbeb'],
+  otro:          ['Otro',           '#475569', '#f1f5f9']
+};
+const SUS_SUGERENCIAS = {
+  hosting: ['Hosting mensual', 'Hosting anual', 'Hosting + correo corporativo'],
+  dominio: ['Renovación de dominio .com', 'Dominio .net', 'Dominio + SSL'],
+  mantenimiento: ['Mantenimiento web mensual', 'Soporte técnico'],
+  marketing: ['WhatsApp Marketing Oro', 'Manejo de redes', 'Publicidad mensual'],
+  otro: []
+};
+const SUS_MESES = { semanal: 12 / 52, mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+let suscripcionesList = [];
+let _susCargadas = false, _susMigrada = false;
+let susFiltroTipo = 'todos', susFiltroEstado = 'activa';
+
+function susNombre(s) { return [s.servicio, s.dominio].filter(Boolean).join(' · '); }
+function susMensual(s) { return (Number(s.precio) || 0) / (SUS_MESES[s.ciclo] || 1); }
+function susDias(s) {
+  if (!s.proximoPago) return null;
+  const hoy = new Date(todayISO() + 'T12:00:00');
+  return Math.round((new Date(s.proximoPago + 'T12:00:00') - hoy) / 864e5);
+}
+function susTipoAuto(texto) {
+  const t = ptNorm(texto);
+  if (/hosting|servidor|correo corporativo/.test(t)) return 'hosting';
+  if (/dominio|\.com|\.net|ssl/.test(t)) return 'dominio';
+  if (/mantenimiento|soporte/.test(t)) return 'mantenimiento';
+  if (/whatsapp|marketing|redes|publicidad|ads|seguidores/.test(t)) return 'marketing';
+  return 'otro';
+}
+
+function initSuscripciones() {
+  db.collection('suscripciones').onSnapshot(snap => {
+    suscripcionesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    _susCargadas = true;
+    migrarSuscripcionesPortal();
+    actualizarBadgeSuscripciones();
+    if (document.getElementById('page-suscripciones')?.classList.contains('active')) renderSuscripciones();
+    if (document.getElementById('page-portal')?.classList.contains('active') && portalTab === 'suscripciones') renderPortalDetail();
+  }, err => console.error('Suscripciones:', err));
+}
+function actualizarBadgeSuscripciones() {
+  const n = suscripcionesList.filter(s => s.estado === 'activa' && susDias(s) !== null && susDias(s) < 0).length;
+  const b = document.getElementById('sus-badge');
+  if (b) { b.textContent = n; b.style.display = n ? 'inline' : 'none'; }
+}
+
+/* Las suscripciones que ya existían dentro de los portales pasan a la sección principal (una vez) */
+async function migrarSuscripcionesPortal() {
+  if (_susMigrada || !_susCargadas || !portalesList.length) return;
+  _susMigrada = true;
+  const existentes = new Set(suscripcionesList.map(s => s._id));
+  let n = 0;
+  for (const p of portalesList) {
+    try {
+      const snap = await ptRef(p._id).collection('suscripciones').get();
+      for (const d of snap.docs) {
+        if (existentes.has(d.id)) continue;
+        const x = d.data();
+        await db.collection('suscripciones').doc(d.id).set({
+          cliente: p.nombre || '', clienteId: p.clienteId || null, portalCodigo: p._id,
+          tipo: susTipoAuto(x.plan), servicio: x.plan || 'Suscripción', dominio: '',
+          precio: Number(x.precio) || 0, ciclo: x.ciclo || 'mensual', inicio: x.inicio || '',
+          proximoPago: x.proximoPago || '', estado: x.estado || 'activa', notas: x.notas || '',
+          autoFactura: false, diasAntes: 5, emisor: '',
+          createdAt: x.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+        });
+        n++;
+      }
+    } catch (e) { console.warn('Migración de suscripciones', p._id, e); }
+  }
+  if (n) toast(`${n} suscripción(es) de portales pasaron a la sección Suscripciones`);
+}
+
+/* Copia visible para el cliente en su portal */
+function susEspejo(s) {
+  return { plan: susNombre(s), precio: Number(s.precio) || 0, ciclo: s.ciclo || 'mensual', inicio: s.inicio || '',
+    proximoPago: s.proximoPago || '', estado: s.estado || 'activa', notas: s.notas || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+}
+async function susSincronizarPortal(id, s, codigoAnterior) {
+  if (codigoAnterior && codigoAnterior !== s.portalCodigo) await ptRef(codigoAnterior).collection('suscripciones').doc(id).delete().catch(() => {});
+  if (s.portalCodigo) await ptRef(s.portalCodigo).collection('suscripciones').doc(id).set(susEspejo(s), { merge: true }).catch(e => console.warn('Espejo portal', e));
+}
+
+/* ── Vista principal ── */
+function susFila(s, compacta) {
+  const [tl, tc, tb] = SUS_TIPOS[s.tipo] || SUS_TIPOS.otro;
+  const dias = susDias(s);
+  const venc = s.estado !== 'activa' ? `<span class="hr-pill" style="background:#f1f5f9;color:#475569;padding:3px 10px;">${s.estado === 'pausada' ? 'En pausa' : 'Cancelada'}</span>`
+    : dias === null ? '<span class="hr-fecha">Sin fecha</span>'
+    : dias < 0 ? `<span class="hr-pill hr-p-pend" style="padding:3px 10px;">Atrasada ${-dias} d</span>`
+    : dias <= 7 ? `<span class="hr-pill hr-p-parc" style="padding:3px 10px;">${dias === 0 ? 'Vence hoy' : `En ${dias} día${dias !== 1 ? 's' : ''}`}</span>`
+    : `<span class="hr-fecha">${new Date(s.proximoPago + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>`;
+  const facturada = s.ultimaFacturaPeriodo && s.ultimaFacturaPeriodo === s.proximoPago && docsMap[s.ultimaFacturaId];
+  const id = esc(s._id);
+  return `<div class="sus-row" onclick="openSuscripcionForm('${id}')">
+    <span class="sus-tipo" style="color:${tc};background:${tb};">${tl}</span>
+    <div class="hr-main">
+      ${compacta ? '' : `<div class="hr-top"><span class="hr-cli">${esc(s.cliente || '—')}</span>${s.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${s.autoFactura ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);" title="La factura se crea sola antes del vencimiento">Auto-factura</span>' : ''}</div>`}
+      <div class="hr-srv" style="${compacta ? 'font-size:13px;font-weight:600;color:var(--black);' : ''}">${esc(susNombre(s) || '—')}</div>
+    </div>
+    <div class="cl-num"><small>${esc((PT_CICLOS[s.ciclo] || s.ciclo || '').toLowerCase())}</small>$${(Number(s.precio) || 0).toFixed(2)}</div>
+    <div style="text-align:right;">${venc}${facturada ? `<div style="font-size:10px;color:var(--green-dark);font-weight:600;margin-top:3px;">Factura emitida</div>` : ''}</div>
+    <div class="hr-acc">
+      ${s.estado === 'activa' ? `<button class="hr-btn ok" title="Marca pagado este período y pasa al siguiente" onclick="event.stopPropagation();renovarSuscripcion('${id}')">${HR_ICON.check}<span>Renovar</span></button>` : ''}
+      ${s.estado === 'activa' && !facturada ? `<button class="hr-ico" title="Crear la factura de este período" onclick="event.stopPropagation();facturarSuscripcion('${id}')">${HR_ICON.card}</button>` : ''}
+      <button class="hr-ico del" title="Eliminar" onclick="event.stopPropagation();borrarSuscripcion('${id}')">${HR_ICON.del}</button>
+    </div>
+  </div>`;
+}
+function setSusFiltro(tipo, valor, btn) {
+  if (tipo === 'tipo') susFiltroTipo = valor; else susFiltroEstado = valor;
+  document.querySelectorAll(`[data-sus${tipo}]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSuscripciones();
+}
+function renderSuscripciones() {
+  const el = document.getElementById('sus-list');
+  if (!el) return;
+  const activas = suscripcionesList.filter(s => s.estado === 'activa');
+  const mrr = activas.reduce((a, s) => a + susMensual(s), 0);
+  const pronto = activas.filter(s => { const d = susDias(s); return d !== null && d >= 0 && d <= 7; });
+  const atrasadas = activas.filter(s => { const d = susDias(s); return d !== null && d < 0; });
+  const hosting = activas.filter(s => s.tipo === 'hosting');
+  document.getElementById('sus-resumen').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Suscripciones activas</div><div class="cb-tile-v">${activas.length}</div><div class="cb-tile-n">${hosting.length} de hosting</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Ingreso mensual recurrente</div><div class="cb-tile-v" style="color:var(--green-dark);">${cbMoney(mrr)}</div><div class="cb-tile-n">${cbMoney(mrr * 12)} al año</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Vencen en 7 días</div><div class="cb-tile-v" style="color:${pronto.length ? '#b45309' : 'var(--black)'}">${pronto.length}</div><div class="cb-tile-n">${cbMoney(pronto.reduce((a, s) => a + (Number(s.precio) || 0), 0))} por cobrar</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Atrasadas</div><div class="cb-tile-v" style="color:${atrasadas.length ? '#b91c1c' : 'var(--black)'}">${atrasadas.length}</div><div class="cb-tile-n">${cbMoney(atrasadas.reduce((a, s) => a + (Number(s.precio) || 0), 0))} sin renovar</div></div>`;
+  const q = ptNorm(document.getElementById('sus-search')?.value);
+  let list = suscripcionesList;
+  if (susFiltroTipo !== 'todos') list = list.filter(s => (s.tipo || 'otro') === susFiltroTipo);
+  if (susFiltroEstado !== 'todas') list = list.filter(s => (s.estado || 'activa') === susFiltroEstado);
+  if (q) list = list.filter(s => ptNorm([s.cliente, s.servicio, s.dominio, s.notas].join(' ')).includes(q));
+  list = list.slice().sort((a, b) => (susDias(a) ?? 9999) - (susDias(b) ?? 9999));
+  el.innerHTML = list.length ? `<div class="hr-list">${list.map(s => susFila(s)).join('')}</div>`
+    : `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:30px 0;">${suscripcionesList.length ? 'No hay suscripciones con ese filtro.' : 'Aún no hay suscripciones. Agrega la primera con "+ Nueva suscripción".'}</div>`;
+}
+
+/* ── Formulario ── */
+function openSuscripcionForm(id, preset) {
+  const s = id ? suscripcionesList.find(x => x._id === id) : { ...(preset || {}) };
+  if (!s) return;
+  const opts = (obj, sel) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${Array.isArray(v) ? v[0] : v}</option>`).join('');
+  const tipo = s.tipo || 'hosting';
+  ptModal(id ? 'Editar suscripción' : 'Nueva suscripción', id ? (s.cliente || '') : 'Servicio que el cliente paga de forma recurrente', `
+    <div class="ff"><label>Cliente</label><input id="sf-cliente" list="clientes-list" maxlength="120" value="${esc(s.cliente || '')}" placeholder="Nombre como en sus facturas"></div>
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px;">
+      <div class="ff"><label>Tipo</label><select id="sf-tipo" onchange="susSugerencias()">${opts(SUS_TIPOS, tipo)}</select></div>
+      <div class="ff"><label>Servicio</label><input id="sf-servicio" list="sf-sugs" maxlength="120" value="${esc(s.servicio || '')}" placeholder="Ej. Hosting mensual"><datalist id="sf-sugs"></datalist></div>
+    </div>
+    <div class="ff" id="sf-dominio-wrap"><label>Dominio o sitio (opcional)</label><input id="sf-dominio" maxlength="120" value="${esc(s.dominio || '')}" placeholder="ejemplo.com"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Precio ($)</label><input type="number" step="0.01" min="0" id="sf-precio" value="${esc(s.precio ?? '')}"></div>
+      <div class="ff"><label>Ciclo de pago</label><select id="sf-ciclo">${opts(PT_CICLOS, s.ciclo || 'mensual')}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Inicio</label><input type="date" id="sf-inicio" value="${esc(s.inicio || todayISO())}"></div>
+      <div class="ff"><label>Próximo pago</label><input type="date" id="sf-prox" value="${esc(s.proximoPago || '')}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Estado</label><select id="sf-estado">${opts(PT_SUSC, s.estado || 'activa')}</select></div>
+      <div class="ff"><label>Emisor</label><select id="sf-emisor"><option value="">—</option>${EMPLEADOS.map(e => `<option ${e.nombre === s.emisor ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}</select></div>
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--off);margin-bottom:12px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">
+      <input type="checkbox" id="sf-auto" ${s.autoFactura !== false ? 'checked' : ''} style="margin-top:2px;">
+      <span><span style="font-size:12px;font-weight:600;color:var(--black);display:block;">Crear la factura automáticamente</span>
+      <span style="font-size:11px;color:var(--text-soft);">El bot la genera <input type="number" id="sf-dias" min="0" max="30" value="${esc(s.diasAntes ?? 5)}" style="width:44px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;"> días antes del próximo pago y te avisa por Telegram.</span></span>
+    </label>
+    <div class="ff"><label>Notas (las ve el cliente en su portal)</label><input id="sf-notas" maxlength="200" value="${esc(s.notas || '')}"></div>
+    <button class="btn-edit-save" onclick="guardarSuscripcion('${esc(id || '')}')">Guardar</button>
+    ${id ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();facturarSuscripcion('${esc(id)}')">Facturar este período</button>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();renovarSuscripcion('${esc(id)}')">Renovar</button>
+    </div>` : ''}
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+  susSugerencias();
+}
+function susSugerencias() {
+  const t = document.getElementById('sf-tipo')?.value || 'otro';
+  const dl = document.getElementById('sf-sugs');
+  if (dl) dl.innerHTML = (SUS_SUGERENCIAS[t] || []).map(x => `<option value="${esc(x)}">`).join('');
+  const dw = document.getElementById('sf-dominio-wrap');
+  if (dw) dw.style.display = (t === 'hosting' || t === 'dominio' || t === 'mantenimiento') ? '' : 'none';
+}
+async function guardarSuscripcion(id) {
+  const cliente = document.getElementById('sf-cliente').value.trim().replace(/\s+/g, ' ');
+  const servicio = document.getElementById('sf-servicio').value.trim();
+  const precio = parseFloat(document.getElementById('sf-precio').value);
+  if (!cliente || !servicio || isNaN(precio)) { toast('Completa cliente, servicio y precio.', 'err'); return; }
+  const ciclo = document.getElementById('sf-ciclo').value;
+  const inicio = document.getElementById('sf-inicio').value || todayISO();
+  const portal = portalParaCliente(cliente);
+  const cli = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(cliente));
+  const anterior = id ? suscripcionesList.find(x => x._id === id) : null;
+  const data = {
+    cliente: portal?.nombre || (cli ? clNombre(cli) : cliente), clienteId: cli?._id || null, portalCodigo: portal ? portal._id : null,
+    tipo: document.getElementById('sf-tipo').value, servicio,
+    dominio: document.getElementById('sf-dominio').value.trim(),
+    precio, moneda: 'usd', ciclo, inicio,
+    proximoPago: document.getElementById('sf-prox').value || ptSumarCiclo(inicio, ciclo),
+    estado: document.getElementById('sf-estado').value,
+    emisor: document.getElementById('sf-emisor').value,
+    autoFactura: document.getElementById('sf-auto').checked,
+    diasAntes: Math.max(0, Math.min(30, parseInt(document.getElementById('sf-dias').value) || 5)),
+    notas: document.getElementById('sf-notas').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    let docId = id;
+    if (id) await db.collection('suscripciones').doc(id).update(data);
+    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); docId = (await db.collection('suscripciones').add(data)).id; }
+    await susSincronizarPortal(docId, data, anterior?.portalCodigo);
+    saveCliente(cliente);
+    logActividad(id ? 'Suscripción editada' : 'Nueva suscripción', `${cliente} · ${servicio}`);
+    toast('Suscripción guardada ✅');
+    closePortalModal();
+  } catch (e) { console.error(e); toast('Error al guardar la suscripción.', 'err'); }
+}
+async function borrarSuscripcion(id) {
+  const s = suscripcionesList.find(x => x._id === id); if (!s) return;
+  if (!confirm(`¿Eliminar la suscripción "${susNombre(s)}" de ${s.cliente}? Las facturas ya emitidas no se borran.`)) return;
+  try {
+    await db.collection('suscripciones').doc(id).delete();
+    if (s.portalCodigo) ptRef(s.portalCodigo).collection('suscripciones').doc(id).delete().catch(() => {});
+    toast('Suscripción eliminada.');
+  } catch (e) { toast('Error al eliminar.', 'err'); }
+}
+async function renovarSuscripcion(id, silencioso) {
+  const s = suscripcionesList.find(x => x._id === id); if (!s) return;
+  const nueva = ptSumarCiclo(s.proximoPago || todayISO(), s.ciclo);
+  if (!silencioso && !confirm(`¿Marcar pagado el período de "${susNombre(s)}" (${s.cliente})?\nEl próximo pago pasará al ${ptFmt(nueva)}.`)) return;
+  try {
+    const upd = { proximoPago: nueva, ultimoPago: todayISO(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    await db.collection('suscripciones').doc(id).update(upd);
+    await susSincronizarPortal(id, { ...s, ...upd });
+    logActividad('Suscripción renovada', `${s.cliente} · ${susNombre(s)} → ${nueva}`);
+    toast(silencioso ? `Suscripción renovada hasta el ${ptFmt(nueva)}` : 'Suscripción renovada ✅');
+  } catch (e) { toast('Error al renovar.', 'err'); }
+}
+function susPeriodoTexto(s) {
+  const desde = s.proximoPago || todayISO();
+  const hasta = ptSumarCiclo(desde, s.ciclo);
+  const f = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  return `${f(desde)} – ${f(hasta)}`;
+}
+async function facturarSuscripcion(id) {
+  const s = suscripcionesList.find(x => x._id === id); if (!s) return;
+  if (s.ultimaFacturaPeriodo === s.proximoPago && docsMap[s.ultimaFacturaId]) {
+    if (!confirm('Ya existe una factura para este período. ¿Crear otra?')) return;
+  }
+  try {
+    const precio = Number(s.precio) || 0;
+    const docData = {
+      docId: genId('FAC'), type: 'factura', cli: s.cliente, ref: '—',
+      nota: `Suscripción ${(PT_CICLOS[s.ciclo] || '').toLowerCase()} · período ${susPeriodoTexto(s)}`,
+      fecha: fmtDate(), total: precio, moneda: s.moneda || 'usd', emisor: s.emisor || '',
+      metodoPago: null, infoPago: {}, contrato: false,
+      items: [{ s: `${susNombre(s)} (${susPeriodoTexto(s)})`, p: precio, c: 1, t: precio }],
+      pagado: false, fechaPago: null, suscripcionId: id, periodo: s.proximoPago || todayISO(),
+      createdBy: currentUser ? currentUser.email : 'desconocido',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const portal = s.portalCodigo ? portalesList.find(p => p._id === s.portalCodigo && p.activo !== false) : portalParaCliente(s.cliente);
+    if (portal) docData.portalCodigo = portal._id;
+    const added = await db.collection('documentos').add(docData);
+    if (portal) registrarFacturaEnPortal(added.id, portal._id);
+    await db.collection('suscripciones').doc(id).update({ ultimaFacturaId: added.id, ultimaFacturaPeriodo: docData.periodo });
+    logActividad('Factura de suscripción', `${docData.docId} · ${s.cliente} · $${precio.toFixed(2)}`);
+    toast('Factura de la suscripción creada ✅');
+    openSheet({ _fsId: added.id, ...docData });
+  } catch (e) { console.error(e); toast('Error al crear la factura.', 'err'); }
+}
+/* Al pagar una factura de suscripción, la suscripción pasa al período siguiente */
+function alPagarFacturaSuscripcion(doc) {
+  if (!doc || !doc.suscripcionId) return;
+  const s = suscripcionesList.find(x => x._id === doc.suscripcionId);
+  if (s && s.estado === 'activa' && (!doc.periodo || doc.periodo === s.proximoPago)) renovarSuscripcion(s._id, true);
+}
+
+/* Portal (admin) y ficha del cliente */
+function susDeCliente(nombre, portalCodigo) {
+  const n = ptNorm(nombre);
+  return suscripcionesList.filter(s => (portalCodigo && s.portalCodigo === portalCodigo) || ptNorm(s.cliente) === n);
+}
+function susBloque(lista, preset) {
+  return `${lista.length ? `<div class="hr-list">${lista.map(s => susFila(s, true)).join('')}</div>` : '<div class="pt-empty" style="padding:18px;">Sin suscripciones.</div>'}
+    <button class="btn-sm" style="margin-top:10px;background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick='closePortalModal();openSuscripcionForm(null, ${JSON.stringify(preset).replace(/'/g, '&#39;')})'>${PT_ICON.plus} Nueva suscripción</button>`;
 }
 
 /* ═══════════════════════════════════════════════════════
