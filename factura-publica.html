@@ -20,7 +20,10 @@
     .pub-card { background:white; max-width:520px; width:100%; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.12); }
     .pub-header-factura { background:linear-gradient(135deg,#0f172a,#1e3a5f); padding:28px 32px 24px; position:relative; }
     .pub-header-recibo  { background:linear-gradient(135deg,#1438cc,#2979ff); padding:28px 32px 24px; position:relative; }
-    .pub-brand { font-size:10px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:6px; }
+    .pub-brandrow { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+    .pub-logo { width:42px; height:42px; object-fit:contain; display:block; }
+    .pub-brand { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:white; line-height:1; }
+    .pub-brand-sub { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.55); margin-top:3px; }
     .pub-title { font-family:'Bebas Neue',sans-serif; font-size:36px; color:white; letter-spacing:1px; }
     .pub-docnum { font-family:'Bebas Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.45); margin-top:4px; letter-spacing:2px; }
     .pub-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); color:white; font-size:10px; font-weight:600; letter-spacing:2px; padding:4px 14px; border-radius:20px; margin-top:12px; }
@@ -30,38 +33,42 @@
     .pub-badge.parcial::before  { background:#fb923c; }
     .pub-zigzag-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#1e3a5f; background-size:14px 14px; background-repeat:repeat-x; }
     .pub-zigzag-blue { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#2979ff; background-size:14px 14px; background-repeat:repeat-x; }
-    .pub-body { padding:24px 32px 0; }
-    .pub-meta { display:flex; justify-content:space-between; margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed #e2e8f0; }
+    .pub-body { padding:26px 32px 0; }
+    .pub-meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #eef2f7; }
     .pub-meta-col { }
     .pub-meta-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; margin-bottom:3px; }
     .pub-meta-value { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#0a0f1e; }
-    .pub-client { border-radius:10px; padding:12px 16px; margin-bottom:18px; }
-    .pub-client.dark { background:rgba(15,23,42,0.05); border:1px solid rgba(15,23,42,0.1); }
-    .pub-client.blue { background:#eff3ff; border:1px solid rgba(20,56,204,0.12); }
+    .pub-client { border-radius:10px; padding:13px 16px; margin-bottom:20px; background:#f8fafc; border:1px solid #eef2f7; border-left:3px solid #0f172a; }
+    .pub-client.blue { border-left-color:#1438cc; background:#f5f8ff; }
     .pub-client-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
     .pub-client-label.dark { color:#475569; }
     .pub-client-label.blue { color:#1438cc; }
-    .pub-client-name { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#0a0f1e; }
+    .pub-client-name { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:.5px; color:#0a0f1e; }
     .pub-nota { background:#fffbeb; border:1px solid rgba(217,119,6,0.2); border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:#92400e; line-height:1.5; }
     .pub-partial { background:#fff7ed; border:1px solid rgba(251,146,60,0.3); border-radius:10px; padding:12px 16px; margin-bottom:18px; display:flex; justify-content:space-between; }
     .pub-partial-col { }
     .pub-partial-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#9a3412; margin-bottom:2px; }
     .pub-partial-value { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#ea580c; }
     .pub-partial-value.paid { color:#059669; }
-    table { width:100%; border-collapse:collapse; margin-bottom:4px; }
-    thead th { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#94a3b8; padding:0 0 8px; text-align:left; border-bottom:1px solid #e2e8f0; }
-    thead th:last-child { text-align:right; }
-    tbody td { padding:9px 0; font-size:12.5px; color:#475569; border-bottom:1px solid #f8fafc; vertical-align:middle; }
-    tbody td:last-child { text-align:right; font-weight:600; color:#0a0f1e; }
-    tbody tr:last-child td { border-bottom:none; }
+    table { width:100%; border-collapse:collapse; margin-bottom:0; }
+    thead th { font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:#64748b; padding:9px 10px; text-align:left; background:#f8fafc; border-top:1px solid #eef2f7; border-bottom:1px solid #eef2f7; }
+    thead th:first-child { padding-left:12px; border-left:1px solid #eef2f7; border-radius:8px 0 0 8px; }
+    thead th:last-child { padding-right:12px; border-right:1px solid #eef2f7; border-radius:0 8px 8px 0; }
+    tbody td { padding:12px 10px; font-size:12.5px; color:#475569; border-bottom:1px solid #eef2f7; vertical-align:top; }
+    tbody td:first-child { padding-left:12px; }
+    tbody td:last-child { padding-right:12px; font-weight:600; color:#0a0f1e; }
+    .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+    .ctr { text-align:center !important; }
+    .pub-sub { display:flex; justify-content:space-between; padding:12px 12px 0; font-size:12px; color:#64748b; }
+    .pub-sub strong { color:#0a0f1e; font-variant-numeric:tabular-nums; }
     .item-name { font-weight:500; color:#0a0f1e; }
     .item-qty  { font-size:10px; color:#94a3b8; margin-top:1px; }
-    .pub-total { margin:0 -32px; padding:18px 32px; display:flex; justify-content:space-between; align-items:center; }
+    .pub-total { margin:16px 32px 0; padding:18px 22px; border-radius:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
     .pub-total.dark { background:#0a0f1e; }
     .pub-total.blue { background:#1438cc; }
     .pub-total-label { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
-    .pub-total-amount { font-family:'Bebas Neue',sans-serif; font-size:34px; color:white; }
-    .pub-footer { padding:16px 32px 24px; text-align:center; }
+    .pub-total-amount { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:.5px; color:white; line-height:1; }
+    .pub-footer { padding:20px 32px 26px; text-align:center; }
     .pub-footer p { font-size:11px; color:#94a3b8; line-height:1.6; }
     .pub-footer strong { color:#0a0f1e; }
     .pub-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 32px 28px; }
@@ -220,14 +227,18 @@
       .pub-card { border-radius:0; min-height:100vh; }
       /* Invoice header */
       .pub-header-factura, .pub-header-recibo { padding:24px 20px 18px; }
-      .pub-brand { font-size:9px; letter-spacing:2px; }
+      .pub-brand { font-size:16px; letter-spacing:2px; }
+      .pub-brandrow { margin-bottom:16px; }
+      .col-precio { display:none; }
+      .pub-body { padding:20px 20px 0; }
+      .pub-total { margin:14px 20px 0; }
+      .pub-footer { padding:18px 20px 22px; }
       .pub-doc-num { font-size:10px; }
       .pub-client-block { padding:16px 20px; }
       /* Items table */
-      .pub-items { margin:0 20px; }
       .pub-items table { font-size:11px; }
       /* Total */
-      .pub-total { padding:16px 20px; }
+      .pub-total { padding:16px 18px; }
       .pub-total-label { font-size:10px; }
       .pub-total-amount { font-size:24px; }
       /* Actions */
@@ -658,9 +669,12 @@
 
     const items = (doc.items || []).map(it => `
       <tr>
-        <td><div class="item-name">${esc(it.s)}</div><div class="item-qty">${it.c > 1 ? `${it.c} unidades × $${it.p.toFixed(2)}` : 'Unidad'}</div></td>
-        <td>$${(it.t||0).toFixed(2)}</td>
+        <td><div class="item-name">${esc(it.s)}</div></td>
+        <td class="ctr">${it.c || 1}</td>
+        <td class="num col-precio">$${(it.p||0).toFixed(2)}</td>
+        <td class="num">$${(it.t||0).toFixed(2)}</td>
       </tr>`).join('');
+    const subtotal = (doc.items || []).reduce((a, it) => a + (it.t || 0), 0);
 
     const parcialBlock = isParcial ? `
       <div class="pub-partial">
@@ -671,15 +685,16 @@
     const notaBlock = (isFactura || isParcial) && doc.nota ? `
       <div class="pub-nota"><strong>Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
 
-    const brandName  = 'DGP GROUP USA · dgp-link.com';
     const waText = encodeURIComponent(
       `Hola, aquí está tu ${docTitle.toLowerCase()} de DGP Group USA:\n${window.location.href}`
     );
 
     card.innerHTML = `
       <div class="${headerClass}">
-        <img src="/logo.png" alt="DGP Group" style="width:42px;height:42px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;margin-bottom:10px;display:block;">
-        <div class="pub-brand">${brandName}</div>
+        <div class="pub-brandrow">
+          <img src="/logo-white.png" alt="DGP Group" class="pub-logo">
+          <div><div class="pub-brand">DGP GROUP USA</div><div class="pub-brand-sub">dgp-link.com · Servicios digitales</div></div>
+        </div>
         <div class="pub-title">${docTitle}</div>
         <div class="pub-docnum">N° ${esc(doc.docId || id)}</div>
         <div class="pub-badge ${badgeClass}">${badgeText}</div>
@@ -692,15 +707,16 @@
           ${doc.ref && doc.ref !== '—' ? `<div class="pub-meta-col" style="text-align:right"><div class="pub-meta-label">Referencia</div><div class="pub-meta-value" style="font-size:11px;">${esc(doc.ref)}</div></div>` : ''}
         </div>
         <div class="pub-client ${clientStyle}">
-          <div class="pub-client-label ${clientStyle}">Cliente</div>
+          <div class="pub-client-label ${clientStyle}">Facturado a</div>
           <div class="pub-client-name">${esc(doc.cli||'—')}</div>
         </div>
         ${notaBlock}
         ${parcialBlock}
         <table>
-          <thead><tr><th>Descripción</th><th style="text-align:right">Importe</th></tr></thead>
+          <thead><tr><th>Descripción</th><th class="ctr">Cant.</th><th class="num col-precio">Precio</th><th class="num">Importe</th></tr></thead>
           <tbody>${items}</tbody>
         </table>
+        ${Math.abs(subtotal - (doc.total || 0)) > 0.009 || (doc.items || []).length > 1 ? `<div class="pub-sub"><span>Subtotal</span><strong>$${subtotal.toFixed(2)}</strong></div>` : ''}
       </div>
       <div class="pub-total ${totalClass}">
         <span class="pub-total-label">${totalLabel}</span>

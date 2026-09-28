@@ -14,7 +14,7 @@
     body { font-family: 'IBM Plex Sans', sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px 48px; }
     .card { background: white; border-radius: 20px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); max-width: 480px; width: 100%; overflow: hidden; }
     .enc-header { background: linear-gradient(135deg, #0f172a, #1e3a5f); padding: 28px 28px 22px; }
-    .enc-logo { width:42px; height:42px; object-fit:contain; background:#fff; border-radius:10px; padding:4px; margin-bottom:10px; display:block; }
+    .enc-logo { width:42px; height:42px; object-fit:contain; margin-bottom:12px; display:block; }
     .enc-brand { font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
     .enc-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: white; letter-spacing: 1px; margin-bottom: 4px; }
     .enc-sub { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.6; }
@@ -120,7 +120,7 @@
 
     card.innerHTML = `
       <div class="enc-header" style="background:${headerBg};">
-        <img src="/logo.png" alt="DGP Group" class="enc-logo">
+        <img src="/logo-white.png" alt="DGP Group" class="enc-logo">
         <div class="enc-brand">${brand}</div>
         <div class="enc-title">¿Cómo fue tu experiencia?</div>
         <div class="enc-sub">Tu opinión nos ayuda a mejorar. Solo toma 1 minuto.</div>
@@ -251,7 +251,7 @@
         : '¡Gracias por tu tiempo! Tu opinión nos ayuda a seguir mejorando.';
     card.innerHTML = `
       <div class="enc-header">
-        <img src="/logo.png" alt="DGP Group" class="enc-logo">
+        <img src="/logo-white.png" alt="DGP Group" class="enc-logo">
         <div class="enc-brand">DGP Group USA</div>
         <div class="enc-title">Encuesta enviada</div>
       </div>

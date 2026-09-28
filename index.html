@@ -567,9 +567,9 @@
       animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
       max-height: 92vh; overflow-y: auto;
     }
-    .sheet-top-factura { background: linear-gradient(135deg,#0f172a,#1e3a5f); padding: 26px 28px 22px; position: relative; overflow: hidden; }
+    .sheet-top-factura { background: linear-gradient(135deg,#0f172a,#1e3a5f); padding: 28px 30px 24px; position: relative; overflow: hidden; }
     .sheet-top-factura::before { content:''; position:absolute; bottom:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.05); }
-    .sheet-top-recibo { background: linear-gradient(135deg,var(--blue),#2979ff); padding: 26px 28px 22px; position: relative; overflow: hidden; }
+    .sheet-top-recibo { background: linear-gradient(135deg,var(--blue),#2979ff); padding: 28px 30px 24px; position: relative; overflow: hidden; }
     .sheet-top-recibo::before { content:''; position:absolute; bottom:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08); }
     .sheet-doc-type { font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,0.6); margin-bottom:5px; }
     .sheet-title { font-family:'Bebas Neue',sans-serif; font-size:30px; font-weight:900; color:white; letter-spacing:1px; }
@@ -578,13 +578,20 @@
     .sheet-status-badge.pagado::before   { content:''; width:6px; height:6px; border-radius:50%; background:#34d399; display:block; }
     .sheet-zigzag-dark { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#1e3a5f; background-size:16px 16px; background-repeat:repeat-x; }
     .sheet-zigzag-blue { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#2979ff; background-size:16px 16px; background-repeat:repeat-x; }
-    .sheet-body { padding:22px 28px 0; }
-    .sheet-meta { display:flex; justify-content:space-between; margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed #e2e8f0; }
+    .sheet-body { padding:26px 30px 0; }
+    .sheet-brandrow { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+    .sheet-logo { width:40px; height:40px; object-fit:contain; display:block; }
+    .sheet-brand { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:white; line-height:1; }
+    .sheet-brand-sub { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.55); margin-top:3px; font-family:'IBM Plex Sans',sans-serif; }
+    .sheet-sub { display:flex; justify-content:space-between; padding:12px 12px 0; font-size:12px; color:var(--text-soft); font-family:'IBM Plex Sans',sans-serif; }
+    .sheet-sub strong { color:var(--black); font-variant-numeric:tabular-nums; }
+    .sheet-items .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+    .sheet-items .ctr { text-align:center !important; }
+    .sheet-meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #eef2f7; }
     .sheet-meta-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); margin-bottom:3px; }
     .sheet-meta-value { font-family:'Bebas Neue',sans-serif; font-size:14px; font-weight:600; color:var(--black); }
-    .sheet-client-block { border-radius:12px; padding:12px 16px; margin-bottom:18px; }
-    .sheet-client-block.factura-style { background:rgba(15,23,42,0.05); border:1px solid rgba(15,23,42,0.1); }
-    .sheet-client-block.recibo-style  { background:var(--blue-xlight); border:1px solid rgba(20,56,204,0.12); }
+    .sheet-client-block { border-radius:10px; padding:13px 16px; margin-bottom:20px; background:#f8fafc; border:1px solid #eef2f7; border-left:3px solid #0f172a; }
+    .sheet-client-block.recibo-style  { border-left-color:var(--blue); background:#f5f8ff; }
     .sheet-client-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
     .sheet-client-label.factura-style { color:var(--text-mid); }
     .sheet-client-label.recibo-style  { color:var(--blue); }
@@ -592,23 +599,24 @@
     .sheet-client-ref  { font-size:11px; color:var(--text-soft); margin-top:2px; }
     .sheet-nota-block { background:#fffbeb; border:1px solid rgba(217,119,6,0.2); border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:var(--amber); line-height:1.5; }
     .sheet-nota-block strong { color:#92400e; }
-    .sheet-items { width:100%; border-collapse:collapse; margin-bottom:4px; }
-    .sheet-items thead th { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); padding:0 0 8px; text-align:left; border-bottom:1px solid var(--border); }
-    .sheet-items thead th:last-child { text-align:right; }
-    .sheet-items tbody td { padding:9px 0; font-size:12.5px; color:var(--text-mid); border-bottom:1px solid #f8fafc; vertical-align:middle; }
-    .sheet-items tbody td:last-child { text-align:right; font-weight:600; color:var(--black); }
-    .sheet-items tbody tr:last-child td { border-bottom:none; }
+    .sheet-items { width:100%; border-collapse:collapse; margin-bottom:0; }
+    .sheet-items thead th { font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); padding:9px 10px; text-align:left; background:#f8fafc; border-top:1px solid #eef2f7; border-bottom:1px solid #eef2f7; }
+    .sheet-items thead th:first-child { padding-left:12px; border-left:1px solid #eef2f7; border-radius:8px 0 0 8px; }
+    .sheet-items thead th:last-child { padding-right:12px; border-right:1px solid #eef2f7; border-radius:0 8px 8px 0; text-align:right; }
+    .sheet-items tbody td { padding:12px 10px; font-size:12.5px; color:var(--text-mid); border-bottom:1px solid #eef2f7; vertical-align:top; }
+    .sheet-items tbody td:first-child { padding-left:12px; }
+    .sheet-items tbody td:last-child { padding-right:12px; text-align:right; font-weight:600; color:var(--black); }
     .item-name { font-weight:500; }
     .item-qty  { font-size:10px; color:var(--text-soft); margin-top:1px; }
-    .sheet-total-block { margin:0 -28px; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; }
+    .sheet-total-block { margin:16px 30px 0; padding:18px 22px; border-radius:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
     .sheet-total-block.factura-style { background:var(--black); }
     .sheet-total-block.recibo-style  { background:var(--blue); }
     .sheet-total-label  { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
-    .sheet-total-amount { font-family:'Bebas Neue',sans-serif; font-size:32px; font-weight:900; color:white; }
-    .sheet-footer { padding:16px 28px 20px; text-align:center; }
+    .sheet-total-amount { font-family:'Bebas Neue',sans-serif; font-size:32px; font-weight:900; color:white; line-height:1; white-space:nowrap; }
+    .sheet-footer { padding:20px 30px 22px; text-align:center; }
     .sheet-footer p { font-size:11px; color:var(--text-soft); line-height:1.6; font-family:'IBM Plex Sans',sans-serif; }
     .sheet-footer strong { color:var(--black); font-weight:600; }
-    .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 28px 24px; }
+    .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 30px 26px; }
     .sheet-actions.three { grid-template-columns:1fr 1fr 1fr; }
     .btn-sheet { padding:12px; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; border:1.5px solid; text-align:center; }
     .btn-sheet.print  { background:var(--blue-xlight); color:var(--blue); border-color:rgba(20,56,204,0.2); }
@@ -771,7 +779,8 @@
       .sheet-body        { padding: 18px 20px 0; }
       .sheet-top-factura,
       .sheet-top-recibo  { padding: 22px 22px 18px; }
-      .sheet-total-block { margin: 0 -20px; padding: 16px 22px; }
+      .sheet-total-block { margin: 14px 20px 0; padding: 16px 18px; }
+      .sheet-items .col-precio { display: none; }
       .sheet-footer      { padding: 14px 22px 20px; }
 
       /* Toast: evita quedar oculto por barra del sistema */
@@ -1068,7 +1077,7 @@
 
 <!-- ─── LOGIN SCREEN ─── -->
 <div id="splash-screen">
-  <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:72px;height:72px;border-radius:18px;padding:8px;margin-bottom:14px;">
+  <img src="/logo-white.png" alt="DGP Group" style="width:64px;height:64px;object-fit:contain;margin-bottom:16px;">
   <div class="splash-logo-text">DGP GROUP <span>USA</span></div>
   <div class="splash-logo-sub">Sistema de Gestión</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
@@ -1077,7 +1086,7 @@
 <div id="login-screen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">
-      <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:60px;height:60px;border-radius:15px;padding:6px;margin:0 auto 12px;display:block;">
+      <img src="/logo-white.png" alt="DGP Group" style="width:56px;height:56px;object-fit:contain;margin:0 auto 14px;display:block;">
       <div class="login-logo-text">DGP GROUP <span>USA</span></div>
       <div class="login-logo-sub">Sistema de Gestión</div>
     </div>
@@ -1428,7 +1437,10 @@
         <div class="panel-title-v" style="margin-bottom:2px;">Base de Clientes</div>
         <div style="font-size:11px;color:var(--text-soft);"><span id="clientes-count">0</span> clientes registrados</div>
       </div>
-      <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <button class="btn-nuevo-cliente" id="btn-unificar" onclick="openUnificarClientes()" style="display:none;background:var(--amber-light);color:var(--amber);border:1.5px solid rgba(217,119,6,.3);"></button>
+        <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
+      </div>
     </div>
     <div class="clientes-search-row">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1524,6 +1536,7 @@
         <thead><tr><th>Descripción</th><th style="text-align:right">Importe</th></tr></thead>
         <tbody id="s-items"></tbody>
       </table>
+      <div class="sheet-sub" id="s-sub" style="display:none;"></div>
     </div>
     <div class="sheet-total-block" id="s-total-block">
       <span class="sheet-total-label" id="s-total-label">Total</span>
@@ -2549,8 +2562,10 @@ function openSheet(doc) {
   const topEl = document.getElementById('sheet-top');
   topEl.innerHTML = `
     <div class="${headerClass}" style="position:relative;">
-      <img src="/logo.png" alt="DGP Group" class="brand-mark" style="width:40px;height:40px;margin-bottom:10px;">
-      <div class="sheet-doc-type">DGP GROUP USA · dgp-link.com</div>
+      <div class="sheet-brandrow">
+        <img src="/logo-white.png" alt="DGP Group" class="sheet-logo">
+        <div><div class="sheet-brand">DGP GROUP USA</div><div class="sheet-brand-sub">dgp-link.com · ${L('Servicios digitales','Digital services')}</div></div>
+      </div>
       <div class="sheet-title">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO DE PAGO','PAYMENT RECEIPT')}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
       <div class="sheet-status-badge ${statusClass}">${statusText}</div>
@@ -2569,11 +2584,11 @@ function openSheet(doc) {
   const clientLabel = document.getElementById('s-client-label');
   clientBlock.className = `sheet-client-block ${isRecibo ? 'recibo-style' : 'factura-style'}`;
   clientLabel.className = `sheet-client-label ${isRecibo ? 'recibo-style' : 'factura-style'}`;
-  clientLabel.textContent = L('Cliente','Client');
+  clientLabel.textContent = L('Facturado a','Bill to');
 
   /* Update table header labels */
   const sheetTable = document.querySelector('.sheet-items thead tr');
-  if (sheetTable) sheetTable.innerHTML = `<th>${L('Descripción','Description')}</th><th style="text-align:right">${L('Importe','Amount')}</th>`;
+  if (sheetTable) sheetTable.innerHTML = `<th>${L('Descripción','Description')}</th><th class="ctr">${L('Cant.','Qty')}</th><th class="num col-precio">${L('Precio','Price')}</th><th class="num">${L('Importe','Amount')}</th>`;
 
   const notaBlock = document.getElementById('s-nota-block');
   if ((isFactura || isParcial) && doc.nota) {
@@ -2609,11 +2624,19 @@ function openSheet(doc) {
   let itemsHtml = '';
   items.forEach(it => {
     itemsHtml += `<tr>
-      <td><div class="item-name">${esc(it.s)}</div><div class="item-qty">${it.c > 1 ? `${it.c} ${L('unidades','units')} × $${it.p.toFixed(2)}` : L('Unidad','Unit')}</div></td>
-      <td>$${it.t.toFixed(2)}</td>
+      <td><div class="item-name">${esc(it.s)}</div></td>
+      <td class="ctr">${it.c || 1}</td>
+      <td class="num col-precio">$${(it.p || 0).toFixed(2)}</td>
+      <td class="num">$${(it.t || 0).toFixed(2)}</td>
     </tr>`;
   });
   document.getElementById('s-items').innerHTML = itemsHtml;
+  const subtotal = items.reduce((a, it) => a + (it.t || 0), 0);
+  const subEl = document.getElementById('s-sub');
+  if (items.length > 1 || Math.abs(subtotal - (doc.total || 0)) > 0.009) {
+    subEl.innerHTML = `<span>Subtotal</span><strong>$${subtotal.toFixed(2)}</strong>`;
+    subEl.style.display = 'flex';
+  } else subEl.style.display = 'none';
 
   const totalBlock = document.getElementById('s-total-block');
   totalBlock.className = `sheet-total-block ${isRecibo ? 'recibo-style' : 'factura-style'}`;
@@ -3431,8 +3454,14 @@ function initClientes() {
 }
 
 function saveCliente(nombre) {
+  nombre = String(nombre || '').trim().replace(/\s+/g, ' ');
   if (!nombre) return;
-  const id = nombre.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_áéíóúüñ]/g, '');
+  const existente = clientesList.find(c => ptNorm([c.nombre, c.apellido].filter(Boolean).join(' ')) === ptNorm(nombre));
+  if (existente) {
+    db.collection('clientes').doc(existente._id).set({ lastUsed: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+    return;
+  }
+  const id = ptNorm(nombre).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   if (!id) return;
   db.collection('clientes').doc(id).set(
     { nombre, lastUsed: firebase.firestore.FieldValue.serverTimestamp() },
@@ -3444,7 +3473,10 @@ function saveCliente(nombre) {
 
 function refreshClientesDatalist() {
   const dl = document.getElementById('clientes-list');
-  if (dl) dl.innerHTML = clientesCache.map(c => `<option value="${esc(c)}">`).join('');
+  if (!dl) return;
+  const vistos = new Set();
+  dl.innerHTML = clientesCache.filter(c => { const k = ptNorm(c); if (!k || vistos.has(k)) return false; vistos.add(k); return true; })
+    .map(c => `<option value="${esc(c)}">`).join('');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3563,6 +3595,104 @@ function initClientesCRM() {
 
 let clTagFiltro = null;
 
+/* ── Duplicados: mismo nombre (sin importar acentos/mayúsculas) o casi igual ── */
+function clNombre(c) { return [c.nombre, c.apellido].filter(Boolean).join(' '); }
+function clLev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let diag = prev[0]; prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+function clGruposDuplicados() {
+  const items = clientesList.map(c => ({ c, n: ptNorm(clNombre(c)) })).filter(x => x.n);
+  const padre = items.map((_, i) => i);
+  const raiz = i => padre[i] === i ? i : (padre[i] = raiz(padre[i]));
+  const exacto = new Set();
+  for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+    const a = items[i].n, b = items[j].n;
+    let unir = a === b;
+    if (!unir) {
+      const d = clLev(a, b), len = Math.min(a.length, b.length);
+      unir = (d === 1 && len >= 6) || (d === 2 && len >= 12);
+    }
+    if (unir) { padre[raiz(i)] = raiz(j); }
+  }
+  const grupos = {};
+  items.forEach((x, i) => (grupos[raiz(i)] = grupos[raiz(i)] || []).push(x));
+  return Object.values(grupos).filter(g => g.length > 1).map(g => ({
+    ids: g.map(x => x.c._id),
+    exacto: g.every(x => x.n === g[0].n)
+  }));
+}
+function clPuntaje(c) {
+  // Preferir: el que tiene portal, luego el más completo, luego el que tiene acentos (bien escrito)
+  const campos = ['telefono', 'correo', 'empresa', 'notas'].filter(f => c[f]).length + (c.tags || []).length;
+  const acentos = /[áéíóúüñ]/i.test(clNombre(c)) ? 1 : 0;
+  return (c.portalCodigo ? 1000 : 0) + campos * 10 + acentos;
+}
+function openUnificarClientes() {
+  const grupos = clGruposDuplicados();
+  if (!grupos.length) { toast('No hay clientes duplicados.'); return; }
+  ptModal('Unificar clientes duplicados', `${grupos.length} grupo(s) encontrados`, `
+    <p style="font-size:12px;color:var(--text-soft);margin-bottom:12px;line-height:1.5;">Elige qué registro conservar en cada grupo. Los datos que falten (teléfono, correo, etiquetas, notas, portal) se copian de los demás y luego los repetidos se eliminan. Las facturas no se modifican.</p>
+    ${grupos.map((g, gi) => {
+      const cs = g.ids.map(id => clientesList.find(c => c._id === id)).sort((a, b) => clPuntaje(b) - clPuntaje(a));
+      return `<div style="border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" class="un-grupo" data-g="${gi}" ${g.exacto ? 'checked' : ''}>
+          ${g.exacto ? 'Mismo nombre' : '<span style="color:var(--amber);">Nombres parecidos — revisa antes de unir</span>'}
+        </label>
+        ${cs.map((c, ci) => `<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px;font-size:13px;cursor:pointer;">
+          <input type="radio" name="un-keep-${gi}" value="${esc(c._id)}" ${ci === 0 ? 'checked' : ''} style="margin-top:3px;">
+          <span><strong>${esc(clNombre(c))}</strong>${c.portalCodigo ? ' <span class="cl-tag">Portal</span>' : ''}
+          <span style="display:block;font-size:11px;color:var(--text-soft);">${[c.telefono, c.correo, c.empresa].filter(Boolean).map(esc).join(' · ') || 'sin datos de contacto'}</span></span>
+        </label>`).join('')}
+      </div>`;
+    }).join('')}
+    <button class="btn-edit-save" id="un-btn" onclick="unificarClientes()">Unificar seleccionados</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+  window._unGrupos = grupos;
+}
+async function unificarClientes() {
+  const grupos = window._unGrupos || [];
+  const elegidos = [...document.querySelectorAll('.un-grupo:checked')].map(x => +x.dataset.g);
+  if (!elegidos.length) { toast('Marca al menos un grupo.', 'err'); return; }
+  const btn = document.getElementById('un-btn');
+  btn.disabled = true; btn.textContent = 'Unificando…';
+  let ok = 0, saltados = 0;
+  for (const gi of elegidos) {
+    const keepId = document.querySelector(`input[name="un-keep-${gi}"]:checked`)?.value;
+    const keep = clientesList.find(c => c._id === keepId);
+    const otros = grupos[gi].ids.filter(id => id !== keepId).map(id => clientesList.find(c => c._id === id)).filter(Boolean);
+    if (!keep || !otros.length) continue;
+    const portales = [keep, ...otros].map(c => c.portalCodigo).filter(Boolean);
+    if (new Set(portales).size > 1) { saltados++; continue; } // dos portales distintos: no se unen solos
+    const upd = {};
+    ['telefono', 'correo', 'empresa'].forEach(f => { if (!keep[f]) { const v = otros.map(o => o[f]).find(Boolean); if (v) upd[f] = v; } });
+    const notas = [keep.notas, ...otros.map(o => o.notas)].filter(Boolean);
+    if (notas.length > 1 || (!keep.notas && notas.length)) upd.notas = [...new Set(notas)].join(' · ');
+    const tags = clParseTags([...(keep.tags || []), ...otros.flatMap(o => o.tags || [])].join(','));
+    if (tags.length) upd.tags = tags;
+    if (!keep.portalCodigo && portales.length) upd.portalCodigo = portales[0];
+    try {
+      if (Object.keys(upd).length) await db.collection('clientes').doc(keep._id).set(upd, { merge: true });
+      if (portales.length) await ptRef(portales[0]).update({ clienteId: keep._id }).catch(() => {});
+      for (const o of otros) await db.collection('clientes').doc(o._id).delete();
+      ok++;
+    } catch (e) { console.error(e); saltados++; }
+  }
+  logActividad('Clientes unificados', `${ok} grupo(s)`);
+  closePortalModal();
+  toast(saltados ? `${ok} unificado(s) · ${saltados} no se pudo (p. ej. dos portales distintos)` : `${ok} grupo(s) unificados ✅`, saltados ? 'err' : 'ok');
+}
+
 function clParseTags(str) {
   const out = [];
   String(str || '').split(',').map(t => t.trim().replace(/\s+/g, ' ')).filter(Boolean).forEach(t => {
@@ -3606,6 +3736,9 @@ function renderClientes() {
   const q = ptNorm(qRaw);
   document.getElementById('cl-clear').style.display = qRaw ? 'block' : 'none';
   renderClienteTags();
+  const dup = clGruposDuplicados();
+  const bu = document.getElementById('btn-unificar');
+  if (bu) { bu.style.display = dup.length ? '' : 'none'; bu.textContent = `Unificar duplicados (${dup.length})`; }
   let lista = clientesList;
   if (clTagFiltro === '__portal')        lista = lista.filter(c => c.portalCodigo);
   else if (clTagFiltro === '__sinportal') lista = lista.filter(c => !c.portalCodigo);
@@ -3691,6 +3824,9 @@ async function saveCliente2() {
   const empresa  = document.getElementById('cl-empresa').value.trim();
   const notas    = document.getElementById('cl-notas').value.trim();
   if (!nombre) { toast('El nombre es obligatorio.', 'err'); return; }
+  const nuevoNorm = ptNorm([nombre, apellido].filter(Boolean).join(' '));
+  const yaExiste = clientesList.find(c => c._id !== editClienteId && ptNorm([c.nombre, c.apellido].filter(Boolean).join(' ')) === nuevoNorm);
+  if (yaExiste && !confirm(`Ya existe un cliente llamado "${[yaExiste.nombre, yaExiste.apellido].filter(Boolean).join(' ')}". ¿Guardar de todas formas?`)) return;
   const tags     = clParseTags(document.getElementById('cl-tags').value);
   const data = { nombre, apellido, telefono, correo, empresa, notas, tags, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
