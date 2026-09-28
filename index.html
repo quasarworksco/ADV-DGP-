@@ -1081,6 +1081,33 @@
     .cp-chip.sel .cp-use { color:var(--blue); }
     .cp-x { padding:0 10px 0 6px; color:var(--text-soft); font-size:14px; line-height:1; }
     .cp-x:hover { color:#dc2626; }
+    .cb-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:12px; }
+    .cb-tile { background:white; border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+    .cb-tile-l { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); font-family:'IBM Plex Sans',sans-serif; }
+    .cb-tile-v { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:.5px; color:var(--black); margin-top:4px; line-height:1; font-variant-numeric:tabular-nums; }
+    .cb-tile-n { font-size:11px; color:var(--text-soft); margin-top:4px; font-family:'IBM Plex Sans',sans-serif; }
+    .cb-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:12px; margin-bottom:12px; }
+    .cb-card { background:white; border:1px solid var(--border); border-radius:14px; padding:16px 18px; position:relative; }
+    .cb-title { font-size:12px; font-weight:700; color:var(--black); font-family:'IBM Plex Sans',sans-serif; }
+    .cb-sub { font-size:11px; color:var(--text-soft); margin:2px 0 12px; font-family:'IBM Plex Sans',sans-serif; }
+    .cb-age { display:grid; grid-template-columns:78px 1fr 84px; gap:10px; align-items:center; padding:7px 0; font-size:12px; font-family:'IBM Plex Sans',sans-serif; }
+    .cb-age-l { color:var(--text-mid); }
+    .cb-age-track { height:10px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
+    .cb-age-bar { height:100%; border-radius:0 4px 4px 0; }
+    .cb-age-v { text-align:right; font-weight:600; color:var(--black); font-variant-numeric:tabular-nums; }
+    .cb-age-c { font-weight:400; color:var(--text-soft); font-size:10px; display:block; }
+    .cb-chart svg { width:100%; height:auto; display:block; overflow:visible; }
+    .cb-tip { position:absolute; pointer-events:none; background:#0a0f1e; color:white; font-size:11px; font-family:'IBM Plex Sans',sans-serif; padding:6px 9px; border-radius:8px; white-space:nowrap; transform:translate(-50%,-100%); opacity:0; transition:opacity .1s; z-index:5; }
+    .cb-tip strong { font-variant-numeric:tabular-nums; }
+    .cb-table { width:100%; border-collapse:collapse; font-family:'IBM Plex Sans',sans-serif; }
+    .cb-table th { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); text-align:left; padding:8px 8px; border-bottom:1px solid var(--border); }
+    .cb-table td { font-size:12px; color:var(--text-mid); padding:9px 8px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .cb-table td.num, .cb-table th.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .cb-table td strong { color:var(--black); }
+    .cb-days { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; background:#f1f5f9; color:var(--text-mid); }
+    .cb-days.old { background:#fef2f2; color:#b91c1c; }
+    .cb-days.mid { background:#fffbeb; color:#b45309; }
+    @media (max-width:900px) { .cb-tiles { grid-template-columns:repeat(2,1fr); } .cb-grid { grid-template-columns:1fr; } .cb-hide-m { display:none; } }
   </style>
 </head>
 <body>
@@ -1348,6 +1375,10 @@
 
 <div id="page-dashboard" class="page">
   <div class="dash-main">
+
+    <!-- COBRANZA -->
+    <div class="dash-section-label">Cobranza</div>
+    <div id="dash-cobranza"></div>
 
     <!-- Period selector — solo afecta ventas -->
     <div class="dash-period-row">
@@ -3206,6 +3237,7 @@ function setDashPeriod(p, btn) {
 }
 
 function renderDashboard() {
+  renderCobranza();
   const now          = new Date();
   const semanaActual = Math.ceil(now.getDate() / 7);
   const mesActual    = now.getMonth();
@@ -4980,6 +5012,157 @@ async function borrarCotizacion(id) {
     if (c?.portalCodigo) ptRef(c.portalCodigo).update({ cotizacionIds: firebase.firestore.FieldValue.arrayRemove(id) }).catch(() => {});
     toast('Cotización eliminada.');
   } catch (e) { toast('Error al eliminar.', 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   COBRANZA — deuda por antigüedad, deudores e ingresos mensuales
+═══════════════════════════════════════════════════════ */
+function cbFecha(v) {
+  if (!v) return null;
+  if (v.toDate) return v.toDate();
+  if (typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) { const [d, m, y] = v.split('/'); return new Date(+y, +m - 1, +d, 12); }
+  const d = new Date(v); return isNaN(d) ? null : d;
+}
+function cbSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((d.total || 0) - (d.montoPagado || 0), 0); }
+function cbMoney(n) { return '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+/* Cada cobro con su fecha: pagos parciales registrados + saldo final al marcar pagada */
+function cbCobros() {
+  const out = [];
+  Object.values(docsMap).forEach(d => {
+    const pagos = Array.isArray(d.pagos) ? d.pagos : [];
+    let sumaPagos = 0;
+    pagos.forEach(p => { const f = cbFecha(p.fecha); const m = Number(p.monto) || 0; if (f && m) { out.push({ f, m }); sumaPagos += m; } });
+    if (d.pagado || d.type === 'recibo') {
+      const resto = (d.total || 0) - sumaPagos;
+      if (resto > 0.009) out.push({ f: cbFecha(d.fechaPago) || cbFecha(d.fecha) || cbFecha(d.createdAt), m: resto });
+    } else if (d.pagadoParcial && (d.montoPagado || 0) > sumaPagos + 0.009) {
+      out.push({ f: cbFecha(d.createdAt) || cbFecha(d.fecha), m: (d.montoPagado || 0) - sumaPagos });
+    }
+  });
+  return out.filter(x => x.f);
+}
+function renderCobranza() {
+  const el = document.getElementById('dash-cobranza');
+  if (!el) return;
+  const hoy = new Date();
+  const dias = d => Math.max(0, Math.floor((hoy - (cbFecha(d.createdAt) || cbFecha(d.fecha) || hoy)) / 864e5));
+  const pendientes = Object.values(docsMap).filter(d => cbSaldo(d) > 0.009).map(d => ({ d, saldo: cbSaldo(d), dias: dias(d) }));
+  const totalDeuda = pendientes.reduce((a, x) => a + x.saldo, 0);
+
+  // Antigüedad
+  const tramos = [['0–15 días', 0, 15], ['16–30 días', 16, 30], ['31–60 días', 31, 60], ['Más de 60', 61, 1e9]]
+    .map(([l, a, b]) => { const xs = pendientes.filter(x => x.dias >= a && x.dias <= b); return { l, monto: xs.reduce((s, x) => s + x.saldo, 0), n: xs.length }; });
+  const maxTramo = Math.max(...tramos.map(t => t.monto), 1);
+  const vencido30 = tramos[2].monto + tramos[3].monto;
+  const tonos = ['#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a8a']; // un solo tono: más oscuro = más antiguo
+
+  // Ingresos por mes (últimos 12)
+  const cobros = cbCobros();
+  const meses = [];
+  for (let i = 11; i >= 0; i--) { const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1); meses.push({ y: d.getFullYear(), m: d.getMonth(), total: 0, n: 0 }); }
+  cobros.forEach(({ f, m }) => { const b = meses.find(x => x.y === f.getFullYear() && x.m === f.getMonth()); if (b) { b.total += m; b.n++; } });
+  const esteMes = meses[11].total, mesAnt = meses[10].total;
+  const variacion = mesAnt > 0 ? Math.round((esteMes - mesAnt) / mesAnt * 100) : null;
+  const NOMBRES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  // Deudores
+  const porCliente = {};
+  pendientes.forEach(x => {
+    const k = ptNorm(x.d.cli) || '—';
+    if (!porCliente[k]) porCliente[k] = { nombre: x.d.cli || '—', saldo: 0, dias: 0, docs: [] };
+    porCliente[k].saldo += x.saldo; porCliente[k].dias = Math.max(porCliente[k].dias, x.dias); porCliente[k].docs.push(x.d);
+  });
+  const deudores = Object.values(porCliente).sort((a, b) => b.saldo - a.saldo);
+  window._cbDeudores = deudores;
+
+  // Gráfico de barras (SVG)
+  const W = 560, H = 190, padL = 44, padB = 22, padT = 16, cw = (W - padL) / 12, bw = Math.min(26, cw - 10);
+  const maxMes = Math.max(...meses.map(x => x.total), 1);
+  const paso = Math.pow(10, Math.floor(Math.log10(maxMes)));
+  const tope = Math.ceil(maxMes / paso) * paso;
+  const y = v => padT + (H - padT - padB) * (1 - v / tope);
+  const ticks = [0, tope / 2, tope];
+  const iMax = meses.reduce((bi, x, i, arr) => x.total > arr[bi].total ? i : bi, 0);
+  const barras = meses.map((x, i) => {
+    const cx = padL + cw * i + cw / 2, top = y(x.total), h = Math.max(0, (H - padB) - top);
+    const r = Math.min(4, h);
+    const path = h > 0 ? `M${cx - bw / 2},${H - padB} V${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r} V${H - padB} Z` : '';
+    const etiqueta = (i === iMax || i === 11) && x.total > 0 ? `<text x="${cx}" y="${top - 5}" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">${cbMoney(x.total).replace('.00', '')}</text>` : '';
+    return `<g class="cb-bar" data-i="${i}">
+      <rect x="${padL + cw * i}" y="${padT}" width="${cw}" height="${H - padT - padB}" fill="transparent"></rect>
+      ${path ? `<path d="${path}" fill="#1438cc" opacity="${i === 11 ? 1 : 0.78}"></path>` : ''}
+      ${etiqueta}
+      <text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#64748b">${NOMBRES[x.m]}</text>
+    </g>`;
+  }).join('');
+  const grid = ticks.map(t => `<line x1="${padL}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#e8e8e4" stroke-width="1"></line>
+    <text x="${padL - 6}" y="${y(t) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${t >= 1000 ? '$' + (t / 1000).toFixed(t % 1000 ? 1 : 0) + 'k' : '$' + t}</text>`).join('');
+
+  el.innerHTML = `
+    <div class="cb-tiles">
+      <div class="cb-tile"><div class="cb-tile-l">Por cobrar</div><div class="cb-tile-v">${cbMoney(totalDeuda)}</div><div class="cb-tile-n">${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Con más de 30 días</div><div class="cb-tile-v" style="color:${vencido30 > 0 ? '#b91c1c' : 'var(--black)'}">${cbMoney(vencido30)}</div><div class="cb-tile-n">${totalDeuda > 0 ? Math.round(vencido30 / totalDeuda * 100) + '% de la deuda' : 'Nada atrasado'}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Cobrado este mes</div><div class="cb-tile-v">${cbMoney(esteMes)}</div><div class="cb-tile-n">${variacion === null ? 'Sin datos del mes anterior' : (variacion >= 0 ? '▲ ' : '▼ ') + Math.abs(variacion) + '% vs. ' + NOMBRES[meses[10].m]}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Clientes con deuda</div><div class="cb-tile-v">${deudores.length}</div><div class="cb-tile-n">${deudores[0] ? 'Mayor: ' + esc(deudores[0].nombre.split(' ')[0]) + ' ' + cbMoney(deudores[0].saldo) : '—'}</div></div>
+    </div>
+    <div class="cb-grid">
+      <div class="cb-card">
+        <div class="cb-title">Antigüedad de la deuda</div>
+        <div class="cb-sub">Días desde que se emitió cada factura pendiente</div>
+        ${tramos.map((t, i) => `<div class="cb-age">
+          <span class="cb-age-l">${t.l}</span>
+          <div class="cb-age-track" title="${t.n} factura(s)"><div class="cb-age-bar" style="width:${t.monto ? Math.max(3, t.monto / maxTramo * 100) : 0}%;background:${tonos[i]};"></div></div>
+          <span class="cb-age-v">${cbMoney(t.monto)}<span class="cb-age-c">${t.n} factura${t.n !== 1 ? 's' : ''}</span></span>
+        </div>`).join('')}
+      </div>
+      <div class="cb-card cb-chart" id="cb-chart">
+        <div class="cb-title">Ingresos cobrados por mes</div>
+        <div class="cb-sub">Últimos 12 meses · pagos registrados en facturas</div>
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cobrados por mes, últimos 12 meses">${grid}${barras}</svg>
+        <div class="cb-tip" id="cb-tip"></div>
+        <details style="margin-top:8px;"><summary style="font-size:11px;color:var(--text-soft);cursor:pointer;">Ver como tabla</summary>
+          <table class="cb-table" style="margin-top:6px;"><tr><th>Mes</th><th class="num">Cobrado</th><th class="num">Pagos</th></tr>
+          ${meses.slice().reverse().map(x => `<tr><td>${NOMBRES[x.m]} ${x.y}</td><td class="num">${cbMoney(x.total)}</td><td class="num">${x.n}</td></tr>`).join('')}</table>
+        </details>
+      </div>
+    </div>
+    <div class="cb-card" style="margin-bottom:22px;">
+      <div class="cb-title">Quién debe</div>
+      <div class="cb-sub">${deudores.length ? 'Ordenado por monto. Envía un recordatorio con los links de sus facturas.' : 'Nadie tiene saldo pendiente.'}</div>
+      ${deudores.length ? `<div style="overflow-x:auto;"><table class="cb-table">
+        <tr><th>Cliente</th><th class="num">Debe</th><th class="cb-hide-m">Facturas</th><th>Antigüedad</th><th></th></tr>
+        ${deudores.slice(0, 15).map((x, i) => `<tr>
+          <td><strong>${esc(x.nombre)}</strong></td>
+          <td class="num"><strong>${cbMoney(x.saldo)}</strong></td>
+          <td class="cb-hide-m">${x.docs.map(d => `<a href="#" onclick="openSheet(docsMap['${esc(d._fsId)}']);return false;" style="color:var(--blue);text-decoration:none;">${esc(d.docId || '')}</a>`).join(', ')}</td>
+          <td><span class="cb-days ${x.dias > 30 ? 'old' : x.dias > 15 ? 'mid' : ''}">${x.dias} día${x.dias !== 1 ? 's' : ''}</span></td>
+          <td style="text-align:right;"><button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,.2);" onclick="recordarPago(${i})">Recordar</button></td>
+        </tr>`).join('')}
+      </table></div>` : ''}
+    </div>`;
+
+  // Hover del gráfico
+  const tip = document.getElementById('cb-tip');
+  const card = document.getElementById('cb-chart');
+  card.querySelectorAll('.cb-bar').forEach(g => {
+    g.addEventListener('mouseenter', () => {
+      const x = meses[+g.dataset.i];
+      tip.innerHTML = `${NOMBRES[x.m]} ${x.y}<br><strong>${cbMoney(x.total)}</strong> · ${x.n} pago${x.n !== 1 ? 's' : ''}`;
+      const rc = card.getBoundingClientRect(), rb = g.getBoundingClientRect();
+      tip.style.left = (rb.left - rc.left + rb.width / 2) + 'px';
+      tip.style.top = (rb.top - rc.top + 18) + 'px';
+      tip.style.opacity = 1;
+      g.querySelector('path')?.setAttribute('opacity', 1);
+    });
+    g.addEventListener('mouseleave', () => { tip.style.opacity = 0; if (+g.dataset.i !== 11) g.querySelector('path')?.setAttribute('opacity', 0.78); });
+  });
+}
+function recordarPago(i) {
+  const x = (window._cbDeudores || [])[i];
+  if (!x) return;
+  const links = x.docs.slice(0, 5).map(d => `• ${d.docId || ''}: ${cbMoney(cbSaldo(d))}\n  https://adv.dgp-link.com/factura-publica.html?id=${d._fsId}`).join('\n');
+  const txt = `Hola ${x.nombre.split(' ')[0]}! Te escribimos de DGP Group para recordarte que tienes un saldo pendiente de ${cbMoney(x.saldo)}:\n\n${links}\n\nDesde cada enlace puedes ver los métodos de pago y subir tu comprobante. ¡Gracias!`;
+  window.open(`https://wa.me/${cotTelefono(x.nombre)}?text=${encodeURIComponent(txt)}`, '_blank');
 }
 
 /* ═══════════════════════════════════════════════════════
