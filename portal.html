@@ -377,6 +377,7 @@
     web:      'https://dgp-link.com'
   };
   const NUEVA_CONVERSACION_MS = 2 * 60 * 60 * 1000; // 2 h sin mensajes = conversación nueva
+  const CHAT_DURACION_MS = 48 * 60 * 60 * 1000;      // los mensajes del chat duran 48 h
 
   const ESTADOS_PROYECTO = {
     solicitado:  'Solicitado',
@@ -975,6 +976,10 @@
         <div class="contact-ico" style="background:#dcfce7;color:#15803d;">${I.wa}</div>
         <div><div class="contact-title">WhatsApp</div><div class="contact-sub">${CONTACTO.telefono}</div></div>
       </a>
+      <a class="contact" href="#" onclick="toggleChat(true);return false;">
+        <div class="contact-ico" style="background:#ede9fe;color:var(--violet);">${I.chat}</div>
+        <div><div class="contact-title">Chat en vivo</div><div class="contact-sub">Escríbenos aquí mismo</div></div>
+      </a>
 `;
   }
   function vCuenta() {
@@ -1032,8 +1037,10 @@
   function renderChat() {
     const body = document.getElementById('chat-body');
     if (!body) return;
-    const welcome = `<div class="chat-welcome">Hola ${esc(primerNombre())} 👋<br>Escríbenos tu consulta y te responderemos por aquí mismo.<br>También puedes escribirnos por WhatsApp al ${CONTACTO.telefono}.</div>`;
-    body.innerHTML = welcome + mensajes.map(m => `
+    const welcome = `<div class="chat-welcome">Hola ${esc(primerNombre())} 👋<br>Escríbenos tu consulta y te responderemos por aquí mismo.<br>También puedes escribirnos por WhatsApp al ${CONTACTO.telefono}.<br><span style="font-size:11px;color:var(--faint);">Los mensajes se borran automáticamente después de 48 horas.</span></div>`;
+    const limite = Date.now() - CHAT_DURACION_MS;
+    const visibles = mensajes.filter(m => { const d = toDate(m.fecha); return !d || d.getTime() > limite; });
+    body.innerHTML = welcome + visibles.map(m => `
       <div class="msg ${m.de === 'admin' ? 'admin' : 'cliente'}">
         ${m.de === 'admin' ? `<div class="msg-author">${esc(m.autor || 'DGP Group')}</div>` : ''}<div class="msg-text">${esc(m.texto)}</div>
         <div class="msg-time">${fmtTime(m.fecha)}</div>
@@ -1054,7 +1061,8 @@
     const esNueva = !mensajes.length || !ultima || (Date.now() - ultima.getTime()) > NUEVA_CONVERSACION_MS;
     try {
       const ref = db.collection('portal').doc(CODE);
-      await ref.collection('mensajes').add({ de: 'cliente', texto, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+      await ref.collection('mensajes').add({ de: 'cliente', texto, fecha: firebase.firestore.FieldValue.serverTimestamp(),
+        expiraAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + CHAT_DURACION_MS)) });
       await ref.update({
         chatNoLeidoAdmin: firebase.firestore.FieldValue.increment(1),
         ultimoMensaje: texto.slice(0, 140),

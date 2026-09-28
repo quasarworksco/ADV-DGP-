@@ -3914,6 +3914,8 @@ let _ptSub = { proyectos:[], suscripciones:[], archivos:[], mensajes:[] };
 let _ptUnsubs = [];
 let _ptPrevUnread = null;
 let _ptEdit = null;            // id en edición dentro del modal
+const PT_CHAT_MS = 48 * 60 * 60 * 1000;   // los mensajes del chat duran 48 h
+let _ptLimpiezaHecha = false;
 
 const PT_ICON = {
   copy: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
@@ -3973,6 +3975,7 @@ function initPortales() {
       });
     }
     _ptPrevUnread = unread;
+    if (!_ptLimpiezaHecha) { _ptLimpiezaHecha = true; limpiarChatsViejos(); }
     updatePortalBadge();
     renderPortalList();
     if (portalSel && document.getElementById('page-portal').classList.contains('active')) {
@@ -3981,6 +3984,20 @@ function initPortales() {
     }
     updatePortalHint();
   }, err => console.error('Portal listener error:', err));
+}
+
+/* Borra los mensajes del chat con más de 48 h (se ejecuta al abrir el sistema) */
+async function limpiarChatsViejos() {
+  const corte = firebase.firestore.Timestamp.fromDate(new Date(Date.now() - PT_CHAT_MS));
+  let borrados = 0;
+  for (const p of portalesList) {
+    try {
+      const snap = await ptRef(p._id).collection('mensajes').where('fecha', '<', corte).get();
+      await Promise.all(snap.docs.map(d => d.ref.delete()));
+      borrados += snap.size;
+    } catch (e) { console.warn('Limpieza de chat', p._id, e); }
+  }
+  if (borrados) console.info(`Chat: ${borrados} mensaje(s) con más de 48 h eliminados`);
 }
 
 function updatePortalBadge() {
@@ -4033,7 +4050,9 @@ function selectPortal(code, tab) {
     sub('suscripciones', byCreated);
     sub('archivos', byCreated);
     _ptUnsubs.push(ref.collection('mensajes').orderBy('fecha').onSnapshot(s => {
-      _ptSub.mensajes = s.docs.map(d => ({ _id: d.id, ...d.data() }));
+      const limite = Date.now() - PT_CHAT_MS;
+      _ptSub.mensajes = s.docs.map(d => ({ _id: d.id, ...d.data() }))
+        .filter(m => { const d = ptDate(m.fecha); return !d || d.getTime() > limite; });
       renderPortalDetail();
     }));
   }
@@ -4478,7 +4497,8 @@ async function enviarMensajePortal() {
   const autor = emp ? emp.nombre.split(' ')[0] + ' · DGP Group' : 'DGP Group';
   try {
     const ref = ptRef();
-    await ref.collection('mensajes').add({ de: 'admin', texto, autor, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.collection('mensajes').add({ de: 'admin', texto, autor, fecha: firebase.firestore.FieldValue.serverTimestamp(),
+      expiraAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + PT_CHAT_MS)) });
     input.value = '';
     await ref.update({
       chatNoLeidoCliente: firebase.firestore.FieldValue.increment(1),
