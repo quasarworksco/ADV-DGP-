@@ -5930,71 +5930,98 @@ function correoEsc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/<
 function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '', cuerpo = '', servicios = true, baja = false }) {
   const e = correoEsc;
   const serv = [
-    ['Páginas web', 'Sitios modernos, rápidos y listos para vender'],
-    ['Marketing digital', 'Redes sociales, anuncios y contenido que convierte'],
-    ['Branding y diseño', 'Logo, identidad y piezas que se recuerdan'],
-    ['Automatización', 'WhatsApp, bots y sistemas que trabajan por ti']
+    ['🌐', 'Páginas web', 'Sitios modernos que venden 24/7'],
+    ['📣', 'Marketing digital', 'Redes, anuncios y contenido'],
+    ['🎨', 'Branding y diseño', 'Identidad que se recuerda'],
+    ['⚡', 'Automatización', 'WhatsApp, bots y sistemas']
   ];
+  const fondo = 'background-color:#0a1a5c;background-image:linear-gradient(160deg,#050b2e 0%,#0b1f7a 38%,#1438cc 72%,#3b6dff 100%);';
+  const glass = 'background-color:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);';
+  const tile = ([ic, t, d]) => `<td width="50%" valign="top" style="padding:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${glass}border-radius:16px;"><tr><td style="padding:16px 16px 15px;">
+        <div style="font-size:22px;line-height:1;">${ic}</div>
+        <div style="font-size:14px;font-weight:bold;color:#ffffff;margin-top:10px;">${t}</div>
+        <div style="font-size:12px;color:#b9c8ff;margin-top:3px;line-height:1.45;">${d}</div>
+      </td></tr></table></td>`;
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>
   a { color:#1438cc; }
   @media (prefers-color-scheme: dark) {
-    .bg-page { background:#070d1f !important; }
-    .bg-card { background:#0f1a36 !important; }
-    .bg-soft { background:#13224a !important; border-color:#1e3270 !important; }
+    .card { background-color:#0d1838 !important; border-color:rgba(143,176,255,.22) !important; }
+    .bg-soft { background-color:#13224a !important; border-color:#223a80 !important; }
     .tx-main { color:#f1f5ff !important; }
     .tx-body { color:#c7d2fe !important; }
     .tx-soft { color:#8ea0d6 !important; }
-    .ln { border-color:#1e3270 !important; }
+    .ln { border-color:#223a80 !important; }
     a.lnk { color:#8fb0ff !important; }
   }
-  @media (max-width:480px) { .pad { padding-left:20px !important; padding-right:20px !important; } .h1 { font-size:24px !important; } }
+  @media (max-width:520px) {
+    .pad { padding-left:22px !important; padding-right:22px !important; }
+    .h1 { font-size:26px !important; }
+    .tl td { display:block !important; width:100% !important; }
+  }
 </style></head>
-<body class="bg-page" style="margin:0;padding:0;background:#eef2fb;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-page" bgcolor="#eef2fb" style="background:#eef2fb;padding:28px 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-<tr><td align="center">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-card" bgcolor="#ffffff" style="max-width:580px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(20,56,204,.10);">
-    <tr><td class="pad" bgcolor="#1438cc" style="background:#1438cc;background-image:linear-gradient(135deg,#0b1f7a 0%,#1438cc 55%,#2f5bff 100%);padding:28px 32px 30px;">
+<body style="margin:0;padding:0;${fondo}">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0a1a5c" style="${fondo}font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;">
+<tr><td align="center" style="padding:34px 14px 40px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+
+    <!-- Marca -->
+    <tr><td class="pad" style="padding:0 8px 26px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td style="width:46px;padding-right:12px;"><img src="https://adv.dgp-link.com/logo-white.png" width="44" height="44" alt="DGP" style="display:block;border:0;"></td>
-        <td style="color:#ffffff;font-size:16px;font-weight:bold;letter-spacing:2px;">DGP GROUP USA<br><span style="font-size:11px;font-weight:normal;letter-spacing:1px;color:#c7d4ff;">Servicios Digitales Profesionales</span></td>
-        ${etiqueta ? `<td align="right" style="vertical-align:top;"><span style="display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#ffffff;font-size:10px;font-weight:bold;letter-spacing:1.5px;padding:5px 10px;border-radius:20px;">${e(etiqueta)}</span></td>` : ''}
+        <td style="width:52px;"><table role="presentation" cellpadding="0" cellspacing="0" style="${glass}border-radius:14px;"><tr><td style="padding:8px;"><img src="https://adv.dgp-link.com/logo-white.png" width="32" height="32" alt="DGP" style="display:block;border:0;"></td></tr></table></td>
+        <td style="padding-left:12px;color:#ffffff;font-size:15px;font-weight:bold;letter-spacing:2.5px;">DGP GROUP USA<br><span style="font-size:11px;font-weight:normal;letter-spacing:1px;color:#b9c8ff;">Servicios Digitales Profesionales</span></td>
+        ${etiqueta ? `<td align="right"><span style="display:inline-block;${glass}color:#ffffff;font-size:10px;font-weight:bold;letter-spacing:1.8px;padding:7px 13px;border-radius:30px;">${e(etiqueta)}</span></td>` : ''}
       </tr></table>
-      ${titulo ? `<div class="h1" style="color:#ffffff;font-size:28px;font-weight:bold;letter-spacing:.5px;margin-top:24px;line-height:1.25;">${e(titulo)}</div>` : ''}
-      ${subtitulo ? `<div style="color:#c7d4ff;font-size:13px;letter-spacing:1px;margin-top:6px;">${e(subtitulo)}</div>` : ''}
     </td></tr>
-    <tr><td style="height:4px;background:#2f5bff;background-image:linear-gradient(90deg,#2f5bff,#60a5fa,#2f5bff);font-size:0;line-height:0;">&nbsp;</td></tr>
-    ${cuerpo}
-    ${servicios ? `<tr><td class="pad" style="padding:6px 32px 28px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-soft" bgcolor="#f3f6ff" style="background:#f3f6ff;border:1px solid #dfe6ff;border-radius:14px;">
-        <tr><td style="padding:20px 22px 6px;">
-          <div class="tx-soft" style="font-size:10px;font-weight:bold;letter-spacing:2px;color:#1438cc;">CONOCE TODO LO QUE HACEMOS</div>
-          <div class="tx-main" style="font-size:17px;font-weight:bold;color:#0a0f1e;margin-top:6px;">Hacemos crecer tu negocio en digital</div>
-        </td></tr>
-        <tr><td style="padding:8px 22px 4px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            ${serv.map(([t, d]) => `<tr><td style="width:22px;vertical-align:top;padding:7px 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f5bff;margin-top:6px;"></span></td>
-              <td style="padding:7px 0;"><span class="tx-main" style="font-size:14px;font-weight:bold;color:#0a0f1e;">${t}</span><br><span class="tx-soft" style="font-size:12.5px;color:#64748b;">${d}</span></td></tr>`).join('')}
-          </table>
-        </td></tr>
-        <tr><td style="padding:10px 22px 22px;">
-          <a href="${WEB_DGP}" style="display:inline-block;background:#ffffff;color:#1438cc;border:1.5px solid #1438cc;text-decoration:none;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:10px;">Ver servicios en dgpglobalgroup.com →</a>
-        </td></tr>
-      </table>
+
+    <!-- Título -->
+    ${titulo ? `<tr><td class="pad" style="padding:0 8px 24px;">
+      <div class="h1" style="color:#ffffff;font-size:34px;font-weight:800;line-height:1.15;letter-spacing:-.5px;">${e(titulo)}</div>
+      ${subtitulo ? `<div style="color:#b9c8ff;font-size:13px;letter-spacing:1.5px;margin-top:8px;">${e(subtitulo)}</div>` : ''}
     </td></tr>` : ''}
-    <tr><td class="pad ln" style="padding:22px 32px 26px;text-align:center;border-top:1px solid #eef2f7;">
-      <div class="tx-soft" style="font-size:12.5px;line-height:1.7;color:#64748b;">
-        ¿Dudas? Responde a este correo o escríbenos por WhatsApp<br>
-        <a class="lnk" href="https://wa.me/12398231738" style="color:#1438cc;font-weight:bold;text-decoration:none;">+1 (239) 823-1738</a> &nbsp;·&nbsp;
-        <a class="lnk" href="${WEB_DGP}" style="color:#1438cc;font-weight:bold;text-decoration:none;">dgpglobalgroup.com</a>
-      </div>
-      <div class="tx-main" style="font-size:12px;color:#0a0f1e;font-weight:bold;letter-spacing:1px;margin-top:12px;">DGP GROUP USA</div>
-      ${baja ? `<div class="tx-soft" style="font-size:11px;color:#94a3b8;margin-top:10px;line-height:1.5;">Recibes este correo porque eres cliente de DGP Group USA.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
+
+    <!-- Tarjeta de cristal -->
+    <tr><td style="padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);border-radius:26px;"><tr><td style="padding:7px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #ffffff;border-radius:20px;box-shadow:0 20px 50px rgba(3,10,40,.35);">
+          ${cuerpo}
+        </table>
+      </td></tr></table>
     </td></tr>
+
+    ${servicios ? `<!-- Servicios -->
+    <tr><td class="pad" style="padding:34px 8px 6px;">
+      <div style="font-size:10px;font-weight:bold;letter-spacing:2.5px;color:#9fb4ff;">CONOCE TODO LO QUE HACEMOS</div>
+      <div style="font-size:21px;font-weight:800;color:#ffffff;margin-top:6px;letter-spacing:-.3px;">Hacemos crecer tu negocio en digital</div>
+    </td></tr>
+    <tr><td style="padding:8px 2px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="tl"><tr>${tile(serv[0])}${tile(serv[1])}</tr><tr>${tile(serv[2])}${tile(serv[3])}</tr></table>
+    </td></tr>
+    <tr><td align="center" style="padding:18px 8px 0;">
+      <a href="${WEB_DGP}" style="display:inline-block;background-color:#ffffff;color:#0b1f7a;text-decoration:none;font-size:14px;font-weight:bold;padding:14px 28px;border-radius:40px;box-shadow:0 8px 24px rgba(3,10,40,.3);">Visita dgpglobalgroup.com &nbsp;→</a>
+    </td></tr>` : ''}
+
+    <!-- Pie -->
+    <tr><td align="center" class="pad" style="padding:34px 8px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="${glass}border-radius:40px;"><tr>
+        <td style="padding:10px 18px;font-size:12.5px;"><a href="https://wa.me/12398231738" style="color:#ffffff;text-decoration:none;font-weight:bold;">💬 WhatsApp</a></td>
+        <td style="padding:10px 4px;color:rgba(255,255,255,.35);">|</td>
+        <td style="padding:10px 18px;font-size:12.5px;"><a href="${WEB_DGP}" style="color:#ffffff;text-decoration:none;font-weight:bold;">🌐 dgpglobalgroup.com</a></td>
+      </tr></table>
+      <div style="font-size:12px;color:#b9c8ff;margin-top:16px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" style="color:#ffffff;text-decoration:none;">+1 (239) 823-1738</a></div>
+      <div style="font-size:11px;color:#8ea0d6;margin-top:12px;letter-spacing:2px;font-weight:bold;">© ${new Date().getFullYear()} DGP GROUP USA</div>
+      ${baja ? `<div style="font-size:11px;color:#8ea0d6;margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Group USA.<br>Si no deseas recibir más novedades, responde con la palabra <strong style="color:#ffffff;">BAJA</strong>.</div>` : ''}
+    </td></tr>
+
   </table>
 </td></tr></table></body></html>`;
+}
+function correoBoton(texto, link) {
+  const e = correoEsc;
+  return `<a href="${e(link)}" style="display:inline-block;background-color:#1438cc;background-image:linear-gradient(135deg,#0b1f7a 0%,#1438cc 50%,#3b6dff 100%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:16px 38px;border-radius:40px;box-shadow:0 10px 26px rgba(20,56,204,.35);">${e(texto)} &nbsp;→</a>`;
 }
 function correoHTML(tipo, doc, mensaje, link) {
   const e = correoEsc;
@@ -6002,37 +6029,37 @@ function correoHTML(tipo, doc, mensaje, link) {
   const etiqueta = { factura: doc.pagadoParcial ? 'ABONO RECIBIDO' : 'PENDIENTE DE PAGO', recibo: '✓ PAGADO', cotizacion: 'PROPUESTA' }[tipo];
   const boton = { factura: 'Ver y pagar factura', recibo: 'Ver mi recibo', cotizacion: 'Ver y aceptar cotización' }[tipo];
   const saldo = tipo === 'factura' && doc.pagadoParcial ? cbSaldo(doc) : null;
-  const fecha = doc.fecha ? String(doc.fecha) : '';
+  const monto = (saldo !== null ? saldo : (doc.total || 0)).toFixed(2);
   const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
   const filas = (doc.items || []).map(it => `<tr>
-      <td class="tx-main ln" style="padding:11px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#0a0f1e;">${e(it.s)}${(it.c || 1) > 1 ? ` <span class="tx-soft" style="color:#64748b;">× ${it.c}</span>` : ''}</td>
-      <td class="tx-main ln" style="padding:11px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#0a0f1e;text-align:right;white-space:nowrap;">$${(it.t || 0).toFixed(2)}</td></tr>`).join('');
-  const dato = (l, v) => v ? `<td style="padding:0 16px 0 0;vertical-align:top;"><div class="tx-soft" style="font-size:10px;letter-spacing:1.5px;color:#64748b;font-weight:bold;">${l}</div><div class="tx-main" style="font-size:13.5px;color:#0a0f1e;font-weight:bold;margin-top:3px;">${e(v)}</div></td>` : '';
+      <td class="tx-main ln" style="padding:13px 0;border-bottom:1px solid #edf1fa;font-size:14px;color:#0a0f1e;">${e(it.s)}${(it.c || 1) > 1 ? ` <span class="tx-soft" style="color:#64748b;">× ${it.c}</span>` : ''}</td>
+      <td class="tx-main ln" style="padding:13px 0;border-bottom:1px solid #edf1fa;font-size:14px;color:#0a0f1e;text-align:right;white-space:nowrap;font-weight:600;">$${(it.t || 0).toFixed(2)}</td></tr>`).join('');
+  const dato = (l, v) => v ? `<td valign="top" style="padding:12px 14px;"><div class="tx-soft" style="font-size:9.5px;letter-spacing:1.8px;color:#6b7bb0;font-weight:bold;">${l}</div><div class="tx-main" style="font-size:13.5px;color:#0a0f1e;font-weight:bold;margin-top:4px;">${e(v)}</div></td>` : '';
   const cuerpo = `
-    <tr><td class="pad tx-body" style="padding:28px 32px 8px;font-size:15px;line-height:1.65;color:#334155;">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
-    <tr><td class="pad" style="padding:14px 32px 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr>${dato('N°', doc.docId || '')}${dato('CLIENTE', doc.cli || '')}${dato('FECHA', fecha)}${tipo !== 'recibo' ? dato(tipo === 'cotizacion' ? 'VÁLIDA HASTA' : 'VENCE', vence) : ''}</tr></table>
+    <tr><td class="pad tx-body" style="padding:32px 34px 6px;font-size:15.5px;line-height:1.7;color:#334155;">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
+    <tr><td class="pad" style="padding:18px 34px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-soft" bgcolor="#f4f7ff" style="background-color:#f4f7ff;border:1px solid #e3e9ff;border-radius:16px;">
+        <tr>${dato('N°', doc.docId || '')}${dato('CLIENTE', doc.cli || '')}${dato('FECHA', doc.fecha ? String(doc.fecha) : '')}${tipo !== 'recibo' ? dato(tipo === 'cotizacion' ? 'VÁLIDA HASTA' : 'VENCE', vence) : ''}</tr>
+      </table>
     </td></tr>
-    <tr><td class="pad" style="padding:16px 32px 0;">
+    <tr><td class="pad" style="padding:22px 34px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr><td class="tx-soft ln" style="padding:0 0 8px;font-size:10px;font-weight:bold;letter-spacing:2px;color:#64748b;border-bottom:2px solid #1438cc;">DETALLE</td><td class="tx-soft ln" style="padding:0 0 8px;font-size:10px;font-weight:bold;letter-spacing:2px;color:#64748b;text-align:right;border-bottom:2px solid #1438cc;">MONTO</td></tr>
+        <tr><td class="tx-soft" style="padding:0 0 6px;font-size:9.5px;font-weight:bold;letter-spacing:2px;color:#6b7bb0;">SERVICIO</td><td class="tx-soft" style="padding:0 0 6px;font-size:9.5px;font-weight:bold;letter-spacing:2px;color:#6b7bb0;text-align:right;">MONTO</td></tr>
         ${filas}
         ${saldo !== null ? `<tr><td class="tx-soft" style="padding:12px 0 0;font-size:13px;color:#64748b;">Ya pagado</td><td style="padding:12px 0 0;font-size:13px;color:#059669;text-align:right;font-weight:bold;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
       </table>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-soft" bgcolor="#f3f6ff" style="background:#f3f6ff;border:1px solid #dfe6ff;border-radius:12px;margin-top:16px;">
-        <tr><td style="padding:16px 18px;font-size:11px;font-weight:bold;letter-spacing:2px;color:#1438cc;" class="tx-soft">${saldo !== null ? 'SALDO PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL A PAGAR'}</td>
-            <td class="tx-main" style="padding:16px 18px;font-size:26px;font-weight:bold;color:#0a0f1e;text-align:right;white-space:nowrap;">$${(saldo !== null ? saldo : (doc.total || 0)).toFixed(2)}</td></tr>
+    </td></tr>
+    <tr><td class="pad" style="padding:20px 34px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#1438cc" style="background-color:#1438cc;background-image:linear-gradient(135deg,#0b1f7a 0%,#1438cc 55%,#3b6dff 100%);border-radius:18px;">
+        <tr><td style="padding:20px 22px;">
+          <div style="font-size:10px;font-weight:bold;letter-spacing:2px;color:#b9c8ff;">${saldo !== null ? 'SALDO PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL A PAGAR'}</div>
+          <div style="font-size:12px;color:#dbe4ff;margin-top:3px;">USD</div></td>
+          <td align="right" style="padding:20px 22px;font-size:32px;font-weight:800;color:#ffffff;white-space:nowrap;letter-spacing:-.5px;">$${monto}</td></tr>
       </table>
     </td></tr>
-    <tr><td align="center" class="pad" style="padding:26px 32px 10px;">
-      <a href="${e(link)}" style="display:inline-block;background:#1438cc;background-image:linear-gradient(135deg,#1438cc,#2f5bff);color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:15px 34px;border-radius:12px;">${boton} →</a>
-      <div class="tx-soft" style="font-size:11.5px;color:#94a3b8;margin-top:10px;">o copia este enlace: <a class="lnk" href="${e(link)}" style="color:#1438cc;word-break:break-all;">${e(link)}</a></div>
-    </td></tr>
-    <tr><td style="height:18px;font-size:0;line-height:0;">&nbsp;</td></tr>`;
-  return correoMarco({
-    preheader: `${titulo} ${doc.docId || ''} · $${(saldo !== null ? saldo : (doc.total || 0)).toFixed(2)} · DGP Group USA`,
-    etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo
-  });
+    <tr><td align="center" class="pad" style="padding:28px 34px 8px;">${correoBoton(boton, link)}</td></tr>
+    <tr><td align="center" class="pad tx-soft" style="padding:4px 34px 30px;font-size:11.5px;color:#94a3b8;line-height:1.6;">¿El botón no abre? Copia este enlace:<br><a class="lnk" href="${e(link)}" style="color:#1438cc;word-break:break-all;">${e(link)}</a></td></tr>`;
+  return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Group USA`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
 }
 function abrirCorreo(coleccion, id) {
   const d = correoDatos(coleccion, id);
@@ -6103,11 +6130,11 @@ function campCuerpoHTML(titulo, mensaje, nombre, img, btnTxt, btnUrl) {
   return correoMarco({
     preheader: mensaje.replace(/\{nombre\}/gi, nombre || '').slice(0, 110),
     etiqueta: 'NOVEDADES', titulo, cuerpo: `
-    ${img ? `<tr><td class="pad" style="padding:26px 32px 0;"><img src="${e(img)}" width="516" alt="" style="display:block;width:100%;max-width:516px;height:auto;border-radius:12px;border:0;"></td></tr>` : ''}
-    <tr><td class="pad tx-body" style="padding:26px 32px 8px;font-size:15.5px;line-height:1.7;color:#334155;">${msg}</td></tr>
-    ${btnTxt && btnUrl ? `<tr><td align="center" class="pad" style="padding:20px 32px 26px;">
-      <a href="${e(btnUrl)}" style="display:inline-block;background:#1438cc;background-image:linear-gradient(135deg,#1438cc,#2f5bff);color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:15px 34px;border-radius:12px;">${e(btnTxt)} →</a>
-    </td></tr>` : '<tr><td style="height:16px;font-size:0;">&nbsp;</td></tr>'}`,
+    ${img ? `<tr><td style="padding:12px 12px 0;"><img src="${e(img)}" width="560" alt="" style="display:block;width:100%;max-width:560px;height:auto;border-radius:14px;border:0;"></td></tr>` : ''}
+    <tr><td class="pad tx-body" style="padding:30px 34px 8px;font-size:15.5px;line-height:1.75;color:#334155;">${msg}</td></tr>
+    ${btnTxt && btnUrl ? `<tr><td align="center" class="pad" style="padding:22px 34px 34px;">
+      ${correoBoton(btnTxt, btnUrl)}
+    </td></tr>` : '<tr><td style="height:22px;font-size:0;">&nbsp;</td></tr>'}`,
     baja: true
   });
 }
