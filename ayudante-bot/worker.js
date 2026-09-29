@@ -199,6 +199,7 @@ export default {
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (ruta === '/tarea') return handleTarea(request, env);
+    if (ruta === '/email') return handleEmail(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -665,7 +666,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-29';
+const WORKER_VERSION = '2026-09-29b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -706,6 +707,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   } catch (e) { out.checks.groq = { ok: false, error: e.message }; }
 
   // IA: leer el comprobante de prueba ($123.45)
+  out.checks.correo = (env.EMAIL_WEBHOOK && env.EMAIL_CLAVE) ? { ok: true } : { ok: false, error: 'Faltan EMAIL_WEBHOOK y EMAIL_CLAVE (ver correo/enviar-correo.gs)' };
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
   if (q.get('ia')) {
     try {
@@ -918,16 +920,8 @@ async function handleTarea(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
   if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
   try {
-    const idToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-    if (!idToken) return json(request, { error: 'Falta la sesión' }, 401);
-    const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
-    const look = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken })
-    }).then(r => r.json());
-    const email = look.users?.[0]?.email;
-    if (!email) return json(request, { error: 'Sesión no válida' }, 401);
-    const acceso = await fsGet(env, `accesos/${email}`, await firebaseLogin(env));
-    if (!acceso) return json(request, { error: 'Sin acceso' }, 403);
+    const v = await verificarEquipo(request, env);
+    if (v.error) return json(request, { error: v.error }, v.status);
     const { tarea } = await request.json().catch(() => ({}));
     if (tarea === 'respaldo') { const r = await enviarRespaldo(env); return json(request, { ok: true, mensaje: `Respaldo enviado a Telegram (${r.registros} registros) ✅` }); }
     if (tarea === 'diaria') {
@@ -935,5 +929,53 @@ async function handleTarea(request, env) {
       return json(request, { ok: true, mensaje: `Resumen enviado a Telegram · ${r.creadas} factura(s) de suscripción creada(s) ✅` });
     }
     return json(request, { error: 'Tarea desconocida' }, 400);
+  } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
+}
+
+/* Comprueba que la llamada viene de alguien del equipo (sesión de Firebase + correo en /accesos) */
+async function verificarEquipo(request, env) {
+  const idToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!idToken) return { error: 'Falta la sesión', status: 401 };
+  const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
+  const look = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken })
+  }).then(r => r.json()).catch(() => ({}));
+  const email = look.users?.[0]?.email;
+  if (!email) return { error: 'Sesión no válida', status: 401 };
+  const token = await firebaseLogin(env);
+  const acceso = await fsGet(env, `accesos/${email}`, token);
+  if (!acceso) return { error: 'Sin acceso', status: 403 };
+  return { email, token };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CORREO: POST /email {coleccion, id, para, asunto, html, texto}
+//  Lo envía desde tu Gmail a través de Google Apps Script
+//  (secretos EMAIL_WEBHOOK y EMAIL_CLAVE; ver correo/enviar-correo.gs)
+// ══════════════════════════════════════════════════════════════
+async function handleEmail(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+  try {
+    const v = await verificarEquipo(request, env);
+    if (v.error) return json(request, { error: v.error }, v.status);
+    if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return json(request, { error: 'El correo no está configurado (faltan EMAIL_WEBHOOK y EMAIL_CLAVE en Cloudflare)' }, 500);
+    const b = await request.json().catch(() => ({}));
+    const para = String(b.para || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) return json(request, { error: 'Correo del cliente no válido' }, 400);
+    if (!['documentos', 'cotizaciones'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
+    const res = await fetch(env.EMAIL_WEBHOOK, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: String(b.html || ''), texto: String(b.texto || ''), nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
+    });
+    const r = await res.json().catch(() => ({ ok: false, error: 'Google respondió algo inesperado (revisa que la URL termine en /exec y que el acceso sea "Cualquier usuario")' }));
+    if (!r.ok) return json(request, { error: 'Gmail: ' + (r.error || 'no se pudo enviar') }, 502);
+    // Registrar el envío en el documento
+    const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+    await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, {
+      method: 'POST', headers: { Authorization: `Bearer ${v.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ writes: [{ transform: { document: `${base}/${b.coleccion}/${b.id}`, fieldTransforms: [{ fieldPath: 'correos', appendMissingElements: { values: [toValue({ para, fecha: new Date().toISOString(), por: v.email, asunto: String(b.asunto || '').slice(0, 200) })] } }] } }] })
+    }).catch(() => {});
+    return json(request, { ok: true, restantes: r.restantes ?? null });
   } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
 }

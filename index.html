@@ -2907,6 +2907,7 @@ function openSheet(doc) {
     actions.innerHTML = `
       <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
       <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Correo</button>
       <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
       <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Registrar Pago</button>
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
@@ -2918,6 +2919,7 @@ function openSheet(doc) {
     actions.innerHTML = `
       <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
       <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Correo</button>
       <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
       <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pago parcial</button>
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
@@ -2931,7 +2933,7 @@ function openSheet(doc) {
       <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
       <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
       <button class="btn-sheet" style="background:#f0fdf4;color:#059669;border-color:rgba(5,150,105,0.3);display:inline-flex;align-items:center;gap:6px;" onclick="copiarLinkEncuesta('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Encuesta</button>
-      <button class="btn-sheet email"  onclick="enviarEmail('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
+      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
       <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
@@ -3145,7 +3147,7 @@ function renderHistorial() {
     return `<div class="hr-row" onclick="openSheetById('${id}')" title="Abrir ${esc(d.docId || '')}">
       <span class="hr-pill ${pill[1]}">${pill[0]}</span>
       <div class="hr-main">
-        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}</div>
+        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}">✉ Enviada</span>` : ''}</div>
         <div class="hr-cli">${esc(d.cli || '—')}</div>
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
@@ -5066,6 +5068,7 @@ function renderCotizaciones() {
         <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="window.open('${COT_URL}${esc(c._id)}','_blank')">Ver</button>
         <button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="navigator.clipboard.writeText('${COT_URL}${esc(c._id)}');toast('Link copiado 🔗')">Link</button>
         <button class="btn-sm" style="background:#dcfce7;color:#15803d;border-color:rgba(5,150,105,.2);" onclick="enviarCotizacionWA('${esc(c._id)}')">WhatsApp</button>
+        <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="abrirCorreo('cotizaciones','${esc(c._id)}')">Correo${(c.correos || []).length ? ' ✓' : ''}</button>
         ${est === 'facturada'
           ? (c.facturaId && docsMap[c.facturaId] ? `<button class="btn-sm" style="background:var(--off);color:var(--text-mid);border-color:var(--border);" onclick="openSheet(docsMap['${esc(c.facturaId)}'])">Ver factura</button>` : '')
           : `<button class="btn-sm" style="background:${est === 'aceptada' ? 'var(--green-dark)' : 'var(--blue)'};color:white;border-color:transparent;" onclick="convertirCotizacion('${esc(c._id)}')">Convertir en factura</button>`}
@@ -5126,6 +5129,7 @@ async function guardarCotizacion() {
       <p style="font-size:12px;color:var(--text-soft);margin-bottom:12px;line-height:1.5;">Envíale el link al cliente: podrá revisarla y aceptarla o rechazarla.${portalCli ? ' También le aparece en su portal.' : ''} Vence el ${new Date(data.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}.</p>
       <div class="ff"><label>Link de la cotización</label><input readonly value="${COT_URL}${esc(added.id)}" onclick="this.select()"></div>
       <button class="btn-edit-save" style="background:#16a34a;" onclick="enviarCotizacionWA('${esc(added.id)}')">Enviar por WhatsApp</button>
+      <button class="btn-edit-save" style="background:var(--blue);" onclick="setTimeout(() => abrirCorreo('cotizaciones','${esc(added.id)}'), 400)">Enviar por correo</button>
       <button class="btn-edit-cancel" onclick="navigator.clipboard.writeText('${COT_URL}${esc(added.id)}');toast('Link copiado 🔗')">Copiar link</button>
       <button class="btn-edit-cancel" onclick="closePortalModal();switchSubTab('cotizaciones', document.getElementById('tab-cot-btn'))">Ver cotizaciones</button>`);
   } catch (e) {
@@ -5431,7 +5435,8 @@ async function correrDiagnostico() {
     { id: 'firebase', titulo: 'El bot puede leer las facturas' },
     { id: 'groq', titulo: 'IA de respaldo (Groq)' },
     { id: 'ia', titulo: 'La IA lee un comprobante de prueba ($123.45)' },
-    { id: 'telegram', titulo: 'Mensaje de prueba enviado a Telegram' }
+    { id: 'telegram', titulo: 'Mensaje de prueba enviado a Telegram' },
+    { id: 'correo', titulo: 'Envío de correos desde tu Gmail' }
   ];
   _diagRes = tests.map(t => ({ ...t, estado: 'wait' }));
   diagRender();
@@ -5476,7 +5481,7 @@ async function correrDiagnostico() {
   finally { db.collection('cotizaciones').doc(sello).delete().catch(() => {}); }
 
   // 6+) Worker
-  const pendientesWorker = ['secretos', 'firebase', 'groq', 'ia', 'telegram'];
+  const pendientesWorker = ['secretos', 'firebase', 'groq', 'ia', 'telegram', 'correo'];
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60000);
     const res = await fetch(`${DIAG_WORKER}/diagnostico?ia=1&telegram=1`, { signal: ctrl.signal, cache: 'no-store' });
@@ -5495,6 +5500,7 @@ async function correrDiagnostico() {
       const PLACEMENT = 'Groq bloquea algunas regiones. En Cloudflare → <b>ayudante-dgp-bot</b> → <b>Settings</b> → <b>Placement</b>, cambia a <b>Smart</b> y guarda. Espera 10–15 minutos y vuelve a probar.' + (d.region ? ` (Esta vez el Worker corrió en: ${esc(d.region)})` : '');
       set('groq', c.groq?.ok, c.groq?.ok ? (c.groq.aviso || 'Modelo de visión: ' + c.groq.modelo) : c.groq?.error, c.groq?.bloqueoRegion ? PLACEMENT : 'Revisa el secreto <b>GROQ_API_KEY</b> en Cloudflare (que sea una clave válida de console.groq.com).');
       set('ia', c.ia?.ok, c.ia?.ok ? `Leyó $${Number(c.ia.monto).toFixed(2)} con ${c.ia.modelo}` : c.ia?.error, c.ia?.bloqueoRegion || /Forbidden/i.test(c.ia?.error || '') ? PLACEMENT : 'Si Groq está bien, puede ser un fallo temporal: vuelve a probar en unos minutos.');
+      set('correo', c.correo?.ok, c.correo?.ok ? 'Configurado (Gmail)' : (c.correo?.error || 'No configurado'), 'Sigue los pasos del archivo <b>correo/enviar-correo.gs</b> y agrega en Cloudflare los secretos <b>EMAIL_WEBHOOK</b> y <b>EMAIL_CLAVE</b>.');
       set('telegram', c.telegram?.ok, c.telegram?.ok ? 'Revisa tu Telegram: te llegó un mensaje de prueba' : c.telegram?.error, 'Asegúrate de que el bot de notificaciones siga activo en tu chat de Telegram (escríbele /start).');
     }
   } catch (e) {
@@ -5803,6 +5809,138 @@ function susDeCliente(nombre, portalCodigo) {
 function susBloque(lista, preset) {
   return `${lista.length ? `<div class="hr-list">${lista.map(s => susFila(s, true)).join('')}</div>` : '<div class="pt-empty" style="padding:18px;">Sin suscripciones.</div>'}
     <button class="btn-sm" style="margin-top:10px;background:var(--blue);color:white;border-color:var(--blue);display:inline-flex;align-items:center;gap:4px;" onclick='closePortalModal();openSuscripcionForm(null, ${JSON.stringify(preset).replace(/'/g, '&#39;')})'>${PT_ICON.plus} Nueva suscripción</button>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CORREO — enviar facturas, recibos y cotizaciones por email
+   Se envían desde tu Gmail a través del bot (ver correo/enviar-correo.gs)
+═══════════════════════════════════════════════════════ */
+let _correo = null;   // { coleccion, id, doc, tipo, link }
+function correoDestinatario(nombre) {
+  const n = ptNorm(nombre);
+  const c = clientesList.find(x => ptNorm(clNombre(x)) === n);
+  const p = portalesList.find(x => ptNorm(x.nombre) === n);
+  return (c?.correo || p?.correo || '').trim();
+}
+function correoDatos(coleccion, id) {
+  if (coleccion === 'cotizaciones') {
+    const doc = cotizacionesList.find(x => x._id === id);
+    return doc && { doc, tipo: 'cotizacion', link: COT_URL + id };
+  }
+  const doc = docsMap[id];
+  if (!doc) return null;
+  const tipo = (doc.pagado || doc.type === 'recibo') ? 'recibo' : 'factura';
+  return { doc, tipo, link: `https://adv.dgp-link.com/factura-publica.html?id=${id}` };
+}
+function correoTextos(tipo, doc) {
+  const nombre = (doc.cli || '').split(' ')[0] || 'hola';
+  const total = cbMoney(tipo === 'factura' ? (cbSaldo(doc) || doc.total) : doc.total);
+  const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long' }) : '';
+  if (tipo === 'cotizacion') return {
+    asunto: `Cotización ${doc.docId || ''} · DGP Group USA`,
+    mensaje: `Hola ${nombre},\n\nTe compartimos la cotización ${doc.docId || ''} por ${total}.${vence ? ` Es válida hasta el ${vence}.` : ''}\n\nPuedes revisarla y aceptarla desde el botón de abajo. Si quieres ajustar algo, responde a este correo.`
+  };
+  if (tipo === 'recibo') return {
+    asunto: `Recibo de pago ${doc.docId || ''} · DGP Group USA`,
+    mensaje: `Hola ${nombre},\n\n¡Gracias por tu pago! Aquí tienes tu recibo ${doc.docId || ''} por ${total}.`
+  };
+  return {
+    asunto: `Factura ${doc.docId || ''} · DGP Group USA`,
+    mensaje: `Hola ${nombre},\n\nTe compartimos tu factura ${doc.docId || ''} por ${total}.\n\nDesde el botón de abajo puedes ver el detalle, pagar con tu método preferido y subir tu comprobante.`
+  };
+}
+function correoHTML(tipo, doc, mensaje, link) {
+  const e = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const titulo = { factura: 'FACTURA', recibo: 'RECIBO DE PAGO', cotizacion: 'COTIZACIÓN' }[tipo];
+  const color = tipo === 'recibo' ? '#059669' : tipo === 'cotizacion' ? '#312e81' : '#0f172a';
+  const boton = { factura: 'Ver y pagar factura', recibo: 'Ver recibo', cotizacion: 'Ver y aceptar cotización' }[tipo];
+  const saldo = tipo === 'factura' && doc.pagadoParcial ? cbSaldo(doc) : null;
+  const filas = (doc.items || []).map(it => `<tr>
+      <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#0a0f1e;">${e(it.s)}${(it.c || 1) > 1 ? ` <span style="color:#64748b;">× ${it.c}</span>` : ''}</td>
+      <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#0a0f1e;text-align:right;white-space:nowrap;">$${(it.t || 0).toFixed(2)}</td></tr>`).join('');
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#f1f5f9;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;">
+<tr><td align="center">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
+    <tr><td style="background:${color};padding:26px 28px;">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:12px;"><img src="https://adv.dgp-link.com/logo-white.png" width="40" height="40" alt="DGP" style="display:block;"></td>
+        <td style="color:#ffffff;font-size:17px;font-weight:bold;letter-spacing:2px;">DGP GROUP USA<br><span style="font-size:11px;font-weight:normal;letter-spacing:1px;color:rgba(255,255,255,.65);">dgp-link.com · Servicios digitales</span></td>
+      </tr></table>
+      <div style="color:#ffffff;font-size:26px;font-weight:bold;letter-spacing:1px;margin-top:20px;">${titulo}</div>
+      <div style="color:rgba(255,255,255,.6);font-size:13px;letter-spacing:1px;margin-top:4px;">N° ${e(doc.docId || '')}</div>
+    </td></tr>
+    <tr><td style="padding:26px 28px 6px;font-size:15px;line-height:1.6;color:#334155;">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
+    <tr><td style="padding:10px 28px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${filas}
+        ${saldo !== null ? `<tr><td style="padding:10px 0 0;font-size:13px;color:#64748b;">Pagado</td><td style="padding:10px 0 0;font-size:13px;color:#059669;text-align:right;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
+        <tr><td style="padding:14px 0 0;font-size:13px;font-weight:bold;letter-spacing:2px;color:#64748b;">${saldo !== null ? 'PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL'}</td>
+            <td style="padding:14px 0 0;font-size:24px;font-weight:bold;color:#0a0f1e;text-align:right;">$${(saldo !== null ? saldo : (doc.total || 0)).toFixed(2)}</td></tr>
+      </table>
+    </td></tr>
+    <tr><td align="center" style="padding:26px 28px 30px;">
+      <a href="${e(link)}" style="display:inline-block;background:#1438cc;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 28px;border-radius:10px;">${boton}</a>
+    </td></tr>
+    <tr><td style="background:#f8fafc;padding:18px 28px;text-align:center;font-size:12px;line-height:1.6;color:#64748b;border-top:1px solid #eef2f7;">
+      ¿Dudas? Responde a este correo o escríbenos por WhatsApp al <a href="https://wa.me/12398231738" style="color:#1438cc;">+1 (239) 823-1738</a><br>
+      <strong style="color:#0a0f1e;">DGP Group USA</strong> — Servicios Digitales Profesionales
+    </td></tr>
+  </table>
+</td></tr></table></body></html>`;
+}
+function abrirCorreo(coleccion, id) {
+  const d = correoDatos(coleccion, id);
+  if (!d) { toast('No se encontró el documento.', 'err'); return; }
+  _correo = { coleccion, id, ...d };
+  const t = correoTextos(d.tipo, d.doc);
+  const previos = Array.isArray(d.doc.correos) ? d.doc.correos : [];
+  closeModal();
+  ptModal('Enviar por correo', `${d.doc.docId || ''} · ${d.doc.cli || ''}`, `
+    ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'IBM Plex Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
+    <div class="ff"><label>Para</label><input type="email" id="co-para" value="${esc(correoDestinatario(d.doc.cli))}" placeholder="correo@cliente.com"></div>
+    <div id="co-sin" style="font-size:11px;color:#b45309;margin:-6px 0 10px;display:none;">Este cliente no tiene correo guardado. Escríbelo aquí (se guarda en su ficha al enviar).</div>
+    <div class="ff"><label>Asunto</label><input id="co-asunto" maxlength="200" value="${esc(t.asunto)}"></div>
+    <div class="ff"><label>Mensaje</label><textarea id="co-msg" rows="5" style="resize:vertical;" oninput="correoPrevia()">${esc(t.mensaje)}</textarea></div>
+    <div class="ff"><label>Vista previa</label>
+      <iframe id="co-prev" title="Vista previa del correo" style="width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#f1f5f9;"></iframe></div>
+    <button class="btn-edit-save" id="co-btn" onclick="enviarCorreo()">Enviar correo</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+  document.getElementById('co-sin').style.display = correoDestinatario(d.doc.cli) ? 'none' : 'block';
+  correoPrevia();
+}
+function correoPrevia() {
+  if (!_correo) return;
+  const f = document.getElementById('co-prev');
+  if (f) f.srcdoc = correoHTML(_correo.tipo, _correo.doc, document.getElementById('co-msg').value, _correo.link);
+}
+async function enviarCorreo() {
+  if (!_correo) return;
+  const para = document.getElementById('co-para').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) { toast('Escribe un correo válido.', 'err'); return; }
+  const asunto = document.getElementById('co-asunto').value.trim() || 'DGP Group USA';
+  const mensaje = document.getElementById('co-msg').value;
+  const btn = document.getElementById('co-btn');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${DIAG_WORKER}/email`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ coleccion: _correo.coleccion, id: _correo.id, para, asunto,
+        html: correoHTML(_correo.tipo, _correo.doc, mensaje, _correo.link),
+        texto: `${mensaje}\n\n${_correo.link}\n\nDGP Group USA · WhatsApp +1 (239) 823-1738` })
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    // Guardar el correo en la ficha del cliente si no lo tenía
+    const c = clientesList.find(x => ptNorm(clNombre(x)) === ptNorm(_correo.doc.cli));
+    if (c && !c.correo) db.collection('clientes').doc(c._id).update({ correo: para }).catch(() => {});
+    logActividad('Correo enviado', `${_correo.doc.docId || ''} → ${para}`);
+    closePortalModal();
+    toast(`Correo enviado a ${para} ✅${d.restantes != null ? ` · te quedan ${d.restantes} hoy` : ''}`);
+  } catch (e) {
+    toast('No se pudo enviar: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Enviar correo';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
