@@ -666,7 +666,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-29d';
+const WORKER_VERSION = '2026-09-29e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -971,14 +971,15 @@ async function handleEmail(request, env) {
     const b = await request.json().catch(() => ({}));
     const para = String(b.para || '').trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) return json(request, { error: 'Correo del cliente no válido' }, 400);
-    if (!['documentos', 'cotizaciones'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
+    if (!['documentos', 'cotizaciones', 'campanas'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
       body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: String(b.html || ''), texto: String(b.texto || ''), nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
     });
     const r = await res.json().catch(() => ({ ok: false, error: 'Google respondió algo inesperado (revisa que la URL termine en /exec y que el acceso sea "Cualquier usuario")' }));
     if (!r.ok) return json(request, { error: 'Gmail: ' + (r.error || 'no se pudo enviar') }, 502);
-    // Registrar el envío en el documento
+    // Registrar el envío en el documento (las pruebas de campaña no se registran)
+    if (b.coleccion === 'campanas' && b.id === 'prueba') return json(request, { ok: true, restantes: r.restantes ?? null });
     const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
     await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, {
       method: 'POST', headers: { Authorization: `Bearer ${v.token}`, 'Content-Type': 'application/json' },
