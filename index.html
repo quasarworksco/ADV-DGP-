@@ -2578,6 +2578,7 @@ function initDocs() {
         Object.entries(newMap).forEach(([id, doc]) => {
           const prev = _prevDocsSnapshot[id];
           if (!prev) return;
+          if (doc.clienteCorreo && !prev.clienteCorreo) toast(`📧 ${doc.cli || 'Un cliente'} registró su correo: ${doc.clienteCorreo}`, 'ok');
           if (doc.brief && !prev.brief) {
             toast(`Brief recibido — ${doc.cli || doc.docId || ''}`, 'ok');
             _addNotifBadge();
@@ -2604,6 +2605,7 @@ function initDocs() {
       docsMap = newMap;
       updateHistorialBadge();
       if (document.getElementById('subtab-historial').style.display !== 'none') renderHistorial();
+      sincronizarCorreosClientes();
       if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
     }, err => {
       console.error('Docs listener error:', err);
@@ -2748,6 +2750,7 @@ async function saveDoc() {
     infoPago:   getInfoPago(),
     contrato:   document.getElementById('contrato-toggle').value === '1',
     items:      [...cart],
+    clienteCorreo: correoDestinatario(cli) || null,
     pagado:     type === 'recibo',
     fechaPago:  type === 'recibo' ? fecha : null,
     createdBy:  currentUser ? currentUser.email : 'desconocido',
@@ -3880,6 +3883,7 @@ let editClienteId = null;
 function initClientesCRM() {
   db.collection('clientes').orderBy('nombre').onSnapshot(snap => {
     clientesList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    sincronizarCorreosClientes();
     clientesCache = clientesList.map(c => [c.nombre, c.apellido].filter(Boolean).join(' '));
     refreshClientesDatalist();
     if (document.getElementById('page-clientes').classList.contains('active')) renderClientes();
@@ -5029,6 +5033,7 @@ function initCotizaciones() {
       });
     }
     _cotPrev = Object.fromEntries(cotizacionesList.map(c => [c._id, c.estado]));
+    sincronizarCorreosClientes();
     const pendientes = cotizacionesList.filter(c => c.estado === 'aceptada').length;
     const b = document.getElementById('cot-badge');
     if (b) { b.textContent = pendientes; b.style.display = pendientes ? 'inline' : 'none'; }
@@ -5107,6 +5112,7 @@ async function guardarCotizacion() {
       metodoPago: document.getElementById('metodo-pago').value || null,
       infoPago:   getInfoPago(),
       items:      [...cart],
+      clienteCorreo: correoDestinatario(cli) || null,
       estado:     'enviada',
       venceEl:    `${vence.getFullYear()}-${String(vence.getMonth() + 1).padStart(2, '0')}-${String(vence.getDate()).padStart(2, '0')}`,
       portalCodigo: portalCli ? portalCli._id : null,
@@ -5150,6 +5156,7 @@ async function convertirCotizacion(id) {
       fecha: fmtDate(), total: c.total || 0, moneda: c.moneda || 'usd', emisor: c.emisor || '',
       metodoPago: c.metodoPago || null, infoPago: c.infoPago || {}, contrato: false,
       items: c.items || [], pagado: false, fechaPago: null, cotizacionId: id,
+      clienteCorreo: c.clienteCorreo || correoDestinatario(c.cli) || null,
       createdBy: currentUser ? currentUser.email : 'desconocido',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -5430,6 +5437,7 @@ async function correrDiagnostico() {
     { id: 'privadas', titulo: 'Nadie de afuera puede listar tus facturas' },
     { id: 'comprobantes', titulo: 'Clientes pueden subir varios comprobantes (y no borrarlos)' },
     { id: 'cotizaciones', titulo: 'Clientes pueden aceptar cotizaciones' },
+    { id: 'correocli', titulo: 'Clientes pueden dejar su correo la primera vez' },
     { id: 'worker', titulo: 'Worker de Cloudflare actualizado' },
     { id: 'secretos', titulo: 'Secretos del Worker (GROQ_API_KEY, TG_TOKEN, FB_EMAIL, FB_PASSWORD)' },
     { id: 'firebase', titulo: 'El bot puede leer las facturas' },
@@ -5465,6 +5473,8 @@ async function correrDiagnostico() {
     let agregar = false, borrarBloqueado = false;
     try { await pub.collection('documentos').doc(sello).update({ comprobante_url: 'prueba-2', comprobantes: firebase.firestore.FieldValue.arrayUnion({ url: 'prueba-2' }) }); agregar = true; } catch (e) {}
     try { await pub.collection('documentos').doc(sello).update({ comprobantes: [] }); } catch (e) { borrarBloqueado = denegado(e); }
+    try { await pub.collection('documentos').doc(sello).update({ clienteCorreo: 'prueba@dgp-link.com', clienteTelefono: '', clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() }); set('correocli', true, 'Se guarda y se agenda en Clientes'); }
+    catch (e) { set('correocli', false, denegado(e) ? 'Las reglas no permiten guardar el correo' : e.message, REGLAS); }
     set('comprobantes', agregar && borrarBloqueado,
       !agregar ? 'Un cliente no pudo agregar un segundo comprobante' : !borrarBloqueado ? 'Un cliente podría borrar comprobantes' : 'Agregar: sí · Borrar: bloqueado', REGLAS);
   } catch (e) { set('comprobantes', false, e.message, REGLAS); }
@@ -5781,6 +5791,7 @@ async function facturarSuscripcion(id) {
       metodoPago: null, infoPago: {}, contrato: false,
       items: [{ s: `${susNombre(s)} (${susPeriodoTexto(s)})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: id, periodo: s.proximoPago || todayISO(),
+      clienteCorreo: correoDestinatario(s.cliente) || null,
       createdBy: currentUser ? currentUser.email : 'desconocido',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -5820,7 +5831,41 @@ function correoDestinatario(nombre) {
   const n = ptNorm(nombre);
   const c = clientesList.find(x => ptNorm(clNombre(x)) === n);
   const p = portalesList.find(x => ptNorm(x.nombre) === n);
-  return (c?.correo || p?.correo || '').trim();
+  const enDoc = Object.values(docsMap).find(d => d.clienteCorreo && ptNorm(d.cli) === n)
+    || cotizacionesList.find(d => d.clienteCorreo && ptNorm(d.cli) === n);
+  return (c?.correo || p?.correo || enDoc?.clienteCorreo || '').trim();
+}
+
+/* El correo que el cliente deja al abrir su factura/cotización se agenda solo en Clientes y en su portal */
+const _correosSincronizados = new Set();
+let _syncCorreosTimer = null;
+function sincronizarCorreosClientes() {
+  clearTimeout(_syncCorreosTimer);
+  _syncCorreosTimer = setTimeout(async () => {
+    if (!clientesList.length && !Object.keys(docsMap).length) return;
+    const fuentes = [...Object.values(docsMap), ...cotizacionesList].filter(d => d.clienteCorreo && d.cli);
+    for (const d of fuentes) {
+      const n = ptNorm(d.cli);
+      const clave = n + '|' + d.clienteCorreo;
+      if (_correosSincronizados.has(clave)) continue;
+      _correosSincronizados.add(clave);
+      try {
+        const c = clientesList.find(x => ptNorm(clNombre(x)) === n);
+        if (c) {
+          const upd = {};
+          if (!c.correo) upd.correo = d.clienteCorreo;
+          if (!c.telefono && d.clienteTelefono) upd.telefono = d.clienteTelefono;
+          if (Object.keys(upd).length) await db.collection('clientes').doc(c._id).update(upd);
+        } else {
+          const partes = String(d.cli).trim().split(/\s+/);
+          const id = n.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+          if (id) await db.collection('clientes').doc(id).set({ nombre: partes[0], apellido: partes.slice(1).join(' '), correo: d.clienteCorreo, telefono: d.clienteTelefono || '', createdAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: 'cliente' }, { merge: true });
+        }
+        const p = portalesList.find(x => ptNorm(x.nombre) === n);
+        if (p && !p.correo) await ptRef(p._id).update({ correo: d.clienteCorreo });
+      } catch (e) { console.warn('Agendar correo', d.cli, e); _correosSincronizados.delete(clave); }
+    }
+  }, 800);
 }
 function correoDatos(coleccion, id) {
   if (coleccion === 'cotizaciones') {

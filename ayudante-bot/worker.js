@@ -666,7 +666,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-29b';
+const WORKER_VERSION = '2026-09-29c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -830,6 +830,13 @@ async function tareaDiaria(env) {
     const p = portales.find(x => normNombre(x.nombre) === n);
     return String(c?.telefono || p?.telefono || '').replace(/[^0-9]/g, '');
   };
+  const correoDe = nombre => {
+    const n = normNombre(nombre);
+    const c = clientes.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n);
+    const p = portales.find(x => normNombre(x.nombre) === n);
+    const d = docs.find(x => x.clienteCorreo && normNombre(x.cli) === n);
+    return c?.correo || p?.correo || d?.clienteCorreo || null;
+  };
   const wa = (nombre, texto) => `https://wa.me/${telDe(nombre)}?text=${encodeURIComponent(texto)}`;
   const linkFac = id => `${SITIO}/factura-publica.html?id=${id}`;
 
@@ -850,6 +857,7 @@ async function tareaDiaria(env) {
       metodoPago: null, infoPago: {}, contrato: false,
       items: [{ s: `${nombre} (${periodoTxt})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: s._id, periodo: s.proximoPago,
+      clienteCorreo: correoDe(s.cliente),
       portalCodigo: s.portalCodigo || null, createdBy: 'bot', createdAt: new Date()
     };
     const id = await fsCreate(env, 'documentos', docData, token);

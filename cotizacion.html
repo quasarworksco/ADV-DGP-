@@ -130,10 +130,61 @@
         return;
       }
       cot = { _id: id, ...snap.data() };
-      render();
+      if (!cot.clienteCorreo && estadoActual(cot) === 'enviada') pedirCorreo(document.getElementById('card'), cot, 'cotizaciones', id, render);
+      else render();
     } catch (e) {
       card.innerHTML = '<div class="missing">No pudimos cargar la cotización. Revisa tu conexión e intenta de nuevo.</div>';
     }
+  }
+
+  /* ── Primera vez: pedir el correo del cliente antes de mostrar el documento ── */
+  function pedirCorreo(card, doc, coleccion, id, alListo) {
+    const tipo = coleccion === 'cotizaciones' ? 'cotización' : 'factura';
+    const nombre = String(doc.cli || '').split(' ')[0];
+    const campo = 'width:100%;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;box-sizing:border-box;';
+    const etiqueta = 'display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:6px;';
+    card.innerHTML = `
+      <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:30px 32px 26px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+          <img src="/logo-white.png" alt="DGP Group" style="width:42px;height:42px;object-fit:contain;">
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff;line-height:1;">DGP GROUP USA</div>
+          <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:3px;">dgp-link.com · Servicios digitales</div></div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:1px;line-height:1;">TU ${tipo.toUpperCase()}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:6px;">N° ${String(doc.docId || id).replace(/[<>&"]/g, '')}</div>
+      </div>
+      <div style="padding:28px 32px 30px;">
+        <div style="font-size:17px;font-weight:700;color:#0a0f1e;margin-bottom:6px;">Hola${nombre ? ' ' + nombre.replace(/[<>&"]/g, '') : ''} 👋</div>
+        <p style="font-size:13px;color:#475569;line-height:1.6;margin:0 0 20px;">Antes de ver tu ${tipo}, déjanos tu correo. Ahí te enviaremos tus facturas, recibos y avisos de tus servicios.</p>
+        <label style="${etiqueta}" for="g-correo">Correo electrónico *</label>
+        <input type="email" id="g-correo" autocomplete="email" placeholder="tucorreo@ejemplo.com" style="${campo}">
+        <label style="${etiqueta}" for="g-tel">WhatsApp (opcional)</label>
+        <input type="tel" id="g-tel" autocomplete="tel" placeholder="+1 305 000 0000" style="${campo}">
+        <div id="g-err" style="font-size:12px;color:#dc2626;min-height:16px;margin:-4px 0 8px;"></div>
+        <button id="g-btn" style="width:100%;padding:14px;border:0;border-radius:11px;background:#1438cc;color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;">Ver mi ${tipo}</button>
+        <p style="font-size:11px;color:#94a3b8;text-align:center;margin:14px 0 0;">Solo lo usamos para enviarte información de tus servicios.</p>
+      </div>`;
+    const guardar = async () => {
+      const correo = document.getElementById('g-correo').value.trim().toLowerCase();
+      const tel = document.getElementById('g-tel').value.trim().slice(0, 40);
+      const err = document.getElementById('g-err');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) || correo.length > 120) { err.textContent = 'Escribe un correo válido para continuar.'; return; }
+      const btn = document.getElementById('g-btn');
+      btn.disabled = true; btn.textContent = 'Guardando…'; err.textContent = '';
+      try {
+        await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
+        doc.clienteCorreo = correo; doc.clienteTelefono = tel;
+        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: TG_CHAT_ID, text: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
+        alListo();
+      } catch (e) {
+        btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
+        err.textContent = 'No pudimos guardar tu correo. Intenta de nuevo.';
+      }
+    };
+    document.getElementById('g-btn').onclick = guardar;
+    ['g-correo', 'g-tel'].forEach(i => document.getElementById(i).addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); }));
+    setTimeout(() => document.getElementById('g-correo')?.focus(), 50);
   }
 
   function render() {

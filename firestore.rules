@@ -14,6 +14,16 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
+    // El correo que deja el cliente la primera vez es válido
+    function correoClienteValido() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['clienteCorreo', 'clienteTelefono']) || (
+        request.resource.data.clienteCorreo is string
+        && request.resource.data.clienteCorreo.size() <= 120
+        && request.resource.data.clienteCorreo.matches('^[^@ ]+@[^@ ]+[.][^@ ]+$')
+        && (!('clienteTelefono' in request.resource.data) || (request.resource.data.clienteTelefono is string && request.resource.data.clienteTelefono.size() <= 40))
+      );
+    }
+
     // ── Lista de acceso del equipo (se edita desde la consola de Firebase) ──
     match /accesos/{email} {
       allow get: if request.auth != null && request.auth.token.email == email;
@@ -32,8 +42,12 @@ service cloud.firestore {
           'contratoFirmado',
           'contratoFirmadoPor',
           'contratoFechaFirma',
-          'encuestaCompletada'
+          'encuestaCompletada',
+          'clienteCorreo',
+          'clienteTelefono',
+          'clienteCorreoAt'
         ])
+        && correoClienteValido()
         // Los comprobantes solo se pueden agregar, nunca borrar (máx. 30)
         && (!('comprobantes' in request.resource.data) || (
           request.resource.data.comprobantes is list
@@ -52,6 +66,9 @@ service cloud.firestore {
         resource.data.estado == 'enviada'
         && request.resource.data.estado in ['aceptada', 'rechazada']
         && onlyChanges(['estado', 'respondidoAt', 'respuestaNota', 'respondidoPor'])
+      ) || (
+        // El cliente deja su correo la primera vez que abre la cotización
+        onlyChanges(['clienteCorreo', 'clienteTelefono', 'clienteCorreoAt']) && correoClienteValido()
       );
     }
 
