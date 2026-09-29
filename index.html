@@ -1211,7 +1211,35 @@
     .cb-days.old { background:#fef2f2; color:#b91c1c; }
     .cb-days.mid { background:#fffbeb; color:#b45309; }
     @media (max-width:900px) { .cb-tiles { grid-template-columns:repeat(2,1fr); } .cb-grid { grid-template-columns:1fr; } .cb-hide-m { display:none; } }
-  </style>
+  
+/* Campañas: lista de destinatarios */
+.cp-para { border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; background:#fff; }
+.cp-top { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--border); background:var(--off); }
+.cp-tags { display:flex; gap:6px; flex-wrap:wrap; }
+.cp-chip { font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:#fff; color:var(--text-mid, #475569); cursor:pointer; }
+.cp-chip.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+.cp-acc { display:flex; gap:4px; }
+.cp-acc button { font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; background:none; border:none; color:var(--blue); cursor:pointer; padding:4px 6px; border-radius:6px; }
+.cp-acc button:hover { background:rgba(20,56,204,.08); }
+.cp-lista { max-height:240px; overflow-y:auto; overflow-x:hidden; }
+.cp-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.cp-row:last-child { border-bottom:none; }
+.cp-row:hover { background:rgba(20,56,204,.04); }
+.cp-row.on { background:rgba(20,56,204,.06); }
+.cp-row.baja { opacity:.5; cursor:default; }
+.cp-check { flex-shrink:0; width:18px; height:18px; border-radius:5px; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; background:#fff; }
+.cp-row.on .cp-check { background:var(--blue); border-color:var(--blue); }
+.cp-av { flex-shrink:0; width:30px; height:30px; border-radius:50%; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Sans',sans-serif; }
+.cp-info { flex:1; min-width:0; display:flex; flex-direction:column; font-family:'IBM Plex Sans',sans-serif; }
+.cp-nom { font-size:13px; font-weight:600; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:none; letter-spacing:0; }
+.cp-nom em { font-style:normal; font-weight:500; color:#b45309; font-size:11px; }
+.cp-mail { font-size:11.5px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cp-tag { flex-shrink:0; font-size:10px; font-weight:600; background:rgba(20,56,204,.08); color:var(--blue); padding:2px 8px; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; }
+.cp-baja { flex-shrink:0; font-family:'IBM Plex Sans',sans-serif; font-size:10.5px; font-weight:600; color:var(--text-soft); background:none; border:1px solid var(--border); border-radius:8px; padding:4px 9px; cursor:pointer; }
+.cp-baja:hover { color:#b91c1c; border-color:rgba(185,28,28,.35); background:rgba(185,28,28,.05); }
+.cp-cuenta { font-size:11px; color:var(--text-soft); padding:9px 12px; border-top:1px solid var(--border); background:var(--off); font-family:'IBM Plex Sans',sans-serif; }
+@media (max-width:560px) { .cp-tag { display:none; } }
+</style>
 </head>
 <body>
 
@@ -1576,7 +1604,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
         <button class="btn-nuevo-cliente" id="btn-unificar" onclick="openUnificarClientes()" style="display:none;background:var(--amber-light);color:var(--amber);border:1.5px solid rgba(217,119,6,.3);"></button>
-        <button class="btn-nuevo-cliente" onclick="openCampana()" style="background:var(--surface);color:var(--blue);border:1.5px solid var(--blue);"><i class="fa-solid fa-paper-plane"></i> Campaña por correo</button>
+        <button class="btn-nuevo-cliente" onclick="openCampana()" style="background:#fff;color:var(--blue);border:1.5px solid var(--blue);"><i class="fa-solid fa-paper-plane"></i> Campaña por correo</button>
         <button class="btn-nuevo-cliente" onclick="openClienteModal()">+ Nuevo cliente</button>
       </div>
     </div>
@@ -6102,15 +6130,18 @@ Si quieres saber cuál te conviene, responde a este correo o escríbenos por Wha
       <div class="ff"><label>Texto del botón</label><input id="cp-btn" maxlength="40" value="Conoce nuestros servicios" oninput="campPrevia()"></div>
       <div class="ff"><label>Enlace del botón</label><input id="cp-url" value="${WEB_DGP}" oninput="campPrevia()"></div>
     </div>
-    <div class="ff"><label>Para</label>
-      <div id="cp-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
-      <div id="cp-lista" style="max-height:190px;overflow:auto;border:1px solid var(--border);border-radius:10px;"></div>
-      <div id="cp-cuenta" style="font-size:11px;color:var(--text-soft);margin-top:6px;"></div></div>
+    <div class="ff"><label>Para</label></div>
+    <div class="cp-para">
+      <div class="cp-top"><div id="cp-tags" class="cp-tags"></div>
+        <div class="cp-acc"><button type="button" onclick="campTodos(true)">Marcar todos</button><button type="button" onclick="campTodos(false)">Ninguno</button></div></div>
+      <div id="cp-lista" class="cp-lista"></div>
+      <div id="cp-cuenta" class="cp-cuenta"></div>
+    </div>
     <div class="ff"><label>Vista previa</label>
       <iframe id="cp-prev" title="Vista previa de la campaña" style="width:100%;height:460px;border:1px solid var(--border);border-radius:10px;background:#eef2fb;"></iframe></div>
     <div id="cp-prog" style="display:none;margin-bottom:12px;"></div>
     <button class="btn-edit-save" id="cp-enviar" onclick="enviarCampana()">Enviar campaña</button>
-    <button class="btn-edit-save" style="background:var(--surface);color:var(--blue);border:1.5px solid var(--blue);margin-top:8px;" onclick="enviarCampana(true)">Enviarme una prueba</button>
+    <button class="btn-edit-save" style="background:#fff;color:var(--blue);border:1.5px solid var(--blue);margin-top:8px;" onclick="enviarCampana(true)">Enviarme una prueba</button>
     <button class="btn-edit-cancel" onclick="_camp.cancelar=true;closePortalModal()">Cerrar</button>
     <div id="cp-historial" style="margin-top:16px;"></div>`);
   document.querySelector('#modalPortal .edit-sheet').style.maxWidth = '640px';
@@ -6122,14 +6153,17 @@ function campRenderLista() {
   const lista = campClientes();
   const tags = clTodasEtiquetas ? clTodasEtiquetas() : [];
   document.getElementById('cp-tags').innerHTML = [['', 'Todos'], ...tags.map(t => [t[0], t[0]])].map(([k, l]) =>
-    `<button type="button" class="btn-sm" style="${ptNorm(_camp.tag) === ptNorm(k) ? 'background:var(--blue);color:#fff;border-color:var(--blue);' : ''}" onclick='campFiltroTag(${JSON.stringify(k).replace(/'/g, '&#39;')})'>${esc(l)}</button>`).join('');
-  document.getElementById('cp-lista').innerHTML = lista.length ? lista.map(c => `
-    <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12.5px;cursor:pointer;${c.noCorreos ? 'opacity:.5;' : ''}">
-      <input type="checkbox" ${_camp.sel.has(c._id) ? 'checked' : ''} ${c.noCorreos ? 'disabled' : ''} onchange="campToggle('${c._id}', this.checked)">
-      <span style="flex:1;min-width:0;"><strong>${esc(clNombre(c))}</strong> <span style="color:var(--text-soft);">${esc(c.correo)}</span></span>
-      ${(c.tags || []).slice(0, 2).map(t => `<span style="font-size:10px;background:var(--blue-light, #eef2ff);color:var(--blue);padding:2px 7px;border-radius:10px;">${esc(t)}</span>`).join('')}
-      <button type="button" class="btn-sm" style="font-size:10px;padding:2px 8px;" onclick="event.preventDefault();campBaja('${c._id}')">${c.noCorreos ? 'Reactivar' : 'Dar de baja'}</button>
-    </label>`).join('') : '<div class="pt-empty" style="padding:16px;">Aún no hay clientes con correo. Se agendan solos cuando abren su factura o cotización.</div>';
+    `<button type="button" class="cp-chip${ptNorm(_camp.tag) === ptNorm(k) ? ' on' : ''}" onclick='campFiltroTag(${JSON.stringify(k).replace(/'/g, '&#39;')})'>${esc(l)}</button>`).join('');
+  document.getElementById('cp-lista').innerHTML = lista.length ? lista.map(c => {
+    const on = _camp.sel.has(c._id);
+    return `<div class="cp-row${on ? ' on' : ''}${c.noCorreos ? ' baja' : ''}" onclick="${c.noCorreos ? '' : `campToggle('${c._id}', ${!on})`}">
+      <span class="cp-check">${on ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</span>
+      <span class="cp-av" style="background:${clColor(clNombre(c))};">${esc(clIniciales(clNombre(c)))}</span>
+      <span class="cp-info"><span class="cp-nom">${esc(clNombre(c))}${c.noCorreos ? ' <em>· dado de baja</em>' : ''}</span><span class="cp-mail">${esc(c.correo)}</span></span>
+      ${(c.tags || []).slice(0, 2).map(t => `<span class="cp-tag">${esc(t)}</span>`).join('')}
+      <button type="button" class="cp-baja" onclick="event.stopPropagation();campBaja('${c._id}')">${c.noCorreos ? 'Reactivar' : 'Dar de baja'}</button>
+    </div>`;
+  }).join('') : '<div class="pt-empty" style="padding:16px;">Aún no hay clientes con correo. Se agendan solos cuando abren su factura o cotización.</div>';
   const sinCorreo = clientesList.length - lista.length;
   document.getElementById('cp-cuenta').innerHTML = `<strong>${_camp.sel.size}</strong> seleccionado${_camp.sel.size !== 1 ? 's' : ''} · ${sinCorreo} cliente${sinCorreo !== 1 ? 's' : ''} sin correo todavía · Gmail permite unos 100 por día`;
 }
@@ -6137,6 +6171,10 @@ function campFiltroTag(tag) {
   _camp.tag = tag;
   const n = ptNorm(tag);
   _camp.sel = new Set(campClientes().filter(c => !c.noCorreos && (!n || (c.tags || []).some(t => ptNorm(t) === n))).map(c => c._id));
+  campRenderLista();
+}
+function campTodos(on) {
+  _camp.sel = on ? new Set(campClientes().filter(c => !c.noCorreos).map(c => c._id)) : new Set();
   campRenderLista();
 }
 function campToggle(id, on) { on ? _camp.sel.add(id) : _camp.sel.delete(id); campRenderLista(); }
