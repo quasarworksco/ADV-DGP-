@@ -200,6 +200,8 @@ export default {
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (ruta === '/tarea') return handleTarea(request, env);
     if (ruta === '/email') return handleEmail(request, env);
+    if (ruta === '/resena') return handleResena(request, env);
+    if (ruta === '/encuesta') return handleEncuesta(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -666,7 +668,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-29e';
+const WORKER_VERSION = '2026-09-29f';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -867,7 +869,10 @@ async function tareaDiaria(env) {
     creadas.push({ s, id, docData });
   }
 
-  // 2) Resumen de cobros
+  // 2) Recordatorio por correo para dejar reseña en Google (clientes felices que no hicieron clic)
+  const resenas = await recordarResenas(env, token, docs, correoDe).catch(e => { console.warn('Reseñas', e); return []; });
+
+  // 3) Resumen de cobros
   const pendientes = docs.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
   const atrasadas = pendientes.filter(x => x.dias >= 7).sort((a, b) => b.dias - a.dias);
   const porRevisar = pendientes.filter(x => (Array.isArray(x.d.comprobantes) && x.d.comprobantes.length) || x.d.comprobante_url);
@@ -896,10 +901,14 @@ async function tareaDiaria(env) {
     subsAtrasadas.forEach(s => L.push(`• 🔴 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · atrasada ${-diasEntre(hoy, s.proximoPago)} días`));
     subsPronto.forEach(s => L.push(`• 🟡 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · vence ${escHtml(fechaCorta(s.proximoPago))}${s.ultimaFacturaPeriodo === s.proximoPago ? ' (factura enviada)' : ''}`));
   }
+  if (resenas.length) {
+    L.push('', `⭐ <b>Recordatorio de reseña en Google enviado (${resenas.length})</b>`);
+    resenas.forEach(r => L.push(`• ${escHtml(r.cliente)} → ${escHtml(r.correo)}`));
+  }
   if (L.length === 1) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
   L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
   await tgEnviar(env, L.join('\n'));
-  return { creadas: creadas.length, atrasadas: atrasadas.length, porRevisar: porRevisar.length, suscripciones: subsAtrasadas.length + subsPronto.length };
+  return { creadas: creadas.length, resenas: resenas.length, atrasadas: atrasadas.length, porRevisar: porRevisar.length, suscripciones: subsAtrasadas.length + subsPronto.length };
 }
 
 /* ── Respaldo semanal ── */
@@ -987,4 +996,102 @@ async function handleEmail(request, env) {
     }).catch(() => {});
     return json(request, { ok: true, restantes: r.restantes ?? null });
   } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Reseñas en Google
+   GET  /resena?e=<encuestaId>  → registra el clic y abre la reseña de Google
+   POST /encuesta { id }        → aviso por Telegram de cada encuesta nueva
+   Tarea diaria                 → recordatorio por correo a los 2 días
+══════════════════════════════════════════════════════════════ */
+const BOT_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev';
+const GOOGLE_RESENA = 'https://g.page/r/CbcyuFX7hqvuEAI/review';
+const escHtmlR = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const promedioEnc = e => Number(e.promedio) || ((Number(e.estrellas_calidad) || 0) + (Number(e.estrellas_comunicacion) || 0)) / 2;
+
+async function handleResena(request, env) {
+  const id = new URL(request.url).searchParams.get('e') || '';
+  if (/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
+    try {
+      const token = await firebaseLogin(env);
+      await fsUpdate(env, `encuestas/${id}`, { googleClick: true, googleClickAt: new Date() }, ['googleClick', 'googleClickAt'], token);
+    } catch (e) { console.warn('Reseña clic', e); }
+  }
+  return Response.redirect(GOOGLE_RESENA, 302);
+}
+
+async function handleEncuesta(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+  try {
+    const { id } = await request.json().catch(() => ({}));
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(id || '')) return json(request, { error: 'id no válido' }, 400);
+    const token = await firebaseLogin(env);
+    const e = await fsGet(env, `encuestas/${id}`, token);
+    if (!e) return json(request, { error: 'No existe' }, 404);
+    if (e.avisoTG) return json(request, { ok: true });
+    const prom = promedioEnc(e);
+    const estrellas = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+    const L = [];
+    if (prom <= 3) L.push(`⚠️ <b>Cliente insatisfecho</b> — contáctalo antes de que deje una mala reseña`);
+    else L.push(`⭐ <b>Nueva encuesta</b>${prom >= 4 ? ' · se le invitó a dejar reseña en Google' : ''}`);
+    L.push('', `👤 ${escHtmlR(e.cliente || '—')}`,
+      `Calidad: ${estrellas(Number(e.estrellas_calidad) || 0)} · Comunicación: ${estrellas(Number(e.estrellas_comunicacion) || 0)}`,
+      `Recomienda: ${e.recomienda ? 'Sí' : 'No'}${e.testimonioAprobado ? ' · autorizó testimonio' : ''}`);
+    if (e.comentario) L.push('', `💬 “${escHtmlR(String(e.comentario).slice(0, 600))}”`);
+    L.push('', `<a href="${SITIO}/">Abrir el panel → Encuestas</a>`);
+    await tgEnviar(env, L.join('\n'));
+    await fsUpdate(env, `encuestas/${id}`, { avisoTG: true }, ['avisoTG'], token).catch(() => {});
+    return json(request, { ok: true });
+  } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
+}
+
+function correoResenaHTML(nombre, link) {
+  const f = "font-family:'Poppins','Segoe UI',Roboto,Arial,sans-serif;";
+  const estrella = '<img src="' + SITIO + '/correo/iconos/estrella.png" width="26" height="26" alt="★" style="display:inline-block;border:0;margin:0 2px;">';
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"></head>
+<body style="margin:0;padding:0;background-color:#0c1a3d;background-image:linear-gradient(165deg,#070f26 0%,#0f2150 30%,#172b5e 50%,#166baf 82%,#3eaedd 118%);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0c1a3d" style="background-color:#0c1a3d;background-image:linear-gradient(165deg,#070f26 0%,#0f2150 30%,#172b5e 50%,#166baf 82%,#3eaedd 118%);font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;">
+<tr><td align="center" style="padding:36px 14px 44px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+  <tr><td align="center" style="padding-bottom:22px;"><img src="${SITIO}/logo-white.png" width="44" height="44" alt="DGP" style="display:block;border:0;"></td></tr>
+  <tr><td bgcolor="#112451" style="background-color:rgba(255,255,255,0.06);border:1px solid rgba(143,220,245,0.25);border-radius:26px;padding:36px 32px;text-align:center;">
+    <div>${estrella.repeat(5)}</div>
+    <div style="${f}font-size:26px;font-weight:700;color:#ffffff;margin-top:18px;line-height:1.25;">¡Gracias por confiar en nosotros, ${escHtmlR(nombre)}!</div>
+    <div style="font-size:15px;line-height:1.7;color:#e8f4ff;margin-top:14px;">Nos alegró mucho saber que tu experiencia con DGP Group USA fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.</div>
+    <div style="margin-top:28px;"><a href="${link}" style="display:inline-block;background-color:#3eaedd;background-image:linear-gradient(135deg,#166baf 0%,#3eaedd 100%);${f}color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:16px 38px;border-radius:40px;">Dejar mi reseña en Google &nbsp;→</a></div>
+    <div style="font-size:12px;color:#a9c4e4;margin-top:16px;">Solo toma un momento. ¡Gracias de corazón!</div>
+  </td></tr>
+  <tr><td align="center" style="padding-top:26px;font-size:12px;color:#a9c4e4;line-height:1.7;">
+    <a href="https://dgpglobalgroup.com" style="color:#ffffff;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" style="color:#ffffff;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
+    <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#7d9cc4;font-weight:600;">DGP GROUP USA</span>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+async function recordarResenas(env, token, docs, correoDe) {
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
+  const encuestas = await fsList(env, 'encuestas', token);
+  const limite = Date.now() - 2 * 86400000;
+  const enviados = [];
+  for (const e of encuestas) {
+    if (e.googleClick || e.resenaRecordada || promedioEnc(e) < 4) continue;
+    if (!e.fecha || new Date(e.fecha).getTime() > limite) continue;
+    const doc = docs.find(d => d._id === e.docId);
+    const correo = doc?.clienteCorreo || correoDe(e.cliente || doc?.cli || '');
+    if (!correo) continue;
+    const nombre = String(e.cliente || doc?.cli || '').split(' ')[0] || 'hola';
+    const res = await fetch(env.EMAIL_WEBHOOK, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto: `${nombre}, ¿nos ayudas con una reseña en Google?`, nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com',
+        html: correoResenaHTML(nombre, `${BOT_URL}/resena?e=${e._id}`),
+        texto: `¡Gracias por confiar en nosotros, ${nombre}! ¿Nos regalas 30 segundos para dejar tu reseña en Google?\n${GOOGLE_RESENA}\n\nDGP Group USA · dgpglobalgroup.com` })
+    });
+    const r = await res.json().catch(() => ({}));
+    if (!r.ok) { console.warn('Reseña correo', correo, r.error); continue; }
+    await fsUpdate(env, `encuestas/${e._id}`, { resenaRecordada: true, resenaRecordadaAt: new Date() }, ['resenaRecordada', 'resenaRecordadaAt'], token).catch(() => {});
+    enviados.push({ cliente: e.cliente || doc?.cli || '—', correo });
+    if (enviados.length >= 20) break;
+  }
+  return enviados;
 }

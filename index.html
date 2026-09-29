@@ -3656,6 +3656,8 @@ function renderEncuestas() {
     const avgCom = docs.length ? (totalCom / docs.length).toFixed(1) : '—';
     const pctRec = docs.length ? Math.round(recomienda / docs.length * 100) : 0;
     const testimoniales = docs.filter(d => d.autorizaTestimonio);
+    const invitadosG = docs.filter(d => d.invitadoGoogle).length;
+    const clicsG = docs.filter(d => d.googleClick).length;
 
     const pctCls = pctRec >= 80 ? 'var(--green-dark)' : pctRec >= 50 ? '#b45309' : '#b91c1c';
     const starsTile = v => { const n = Math.round(Number(v) || 0); return `<span style="display:inline-flex;gap:1px;vertical-align:2px;margin-left:6px;">${Array.from({length:5}, (_,i) => `<svg width="11" height="11" viewBox="0 0 24 24" fill="${i < n ? '#f59e0b' : 'none'}" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('')}</span>`; };
@@ -3665,7 +3667,7 @@ function renderEncuestas() {
       <div class="cb-tile"><div class="cb-tile-l">Calidad del servicio</div><div class="cb-tile-v">${avgCal}<small style="font-size:14px;color:var(--text-soft);"> / 5</small>${starsTile(avgCal)}</div><div class="cb-tile-n">${docs.length} respuesta${docs.length !== 1 ? 's' : ''}</div></div>
       <div class="cb-tile"><div class="cb-tile-l">Comunicación</div><div class="cb-tile-v">${avgCom}<small style="font-size:14px;color:var(--text-soft);"> / 5</small>${starsTile(avgCom)}</div><div class="cb-tile-n">Promedio general</div></div>
       <div class="cb-tile"><div class="cb-tile-l">Nos recomendarían</div><div class="cb-tile-v" style="color:${pctCls};">${pctRec}%</div><div class="cb-tile-n">${recomienda} de ${docs.length}</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Testimonios</div><div class="cb-tile-v">${testimoniales.length}</div><div class="cb-tile-n">Autorizados para publicar</div></div>`;
+      <div class="cb-tile"><div class="cb-tile-l">Reseñas en Google</div><div class="cb-tile-v">${clicsG}<small style="font-size:14px;color:var(--text-soft);"> / ${invitadosG}</small></div><div class="cb-tile-n">Clics de invitados · ${testimoniales.length} testimonio${testimoniales.length !== 1 ? 's' : ''}</div></div>`;
 
     const stars = n => Array.from({length:5}, (_,i) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="${i < n ? '#f59e0b' : 'none'}" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('');
     const fechaDe = d => d.fecha?.toDate ? d.fecha.toDate().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—';
@@ -3688,7 +3690,7 @@ function renderEncuestas() {
     html += `<div class="hr-list">${docs.map(d => `
       <div class="enc-row">
         <div class="hr-main">
-          <div class="hr-top"><span class="hr-cli">${esc(d.clienteNombre || '—')}</span>${d.autorizaTestimonio ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);">Testimonio</span>' : ''}</div>
+          <div class="hr-top"><span class="hr-cli">${esc(d.clienteNombre || '—')}</span>${d.autorizaTestimonio ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);">Testimonio</span>' : ''}${d.googleClick ? '<span class="emisor-tag" style="margin:0;background:#fffbeb;color:#b45309;border-color:rgba(217,119,6,.25);">★ Fue a Google</span>' : d.invitadoGoogle ? `<span class="emisor-tag" style="margin:0;">${d.resenaRecordada ? 'Recordatorio enviado' : 'Invitado a Google'}</span>` : ''}</div>
           ${d.comentario ? `<div class="hr-srv" style="white-space:normal;font-style:italic;">“${esc(d.comentario)}”</div>` : ''}
         </div>
         <div class="enc-cal"><small>Calidad</small><span>${stars(d.calidad || 0)}</span></div>
