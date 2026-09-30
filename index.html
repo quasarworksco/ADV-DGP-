@@ -5929,12 +5929,15 @@ function correoTextos(tipo, doc) {
 /* Marco común de todos los correos */
 const WEB_DGP = 'https://dgpglobalgroup.com';
 function correoEsc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-/* Paleta del logo: azul marino, azul y turquesa. Todo el correo es oscuro con
-   cristal y textos claros, así se ve igual en modo claro y en modo oscuro. */
-const CM = { navy: '#172b5e', azul: '#166baf', turq: '#3eaedd', turqClaro: '#8fdcf5', texto: '#e8f4ff', suave: '#a9c4e4', tenue: '#7d9cc4' };
+/* Base clara (Gmail en modo oscuro la invierte bien) + modo oscuro propio para
+   Apple Mail / iPhone / Outlook. El texto blanco sobre degradados va protegido
+   con el truco de mezcla de Gmail para que no se oscurezca. */
+const CM = { navy: '#172b5e', azul: '#166baf', turq: '#3eaedd', lbl: '#1f8fc0', texto: '#1e293b', suave: '#64748b', tenue: '#94a3b8' };
 const CM_ICO = 'https://adv.dgp-link.com/correo/iconos/';
 const CM_TIT = "font-family:'Poppins','Montserrat','Segoe UI',Roboto,Arial,sans-serif;";
 const CM_TXT = "font-family:'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif;";
+const CM_GRAD = `background-color:${CM.azul};background-image:linear-gradient(135deg,${CM.navy} 0%,${CM.azul} 58%,${CM.turq} 100%);`;
+const cmBlanco = html => `<div class="gm-s"><div class="gm-d">${html}</div></div>`;
 function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '', cuerpo = '', servicios = true, baja = false }) {
   const e = correoEsc;
   const serv = [
@@ -5943,21 +5946,37 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
     ['branding', 'Branding y diseño', 'Identidad que se recuerda'],
     ['auto', 'Automatización', 'WhatsApp, bots y sistemas']
   ];
-  const fondo = `background-color:#0c1a3d;background-image:linear-gradient(165deg,#070f26 0%,#0f2150 30%,${CM.navy} 50%,${CM.azul} 82%,${CM.turq} 118%);`;
-  const glass = 'background-color:rgba(255,255,255,0.07);border:1px solid rgba(143,220,245,0.22);';
   const tile = ([ic, t, d]) => `<td class="tc" width="50%" valign="top" style="padding:6px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#14295a" style="${glass}border-radius:18px;"><tr><td style="padding:18px 18px 16px;">
-        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:40px;height:40px;text-align:center;vertical-align:middle;border-radius:12px;background-color:rgba(62,174,221,0.18);border:1px solid rgba(62,174,221,0.35);"><img src="${CM_ICO}${ic}.png" width="22" height="22" alt="" style="display:inline-block;vertical-align:middle;border:0;"></td></tr></table>
-        <div style="${CM_TIT}font-size:14.5px;font-weight:600;color:#ffffff;margin-top:12px;">${t}</div>
-        <div style="${CM_TXT}font-size:12.5px;color:${CM.suave};margin-top:4px;line-height:1.5;">${d}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="soft" bgcolor="#f3f8fc" style="background-color:#f3f8fc;border:1px solid #e1ecf5;border-radius:16px;"><tr><td style="padding:16px 16px 15px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="38" height="38" align="center" valign="middle" style="width:38px;height:38px;border-radius:11px;${CM_GRAD}"><img src="${CM_ICO}${ic}-w.png" width="20" height="20" alt="" style="display:block;border:0;"></td></tr></table>
+        <div class="tx" style="${CM_TIT}font-size:14.5px;font-weight:600;color:${CM.texto};margin-top:12px;">${t}</div>
+        <div class="tx2" style="${CM_TXT}font-size:12.5px;color:${CM.suave};margin-top:3px;line-height:1.5;">${d}</div>
       </td></tr></table></td>`;
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark light; }
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
   body, table, td { -webkit-text-size-adjust:100%; }
-  a { color:${CM.turqClaro}; }
+  u + .body .gm-s { background:#000; mix-blend-mode:screen; }
+  u + .body .gm-d { background:#000; mix-blend-mode:difference; }
+  @media (prefers-color-scheme: dark) {
+    .pg { background-color:#070f22 !important; }
+    .card { background-color:#0f1b38 !important; border-color:#1d2d52 !important; }
+    .soft { background-color:#132349 !important; border-color:#223463 !important; }
+    .tx { color:#eaf3ff !important; }
+    .tx2 { color:#a9bedb !important; }
+    .lb { color:#5cc3ec !important; }
+    .ln { border-color:#1d2d52 !important; }
+    .lk { color:#5cc3ec !important; }
+    .pill { background-color:#132349 !important; border-color:#223463 !important; }
+  }
+  [data-ogsc] .tx { color:#eaf3ff !important; }
+  [data-ogsc] .tx2 { color:#a9bedb !important; }
+  [data-ogsc] .lb, [data-ogsc] .lk { color:#5cc3ec !important; }
+  [data-ogsb] .pg { background-color:#070f22 !important; }
+  [data-ogsb] .card { background-color:#0f1b38 !important; }
+  [data-ogsb] .soft, [data-ogsb] .pill { background-color:#132349 !important; }
   @media (max-width:520px) {
     .pad { padding-left:22px !important; padding-right:22px !important; }
     .h1 { font-size:28px !important; }
@@ -5966,52 +5985,55 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
     .etq { display:none !important; }
   }
 </style></head>
-<body style="margin:0;padding:0;${fondo}">
+<body class="body pg" style="margin:0;padding:0;background-color:#eef4fa;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0c1a3d" style="${fondo}${CM_TXT}">
-<tr><td align="center" style="padding:36px 14px 44px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="pg" bgcolor="#eef4fa" style="background-color:#eef4fa;${CM_TXT}">
+<tr><td align="center" style="padding:30px 12px 40px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
 
-    <tr><td class="pad" style="padding:0 8px 28px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td style="width:54px;"><table role="presentation" cellpadding="0" cellspacing="0" bgcolor="#14295a" style="${glass}border-radius:16px;"><tr><td style="padding:9px;"><img src="https://adv.dgp-link.com/logo-white.png" width="34" height="34" alt="DGP" style="display:block;border:0;"></td></tr></table></td>
-        <td style="padding-left:13px;${CM_TIT}color:#ffffff;font-size:15px;font-weight:700;letter-spacing:2.5px;">DGP GROUP USA<br><span style="${CM_TXT}font-size:11.5px;font-weight:400;letter-spacing:.8px;color:${CM.turqClaro};">Servicios Digitales Profesionales</span></td>
-        ${etiqueta ? `<td align="right" class="etq"><span style="display:inline-block;${glass}${CM_TIT}color:#ffffff;font-size:10px;font-weight:600;letter-spacing:1.8px;padding:7px 14px;border-radius:30px;">${e(etiqueta)}</span></td>` : ''}
-      </tr></table>
+    <!-- Encabezado de marca -->
+    <tr><td style="border-radius:24px 24px 0 0;background-color:${CM.navy};background-image:linear-gradient(150deg,#0b1633 0%,${CM.navy} 42%,${CM.azul} 82%,${CM.turq} 122%);">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="pad" style="padding:28px 34px ${titulo ? '32px' : '26px'};">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="width:44px;"><img src="https://adv.dgp-link.com/logo-white.png" width="40" height="40" alt="DGP" style="display:block;border:0;"></td>
+          <td style="padding-left:12px;">${cmBlanco(`<div style="${CM_TIT}color:#ffffff;font-size:15px;font-weight:700;letter-spacing:2.5px;">DGP GROUP USA</div><div style="${CM_TXT}font-size:11.5px;letter-spacing:.5px;color:#bfe9fa;margin-top:2px;">Servicios Digitales Profesionales</div>`)}</td>
+          ${etiqueta ? `<td align="right" class="etq"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border:1px solid #6fb6dc;border-radius:30px;padding:7px 14px;">${cmBlanco(`<span style="${CM_TIT}color:#ffffff;font-size:10px;font-weight:600;letter-spacing:1.8px;white-space:nowrap;">${e(etiqueta)}</span>`)}</td></tr></table></td>` : ''}
+        </tr></table>
+        ${titulo ? cmBlanco(`<div class="h1" style="${CM_TIT}color:#ffffff;font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.5px;margin-top:26px;">${e(titulo)}</div>${subtitulo ? `<div style="${CM_TXT}color:#bfe9fa;font-size:13px;font-weight:500;letter-spacing:1.5px;margin-top:7px;">${e(subtitulo)}</div>` : ''}`) : ''}
+      </td></tr></table>
     </td></tr>
 
-    ${titulo ? `<tr><td class="pad" style="padding:0 8px 26px;">
-      <div class="h1" style="${CM_TIT}color:#ffffff;font-size:36px;font-weight:700;line-height:1.15;letter-spacing:-.6px;">${e(titulo)}</div>
-      ${subtitulo ? `<div style="${CM_TXT}color:${CM.turqClaro};font-size:13px;font-weight:500;letter-spacing:1.5px;margin-top:8px;">${e(subtitulo)}</div>` : ''}
-      <div style="width:56px;height:4px;border-radius:4px;margin-top:16px;background-color:${CM.turq};background-image:linear-gradient(90deg,${CM.turq},${CM.azul});font-size:0;line-height:0;">&nbsp;</div>
-    </td></tr>` : ''}
-
-    <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#112451" style="background-color:rgba(255,255,255,0.06);background-image:linear-gradient(160deg,rgba(255,255,255,0.10),rgba(255,255,255,0.03));border:1px solid rgba(143,220,245,0.25);border-radius:26px;box-shadow:0 24px 60px rgba(2,8,30,.45);">
+    <!-- Tarjeta principal -->
+    <tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e1ecf5;border-top:0;border-radius:0 0 24px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${cuerpo}
+        ${servicios ? `
+        <tr><td class="pad" style="padding:8px 34px 0;"><div class="ln" style="border-top:1px solid #e6edf5;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+        <tr><td class="pad" style="padding:26px 34px 4px;">
+          <div class="lb" style="${CM_TIT}font-size:10.5px;font-weight:600;letter-spacing:2.5px;color:${CM.lbl};">CONOCE TODO LO QUE HACEMOS</div>
+          <div class="tx" style="${CM_TIT}font-size:20px;font-weight:700;color:${CM.texto};margin-top:6px;letter-spacing:-.3px;">Hacemos crecer tu negocio en digital</div>
+        </td></tr>
+        <tr><td class="pad" style="padding:10px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${tile(serv[0])}${tile(serv[1])}</tr><tr>${tile(serv[2])}${tile(serv[3])}</tr></table>
+        </td></tr>
+        <tr><td align="center" style="padding:20px 34px 34px;">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td class="pill" style="border:1.5px solid ${CM.azul};border-radius:40px;background-color:#ffffff;">
+            <a href="${WEB_DGP}" class="lk" style="display:inline-block;${CM_TIT}color:${CM.azul};text-decoration:none;font-size:14px;font-weight:600;padding:12px 26px;">Visita dgpglobalgroup.com &nbsp;→</a>
+          </td></tr></table>
+        </td></tr>` : '<tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>'}
       </table>
     </td></tr>
 
-    ${servicios ? `<tr><td class="pad" style="padding:38px 8px 6px;">
-      <div style="${CM_TIT}font-size:10.5px;font-weight:600;letter-spacing:2.5px;color:${CM.turq};">CONOCE TODO LO QUE HACEMOS</div>
-      <div style="${CM_TIT}font-size:22px;font-weight:700;color:#ffffff;margin-top:6px;letter-spacing:-.3px;">Hacemos crecer tu negocio en digital</div>
-    </td></tr>
-    <tr><td style="padding:10px 2px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="tl"><tr>${tile(serv[0])}${tile(serv[1])}</tr><tr>${tile(serv[2])}${tile(serv[3])}</tr></table>
-    </td></tr>
-    <tr><td align="center" style="padding:20px 8px 0;">
-      <a href="${WEB_DGP}" style="display:inline-block;background-color:#ffffff;${CM_TIT}color:${CM.navy};text-decoration:none;font-size:14px;font-weight:600;padding:14px 30px;border-radius:40px;box-shadow:0 10px 28px rgba(2,8,30,.35);">Visita dgpglobalgroup.com &nbsp;→</a>
-    </td></tr>` : ''}
-
-    <tr><td align="center" class="pad" style="padding:38px 8px 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0" bgcolor="#14295a" style="${glass}border-radius:40px;"><tr>
-        <td style="padding:11px 18px;font-size:12.5px;"><a href="https://wa.me/12398231738" style="${CM_TIT}color:#ffffff;text-decoration:none;font-weight:600;"><img src="${CM_ICO}chat.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; WhatsApp</a></td>
-        <td style="padding:11px 2px;color:rgba(143,220,245,.4);">|</td>
-        <td style="padding:11px 18px;font-size:12.5px;"><a href="${WEB_DGP}" style="${CM_TIT}color:#ffffff;text-decoration:none;font-weight:600;"><img src="${CM_ICO}web.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; dgpglobalgroup.com</a></td>
+    <!-- Pie -->
+    <tr><td align="center" class="pad" style="padding:28px 8px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" class="pill" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e1ecf5;border-radius:40px;"><tr>
+        <td style="padding:10px 16px;font-size:12.5px;"><a href="https://wa.me/12398231738" class="lk" style="${CM_TIT}color:${CM.azul};text-decoration:none;font-weight:600;"><img src="${CM_ICO}chat-b.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; WhatsApp</a></td>
+        <td class="tx2" style="padding:10px 2px;color:#cbd5e1;">|</td>
+        <td style="padding:10px 16px;font-size:12.5px;"><a href="${WEB_DGP}" class="lk" style="${CM_TIT}color:${CM.azul};text-decoration:none;font-weight:600;"><img src="${CM_ICO}web-b.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; dgpglobalgroup.com</a></td>
       </tr></table>
-      <div style="font-size:12.5px;color:${CM.suave};margin-top:18px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" style="color:#ffffff;text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
-      <div style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:14px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GROUP USA</div>
-      ${baja ? `<div style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Group USA.<br>Si no deseas recibir más novedades, responde con la palabra <strong style="color:#ffffff;">BAJA</strong>.</div>` : ''}
+      <div class="tx2" style="font-size:12.5px;color:${CM.suave};margin-top:16px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" class="lk" style="color:${CM.azul};text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
+      <div class="tx2" style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:12px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GROUP USA</div>
+      ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Group USA.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
     </td></tr>
 
   </table>
@@ -6019,7 +6041,8 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
 }
 function correoBoton(texto, link) {
   const e = correoEsc;
-  return `<a href="${e(link)}" style="display:inline-block;background-color:${CM.turq};background-image:linear-gradient(135deg,${CM.azul} 0%,${CM.turq} 100%);${CM_TIT}color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:16px 40px;border-radius:40px;box-shadow:0 10px 28px rgba(62,174,221,.35);">${e(texto)} &nbsp;→</a>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:40px;${CM_GRAD}box-shadow:0 10px 26px rgba(22,107,175,.28);">
+    <a href="${e(link)}" style="display:inline-block;padding:16px 40px;text-decoration:none;">${cmBlanco(`<span style="${CM_TIT}color:#ffffff;font-size:15px;font-weight:600;">${e(texto)} &nbsp;→</span>`)}</a></td></tr></table>`;
 }
 function correoHTML(tipo, doc, mensaje, link) {
   const e = correoEsc;
@@ -6029,35 +6052,33 @@ function correoHTML(tipo, doc, mensaje, link) {
   const saldo = tipo === 'factura' && doc.pagadoParcial ? cbSaldo(doc) : null;
   const monto = (saldo !== null ? saldo : (doc.total || 0)).toFixed(2);
   const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-  const lbl = `${CM_TIT}font-size:9.5px;font-weight:600;letter-spacing:2px;color:${CM.turq};`;
+  const lbl = `${CM_TIT}font-size:9.5px;font-weight:600;letter-spacing:2px;color:${CM.lbl};`;
   const filas = (doc.items || []).map(it => `<tr>
-      <td style="padding:14px 0;border-bottom:1px solid rgba(143,220,245,0.14);font-size:14.5px;color:${CM.texto};">${e(it.s)}${(it.c || 1) > 1 ? ` <span style="color:${CM.suave};">× ${it.c}</span>` : ''}</td>
-      <td style="padding:14px 0;border-bottom:1px solid rgba(143,220,245,0.14);font-size:14.5px;color:#ffffff;text-align:right;white-space:nowrap;font-weight:600;">$${(it.t || 0).toFixed(2)}</td></tr>`).join('');
-  const dato = (l, v) => v ? `<td class="dc" valign="top" style="padding:13px 15px;"><div style="${lbl}">${l}</div><div style="${CM_TIT}font-size:13.5px;color:#ffffff;font-weight:600;margin-top:5px;">${e(v)}</div></td>` : '';
+      <td class="tx ln" style="padding:14px 0;border-bottom:1px solid #e6edf5;font-size:14.5px;color:${CM.texto};">${e(it.s)}${(it.c || 1) > 1 ? ` <span class="tx2" style="color:${CM.suave};">× ${it.c}</span>` : ''}</td>
+      <td class="tx ln" style="padding:14px 0;border-bottom:1px solid #e6edf5;font-size:14.5px;color:${CM.texto};text-align:right;white-space:nowrap;font-weight:600;">$${(it.t || 0).toFixed(2)}</td></tr>`).join('');
+  const dato = (l, v) => v ? `<td class="dc" valign="top" style="padding:13px 15px;"><div class="lb" style="${lbl}">${l}</div><div class="tx" style="${CM_TIT}font-size:13.5px;color:${CM.texto};font-weight:600;margin-top:5px;">${e(v)}</div></td>` : '';
   const cuerpo = `
-    <tr><td class="pad" style="padding:34px 34px 6px;font-size:15.5px;line-height:1.75;color:${CM.texto};">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
+    <tr><td class="pad tx" style="padding:32px 34px 6px;font-size:15.5px;line-height:1.75;color:${CM.texto};">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
     <tr><td class="pad" style="padding:20px 34px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="dt" bgcolor="#16305f" style="background-color:rgba(62,174,221,0.08);border:1px solid rgba(62,174,221,0.25);border-radius:16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="soft" bgcolor="#f3f8fc" style="background-color:#f3f8fc;border:1px solid #e1ecf5;border-radius:16px;">
         <tr>${dato('N°', doc.docId || '')}${dato('CLIENTE', doc.cli || '')}${dato('FECHA', doc.fecha ? String(doc.fecha) : '')}${tipo !== 'recibo' ? dato(tipo === 'cotizacion' ? 'VÁLIDA HASTA' : 'VENCE', vence) : ''}</tr>
       </table>
     </td></tr>
     <tr><td class="pad" style="padding:24px 34px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr><td style="padding:0 0 4px;${lbl}">SERVICIO</td><td style="padding:0 0 4px;${lbl}text-align:right;">MONTO</td></tr>
+        <tr><td class="lb" style="padding:0 0 6px;${lbl}">SERVICIO</td><td class="lb" style="padding:0 0 6px;${lbl}text-align:right;">MONTO</td></tr>
         ${filas}
-        ${saldo !== null ? `<tr><td style="padding:12px 0 0;font-size:13px;color:${CM.suave};">Ya pagado</td><td style="padding:12px 0 0;font-size:13px;color:#5eead4;text-align:right;font-weight:600;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
+        ${saldo !== null ? `<tr><td class="tx2" style="padding:12px 0 0;font-size:13px;color:${CM.suave};">Ya pagado</td><td style="padding:12px 0 0;font-size:13px;color:#059669;text-align:right;font-weight:600;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
       </table>
     </td></tr>
     <tr><td class="pad" style="padding:22px 34px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CM.azul}" style="background-color:${CM.azul};background-image:linear-gradient(120deg,${CM.navy} 0%,${CM.azul} 55%,${CM.turq} 100%);border:1px solid rgba(143,220,245,0.35);border-radius:20px;">
-        <tr><td style="padding:22px 24px;">
-          <div style="${CM_TIT}font-size:10px;font-weight:600;letter-spacing:2px;color:${CM.turqClaro};">${saldo !== null ? 'SALDO PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL A PAGAR'}</div>
-          <div style="font-size:12px;color:#d6ecff;margin-top:4px;">USD</div></td>
-          <td align="right" style="padding:22px 24px;${CM_TIT}font-size:34px;font-weight:700;color:#ffffff;white-space:nowrap;letter-spacing:-.5px;">$${monto}</td></tr>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:18px;${CM_GRAD}">
+        <tr><td style="padding:20px 22px;">${cmBlanco(`<div style="${CM_TIT}font-size:10px;font-weight:600;letter-spacing:2px;color:#bfe9fa;">${saldo !== null ? 'SALDO PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL A PAGAR'}</div><div style="font-size:12px;color:#dff3fb;margin-top:4px;">USD</div>`)}</td>
+          <td align="right" style="padding:20px 22px;">${cmBlanco(`<span style="${CM_TIT}font-size:32px;font-weight:700;color:#ffffff;white-space:nowrap;letter-spacing:-.5px;">$${monto}</span>`)}</td></tr>
       </table>
     </td></tr>
-    <tr><td align="center" class="pad" style="padding:30px 34px 10px;">${correoBoton(boton, link)}</td></tr>
-    <tr><td align="center" class="pad" style="padding:4px 34px 32px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">¿El botón no abre? Copia este enlace:<br><a href="${e(link)}" style="color:${CM.turqClaro};word-break:break-all;">${e(link)}</a></td></tr>`;
+    <tr><td align="center" class="pad" style="padding:28px 34px 10px;">${correoBoton(boton, link)}</td></tr>
+    <tr><td align="center" class="pad tx2" style="padding:4px 34px 26px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">¿El botón no abre? Copia este enlace:<br><a href="${e(link)}" class="lk" style="color:${CM.azul};word-break:break-all;">${e(link)}</a></td></tr>`;
   return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Group USA`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
 }
 function abrirCorreo(coleccion, id) {
@@ -6074,7 +6095,7 @@ function abrirCorreo(coleccion, id) {
     <div class="ff"><label>Asunto</label><input id="co-asunto" maxlength="200" value="${esc(t.asunto)}"></div>
     <div class="ff"><label>Mensaje</label><textarea id="co-msg" rows="5" style="resize:vertical;" oninput="correoPrevia()">${esc(t.mensaje)}</textarea></div>
     <div class="ff"><label>Vista previa</label>
-      <iframe id="co-prev" title="Vista previa del correo" style="width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#0c1a3d;"></iframe></div>
+      <iframe id="co-prev" title="Vista previa del correo" style="width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#eef4fa;"></iframe></div>
     <button class="btn-edit-save" id="co-btn" onclick="enviarCorreo()">Enviar correo</button>
     <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
   document.getElementById('co-sin').style.display = correoDestinatario(d.doc.cli) ? 'none' : 'block';
@@ -6129,8 +6150,8 @@ function campCuerpoHTML(titulo, mensaje, nombre, img, btnTxt, btnUrl) {
   return correoMarco({
     preheader: mensaje.replace(/\{nombre\}/gi, nombre || '').slice(0, 110),
     etiqueta: 'NOVEDADES', titulo, cuerpo: `
-    ${img ? `<tr><td style="padding:12px 12px 0;"><img src="${e(img)}" width="560" alt="" style="display:block;width:100%;max-width:560px;height:auto;border-radius:14px;border:0;"></td></tr>` : ''}
-    <tr><td class="pad" style="padding:34px 34px 8px;font-size:15.5px;line-height:1.75;color:${CM.texto};">${msg}</td></tr>
+    ${img ? `<tr><td class="pad" style="padding:26px 34px 0;"><img src="${e(img)}" width="532" alt="" style="display:block;width:100%;max-width:532px;height:auto;border-radius:14px;border:0;"></td></tr>` : ''}
+    <tr><td class="pad tx" style="padding:32px 34px 8px;font-size:15.5px;line-height:1.75;color:${CM.texto};">${msg}</td></tr>
     ${btnTxt && btnUrl ? `<tr><td align="center" class="pad" style="padding:22px 34px 34px;">
       ${correoBoton(btnTxt, btnUrl)}
     </td></tr>` : '<tr><td style="height:22px;font-size:0;">&nbsp;</td></tr>'}`,
@@ -6164,7 +6185,7 @@ Si quieres saber cuál te conviene, responde a este correo o escríbenos por Wha
       <div id="cp-cuenta" class="cp-cuenta"></div>
     </div>
     <div class="ff"><label>Vista previa</label>
-      <iframe id="cp-prev" title="Vista previa de la campaña" style="width:100%;height:460px;border:1px solid var(--border);border-radius:10px;background:#0c1a3d;"></iframe></div>
+      <iframe id="cp-prev" title="Vista previa de la campaña" style="width:100%;height:460px;border:1px solid var(--border);border-radius:10px;background:#eef4fa;"></iframe></div>
     <div id="cp-prog" style="display:none;margin-bottom:12px;"></div>
     <button class="btn-edit-save" id="cp-enviar" onclick="enviarCampana()">Enviar campaña</button>
     <button class="btn-edit-save" style="background:#fff;color:var(--blue);border:1.5px solid var(--blue);margin-top:8px;" onclick="enviarCampana(true)">Enviarme una prueba</button>

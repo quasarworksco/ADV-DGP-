@@ -668,7 +668,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-29f';
+const WORKER_VERSION = '2026-09-30a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1048,23 +1048,41 @@ async function handleEncuesta(request, env) {
 
 function correoResenaHTML(nombre, link) {
   const f = "font-family:'Poppins','Segoe UI',Roboto,Arial,sans-serif;";
+  const grad = 'background-color:#166baf;background-image:linear-gradient(135deg,#172b5e 0%,#166baf 58%,#3eaedd 100%);';
+  const blanco = h => `<div class="gm-s"><div class="gm-d">${h}</div></div>`;
   const estrella = '<img src="' + SITIO + '/correo/iconos/estrella.png" width="26" height="26" alt="★" style="display:inline-block;border:0;margin:0 2px;">';
-  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"></head>
-<body style="margin:0;padding:0;background-color:#0c1a3d;background-image:linear-gradient(165deg,#070f26 0%,#0f2150 30%,#172b5e 50%,#166baf 82%,#3eaedd 118%);">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0c1a3d" style="background-color:#0c1a3d;background-image:linear-gradient(165deg,#070f26 0%,#0f2150 30%,#172b5e 50%,#166baf 82%,#3eaedd 118%);font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;">
-<tr><td align="center" style="padding:36px 14px 44px;">
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<style>
+  :root { color-scheme: light dark; }
+  u + .body .gm-s { background:#000; mix-blend-mode:screen; }
+  u + .body .gm-d { background:#000; mix-blend-mode:difference; }
+  @media (prefers-color-scheme: dark) {
+    .pg { background-color:#070f22 !important; } .card { background-color:#0f1b38 !important; border-color:#1d2d52 !important; }
+    .tx { color:#eaf3ff !important; } .tx2 { color:#a9bedb !important; } .lk { color:#5cc3ec !important; }
+  }
+  [data-ogsc] .tx { color:#eaf3ff !important; } [data-ogsc] .tx2 { color:#a9bedb !important; } [data-ogsb] .pg { background-color:#070f22 !important; } [data-ogsb] .card { background-color:#0f1b38 !important; }
+</style></head>
+<body class="body pg" style="margin:0;padding:0;background-color:#eef4fa;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="pg" bgcolor="#eef4fa" style="background-color:#eef4fa;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;">
+<tr><td align="center" style="padding:30px 12px 40px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-  <tr><td align="center" style="padding-bottom:22px;"><img src="${SITIO}/logo-white.png" width="44" height="44" alt="DGP" style="display:block;border:0;"></td></tr>
-  <tr><td bgcolor="#112451" style="background-color:rgba(255,255,255,0.06);border:1px solid rgba(143,220,245,0.25);border-radius:26px;padding:36px 32px;text-align:center;">
-    <div>${estrella.repeat(5)}</div>
-    <div style="${f}font-size:26px;font-weight:700;color:#ffffff;margin-top:18px;line-height:1.25;">¡Gracias por confiar en nosotros, ${escHtmlR(nombre)}!</div>
-    <div style="font-size:15px;line-height:1.7;color:#e8f4ff;margin-top:14px;">Nos alegró mucho saber que tu experiencia con DGP Group USA fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.</div>
-    <div style="margin-top:28px;"><a href="${link}" style="display:inline-block;background-color:#3eaedd;background-image:linear-gradient(135deg,#166baf 0%,#3eaedd 100%);${f}color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:16px 38px;border-radius:40px;">Dejar mi reseña en Google &nbsp;→</a></div>
-    <div style="font-size:12px;color:#a9c4e4;margin-top:16px;">Solo toma un momento. ¡Gracias de corazón!</div>
+  <tr><td align="center" style="border-radius:24px 24px 0 0;padding:26px 20px;background-color:#172b5e;background-image:linear-gradient(150deg,#0b1633 0%,#172b5e 42%,#166baf 82%,#3eaedd 122%);">
+    <img src="${SITIO}/logo-white.png" width="42" height="42" alt="DGP" style="display:block;border:0;margin:0 auto;">
+    ${blanco(`<div style="${f}color:#ffffff;font-size:13px;font-weight:700;letter-spacing:2.5px;margin-top:10px;">DGP GROUP USA</div>`)}
   </td></tr>
-  <tr><td align="center" style="padding-top:26px;font-size:12px;color:#a9c4e4;line-height:1.7;">
-    <a href="https://dgpglobalgroup.com" style="color:#ffffff;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" style="color:#ffffff;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
-    <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#7d9cc4;font-weight:600;">DGP GROUP USA</span>
+  <tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e1ecf5;border-top:0;border-radius:0 0 24px 24px;padding:34px 30px;text-align:center;">
+    <div>${estrella.repeat(5)}</div>
+    <div class="tx" style="${f}font-size:25px;font-weight:700;color:#1e293b;margin-top:18px;line-height:1.25;">¡Gracias por confiar en nosotros, ${escHtmlR(nombre)}!</div>
+    <div class="tx2" style="font-size:15px;line-height:1.7;color:#475569;margin-top:14px;">Nos alegró mucho saber que tu experiencia con DGP Group USA fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:28px;"><tr><td style="border-radius:40px;${grad}">
+      <a href="${link}" style="display:inline-block;padding:16px 38px;text-decoration:none;">${blanco(`<span style="${f}color:#ffffff;font-size:15px;font-weight:600;">Dejar mi reseña en Google &nbsp;→</span>`)}</a>
+    </td></tr></table>
+    <div class="tx2" style="font-size:12px;color:#94a3b8;margin-top:16px;">Solo toma un momento. ¡Gracias de corazón!</div>
+  </td></tr>
+  <tr><td align="center" class="tx2" style="padding-top:24px;font-size:12px;color:#64748b;line-height:1.7;">
+    <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
+    <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#94a3b8;font-weight:600;">DGP GROUP USA</span>
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
