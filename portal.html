@@ -1123,6 +1123,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
             <div class="row-title">${esc(s.plan || 'Plan')}</div>
             <div class="row-sub">${money(s.precio)} / ${esc(CICLOS[s.ciclo] || s.ciclo || 'mes')}${s.inicio ? ' · desde ' + fmtDate(s.inicio) : ''}</div>
             ${est === 'activa' && prox ? `<div class="row-sub" style="color:${dias <= 3 ? 'var(--amber)' : 'var(--mid)'};font-weight:600;margin-top:3px;">Próximo pago: ${fmtDate(prox, { day: '2-digit', month: 'long', year: 'numeric' })}${dias >= 0 ? ` (en ${dias} día${dias !== 1 ? 's' : ''})` : ' (vencido)'}</div>` : ''}
+            ${s.fechaFin ? `<div class="row-sub" style="margin-top:3px;">Contrato hasta el ${fmtDate(s.fechaFin, { day: '2-digit', month: 'long', year: 'numeric' })}</div>` : ''}
             ${s.notas ? `<div class="row-sub" style="margin-top:3px;">${esc(s.notas)}</div>` : ''}
           </div>
           <span class="pill ${esc(est)}">${esc(ESTADOS_SUSC[est] || est)}</span>

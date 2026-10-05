@@ -668,7 +668,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-09-30a';
+const WORKER_VERSION = '2026-10-05a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -848,6 +848,7 @@ async function tareaDiaria(env) {
     if (s.estado !== 'activa' || s.autoFactura === false || !s.proximoPago) continue;
     if (diasEntre(hoy, s.proximoPago) > (Number.isFinite(Number(s.diasAntes)) ? Number(s.diasAntes) : 5)) continue;
     if (s.ultimaFacturaPeriodo === s.proximoPago) continue;
+    if (s.fechaFin && s.proximoPago > s.fechaFin) continue; // el contrato ya terminó
     const precio = Number(s.precio) || 0;
     const nombre = [s.servicio, s.dominio].filter(Boolean).join(' · ') || 'Suscripción';
     const periodoTxt = `${fechaCorta(s.proximoPago)} – ${fechaCorta(sumarCiclo(s.proximoPago, s.ciclo))}`;

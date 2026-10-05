@@ -1161,6 +1161,28 @@
     @media (max-width:760px) { .enc-row { grid-template-columns:1fr 1fr; } .enc-row .hr-main { grid-column:1 / -1; } .enc-row .hr-fecha { text-align:left !important; } }
     .sus-row { display:grid; grid-template-columns:100px 1fr 90px 120px auto; gap:12px; align-items:center; padding:11px 14px; border-top:1px solid #f1f5f9; cursor:pointer; transition:background .12s; font-family:'IBM Plex Sans',sans-serif; }
     .sus-row:first-child { border-top:0; }
+    .sus-cal { border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:16px; background:#fff; }
+    .sus-cal-h { display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:12px; }
+    .sus-cal-h strong { font-size:14px; letter-spacing:0; color:var(--green-dark); }
+    .sus-cal-g { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+    .sus-cal-m { border:1px solid var(--border); border-radius:10px; padding:9px 10px; min-height:84px; font-family:'IBM Plex Sans',sans-serif; background:var(--off); }
+    .sus-cal-m.hoy { border-color:var(--blue); background:var(--blue-xlight); }
+    .sus-cal-m.vacio { opacity:.55; }
+    .sus-cal-mes { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-mid); }
+    .sus-cal-mes small { font-weight:500; color:var(--text-soft); letter-spacing:0; }
+    .sus-cal-v { font-size:14px; font-weight:700; color:var(--black); margin-top:2px; }
+    .sus-cal-bar { height:4px; background:#e2e8f0; border-radius:4px; margin:5px 0 6px; overflow:hidden; }
+    .sus-cal-bar div { height:100%; background:linear-gradient(90deg,#166baf,#3eaedd); border-radius:4px; }
+    .sus-cal-n { font-size:10.5px; color:var(--text-mid); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.55; }
+    .sus-cal-n b { color:var(--blue); font-weight:700; }
+    .sus-cal-n.atr, .sus-cal-n.atr b { color:#b91c1c; }
+    .sus-cal-n.men { color:var(--text-soft); font-style:italic; }
+    @media (max-width:900px) { .sus-cal-g { grid-template-columns:repeat(4,1fr); } }
+    @media (max-width:560px) { .sus-cal-g { grid-template-columns:repeat(3,1fr); } }
+    .sf-ciclos { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .sf-ciclo { padding:10px 6px; border:1.5px solid var(--border); border-radius:10px; background:#fff; font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-mid); cursor:pointer; transition:all .15s; }
+    .sf-ciclo:hover { border-color:var(--blue); color:var(--blue); }
+    .sf-ciclo.on { background:var(--blue); border-color:var(--blue); color:#fff; }
     .sus-row:hover { background:#f8fafc; }
     .sus-tipo { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 0; border-radius:20px; text-align:center; }
     @media (max-width:700px) {
@@ -1643,6 +1665,7 @@
       <button class="btn-nuevo-cliente" onclick="openSuscripcionForm()">+ Nueva suscripción</button>
     </div>
     <div class="cb-tiles" id="sus-resumen" style="margin-bottom:14px;"></div>
+    <div id="sus-calendario"></div>
     <div class="clientes-search-row">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="sus-search" placeholder="Buscar por cliente, servicio o dominio..." oninput="renderSuscripciones()" autocomplete="off">
@@ -1652,6 +1675,12 @@
       <button class="cl-chip" data-susestado="pausada" onclick="setSusFiltro('estado','pausada',this)">En pausa</button>
       <button class="cl-chip" data-susestado="cancelada" onclick="setSusFiltro('estado','cancelada',this)">Canceladas</button>
       <button class="cl-chip" data-susestado="todas" onclick="setSusFiltro('estado','todas',this)">Todas</button>
+    </div>
+    <div class="cl-tags-row" style="margin-bottom:8px;">
+      <button class="cl-chip active" data-susciclo="todos" onclick="setSusFiltro('ciclo','todos',this)">Todos los planes</button>
+      <button class="cl-chip" data-susciclo="mensual" onclick="setSusFiltro('ciclo','mensual',this)">Mensuales</button>
+      <button class="cl-chip" data-susciclo="anual" onclick="setSusFiltro('ciclo','anual',this)">Anuales</button>
+      <button class="cl-chip" data-susciclo="otros" onclick="setSusFiltro('ciclo','otros',this)">Otros ciclos</button>
     </div>
     <div class="cl-tags-row">
       <button class="cl-chip active" data-sustipo="todos" onclick="setSusFiltro('tipo','todos',this)">Todos los tipos</button>
@@ -5575,8 +5604,63 @@ const SUS_SUGERENCIAS = {
 const SUS_MESES = { semanal: 12 / 52, mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
 let suscripcionesList = [];
 let _susCargadas = false, _susMigrada = false;
-let susFiltroTipo = 'todos', susFiltroEstado = 'activa';
+let susFiltroTipo = 'todos', susFiltroEstado = 'activa', susFiltroCiclo = 'todos';
 
+/* Primer vencimiento desde hoy en adelante, contando ciclos desde la fecha de inicio */
+function susProximoDesde(inicio, ciclo) {
+  if (!inicio) return '';
+  const hoy = todayISO();
+  let f = ptSumarCiclo(inicio, ciclo);
+  for (let i = 0; f < hoy && i < 600; i++) f = ptSumarCiclo(f, ciclo);
+  return f;
+}
+/* Cobros de los próximos 12 meses (cada suscripción activa en el mes que le toca pagar) */
+function susCalendario(list) {
+  const hoy = new Date(todayISO() + 'T12:00:00');
+  const meses = Array.from({ length: 12 }, (_, i) => { const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1); return { y: d.getFullYear(), m: d.getMonth(), items: [] }; });
+  const limite = new Date(hoy.getFullYear(), hoy.getMonth() + 12, 1);
+  list.filter(s => s.estado === 'activa' && s.proximoPago).forEach(s => {
+    let f = s.proximoPago;
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(f + 'T12:00:00');
+      if (d >= limite || (s.fechaFin && f > s.fechaFin)) break;
+      const mes = meses.find(x => x.y === d.getFullYear() && x.m === d.getMonth());
+      if (mes) mes.items.push({ s, f });
+      else if (d < hoy) meses[0].items.push({ s, f, atrasada: true });
+      f = ptSumarCiclo(f, s.ciclo);
+    }
+  });
+  return meses;
+}
+function renderSusCalendario(list) {
+  const el = document.getElementById('sus-calendario');
+  if (!el) return;
+  const soloAnual = susFiltroCiclo === 'anual';
+  const base = list.filter(s => susFiltroCiclo === 'todos' || susGrupo(s) === susFiltroCiclo);
+  if (!base.some(s => s.estado === 'activa' && s.proximoPago) || susFiltroCiclo === 'mensual') { el.innerHTML = ''; return; }
+  const meses = susCalendario(base);
+  const max = Math.max(1, ...meses.map(m => m.items.reduce((a, x) => a + (Number(x.s.precio) || 0), 0)));
+  const total = meses.reduce((a, m) => a + m.items.reduce((b, x) => b + (Number(x.s.precio) || 0), 0), 0);
+  el.innerHTML = `<div class="sus-cal">
+    <div class="sus-cal-h"><span>${soloAnual ? 'Cobros anuales' : 'Cobros'} de los próximos 12 meses</span><strong>${cbMoney(total)}</strong></div>
+    <div class="sus-cal-g">${meses.map((m, i) => {
+      const monto = m.items.reduce((a, x) => a + (Number(x.s.precio) || 0), 0);
+      const anuales = m.items.filter(x => x.s.ciclo !== 'mensual' && x.s.ciclo !== 'semanal');
+      const nombres = (soloAnual ? m.items : anuales).map(x => `<div class="sus-cal-n${x.atrasada ? ' atr' : ''}" title="${esc(susNombre(x.s))} · ${ptFmt(x.f)}">${esc(String(x.s.cliente || '').split(' ').slice(0, 2).join(' '))} <b>${new Date(x.f + 'T12:00:00').getDate()}</b></div>`).join('');
+      const mensuales = m.items.length - anuales.length;
+      return `<div class="sus-cal-m${i === 0 ? ' hoy' : ''}${monto ? '' : ' vacio'}">
+        <div class="sus-cal-mes">${new Date(m.y, m.m, 1).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}${m.m === 0 || i === 0 ? ` <small>${m.y}</small>` : ''}</div>
+        <div class="sus-cal-v">${monto ? cbMoney(monto) : '—'}</div>
+        <div class="sus-cal-bar"><div style="width:${Math.round(monto / max * 100)}%"></div></div>
+        ${nombres}${!soloAnual && mensuales ? `<div class="sus-cal-n men">+ ${mensuales} mensual${mensuales !== 1 ? 'es' : ''}</div>` : ''}
+      </div>`;
+    }).join('')}</div></div>`;
+}
+function susGrupo(s) { return s.ciclo === 'mensual' ? 'mensual' : s.ciclo === 'anual' ? 'anual' : 'otros'; }
+function susDiasFin(s) {
+  if (!s.fechaFin) return null;
+  return Math.round((new Date(s.fechaFin + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 864e5);
+}
 function susNombre(s) { return [s.servicio, s.dominio].filter(Boolean).join(' · '); }
 function susMensual(s) { return (Number(s.precio) || 0) / (SUS_MESES[s.ciclo] || 1); }
 function susDias(s) {
@@ -5639,7 +5723,7 @@ async function migrarSuscripcionesPortal() {
 /* Copia visible para el cliente en su portal */
 function susEspejo(s) {
   return { plan: susNombre(s), precio: Number(s.precio) || 0, ciclo: s.ciclo || 'mensual', inicio: s.inicio || '',
-    proximoPago: s.proximoPago || '', estado: s.estado || 'activa', notas: s.notas || '',
+    proximoPago: s.proximoPago || '', fechaFin: s.fechaFin || '', estado: s.estado || 'activa', notas: s.notas || '',
     updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
 }
 async function susSincronizarPortal(id, s, codigoAnterior) {
@@ -5663,6 +5747,7 @@ function susFila(s, compacta) {
     <div class="hr-main">
       ${compacta ? '' : `<div class="hr-top"><span class="hr-cli">${esc(s.cliente || '—')}</span>${s.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${s.autoFactura ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);" title="La factura se crea sola antes del vencimiento">Auto-factura</span>' : ''}</div>`}
       <div class="hr-srv" style="${compacta ? 'font-size:13px;font-weight:600;color:var(--black);' : ''}">${esc(susNombre(s) || '—')}</div>
+      ${s.fechaFin ? (() => { const df = susDiasFin(s); return `<div style="font-size:10.5px;margin-top:2px;font-weight:600;color:${df < 0 ? '#b91c1c' : df <= 30 ? '#b45309' : 'var(--text-soft)'};">${df < 0 ? 'Contrato terminó el ' : 'Contrato hasta el '}${ptFmt(s.fechaFin)}${df >= 0 && df <= 30 ? ` · faltan ${df} día${df !== 1 ? 's' : ''}` : ''}</div>`; })() : (s.inicio ? `<div style="font-size:10.5px;margin-top:2px;color:var(--text-soft);">Desde el ${ptFmt(s.inicio)}</div>` : '')}
     </div>
     <div class="cl-num"><small>${esc((PT_CICLOS[s.ciclo] || s.ciclo || '').toLowerCase())}</small>$${(Number(s.precio) || 0).toFixed(2)}</div>
     <div style="text-align:right;">${venc}${facturada ? `<div style="font-size:10px;color:var(--green-dark);font-weight:600;margin-top:3px;">Factura emitida</div>` : ''}</div>
@@ -5674,7 +5759,7 @@ function susFila(s, compacta) {
   </div>`;
 }
 function setSusFiltro(tipo, valor, btn) {
-  if (tipo === 'tipo') susFiltroTipo = valor; else susFiltroEstado = valor;
+  if (tipo === 'tipo') susFiltroTipo = valor; else if (tipo === 'ciclo') susFiltroCiclo = valor; else susFiltroEstado = valor;
   document.querySelectorAll(`[data-sus${tipo}]`).forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSuscripciones();
@@ -5693,12 +5778,20 @@ function renderSuscripciones() {
     <div class="cb-tile"><div class="cb-tile-l">Vencen en 7 días</div><div class="cb-tile-v" style="color:${pronto.length ? '#b45309' : 'var(--black)'}">${pronto.length}</div><div class="cb-tile-n">${cbMoney(pronto.reduce((a, s) => a + (Number(s.precio) || 0), 0))} por cobrar</div></div>
     <div class="cb-tile"><div class="cb-tile-l">Atrasadas</div><div class="cb-tile-v" style="color:${atrasadas.length ? '#b91c1c' : 'var(--black)'}">${atrasadas.length}</div><div class="cb-tile-n">${cbMoney(atrasadas.reduce((a, s) => a + (Number(s.precio) || 0), 0))} sin renovar</div></div>`;
   const q = ptNorm(document.getElementById('sus-search')?.value);
+  renderSusCalendario(suscripcionesList.filter(s => susFiltroTipo === 'todos' || (s.tipo || 'otro') === susFiltroTipo));
   let list = suscripcionesList;
   if (susFiltroTipo !== 'todos') list = list.filter(s => (s.tipo || 'otro') === susFiltroTipo);
   if (susFiltroEstado !== 'todas') list = list.filter(s => (s.estado || 'activa') === susFiltroEstado);
+  if (susFiltroCiclo !== 'todos') list = list.filter(s => susGrupo(s) === susFiltroCiclo);
   if (q) list = list.filter(s => ptNorm([s.cliente, s.servicio, s.dominio, s.notas].join(' ')).includes(q));
   list = list.slice().sort((a, b) => (susDias(a) ?? 9999) - (susDias(b) ?? 9999));
-  el.innerHTML = list.length ? `<div class="hr-list">${list.map(s => susFila(s)).join('')}</div>`
+  const grupos = [['mensual', 'Planes mensuales', 'var(--blue)', 'al mes'], ['anual', 'Planes anuales', '#0f766e', 'al año'], ['otros', 'Otros ciclos', '#7c3aed', '']]
+    .map(([k, t, c, u]) => ({ k, t, c, u, items: list.filter(s => susGrupo(s) === k) })).filter(g => g.items.length);
+  el.innerHTML = list.length ? grupos.map((g, i) => {
+    const total = g.items.filter(s => s.estado === 'activa').reduce((a, s) => a + (Number(s.precio) || 0), 0);
+    return `<div class="hr-sec-t" style="margin-top:${i ? 20 : 0}px;"><span style="background:${g.c};"></span>${g.t}<em>${g.items.length}</em>${g.u && total ? `<small style="margin-left:auto;letter-spacing:0;text-transform:none;font-weight:600;color:var(--black);font-size:12px;">${cbMoney(total)} ${g.u}</small>` : ''}</div>
+      <div class="hr-list">${g.items.map(s => susFila(s)).join('')}</div>`;
+  }).join('')
     : `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:30px 0;">${suscripcionesList.length ? 'No hay suscripciones con ese filtro.' : 'Aún no hay suscripciones. Agrega la primera con "+ Nueva suscripción".'}</div>`;
 }
 
@@ -5714,15 +5807,19 @@ function openSuscripcionForm(id, preset) {
       <div class="ff"><label>Tipo</label><select id="sf-tipo" onchange="susSugerencias()">${opts(SUS_TIPOS, tipo)}</select></div>
       <div class="ff"><label>Servicio</label><input id="sf-servicio" list="sf-sugs" maxlength="120" value="${esc(s.servicio || '')}" placeholder="Ej. Hosting mensual"><datalist id="sf-sugs"></datalist></div>
     </div>
-    <div class="ff" id="sf-dominio-wrap"><label>Dominio o sitio (opcional)</label><input id="sf-dominio" maxlength="120" value="${esc(s.dominio || '')}" placeholder="ejemplo.com"></div>
+    <div class="ff" id="sf-dominio-wrap"><label>Nombre de la página o dominio</label><input id="sf-dominio" maxlength="120" value="${esc(s.dominio || '')}" placeholder="Ej. mitienda.com"></div>
+    <div class="ff"><label>Plan</label>
+      <div class="sf-ciclos">${[['mensual', 'Mensual'], ['anual', 'Anual'], ['trimestral', 'Trimestral'], ['semestral', 'Semestral']].map(([k, v]) => `<button type="button" class="sf-ciclo${(s.ciclo || 'mensual') === k ? ' on' : ''}" data-ciclo="${k}" onclick="susElegirCiclo('${k}')">${v}</button>`).join('')}</div>
+      <input type="hidden" id="sf-ciclo" value="${esc(s.ciclo || 'mensual')}"></div>
+    <div class="ff"><label>Precio por <span id="sf-precio-u">${{ anual: 'año', trimestral: 'trimestre', semestral: 'semestre', semanal: 'semana' }[s.ciclo] || 'mes'}</span> ($)</label><input type="number" step="0.01" min="0" id="sf-precio" value="${esc(s.precio ?? '')}"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="ff"><label>Precio ($)</label><input type="number" step="0.01" min="0" id="sf-precio" value="${esc(s.precio ?? '')}"></div>
-      <div class="ff"><label>Ciclo de pago</label><select id="sf-ciclo">${opts(PT_CICLOS, s.ciclo || 'mensual')}</select></div>
+      <div class="ff"><label>Empezó el</label><input type="date" id="sf-inicio" value="${esc(s.inicio || todayISO())}" onchange="susAutoFechas()"></div>
+      <div class="ff"><label>Próximo pago</label><input type="date" id="sf-prox" value="${esc(s.proximoPago || '')}" oninput="this.dataset.manual='1'"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="ff"><label>Inicio</label><input type="date" id="sf-inicio" value="${esc(s.inicio || todayISO())}"></div>
-      <div class="ff"><label>Próximo pago</label><input type="date" id="sf-prox" value="${esc(s.proximoPago || '')}"></div>
-    </div>
+    <div class="ff"><label>Contrato hasta (opcional)</label>
+      <div style="display:flex;gap:8px;"><input type="date" id="sf-fin" value="${esc(s.fechaFin || '')}" style="flex:1;">
+      <button type="button" class="btn-sm" onclick="susFinUnAnio()" style="white-space:nowrap;">+1 año desde el inicio</button></div>
+      <div id="sf-ayuda" style="font-size:11px;color:var(--text-soft);margin-top:6px;font-family:'IBM Plex Sans',sans-serif;"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="ff"><label>Estado</label><select id="sf-estado">${opts(PT_SUSC, s.estado || 'activa')}</select></div>
       <div class="ff"><label>Emisor</label><select id="sf-emisor"><option value="">—</option>${EMPLEADOS.map(e => `<option ${e.nombre === s.emisor ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}</select></div>
@@ -5734,12 +5831,44 @@ function openSuscripcionForm(id, preset) {
     </label>
     <div class="ff"><label>Notas (las ve el cliente en su portal)</label><input id="sf-notas" maxlength="200" value="${esc(s.notas || '')}"></div>
     <button class="btn-edit-save" onclick="guardarSuscripcion('${esc(id || '')}')">Guardar</button>
+    ${id ? '' : `<button class="btn-edit-cancel" style="color:var(--blue);border-color:var(--blue);" onclick="guardarSuscripcion('', true)">Guardar y agregar otra</button>`}
     ${id ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
       <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();facturarSuscripcion('${esc(id)}')">Facturar este período</button>
       <button class="btn-edit-cancel" style="margin:0;" onclick="closePortalModal();renovarSuscripcion('${esc(id)}')">Renovar</button>
     </div>` : ''}
     <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
   susSugerencias();
+  if (!id && !s.proximoPago) susAutoFechas(); else susAyuda();
+}
+function susElegirCiclo(k) {
+  document.getElementById('sf-ciclo').value = k;
+  document.querySelectorAll('.sf-ciclo').forEach(b => b.classList.toggle('on', b.dataset.ciclo === k));
+  document.getElementById('sf-precio-u').textContent = { anual: 'año', trimestral: 'trimestre', semestral: 'semestre' }[k] || 'mes';
+  const srv = document.getElementById('sf-servicio');
+  if (srv && /^hosting (mensual|anual)$/i.test(srv.value.trim()) && (k === 'mensual' || k === 'anual')) srv.value = 'Hosting ' + k;
+  susAutoFechas();
+}
+/* Al cambiar el inicio o el plan, el próximo pago se calcula solo (si no lo escribiste a mano) */
+function susAutoFechas() {
+  const prox = document.getElementById('sf-prox');
+  const inicio = document.getElementById('sf-inicio').value;
+  if (prox && !prox.dataset.manual && inicio) prox.value = susProximoDesde(inicio, document.getElementById('sf-ciclo').value);
+  susAyuda();
+}
+function susFinUnAnio() {
+  const inicio = document.getElementById('sf-inicio').value || todayISO();
+  document.getElementById('sf-fin').value = ptSumarCiclo(inicio, 'anual');
+  susAyuda();
+}
+function susAyuda() {
+  const el = document.getElementById('sf-ayuda'); if (!el) return;
+  const inicio = document.getElementById('sf-inicio').value, ciclo = document.getElementById('sf-ciclo').value;
+  const prox = document.getElementById('sf-prox').value, fin = document.getElementById('sf-fin').value;
+  const partes = [];
+  if (inicio) partes.push(`Empezó el ${ptFmt(inicio)}`);
+  if (prox) partes.push(`le toca pagar el ${ptFmt(prox)}`);
+  if (fin) partes.push(`el contrato termina el ${ptFmt(fin)}`);
+  el.textContent = partes.length ? partes.join(', ') + '.' + (fin && ciclo === 'mensual' ? ` Son ${Math.max(1, Math.round((new Date(fin) - new Date(inicio)) / (864e5 * 30.44)))} pagos mensuales en total.` : '') : 'Si el cliente firmó por un tiempo fijo (por ejemplo, un año), pon aquí la fecha final.';
 }
 function susSugerencias() {
   const t = document.getElementById('sf-tipo')?.value || 'otro';
@@ -5748,7 +5877,7 @@ function susSugerencias() {
   const dw = document.getElementById('sf-dominio-wrap');
   if (dw) dw.style.display = (t === 'hosting' || t === 'dominio' || t === 'mantenimiento') ? '' : 'none';
 }
-async function guardarSuscripcion(id) {
+async function guardarSuscripcion(id, otra) {
   const cliente = document.getElementById('sf-cliente').value.trim().replace(/\s+/g, ' ');
   const servicio = document.getElementById('sf-servicio').value.trim();
   const precio = parseFloat(document.getElementById('sf-precio').value);
@@ -5763,7 +5892,8 @@ async function guardarSuscripcion(id) {
     tipo: document.getElementById('sf-tipo').value, servicio,
     dominio: document.getElementById('sf-dominio').value.trim(),
     precio, moneda: 'usd', ciclo, inicio,
-    proximoPago: document.getElementById('sf-prox').value || ptSumarCiclo(inicio, ciclo),
+    proximoPago: document.getElementById('sf-prox').value || susProximoDesde(inicio, ciclo),
+    fechaFin: document.getElementById('sf-fin').value || '',
     estado: document.getElementById('sf-estado').value,
     emisor: document.getElementById('sf-emisor').value,
     autoFactura: document.getElementById('sf-auto').checked,
@@ -5780,6 +5910,7 @@ async function guardarSuscripcion(id) {
     logActividad(id ? 'Suscripción editada' : 'Nueva suscripción', `${cliente} · ${servicio}`);
     toast('Suscripción guardada ✅');
     closePortalModal();
+    if (otra) setTimeout(() => openSuscripcionForm(null, { tipo: data.tipo, ciclo: data.ciclo, servicio: data.servicio, precio: data.precio, emisor: data.emisor }), 150);
   } catch (e) { console.error(e); toast('Error al guardar la suscripción.', 'err'); }
 }
 async function borrarSuscripcion(id) {
@@ -5794,7 +5925,8 @@ async function borrarSuscripcion(id) {
 async function renovarSuscripcion(id, silencioso) {
   const s = suscripcionesList.find(x => x._id === id); if (!s) return;
   const nueva = ptSumarCiclo(s.proximoPago || todayISO(), s.ciclo);
-  if (!silencioso && !confirm(`¿Marcar pagado el período de "${susNombre(s)}" (${s.cliente})?\nEl próximo pago pasará al ${ptFmt(nueva)}.`)) return;
+  const finAviso = s.fechaFin && nueva > s.fechaFin ? `\n\nOjo: el contrato termina el ${ptFmt(s.fechaFin)}. Si el cliente renueva, actualiza la fecha de fin.` : '';
+  if (!silencioso && !confirm(`¿Marcar pagado el período de "${susNombre(s)}" (${s.cliente})?\nEl próximo pago pasará al ${ptFmt(nueva)}.${finAviso}`)) return;
   try {
     const upd = { proximoPago: nueva, ultimoPago: todayISO(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     await db.collection('suscripciones').doc(id).update(upd);
