@@ -623,6 +623,8 @@
     .sheet-footer strong { color:var(--black); font-weight:600; }
     .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 30px 26px; }
     .sheet-actions.three { grid-template-columns:1fr 1fr 1fr; }
+    .btn-sheet.deshacer { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#fff; color:#b45309; border:1.5px dashed rgba(180,83,9,.35); }
+    .btn-sheet.deshacer:hover { background:#fffbeb; border-style:solid; }
     .btn-sheet { padding:12px; border-radius:10px; font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.2s; border:1.5px solid; text-align:center; }
     .btn-sheet.print  { background:var(--blue-xlight); color:var(--blue); border-color:rgba(20,56,204,0.2); }
     .btn-sheet.print:hover  { background:rgba(20,56,204,0.12); }
@@ -684,6 +686,9 @@
     .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--black); color:white; padding:12px 24px; border-radius:100px; font-size:13px; font-weight:500; opacity:0; transition:all 0.3s; z-index:99999; pointer-events:none; white-space:nowrap; }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
     .toast.err  { background:#ef4444; }
+    .toast.accion { pointer-events:auto; display:flex; align-items:center; gap:14px; padding:10px 12px 10px 22px; }
+    .toast-btn { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); color:#fff; font-family:inherit; font-size:12px; font-weight:700; padding:6px 14px; border-radius:20px; cursor:pointer; white-space:nowrap; }
+    .toast-btn:hover { background:rgba(255,255,255,.25); }
 
     /* ─── PRINT ─── */
     @media print {
@@ -2028,6 +2033,15 @@ function toast(msg, type='ok') {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.className = 'toast', 3200);
 }
+/* Aviso con botón (ej. "Deshacer"), visible unos segundos más */
+function toastAccion(msg, etiqueta, fn, ms = 9000) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="toast-btn">${esc(etiqueta)}</button>`;
+  t.className = 'toast show ok accion';
+  t.querySelector('.toast-btn').onclick = () => { t.className = 'toast'; clearTimeout(t._timer); fn(); };
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = 'toast', ms);
+}
 
 function genId(prefix) {
   return prefix + '-' + Date.now().toString(36).toUpperCase().slice(-6);
@@ -3003,6 +3017,7 @@ function openSheet(doc) {
       <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
       <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
+      ${fsId && (doc.pagos || []).length ? `<button class="btn-sheet deshacer" onclick="deshacerUltimoAbono('${esc(fsId)}')" style="grid-column:1/-1;">${SVG_DESHACER} Quitar el último abono ($${(Number(doc.pagos[doc.pagos.length - 1].monto) || 0).toFixed(2)})</button>` : ''}
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   } else if (isFactura) {
     actions.className = 'sheet-actions four';
@@ -3026,6 +3041,7 @@ function openSheet(doc) {
       <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
       <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
       <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
+      ${fsId ? `<button class="btn-sheet deshacer" onclick="deshacerPago('${esc(fsId)}')" style="grid-column:1/-1;">${SVG_DESHACER} Volver a pendiente de pago</button>` : ''}
       <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
   }
 
@@ -3056,6 +3072,70 @@ function openSheet(doc) {
   document.getElementById('modalDoc').classList.add('show');
 }
 
+const SVG_DESHACER = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>';
+/* Foto del estado antes de cobrar, para poder deshacer */
+function estadoAntesDePago(doc) {
+  const s = doc.suscripcionId ? suscripcionesList.find(x => x._id === doc.suscripcionId) : null;
+  return {
+    type: doc.type || 'factura', pagadoParcial: !!doc.pagadoParcial,
+    montoPagado: Number(doc.montoPagado) || 0, fechaPago: doc.fechaPago || null,
+    docId: doc.docId || '', ref: doc.ref ?? '', pagosN: Array.isArray(doc.pagos) ? doc.pagos.length : 0,
+    sus: s ? { id: s._id, proximoPago: s.proximoPago || '', ultimoPago: s.ultimoPago || '' } : null,
+    fecha: new Date().toISOString(), por: currentUser?.email || ''
+  };
+}
+/* Volver la factura a como estaba antes de marcarla pagada */
+async function deshacerPago(fsId, sinConfirmar) {
+  const doc = docsMap[fsId];
+  if (!doc) return;
+  const prev = doc.estadoAnterior;
+  const pagosAhora = Array.isArray(doc.pagos) ? doc.pagos : [];
+  if (!sinConfirmar && !confirm(`¿Volver ${doc.docId || 'este documento'} a pendiente de pago?\nSe quitará la marca de pagado${prev && prev.pagosN < pagosAhora.length ? ' y el abono con que se completó' : ''}. Los comprobantes que subió el cliente no se borran.`)) return;
+  const total = Number(doc.total) || 0;
+  let upd;
+  if (prev) {
+    upd = { type: prev.type === 'recibo' ? 'factura' : prev.type, pagado: false, pagadoParcial: prev.pagadoParcial,
+      montoPagado: prev.montoPagado, fechaPago: prev.fechaPago, docId: prev.docId, ref: prev.ref, pagos: pagosAhora.slice(0, prev.pagosN) };
+  } else {
+    // Recibos viejos sin "foto": vuelve a factura sin abonos
+    upd = { type: 'factura', pagado: false, pagadoParcial: false, montoPagado: 0, fechaPago: null,
+      docId: String(doc.docId || '').replace(/^REC-/, 'FAC-'), pagos: [] };
+  }
+  upd.estadoAnterior = firebase.firestore.FieldValue.delete();
+  try {
+    await db.collection('documentos').doc(fsId).update(upd);
+    // La suscripción vuelve al período que tenía
+    const sp = prev?.sus;
+    const s = sp && suscripcionesList.find(x => x._id === sp.id);
+    if (s && s.proximoPago !== sp.proximoPago) {
+      const su = { proximoPago: sp.proximoPago, ultimoPago: sp.ultimoPago, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      await db.collection('suscripciones').doc(sp.id).update(su);
+      await susSincronizarPortal(sp.id, { ...s, ...su });
+    }
+    logActividad('Pago deshecho', `${doc.docId || fsId} → ${upd.docId}`);
+    toast('Listo: volvió a pendiente de pago ↩');
+    if (document.getElementById('modalDoc').classList.contains('show')) {
+      const nuevo = { ...doc, ...upd, _fsId: fsId }; delete nuevo.estadoAnterior;
+      openSheet(nuevo);
+    }
+  } catch (e) { console.error(e); toast('No se pudo deshacer.', 'err'); }
+}
+/* Quitar el último abono registrado por error (pago parcial) */
+async function deshacerUltimoAbono(fsId, sinConfirmar) {
+  const doc = docsMap[fsId];
+  const pagos = Array.isArray(doc?.pagos) ? doc.pagos : [];
+  if (!pagos.length) return;
+  const ult = pagos[pagos.length - 1];
+  if (!sinConfirmar && !confirm(`¿Quitar el último abono de $${(Number(ult.monto) || 0).toFixed(2)}${ult.ref ? ' (' + ult.ref + ')' : ''}?`)) return;
+  const resto = pagos.slice(0, -1);
+  const monto = parseFloat(resto.reduce((a, x) => a + (Number(x.monto) || 0), 0).toFixed(2));
+  try {
+    await db.collection('documentos').doc(fsId).update({ pagos: resto, montoPagado: monto, pagadoParcial: monto > 0.009 });
+    logActividad('Abono quitado', `${doc.docId || fsId} · $${(Number(ult.monto) || 0).toFixed(2)}`);
+    toast('Abono quitado ↩');
+    if (document.getElementById('modalDoc').classList.contains('show')) openSheet({ ...doc, pagos: resto, montoPagado: monto, pagadoParcial: monto > 0.009, _fsId: fsId });
+  } catch (e) { toast('No se pudo quitar el abono.', 'err'); }
+}
 async function marcarPagado(fsId) {
   if (!fsId) return;
   const doc = docsMap[fsId];
@@ -3073,10 +3153,11 @@ async function marcarPagado(fsId) {
       pagadoParcial: false,
       fechaPago,
       docId:         newDocId,
-      ref:           doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'
+      ref:           doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado',
+      estadoAnterior: estadoAntesDePago(doc)
     });
     logActividad('Factura pagada', newDocId || fsId);
-    toast('Marcado como pagado ✅');
+    toastAccion('Marcado como pagado ✅', 'Deshacer', () => deshacerPago(fsId, true));
     alPagarFacturaSuscripcion(doc);
     /* Refresh the open sheet */
     const updated = { ...doc, type:'recibo', pagado:true, pagadoParcial:false, fechaPago, docId:newDocId };
@@ -3139,9 +3220,10 @@ async function confirmarPagoParcial() {
         fechaPago,
         docId:         newDocId,
         ref:           ref || (doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'),
-        pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
+        pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() }),
+        estadoAnterior: estadoAntesDePago(doc)
       });
-      toast('Pago completo registrado ✅');
+      toastAccion('Pago completo registrado ✅', 'Deshacer', () => deshacerPago(fsId, true));
       alPagarFacturaSuscripcion(doc);
     } else {
       /* Partial */
@@ -3150,7 +3232,7 @@ async function confirmarPagoParcial() {
         montoPagado:   newMontoPagado,
         pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
       });
-      toast('Pago parcial registrado 💰');
+      toastAccion('Pago parcial registrado 💰', 'Deshacer', () => deshacerUltimoAbono(fsId, true));
     }
     document.getElementById('modalPagoParcial').classList.remove('show');
     pagoParcialFsId = null;
