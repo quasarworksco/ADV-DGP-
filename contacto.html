@@ -88,7 +88,7 @@
         <div class="f"><label for="telefono">WhatsApp</label><input id="telefono" type="tel" autocomplete="tel" maxlength="40" placeholder="+1 305 000 0000"></div>
       </div>
       <div class="f"><label for="mensaje">Cuéntanos un poco más <em>(opcional)</em></label><textarea id="mensaje" maxlength="1500" placeholder="Ej. Tengo una pizzería y quiero una página con menú y pedidos por WhatsApp."></textarea></div>
-      <div class="trampa" aria-hidden="true"><label for="web">No llenar</label><input id="web" tabindex="-1" autocomplete="off"></div>
+      <div class="trampa" aria-hidden="true"><label for="hp">No llenar</label><input id="hp" tabindex="-1" autocomplete="off"></div>
       <button class="btn" id="btn" type="submit">Enviar mensaje
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
       <div class="err" id="err" role="alert"></div>
@@ -128,7 +128,7 @@
     btn.disabled = true; btn.firstChild.textContent = 'Enviando… ';
     try {
       const r = await fetch(BOT + '/contacto', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: v('nombre'), negocio: v('negocio'), correo: v('correo'), telefono: v('telefono'), mensaje: v('mensaje'), servicio, web: v('web'), t: Date.now() - inicio, pagina: document.referrer || '' }) });
+        body: JSON.stringify({ nombre: v('nombre'), negocio: v('negocio'), correo: v('correo'), telefono: v('telefono'), mensaje: v('mensaje'), servicio, _hp_dgp: v('hp'), t: Date.now() - inicio, pagina: document.referrer || '' }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se pudo enviar');
       document.getElementById('form').style.display = 'none';

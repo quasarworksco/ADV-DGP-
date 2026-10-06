@@ -1658,6 +1658,57 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe) {
    Crea el cliente con la etiqueta "Prospecto" (o suma el mensaje si ya existe)
    y avisa por Telegram con un botón para responder por WhatsApp.
 ══════════════════════════════════════════════════════════════ */
+/* Acepta JSON, texto JSON (sendBeacon) o formularios normales, y reconoce los campos
+   aunque se llamen distinto (Name, Email, your-email, Teléfono, Message, fields[name][value]...) */
+async function leerFormularioContacto(request) {
+  const tipo = (request.headers.get('Content-Type') || '').toLowerCase();
+  let crudo = {};
+  try {
+    if (tipo.includes('multipart/form-data') || tipo.includes('application/x-www-form-urlencoded')) {
+      const fd = await request.formData();
+      for (const [k, v] of fd.entries()) if (typeof v === 'string') crudo[k] = crudo[k] ? crudo[k] + ', ' + v : v;
+    } else {
+      const t = await request.text();
+      try { crudo = JSON.parse(t); } catch (e) { crudo = Object.fromEntries(new URLSearchParams(t)); }
+    }
+  } catch (e) { crudo = {}; }
+  const planos = {};
+  const aplanar = (o, pref) => {
+    if (Array.isArray(o)) { o.forEach((x, i) => (x && typeof x === 'object' && (x.value !== undefined)) ? (planos[x.label || x.name || x.id || pref + i] = String(x.value)) : aplanar(x, pref + i + '.')); return; }
+    for (const [k, v] of Object.entries(o || {})) {
+      if (v && typeof v === 'object') { if (v.value !== undefined && typeof v.value !== 'object') planos[v.title || v.label || k] = String(v.value); else aplanar(v, k + '.'); }
+      else if (v !== undefined && v !== null && v !== '') planos[pref + k] = String(v);
+    }
+  };
+  aplanar(crudo, '');
+  const norm = k => String(k).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^fields?[\[.]|\]?\[?value\]?$|\]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const out = {}, usados = new Set();
+  const reglas = [
+    ['_hp_dgp', /^hp dgp$/], ['t', /^t$/],
+    ['apellido', /(apellido|last ?name|surname)/],
+    ['nombre', /^(nombre|name|your name|full ?name|nombre completo|first ?name|tu nombre|nombres?)( |$)/],
+    ['correo', /(e ?mail|correo)/],
+    ['telefono', /(tel|phone|whatsapp|celular|movil|numero)/],
+    ['negocio', /(empresa|negocio|company|business|organizacion)/],
+    ['servicio', /(servicio|service|interes|plan|producto|asunto|subject)/],
+    ['mensaje', /(mensaje|message|comentario|consulta|detalle|descripcion|your message|texto|pregunta|cuentanos|cuentame|necesitas|proyecto)/]
+  ];
+  for (const [k, v] of Object.entries(planos)) {
+    const n = norm(k);
+    const r = reglas.find(([campo, re]) => !out[campo] && re.test(n));
+    if (r) { out[r[0]] = v; usados.add(k); }
+  }
+  // Si no hubo campo de correo, busca un valor que lo parezca
+  if (!out.correo) { const e = Object.entries(planos).find(([k, v]) => !usados.has(k) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim())); if (e) { out.correo = e[1]; usados.add(e[0]); } }
+  if (out.apellido && out.nombre) out.nombre = out.nombre + ' ' + out.apellido;
+  else if (out.apellido && !out.nombre) out.nombre = out.apellido;
+  // Lo que no se reconoció se agrega al mensaje (sin datos técnicos del formulario)
+  const tecnico = /^(form|action|nonce|wp|token|g recaptcha|recaptcha|referer|referrer|post id|page|queried|submit|cf |honeypot|hp |pagina$|origen$|utm )/;
+  const extra = Object.entries(planos).filter(([k, v]) => !usados.has(k) && !tecnico.test(norm(k)) && String(v).length < 500).map(([k, v]) => `${k}: ${v}`);
+  if (extra.length) out.mensaje = [out.mensaje, ...extra].filter(Boolean).join('\n');
+  out.pagina = planos.pagina || planos.page_url || '';
+  return out;
+}
 const ORIGENES_CONTACTO = ['https://dgpglobalgroup.com', 'https://www.dgpglobalgroup.com', 'https://adv.dgp-link.com', 'http://localhost:8765'];
 function corsContacto(request) {
   const o = request.headers.get('Origin') || '';
@@ -1668,9 +1719,9 @@ async function handleContacto(request, env) {
   const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
   if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
-  const b = await request.json().catch(() => ({}));
+  const b = await leerFormularioContacto(request);
   // Anti-spam: campo trampa invisible y tiempo mínimo llenando el formulario
-  if (b.web || (Number(b.t) && Number(b.t) < 2500)) return resp({ ok: true });
+  if (b._hp_dgp || (Number(b.t) && Number(b.t) < 2500)) return resp({ ok: true });
   const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
   const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase(), telefono = limpiar(b.telefono, 40);
   const servicio = limpiar(b.servicio, 80), negocio = limpiar(b.negocio, 100);
