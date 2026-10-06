@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contáctanos — DGP Group USA</title>
+  <meta name="description" content="Cuéntanos qué necesitas y te respondemos en menos de 24 horas.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#172b5e">
+  <link rel="icon" href="/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg:#eef4fa; --card:#ffffff; --tx:#0f1b33; --tx2:#475569; --tx3:#94a3b8; --line:#e6edf5;
+      --acc:#166baf; --acc-soft:#eaf5fb; --input:#ffffff; --input-line:#dbe4ee; --err:#dc2626; --ok:#059669;
+      --shadow:0 20px 60px rgba(15,27,51,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#070f22; --card:#0f1b38; --tx:#eaf3ff; --tx2:#a9bedb; --tx3:#6f86a8; --line:#1d2d52;
+        --acc:#5cc3ec; --acc-soft:rgba(62,174,221,.10); --input:#0b1630; --input-line:#223463; --err:#f87171; --ok:#34d399; --shadow:0 20px 60px rgba(0,0,0,.45); }
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--tx); min-height:100vh; display:flex; justify-content:center; padding:24px 16px; }
+    body.embed { padding:0; background:transparent; }
+    .card { width:100%; max-width:560px; background:var(--card); border:1px solid var(--line); border-radius:22px; overflow:hidden; box-shadow:var(--shadow); align-self:flex-start; }
+    body.embed .card { box-shadow:none; }
+    .head { background:linear-gradient(150deg,#0b1633 0%,#172b5e 45%,#166baf 85%,#3eaedd 125%); padding:28px 30px 26px; color:#fff; }
+    .brand { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+    .brand img { width:38px; height:38px; }
+    .brand b { font-family:'Poppins',sans-serif; font-size:14px; letter-spacing:2.5px; display:block; }
+    .brand small { font-size:11px; color:#9fdcf4; }
+    h1 { font-family:'Poppins',sans-serif; font-size:28px; font-weight:700; line-height:1.15; letter-spacing:-.3px; }
+    .head p { font-size:13.5px; color:#cfeaf8; margin-top:8px; line-height:1.55; }
+    form { padding:24px 30px 28px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .f { margin-bottom:14px; }
+    label { display:block; font-size:10.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--tx2); margin-bottom:6px; }
+    label em { font-style:normal; color:var(--tx3); text-transform:none; letter-spacing:0; font-weight:500; }
+    input, textarea, select { width:100%; padding:12px 14px; border:1.5px solid var(--input-line); border-radius:12px; font-size:15px; font-family:inherit; background:var(--input); color:var(--tx); outline:none; transition:border-color .15s, box-shadow .15s; }
+    input::placeholder, textarea::placeholder { color:var(--tx3); }
+    input:focus, textarea:focus, select:focus { border-color:#3eaedd; box-shadow:0 0 0 3px rgba(62,174,221,.18); }
+    textarea { resize:vertical; min-height:96px; }
+    .chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .chip { padding:8px 13px; border:1.5px solid var(--input-line); border-radius:30px; background:transparent; color:var(--tx2); font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:all .15s; }
+    .chip:hover { border-color:#3eaedd; color:var(--acc); }
+    .chip.on { background:linear-gradient(135deg,#166baf,#3eaedd); border-color:transparent; color:#fff; }
+    .trampa { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+    .btn { width:100%; margin-top:6px; padding:15px; border:0; border-radius:40px; background:linear-gradient(135deg,#166baf,#3eaedd); color:#fff; font-family:'Poppins',sans-serif; font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 10px 26px rgba(62,174,221,.3); display:flex; align-items:center; justify-content:center; gap:8px; }
+    .btn:disabled { opacity:.65; cursor:wait; }
+    .err { color:var(--err); font-size:12.5px; min-height:18px; margin-top:8px; text-align:center; }
+    .nota { font-size:11.5px; color:var(--tx3); text-align:center; margin-top:10px; line-height:1.5; }
+    .ok { padding:46px 30px 50px; text-align:center; display:none; }
+    .ok .ico { width:64px; height:64px; border-radius:50%; background:var(--acc-soft); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--acc); }
+    .ok h2 { font-family:'Poppins',sans-serif; font-size:22px; margin-bottom:8px; }
+    .ok p { font-size:14px; color:var(--tx2); line-height:1.6; }
+    .ok a { display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:12px 22px; border-radius:40px; border:1.5px solid var(--acc); color:var(--acc); text-decoration:none; font-weight:600; font-size:14px; }
+    @media (max-width:520px) { body { padding:0; } .card { border-radius:0; border:0; min-height:100vh; } .row { grid-template-columns:1fr; gap:0; } form, .head { padding-left:20px; padding-right:20px; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="brand"><img src="/logo-white.png" alt=""><div><b>DGP GROUP USA</b><small>Servicios Digitales Profesionales</small></div></div>
+      <h1>Cuéntanos tu proyecto</h1>
+      <p>Déjanos tus datos y te respondemos en menos de 24 horas, sin compromiso.</p>
+    </div>
+    <form id="form" novalidate>
+      <div class="f"><label>¿Qué necesitas?</label>
+        <div class="chips" id="chips">
+          <button type="button" class="chip">Página web</button>
+          <button type="button" class="chip">Tienda online</button>
+          <button type="button" class="chip">Branding y logo</button>
+          <button type="button" class="chip">Redes sociales</button>
+          <button type="button" class="chip">WhatsApp Marketing</button>
+          <button type="button" class="chip">Hosting</button>
+          <button type="button" class="chip">Otro</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="f"><label for="nombre">Tu nombre *</label><input id="nombre" autocomplete="name" maxlength="80" required></div>
+        <div class="f"><label for="negocio">Negocio <em>(opcional)</em></label><input id="negocio" autocomplete="organization" maxlength="100"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label for="correo">Correo</label><input id="correo" type="email" autocomplete="email" maxlength="120" placeholder="tucorreo@ejemplo.com"></div>
+        <div class="f"><label for="telefono">WhatsApp</label><input id="telefono" type="tel" autocomplete="tel" maxlength="40" placeholder="+1 305 000 0000"></div>
+      </div>
+      <div class="f"><label for="mensaje">Cuéntanos un poco más <em>(opcional)</em></label><textarea id="mensaje" maxlength="1500" placeholder="Ej. Tengo una pizzería y quiero una página con menú y pedidos por WhatsApp."></textarea></div>
+      <div class="trampa" aria-hidden="true"><label for="web">No llenar</label><input id="web" tabindex="-1" autocomplete="off"></div>
+      <button class="btn" id="btn" type="submit">Enviar mensaje
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      <div class="err" id="err" role="alert"></div>
+      <p class="nota">Necesitamos tu correo o tu WhatsApp para responderte. No compartimos tus datos.</p>
+    </form>
+    <div class="ok" id="ok">
+      <div class="ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>¡Mensaje recibido!</h2>
+      <p>Gracias por escribirnos. Te contactaremos muy pronto.<br>¿Lo necesitas ya? Escríbenos directo:</p>
+      <a href="https://wa.me/12398231738" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> WhatsApp +1 (239) 823-1738</a>
+    </div>
+  </div>
+<script>
+  const BOT = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev';
+  const inicio = Date.now();
+  const params = new URLSearchParams(location.search);
+  if (params.has('embed')) document.body.classList.add('embed');
+  let servicio = params.get('servicio') || '';
+  const chips = [...document.querySelectorAll('.chip')];
+  chips.forEach(c => {
+    if (servicio && c.textContent.trim().toLowerCase() === servicio.toLowerCase()) c.classList.add('on');
+    c.onclick = () => { const on = !c.classList.contains('on'); chips.forEach(x => x.classList.remove('on')); if (on) c.classList.add('on'); servicio = on ? c.textContent.trim() : ''; };
+  });
+  // Si está dentro de un iframe, avisa la altura para que no salga barra de scroll
+  const avisarAltura = () => { try { parent.postMessage({ dgpContactoAltura: document.documentElement.scrollHeight }, '*'); } catch (e) {} };
+  new ResizeObserver(avisarAltura).observe(document.body);
+
+  document.getElementById('form').onsubmit = async e => {
+    e.preventDefault();
+    const v = id => document.getElementById(id).value.trim();
+    const err = document.getElementById('err');
+    err.textContent = '';
+    if (v('nombre').length < 2) { err.textContent = 'Escribe tu nombre.'; return; }
+    if (v('correo') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('correo'))) { err.textContent = 'Revisa tu correo.'; return; }
+    if (!v('correo') && v('telefono').replace(/\D/g, '').length < 7) { err.textContent = 'Déjanos tu correo o tu WhatsApp para responderte.'; return; }
+    const btn = document.getElementById('btn');
+    btn.disabled = true; btn.firstChild.textContent = 'Enviando… ';
+    try {
+      const r = await fetch(BOT + '/contacto', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: v('nombre'), negocio: v('negocio'), correo: v('correo'), telefono: v('telefono'), mensaje: v('mensaje'), servicio, web: v('web'), t: Date.now() - inicio, pagina: document.referrer || '' }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'No se pudo enviar');
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('ok').style.display = 'block';
+      avisarAltura();
+    } catch (x) {
+      err.textContent = x.message === 'Failed to fetch' ? 'Sin conexión. Intenta de nuevo o escríbenos por WhatsApp.' : x.message;
+      btn.disabled = false; btn.firstChild.textContent = 'Enviar mensaje ';
+    }
+  };
+</script>
+</body>
+</html>

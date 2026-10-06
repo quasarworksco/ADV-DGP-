@@ -1213,6 +1213,21 @@
       .scl-det { max-height:none; }
     }
     @media (max-width:480px) { .scl-mes { font-size:9px; } .scl-row { grid-template-columns:38px 1fr 70px; } .scl-plan { display:none; } }
+    .srv-rap-t { font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin:14px 0 7px; }
+    .srv-rap { display:flex; flex-wrap:wrap; gap:6px; }
+    .srv-chip { display:inline-flex; align-items:center; gap:7px; padding:7px 11px; border:1.5px solid var(--border); border-radius:20px; background:#fff; font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; font-weight:500; color:var(--black); cursor:pointer; transition:all .15s; }
+    .srv-chip b { color:var(--blue); font-weight:700; }
+    .srv-chip:hover { border-color:var(--blue); background:var(--blue-xlight); }
+    .srv-chip.ghost { color:var(--text-soft); border-style:dashed; }
+    .cat-g { font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin:12px 0 4px; }
+    .cat-row { display:grid; grid-template-columns:1fr auto 30px 30px 30px; gap:6px; align-items:center; padding:7px 4px; border-bottom:1px solid #f1f5f9; font-family:'IBM Plex Sans',sans-serif; }
+    .cat-row.off { opacity:.45; }
+    .cat-n { font-size:13px; font-weight:500; color:var(--black); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cat-n em { font-style:normal; font-size:9.5px; font-weight:700; color:var(--blue); background:var(--blue-xlight); border-radius:8px; padding:1px 6px; margin-left:4px; }
+    .cat-p { font-size:12.5px; font-weight:700; color:var(--black); white-space:nowrap; }
+    .cat-p small { font-weight:500; color:var(--text-soft); }
+    .cat-form { border:1px solid var(--border); background:var(--off); border-radius:12px; padding:12px; margin:16px 0 8px; }
+    #cat-lista { max-height:340px; overflow-y:auto; }
     .sf-ciclos { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
     .sf-ciclo { padding:10px 6px; border:1.5px solid var(--border); border-radius:10px; background:#fff; font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-mid); cursor:pointer; transition:all .15s; }
     .sf-ciclo:hover { border-color:var(--blue); color:var(--blue); }
@@ -1463,6 +1478,7 @@
           <div class="ff" style="margin:0"><label>Cant.</label><input type="number" id="srv-can" value="1" min="1"></div>
         </div>
         <button class="btn-add-f" onclick="addItem()">+ Añadir al documento</button>
+        <div id="srv-rapidos"></div>
         <div class="fstep"><span class="fstep-n">3</span><div><div class="fstep-t">Pago</div><div class="fstep-s">Cómo te va a pagar el cliente</div></div></div>
         <div class="ff">
           <label>Moneda</label>
@@ -1921,7 +1937,10 @@
       </div>
       <div class="ff"><label>Teléfono / WhatsApp</label><input type="tel" id="cl-telefono" placeholder="+1 555 000 0000"></div>
       <div class="ff"><label>Correo electrónico</label><input type="email" id="cl-correo" placeholder="cliente@ejemplo.com"></div>
-      <div class="ff"><label>Empresa (opcional)</label><input type="text" id="cl-empresa" placeholder="Nombre de empresa"></div>
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:10px;">
+        <div class="ff"><label>Empresa (opcional)</label><input type="text" id="cl-empresa" placeholder="Nombre de empresa"></div>
+        <div class="ff"><label>Cumpleaños (opcional)</label><input type="date" id="cl-cumple" title="Le llega un correo de felicitación ese día"></div>
+      </div>
       <div class="ff"><label>Etiquetas (separadas por coma)</label><input type="text" id="cl-tags" placeholder="Ej. VIP, Web, Seguidores" autocomplete="off"><div class="cl-tag-sug" id="cl-tag-sug"></div></div>
       <div class="ff"><label>Notas</label><textarea id="cl-notas" placeholder="Notas internas sobre este cliente..." style="height:70px;resize:none;"></textarea></div>
       <button class="btn-edit-save" onclick="saveCliente2()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cliente</button>
@@ -2093,43 +2112,162 @@ const METODOS_CAMPOS = {
   ]
 };
 
+/* ═══════════════════════════════════════════════════════
+   CATÁLOGO DE SERVICIOS (editable, colección "catalogo")
+═══════════════════════════════════════════════════════ */
+const CATALOGO_BASE = [
+  ['Sitios Web', 'Web Básica', 280, 260], ['Sitios Web', 'Web Estándar', 455, 423], ['Sitios Web', 'Web Premium', 950, 884], ['Sitios Web', 'Plan Gestión Ecommerce', 750, 698],
+  ['Diseño & Identidad', 'Identidad Visual', 85, 79], ['Diseño & Identidad', 'Tarjeta de Presentación', 20, 19], ['Diseño & Identidad', 'Post / Flyers RRSS', 10, 9],
+  ['Diseño & Identidad', 'Office Pack', 80, 74], ['Diseño & Identidad', 'Paquete Básico', 124, 115], ['Diseño & Identidad', 'Paquete Intermedio', 221, 206], ['Diseño & Identidad', 'Paquete Avanzado', 553, 514],
+  ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
+  ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
+  ['Seguidores', '1,000 Seguidores', 55, 51], ['Seguidores', '3,000 Seguidores', 75, 70], ['Seguidores', '5,000 Seguidores', 125, 116], ['Seguidores', '10,000 Seguidores', 190, 177],
+  ['Hosting y dominios', 'Hosting mensual', 15, 14], ['Hosting y dominios', 'Hosting anual', 120, 112]
+].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
+let catalogoList = null;   // null = aún no carga (se usa la lista base)
+let _catSembrado = false;
+
+function catalogoActivo() {
+  const l = (catalogoList && catalogoList.length ? catalogoList : CATALOGO_BASE).filter(x => x.activo !== false);
+  return l.slice().sort((a, b) => (a.categoria || '').localeCompare(b.categoria || '') || (a.orden ?? 999) - (b.orden ?? 999) || a.nombre.localeCompare(b.nombre));
+}
+function catPrecio(x) { return monedaSeleccionada === 'eur' ? (Number(x.precioEur) || Number(x.precio) || 0) : (Number(x.precio) || 0); }
+function initCatalogo() {
+  db.collection('catalogo').onSnapshot(async snap => {
+    catalogoList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Primera vez: se copian los servicios de siempre para poder editarlos
+    if (!catalogoList.length && !_catSembrado) {
+      _catSembrado = true;
+      const lote = db.batch();
+      CATALOGO_BASE.forEach(x => lote.set(db.collection('catalogo').doc(), { ...x, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
+      await lote.commit().catch(e => console.warn('Catálogo', e));
+      return;
+    }
+    refrescarServicios();
+  }, e => console.warn('Catálogo:', e));
+}
+function refrescarServicios() {
+  const html = servicesOptionsHTML();
+  ['srv-sel', 'edit-srv-sel'].forEach(id => { const el = document.getElementById(id); if (el) { const v = el.value; el.innerHTML = html; if (v) el.value = v; } });
+  renderServiciosRapidos();
+  if (document.getElementById('cat-lista')) renderCatalogoLista();
+}
+
 function servicesOptionsHTML() {
-  const eur = monedaSeleccionada === 'eur';
-  const p = (usd, euros) => eur ? euros : usd;
-  const sym = eur ? '€' : '$';
-  return `
-    <option value="" disabled selected>Seleccionar servicio...</option>
-    <optgroup label="Sitios Web">
-      <option value="Web Básica" data-p="280" data-eur="260">Web Básica — ${sym}${p(280,260)}</option>
-      <option value="Web Estándar" data-p="455" data-eur="423">Web Estándar — ${sym}${p(455,423)}</option>
-      <option value="Web Premium" data-p="950" data-eur="884">Web Premium — ${sym}${p(950,884)}</option>
-      <option value="Plan Gestión Ecommerce" data-p="750" data-eur="698">Plan Gestión Ecommerce — ${sym}${p(750,698)}</option>
-    </optgroup>
-    <optgroup label="Diseño &amp; Identidad">
-      <option value="Identidad Visual" data-p="85" data-eur="79">Identidad Visual — ${sym}${p(85,79)}</option>
-      <option value="Tarjeta de Presentación" data-p="20" data-eur="19">Tarjeta de Presentación — ${sym}${p(20,19)}</option>
-      <option value="Post / Flyers RRSS" data-p="10" data-eur="9">Post / Flyers RRSS — ${sym}${p(10,9)}</option>
-      <option value="Office Pack" data-p="80" data-eur="74">Office Pack — ${sym}${p(80,74)}</option>
-      <option value="Paquete Básico" data-p="124" data-eur="115">Paquete Básico — ${sym}${p(124,115)}</option>
-      <option value="Paquete Intermedio" data-p="221" data-eur="206">Paquete Intermedio — ${sym}${p(221,206)}</option>
-      <option value="Paquete Avanzado" data-p="553" data-eur="514">Paquete Avanzado — ${sym}${p(553,514)}</option>
-    </optgroup>
-    <optgroup label="WhatsApp Marketing">
-      <option value="WhatsApp Bronce (1 Sem)" data-p="55" data-eur="51">Bronce — ${sym}${p(55,51)}</option>
-      <option value="WhatsApp Plata (2 Sem)" data-p="75" data-eur="70">Plata — ${sym}${p(75,70)}</option>
-      <option value="WhatsApp Oro (1 Mes)" data-p="108" data-eur="100">Oro — ${sym}${p(108,100)}</option>
-      <option value="WhatsApp Pro (3 Meses)" data-p="225" data-eur="209">Pro — ${sym}${p(225,209)}</option>
-      <option value="WhatsApp Enterprise (1 Año)" data-p="650" data-eur="605">Enterprise — ${sym}${p(650,605)}</option>
-    </optgroup>
-    <optgroup label="Seguidores">
-      <option value="1,000 Seguidores" data-p="55" data-eur="51">1,000 Seguidores — ${sym}${p(55,51)}</option>
-      <option value="3,000 Seguidores" data-p="75" data-eur="70">3,000 Seguidores — ${sym}${p(75,70)}</option>
-      <option value="5,000 Seguidores" data-p="125" data-eur="116">5,000 Seguidores — ${sym}${p(125,116)}</option>
-      <option value="10,000 Seguidores" data-p="190" data-eur="177">10,000 Seguidores — ${sym}${p(190,177)}</option>
-    </optgroup>
-    <optgroup label="──────────────────">
-      <option value="__otro__" data-p="">Otro (especificar)...</option>
-    </optgroup>`;
+  const sym = monedaSeleccionada === 'eur' ? '€' : '$';
+  const grupos = {};
+  catalogoActivo().forEach(x => (grupos[x.categoria || 'Otros'] = grupos[x.categoria || 'Otros'] || []).push(x));
+  return `<option value="" disabled selected>Seleccionar servicio...</option>` +
+    Object.entries(grupos).map(([g, xs]) => `<optgroup label="${esc(g)}">${xs.map(x =>
+      `<option value="${esc(x.nombre)}" data-p="${Number(x.precio) || 0}" data-eur="${Number(x.precioEur) || Number(x.precio) || 0}">${esc(x.nombre)} — ${sym}${catPrecio(x)}</option>`).join('')}</optgroup>`).join('') +
+    `<optgroup label="──────────────────"><option value="__otro__" data-p="">Otro (especificar)...</option></optgroup>`;
+}
+
+/* Botones de un clic: los servicios marcados como "rápidos" + los que más usas */
+function renderServiciosRapidos() {
+  const el = document.getElementById('srv-rapidos');
+  if (!el) return;
+  const uso = {};
+  Object.values(docsMap || {}).forEach(d => (d.items || []).forEach(i => { uso[i.s] = (uso[i.s] || 0) + 1; }));
+  const lista = catalogoActivo();
+  const elegidos = lista.filter(x => x.rapido);
+  lista.slice().sort((a, b) => (uso[b.nombre] || 0) - (uso[a.nombre] || 0)).forEach(x => { if (elegidos.length < 8 && uso[x.nombre] && !elegidos.includes(x)) elegidos.push(x); });
+  const sym = monedaSeleccionada === 'eur' ? '€' : '$';
+  el.innerHTML = elegidos.length ? `<div class="srv-rap-t">Agregar con un clic</div><div class="srv-rap">${elegidos.slice(0, 8).map((x, i) =>
+    `<button type="button" class="srv-chip" onclick="agregarDelCatalogo(${lista.indexOf(x)})" title="Agregar ${esc(x.nombre)}"><span>${esc(x.nombre)}</span><b>${sym}${catPrecio(x)}</b></button>`).join('')}
+    <button type="button" class="srv-chip ghost" onclick="abrirCatalogo()">Editar catálogo</button></div>` : '';
+}
+function agregarDelCatalogo(i) {
+  const x = catalogoActivo()[i];
+  if (!x) return;
+  const p = catPrecio(x);
+  const ya = cart.find(it => it.s === x.nombre && it.p === p);
+  if (ya) { ya.c += 1; ya.t = parseFloat((ya.p * ya.c).toFixed(2)); } else cart.push({ s: x.nombre, p, c: 1, t: p });
+  renderCart();
+  toast(`${x.nombre} agregado`);
+}
+
+/* Administrar el catálogo */
+function abrirCatalogo() {
+  ptModal('Catálogo de servicios', 'Tus servicios y precios: se usan en facturas, cotizaciones y el bot de Telegram', `
+    <div id="cat-lista"></div>
+    <div class="cat-form">
+      <div class="panel-title-v" style="font-size:10px;margin-bottom:8px;" id="cat-form-t">Agregar servicio</div>
+      <input type="hidden" id="cat-id">
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;">
+        <div class="ff" style="margin-bottom:8px;"><label>Nombre</label><input id="cat-nombre" maxlength="80" placeholder="Ej. Landing page"></div>
+        <div class="ff" style="margin-bottom:8px;"><label>Categoría</label><input id="cat-cat" maxlength="40" list="cat-cats" placeholder="Ej. Sitios Web"><datalist id="cat-cats"></datalist></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
+        <div class="ff" style="margin-bottom:8px;"><label>Precio USD</label><input type="number" id="cat-precio" min="0" step="0.01"></div>
+        <div class="ff" style="margin-bottom:8px;"><label>Precio EUR</label><input type="number" id="cat-eur" min="0" step="0.01" placeholder="opcional"></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:18px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;"><input type="checkbox" id="cat-rapido"> Botón rápido</label>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+        <button class="btn-edit-save" style="margin:0;" onclick="guardarServicioCat()">Guardar servicio</button>
+        <button class="btn-edit-cancel" style="margin:0;" onclick="limpiarFormCat()">Limpiar</button>
+      </div>
+    </div>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
+  document.querySelector('#modalPortal .edit-sheet').style.maxWidth = '600px';
+  renderCatalogoLista();
+}
+function renderCatalogoLista() {
+  const el = document.getElementById('cat-lista');
+  if (!el) return;
+  const l = (catalogoList || []).slice().sort((a, b) => (a.categoria || '').localeCompare(b.categoria || '') || (a.orden ?? 999) - (b.orden ?? 999));
+  const cats = [...new Set(l.map(x => x.categoria).filter(Boolean))];
+  const dl = document.getElementById('cat-cats'); if (dl) dl.innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+  if (!l.length) { el.innerHTML = '<div class="pt-empty" style="padding:16px;">Cargando…</div>'; return; }
+  el.innerHTML = cats.concat(l.some(x => !x.categoria) ? [''] : []).map(c => `
+    <div class="cat-g">${esc(c || 'Otros')}</div>
+    ${l.filter(x => (x.categoria || '') === c).map(x => `<div class="cat-row${x.activo === false ? ' off' : ''}">
+      <span class="cat-n">${esc(x.nombre)}${x.rapido ? ' <em>rápido</em>' : ''}</span>
+      <span class="cat-p">$${(Number(x.precio) || 0).toFixed(2)}${x.precioEur ? ` <small>· €${Number(x.precioEur).toFixed(2)}</small>` : ''}</span>
+      <button type="button" class="hr-ico" title="Editar" onclick="editarServicioCat('${esc(x._id)}')">${HR_ICON.edit}</button>
+      <button type="button" class="hr-ico" title="${x.activo === false ? 'Mostrar' : 'Ocultar'}" onclick="toggleServicioCat('${esc(x._id)}')">${x.activo === false ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'}</button>
+      <button type="button" class="hr-ico del" title="Eliminar" onclick="borrarServicioCat('${esc(x._id)}')">${HR_ICON.del}</button>
+    </div>`).join('')}`).join('');
+}
+function limpiarFormCat() {
+  ['cat-id', 'cat-nombre', 'cat-cat', 'cat-precio', 'cat-eur'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('cat-rapido').checked = false;
+  document.getElementById('cat-form-t').textContent = 'Agregar servicio';
+}
+function editarServicioCat(id) {
+  const x = (catalogoList || []).find(c => c._id === id); if (!x) return;
+  document.getElementById('cat-id').value = id;
+  document.getElementById('cat-nombre').value = x.nombre || '';
+  document.getElementById('cat-cat').value = x.categoria || '';
+  document.getElementById('cat-precio').value = x.precio ?? '';
+  document.getElementById('cat-eur').value = x.precioEur ?? '';
+  document.getElementById('cat-rapido').checked = !!x.rapido;
+  document.getElementById('cat-form-t').textContent = 'Editar: ' + x.nombre;
+  document.getElementById('cat-nombre').focus();
+}
+async function guardarServicioCat() {
+  const id = document.getElementById('cat-id').value;
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('cat-precio').value);
+  if (!nombre || isNaN(precio) || precio < 0) { toast('Pon el nombre y el precio.', 'err'); return; }
+  const eur = parseFloat(document.getElementById('cat-eur').value);
+  const data = { nombre, categoria: document.getElementById('cat-cat').value.trim() || 'Otros', precio, precioEur: isNaN(eur) ? null : eur,
+    rapido: document.getElementById('cat-rapido').checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    if (id) await db.collection('catalogo').doc(id).update(data);
+    else await db.collection('catalogo').add({ ...data, activo: true, orden: (catalogoList || []).length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    toast('Servicio guardado ✅');
+    limpiarFormCat();
+  } catch (e) { toast('No se pudo guardar.', 'err'); }
+}
+async function toggleServicioCat(id) {
+  const x = (catalogoList || []).find(c => c._id === id); if (!x) return;
+  await db.collection('catalogo').doc(id).update({ activo: x.activo === false }).catch(() => toast('No se pudo cambiar.', 'err'));
+}
+async function borrarServicioCat(id) {
+  const x = (catalogoList || []).find(c => c._id === id); if (!x) return;
+  if (!confirm(`¿Eliminar "${x.nombre}" del catálogo? Las facturas ya hechas no cambian.`)) return;
+  await db.collection('catalogo').doc(id).delete().catch(() => toast('No se pudo eliminar.', 'err'));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2240,6 +2378,8 @@ function initPage() {
   initCuentasPago();
   initCotizaciones();
   initSuscripciones();
+  initMeta();
+  initCatalogo();
   onTypeChange();
 }
 
@@ -2461,12 +2601,37 @@ async function toggleBriefCompletado(fsId) {
   const completado = !doc.brief.completado;
   try {
     const brief = { ...doc.brief, completado };
-    await db.collection('documentos').doc(fsId).update({ brief });
+    await db.collection('documentos').doc(fsId).update({ brief,
+      proyectoCompletadoAt: completado ? new Date().toISOString() : firebase.firestore.FieldValue.delete() });
     docsMap[fsId].brief.completado = completado;
     renderProyectos();
+    const enPortal = await syncProyectoPortal(fsId, completado);
+    toast(completado ? (enPortal ? 'Proyecto completado ✅ · también en su portal' : 'Proyecto completado ✅') : 'Proyecto reabierto');
   } catch(e) {
     toast('Error al actualizar.', 'err');
   }
+}
+/* El proyecto del portal del cliente sigue a la pestaña Proyectos (y viceversa en guardarProyecto) */
+async function syncProyectoPortal(fsId, completado) {
+  const doc = docsMap[fsId];
+  if (!doc) return false;
+  const code = doc.portalCodigo || portalParaCliente(doc.cli)?._id;
+  if (!code) return false;
+  try {
+    const col = ptRef(code).collection('proyectos');
+    let snap = await col.where('facturaId', '==', fsId).get();
+    if (snap.empty && completado) { await crearProyectoDesdeFactura(code, fsId, doc); snap = await col.where('facturaId', '==', fsId).get(); }
+    for (const d of snap.docs) {
+      const x = d.data();
+      if ((x.estado === 'completado') === completado) continue;
+      await col.doc(d.id).update(completado ? {
+        estado: 'completado', progreso: 100, completadoAt: new Date().toISOString(),
+        actualizaciones: firebase.firestore.FieldValue.arrayUnion({ texto: '¡Proyecto completado! Gracias por confiar en nosotros.', fecha: new Date().toISOString() }),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      } : { estado: 'en_progreso', progreso: Math.min(Number(x.progreso) || 90, 90), completadoAt: firebase.firestore.FieldValue.delete(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    return !snap.empty;
+  } catch (e) { console.warn('Sincronizar proyecto del portal', e); return false; }
 }
 
 function renderProyectos() {
@@ -3060,7 +3225,7 @@ function openSheet(doc) {
           <img src="${esc(c.url)}" alt="Comprobante ${i + 1}" onclick="verImagen(this.src)" style="width:84px;height:84px;object-fit:cover;border-radius:8px;cursor:zoom-in;flex-shrink:0;background:#e2e8f0;">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;">
-              <div style="font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;">Comprobante ${i + 1}${c.fecha ? ` <span style="font-weight:400;color:var(--text-soft);font-size:11px;">· ${new Date(c.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short' })}${c.origen === 'portal' ? ' · portal' : ''}</span>` : ''}</div>
+              <div style="font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;">Comprobante ${i + 1}${c.fecha ? ` <span style="font-weight:400;color:var(--text-soft);font-size:11px;">· ${new Date(c.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short' })}${c.origen === 'portal' ? ' · portal' : ''}</span>` : ''}${doc.pagoRechazado && doc.pagoRechazado.url === c.url ? ' <span style="font-size:10px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:1px 7px;">Rechazado</span>' : ''}</div>
               <a href="${esc(c.url)}" download="comprobante_${esc(doc.docId || fsId)}_${i + 1}.jpg" target="_blank" rel="noopener" title="Descargar" style="color:var(--blue);display:inline-flex;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
             </div>
             ${iaAdminBox(doc, c.url)}
@@ -3508,9 +3673,19 @@ document.getElementById('edit-type').addEventListener('change', function() {
 let dashPeriod = 'semana';
 let metaMensual = parseFloat(localStorage.getItem('dgp-meta-mensual')) || 1000;
 
+/* La meta se guarda en Firestore (config/meta) para que el bot de Telegram también la use */
+function initMeta() {
+  db.collection('config').doc('meta').onSnapshot(snap => {
+    const m = snap.exists ? Number(snap.data().mensual) : NaN;
+    if (isFinite(m) && m > 0) { metaMensual = m; try { localStorage.setItem('dgp-meta-mensual', m); } catch (e) {} renderMetaBar(); }
+    else if (!snap.exists && metaMensual > 0) db.collection('config').doc('meta').set({ mensual: metaMensual }, { merge: true }).catch(() => {});
+  }, () => {});
+}
 function guardarMeta(val) {
   metaMensual = parseFloat(val) || 0;
-  localStorage.setItem('dgp-meta-mensual', metaMensual);
+  try { localStorage.setItem('dgp-meta-mensual', metaMensual); } catch (e) {}
+  db.collection('config').doc('meta').set({ mensual: metaMensual, actualizadoPor: currentUser?.email || '', actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
+    .then(() => toast('Meta guardada: el bot te dirá cómo vas 🎯')).catch(() => {});
   renderDashboard();
 }
 
@@ -3530,10 +3705,9 @@ function renderMetaBar() {
   const now = new Date();
   const mesActual = now.getMonth();
   const añoActual = now.getFullYear();
-  const totalMes  = getMergedVentas().filter(f => {
-    const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
-    return fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
-  }).reduce((a, f) => a + (parseFloat(f.monto) || 0), 0);
+  // Dinero que entró este mes según la fecha de cada pago (igual que el bot)
+  const totalMes  = cbCobros().filter(x => x.f.getMonth() === mesActual && x.f.getFullYear() === añoActual).reduce((a, x) => a + x.m, 0);
+  const diasRestantes = new Date(añoActual, mesActual + 1, 0).getDate() - now.getDate() + 1;
 
   if (input) input.value = metaMensual;
   const porcentaje = metaMensual > 0 ? Math.min(totalMes / metaMensual * 100, 100) : 0;
@@ -3546,7 +3720,7 @@ function renderMetaBar() {
   amt.textContent   = `$${totalMes.toFixed(0)} / $${metaMensual.toFixed(0)}`;
   msg.textContent   = porcentaje >= 100
     ? '¡Meta alcanzada este mes!'
-    : `Faltan $${faltante.toFixed(0)} para la meta`;
+    : `Faltan $${faltante.toFixed(0)} · ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} (~$${Math.ceil(faltante / diasRestantes)}/día)`;
 }
 
 function setDashPeriod(p, btn) {
@@ -4344,6 +4518,7 @@ function openClienteModal(id) {
   document.getElementById('cl-telefono').value = c?.telefono || '';
   document.getElementById('cl-correo').value   = c?.correo   || '';
   document.getElementById('cl-empresa').value  = c?.empresa  || '';
+  document.getElementById('cl-cumple').value   = c?.cumpleanos || '';
   document.getElementById('cl-notas').value    = c?.notas    || '';
   document.getElementById('cl-tags').value     = (c?.tags || []).join(', ');
   const sug = clTodasEtiquetas().map(([t]) => t);
@@ -4369,7 +4544,8 @@ async function saveCliente2() {
   const yaExiste = clientesList.find(c => c._id !== editClienteId && ptNorm([c.nombre, c.apellido].filter(Boolean).join(' ')) === nuevoNorm);
   if (yaExiste && !confirm(`Ya existe un cliente llamado "${[yaExiste.nombre, yaExiste.apellido].filter(Boolean).join(' ')}". ¿Guardar de todas formas?`)) return;
   const tags     = clParseTags(document.getElementById('cl-tags').value);
-  const data = { nombre, apellido, telefono, correo, empresa, notas, tags, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const cumpleanos = document.getElementById('cl-cumple').value || '';
+  const data = { nombre, apellido, telefono, correo, empresa, notas, tags, cumpleanos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     if (editClienteId) {
       await db.collection('clientes').doc(editClienteId).update(data);
@@ -4797,10 +4973,22 @@ async function guardarProyecto() {
   };
   const nota = document.getElementById('pp-update').value.trim();
   if (nota) data.actualizaciones = firebase.firestore.FieldValue.arrayUnion({ texto: nota, fecha: new Date().toISOString() });
+  const previo = _ptEdit ? _ptSub.proyectos.find(p => p._id === _ptEdit) : null;
+  const eraCompletado = previo?.estado === 'completado', esCompletado = estado === 'completado';
+  if (esCompletado && !eraCompletado) data.completadoAt = new Date().toISOString();
+  if (!esCompletado && eraCompletado) data.completadoAt = firebase.firestore.FieldValue.delete();
   try {
     const col = ptRef().collection('proyectos');
     if (_ptEdit) await col.doc(_ptEdit).update(data);
     else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await col.add(data); }
+    // La pestaña Proyectos (brief de la factura) sigue al portal
+    const fid = previo?.facturaId;
+    if (fid && docsMap[fid] && esCompletado !== eraCompletado) {
+      const d = docsMap[fid];
+      const upd = { proyectoCompletadoAt: esCompletado ? new Date().toISOString() : firebase.firestore.FieldValue.delete() };
+      if (d.brief) upd.brief = { ...d.brief, completado: esCompletado };
+      await db.collection('documentos').doc(fid).update(upd).catch(e => console.warn(e));
+    }
     toast('Proyecto guardado ✅');
     closePortalModal();
   } catch (e) { console.error(e); toast('Error al guardar el proyecto.', 'err'); }
@@ -5544,13 +5732,15 @@ function abrirDiagnostico() {
     <button class="btn-edit-save" id="diag-btn" style="margin-top:14px;" onclick="correrDiagnostico()">Volver a probar</button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
       <button class="btn-edit-cancel" style="margin:0;" id="resp-btn" onclick="descargarRespaldo()">Descargar respaldo</button>
-      <button class="btn-edit-cancel" style="margin:0;" id="tarea-btn" onclick="ejecutarTareaBot('diaria')">Enviar resumen diario</button>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="ejecutarTareaBot('diaria', this)">Enviar resumen diario</button>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="ejecutarTareaBot('semanal', this)">Enviar resumen semanal</button>
+      <button class="btn-edit-cancel" style="margin:0;color:var(--blue);border-color:var(--blue);" onclick="ejecutarTareaBot('telegram', this)">Conectar bot de Telegram</button>
     </div>
     <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
   correrDiagnostico();
 }
 /* ── Respaldo: descarga toda la base de datos en un archivo JSON ── */
-const RESPALDO_COLECCIONES = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'accesos', 'actividadLog', 'ventas'];
+const RESPALDO_COLECCIONES = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'catalogo', 'config', 'accesos', 'actividadLog', 'ventas'];
 function respaldoValor(v) {
   if (v && typeof v.toDate === 'function') return v.toDate().toISOString();
   if (Array.isArray(v)) return v.map(respaldoValor);
@@ -5585,8 +5775,8 @@ async function descargarRespaldo() {
   finally { if (btn) { btn.disabled = false; btn.textContent = 'Descargar respaldo'; } }
 }
 /* Pide al bot que ejecute una tarea ya (resumen diario / respaldo a Telegram) */
-async function ejecutarTareaBot(tarea) {
-  const btn = document.getElementById('tarea-btn');
+async function ejecutarTareaBot(tarea, btn) {
+  const texto = btn?.textContent;
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   try {
     const token = await auth.currentUser.getIdToken();
@@ -5595,7 +5785,7 @@ async function ejecutarTareaBot(tarea) {
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
     toast(d.mensaje || 'Listo: revisa tu Telegram ✅');
   } catch (e) { toast('No se pudo: ' + e.message + '. ¿Está actualizado el Worker?', 'err'); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Enviar resumen diario'; } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = texto; } }
 }
 
 async function correrDiagnostico() {
@@ -6690,6 +6880,7 @@ function selectMoneda(val) {
   const s2 = document.getElementById('edit-srv-sel');
   if (s1) { const v = s1.value; s1.innerHTML = html; s1.value = v; }
   if (s2) { const v = s2.value; s2.innerHTML = html; s2.value = v; }
+  renderServiciosRapidos();
 }
 
 function onMetodoPagoChange(sinAutollenar) {

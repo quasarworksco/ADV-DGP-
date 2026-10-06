@@ -190,12 +190,17 @@ export default {
   async scheduled(event, env, ctx) {
     // Cron (UTC): mensual el día 1 · diario 11:00 (7:00 Venezuela) · domingo 12:00 (8:00 Venezuela)
     if (event.cron === '0 11 * * *') ctx.waitUntil(tareaDiaria(env).catch(e => avisoError(env, 'Resumen diario', e)));
-    else if (event.cron === '0 12 * * SUN') ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
+    else if (event.cron === '0 12 * * SUN') {
+      ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
+      ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
+    }
     else ctx.waitUntil(enviarResumenMensual(env));
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const ruta = new URL(request.url).pathname;
+    if (ruta === TG_RUTA) return handleTgNotif(request, env, ctx);
+    if (ruta === '/contacto') return handleContacto(request, env);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (ruta === '/tarea') return handleTarea(request, env);
@@ -654,7 +659,8 @@ async function handleVerificar(request, env, firebaseLogin) {
         `${lectura.plataforma ? 'Plataforma: ' + lectura.plataforma + '\n' : ''}` +
         `${lectura.referencia ? 'Ref: ' + lectura.referencia + '\n' : ''}` +
         `${lectura.remitente ? 'De: ' + lectura.remitente + '\n' : ''}` +
-        `\n${ev.mensaje}\n\nConfirma el pago manualmente antes de marcarlo como pagado.` })
+        `\n${ev.mensaje}\n\nRevisa que el dinero llegó y confirma con los botones.`,
+        reply_markup: botonesPago(fsId, ev) })
     }).catch(() => {});
 
     return json(request, verificacion);
@@ -668,7 +674,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-05a';
+const WORKER_VERSION = '2026-10-06a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -750,7 +756,7 @@ const TG_NOTIF_DEFAULT = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
 const SITIO = 'https://adv.dgp-link.com';
 const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
 const CICLO_TXT = { semanal: 'semanal', mensual: 'mensual', trimestral: 'trimestral', semestral: 'semestral', anual: 'anual' };
-const RESPALDO_COLS = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'accesos', 'actividadLog', 'ventas'];
+const RESPALDO_COLS = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'catalogo', 'config', 'accesos', 'actividadLog', 'ventas'];
 
 const tgToken = env => env.TG_TOKEN_NOTIF || TG_NOTIF_DEFAULT;
 const hoyVE = () => new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);   // fecha en Venezuela (UTC-4)
@@ -824,6 +830,7 @@ async function avisoError(env, que, e) {
 /* ── Tarea diaria ── */
 async function tareaDiaria(env) {
   const token = await firebaseLogin(env);
+  await asegurarWebhook(env).catch(e => console.warn('Webhook', e));
   const [docs, subs, clientes, portales] = await Promise.all(['documentos', 'suscripciones', 'clientes', 'portal'].map(c => fsList(env, c, token)));
   const hoy = hoyVE();
   const telDe = nombre => {
@@ -872,6 +879,7 @@ async function tareaDiaria(env) {
 
   // 2) Recordatorio por correo para dejar reseña en Google (clientes felices que no hicieron clic)
   const resenas = await recordarResenas(env, token, docs, correoDe).catch(e => { console.warn('Reseñas', e); return []; });
+  const automaticos = await correosAutomaticos(env, token, docs, clientes, correoDe).catch(e => { console.warn('Correos automáticos', e); return []; });
 
   // 3) Resumen de cobros
   const pendientes = docs.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
@@ -902,11 +910,17 @@ async function tareaDiaria(env) {
     subsAtrasadas.forEach(s => L.push(`• 🔴 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · atrasada ${-diasEntre(hoy, s.proximoPago)} días`));
     subsPronto.forEach(s => L.push(`• 🟡 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · vence ${escHtml(fechaCorta(s.proximoPago))}${s.ultimaFacturaPeriodo === s.proximoPago ? ' (factura enviada)' : ''}`));
   }
+  if (automaticos.length) {
+    L.push('', `📧 <b>Correos automáticos enviados (${automaticos.length})</b>`);
+    automaticos.forEach(r => L.push(`• ${escHtml(r.tipo)}: ${escHtml(r.cliente)} → ${escHtml(r.correo)}`));
+  }
   if (resenas.length) {
     L.push('', `⭐ <b>Recordatorio de reseña en Google enviado (${resenas.length})</b>`);
     resenas.forEach(r => L.push(`• ${escHtml(r.cliente)} → ${escHtml(r.correo)}`));
   }
-  if (L.length === 1) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
+  const meta = await lineaMeta(env, token, docs).catch(() => '');
+  if (meta) L.push('', meta);
+  if (L.length === 1 || (meta && L.length === 3)) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
   L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
   await tgEnviar(env, L.join('\n'));
   return { creadas: creadas.length, resenas: resenas.length, atrasadas: atrasadas.length, porRevisar: porRevisar.length, suscripciones: subsAtrasadas.length + subsPronto.length };
@@ -942,6 +956,13 @@ async function handleTarea(request, env) {
     if (v.error) return json(request, { error: v.error }, v.status);
     const { tarea } = await request.json().catch(() => ({}));
     if (tarea === 'respaldo') { const r = await enviarRespaldo(env); return json(request, { ok: true, mensaje: `Respaldo enviado a Telegram (${r.registros} registros) ✅` }); }
+    if (tarea === 'telegram') {
+      const r = await asegurarWebhook(env);
+      if (!r.ok) return json(request, { error: r.error || 'No se pudo conectar el bot' }, 502);
+      if (r.nuevo) await tgEnviar(env, '🤖 ¡Listo! Ahora puedes hablarme: mándame una nota de voz para crear facturas, y te pondré botones en los avisos de pago.\n\nEscribe /ayuda para ver ejemplos.');
+      return json(request, { ok: true, mensaje: r.nuevo ? 'Bot de Telegram conectado ✅ (te escribió un mensaje)' : 'El bot de Telegram ya estaba conectado ✅' });
+    }
+    if (tarea === 'semanal') { await resumenSemanal(env); return json(request, { ok: true, mensaje: 'Resumen semanal con análisis enviado a Telegram ✅' }); }
     if (tarea === 'diaria') {
       const r = await tareaDiaria(env);
       return json(request, { ok: true, mensaje: `Resumen enviado a Telegram · ${r.creadas} factura(s) de suscripción creada(s) ✅` });
@@ -1047,11 +1068,19 @@ async function handleEncuesta(request, env) {
   } catch (e) { return json(request, { error: e.message || 'Error' }, 500); }
 }
 
+/* Plantilla de los correos automáticos del bot (misma línea que los del panel) */
 function correoResenaHTML(nombre, link) {
+  return correoBotHTML({ icono: 'estrellas', titulo: `¡Gracias por confiar en nosotros, ${nombre}!`,
+    texto: 'Nos alegró mucho saber que tu experiencia con DGP Group USA fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.',
+    boton: 'Dejar mi reseña en Google', link, nota: 'Solo toma un momento. ¡Gracias de corazón!' });
+}
+function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota = '', oferta = '' }) {
   const f = "font-family:'Poppins','Segoe UI',Roboto,Arial,sans-serif;";
   const grad = 'background-color:#166baf;background-image:linear-gradient(135deg,#172b5e 0%,#166baf 58%,#3eaedd 100%);';
   const blanco = h => `<div class="gm-s"><div class="gm-d">${h}</div></div>`;
   const estrella = '<img src="' + SITIO + '/correo/iconos/estrella.png" width="26" height="26" alt="★" style="display:inline-block;border:0;margin:0 2px;">';
+  const cabeza = icono === 'estrellas' ? estrella.repeat(5)
+    : `<table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr><td width="72" height="72" align="center" valign="middle" style="width:72px;height:72px;border-radius:36px;background-color:#e6f4fb;"><img src="${SITIO}/correo/iconos/${icono}-b.png" width="38" height="38" alt="" style="display:block;border:0;"></td></tr></table>`;
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>
@@ -1060,7 +1089,7 @@ function correoResenaHTML(nombre, link) {
   u + .body .gm-d { background:#000; mix-blend-mode:difference; }
   @media (prefers-color-scheme: dark) {
     .pg { background-color:#070f22 !important; } .card { background-color:#0f1b38 !important; border-color:#1d2d52 !important; }
-    .tx { color:#eaf3ff !important; } .tx2 { color:#a9bedb !important; } .lk { color:#5cc3ec !important; }
+    .tx { color:#eaf3ff !important; } .tx2 { color:#a9bedb !important; } .lk { color:#5cc3ec !important; } .lb { color:#5cc3ec !important; } .soft { background-color:#132349 !important; }
   }
   [data-ogsc] .tx { color:#eaf3ff !important; } [data-ogsc] .tx2 { color:#a9bedb !important; } [data-ogsb] .pg { background-color:#070f22 !important; } [data-ogsb] .card { background-color:#0f1b38 !important; }
 </style></head>
@@ -1073,13 +1102,16 @@ function correoResenaHTML(nombre, link) {
     ${blanco(`<div style="${f}color:#ffffff;font-size:13px;font-weight:700;letter-spacing:2.5px;margin-top:10px;">DGP GROUP USA</div>`)}
   </td></tr>
   <tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e1ecf5;border-top:0;border-radius:0 0 24px 24px;padding:34px 30px;text-align:center;">
-    <div>${estrella.repeat(5)}</div>
-    <div class="tx" style="${f}font-size:25px;font-weight:700;color:#1e293b;margin-top:18px;line-height:1.25;">¡Gracias por confiar en nosotros, ${escHtmlR(nombre)}!</div>
-    <div class="tx2" style="font-size:15px;line-height:1.7;color:#475569;margin-top:14px;">Nos alegró mucho saber que tu experiencia con DGP Group USA fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.</div>
+    <div>${cabeza}</div>
+    <div class="tx" style="${f}font-size:25px;font-weight:700;color:#1e293b;margin-top:18px;line-height:1.25;">${escHtmlR(titulo)}</div>
+    <div class="tx2" style="font-size:15px;line-height:1.7;color:#475569;margin-top:14px;">${escHtmlR(texto).replace(/\n/g, '<br>')}</div>
+    ${oferta ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;"><tr><td class="soft" style="border:1.5px dashed #3eaedd;border-radius:16px;padding:16px 18px;background-color:#f3f8fc;text-align:center;">
+      <div class="lb" style="${f}font-size:10.5px;font-weight:600;letter-spacing:2px;color:#1f8fc0;">TU REGALO</div>
+      <div class="tx" style="${f}font-size:17px;font-weight:700;color:#1e293b;margin-top:6px;line-height:1.35;">${escHtmlR(oferta)}</div></td></tr></table>` : ''}
     <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:28px;"><tr><td style="border-radius:40px;${grad}">
-      <a href="${link}" style="display:inline-block;padding:16px 38px;text-decoration:none;">${blanco(`<span style="${f}color:#ffffff;font-size:15px;font-weight:600;">Dejar mi reseña en Google &nbsp;→</span>`)}</a>
+      <a href="${link}" style="display:inline-block;padding:16px 38px;text-decoration:none;">${blanco(`<span style="${f}color:#ffffff;font-size:15px;font-weight:600;">${escHtmlR(boton)} &nbsp;→</span>`)}</a>
     </td></tr></table>
-    <div class="tx2" style="font-size:12px;color:#94a3b8;margin-top:16px;">Solo toma un momento. ¡Gracias de corazón!</div>
+    ${nota ? `<div class="tx2" style="font-size:12px;color:#94a3b8;margin-top:16px;">${escHtmlR(nota)}</div>` : ''}
   </td></tr>
   <tr><td align="center" class="tx2" style="padding-top:24px;font-size:12px;color:#64748b;line-height:1.7;">
     <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
@@ -1113,4 +1145,573 @@ async function recordarResenas(env, token, docs, correoDe) {
     if (enviados.length >= 20) break;
   }
   return enviados;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Bot de avisos interactivo — webhook POST /tg-notif
+   · Botones en los avisos de comprobantes: confirmar, abono, rechazar
+   · Nota de voz o texto ("factura para Pedro de 200 por página web")
+     → borrador con botones Crear / Cancelar
+   Solo atiende el chat del dueño (TG_CHAT) y exige el token secreto de Telegram.
+══════════════════════════════════════════════════════════════ */
+const TG_RUTA = '/tg-notif';
+const MODELOS_TEXTO = ['@cf/qwen/qwen3.8-27b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct'];
+
+async function tgApi(env, metodo, body) {
+  const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/${metodo}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {})
+  });
+  return r.json().catch(() => ({}));
+}
+async function tgSecreto(env) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('dgp-notif:' + tgToken(env)));
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 48);
+}
+/* Apunta el bot de avisos a este Worker (idempotente) */
+async function asegurarWebhook(env) {
+  const url = BOT_URL + TG_RUTA;
+  const info = await tgApi(env, 'getWebhookInfo');
+  const actual = info.result?.url || '';
+  if (actual === url) return { ok: true, url, nuevo: false, pendientes: info.result.pending_update_count || 0, error: info.result.last_error_message || null };
+  // Si este token es el del asistente de ventas (webhook en la raíz), no se toca
+  if (actual && actual.replace(/\/$/, '') === BOT_URL) return { ok: false, url: actual, error: 'Este bot es el mismo del asistente de ventas; usa un bot distinto para los avisos (TG_TOKEN_NOTIF).' };
+  const r = await tgApi(env, 'setWebhook', { url, secret_token: await tgSecreto(env), allowed_updates: ['message', 'callback_query'] });
+  if (r.ok) await tgApi(env, 'setMyCommands', { commands: [
+    { command: 'factura', description: 'Crear una factura: /factura Pedro 200 página web' },
+    { command: 'cotizacion', description: 'Crear una cotización' },
+    { command: 'meta', description: 'Cómo vas con la meta del mes' },
+    { command: 'ayuda', description: 'Qué puedo hacer' }
+  ] }).catch(() => {});
+  return { ok: !!r.ok, url, nuevo: true, error: r.ok ? null : (r.description || 'No se pudo conectar') };
+}
+
+async function handleTgNotif(request, env, ctx) {
+  if (request.method !== 'POST') return new Response('ok');
+  if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== await tgSecreto(env)) return new Response('forbidden', { status: 403 });
+  const up = await request.json().catch(() => null);
+  if (!up) return new Response('ok');
+  const tarea = (async () => {
+    try {
+      if (up.callback_query) await tgCallback(env, up.callback_query);
+      else if (up.message) await tgMensaje(env, up.message);
+    } catch (e) {
+      console.error('tg-notif', e);
+      await tgEnviar(env, `⚠️ No pude completar eso: ${escHtml(e.message || e)}`).catch(() => {});
+    }
+  })();
+  if (ctx?.waitUntil) ctx.waitUntil(tarea); else await tarea;
+  return new Response('ok');
+}
+
+/* ── Botones ── */
+function botonesPago(fsId, ev) {
+  const rechazar = { text: '❌ Rechazar', callback_data: `r:${fsId}` };
+  if (ev.estado === 'menor' && ev.monto > 0) return { inline_keyboard: [
+    [{ text: `💰 Registrar abono de ${dinero(ev.monto)}`, callback_data: `a:${fsId}:${ev.monto}` }],
+    [{ text: '✅ Pagado completo', callback_data: `p:${fsId}` }, rechazar]] };
+  return { inline_keyboard: [[{ text: ev.estado === 'coincide' ? '✅ Confirmar pago' : '✅ Marcar pagado', callback_data: `p:${fsId}` }, rechazar]] };
+}
+
+async function tgCallback(env, cq) {
+  const chat = String(cq.message?.chat?.id || '');
+  if (chat !== TG_CHAT) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'No autorizado' });
+  const [acc, id, extra] = String(cq.data || '').split(':');
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id || '')) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Botón no válido' });
+  const token = await firebaseLogin(env);
+  const acciones = {
+    p: () => botMarcarPagado(env, token, id),
+    a: () => botAbono(env, token, id, Number(extra)),
+    r: () => botRechazar(env, token, id),
+    c: () => botCrearDesdeBorrador(env, token, id),
+    x: () => botCancelarBorrador(env, token, id)
+  };
+  const res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' };
+  await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
+  // Quita los botones para no repetir la acción
+  await tgApi(env, 'editMessageReplyMarkup', { chat_id: chat, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
+  if (res.html) await tgApi(env, 'sendMessage', { chat_id: chat, text: res.html, parse_mode: 'HTML', disable_web_page_preview: true,
+    reply_to_message_id: cq.message.message_id, ...(res.markup ? { reply_markup: res.markup } : {}) });
+}
+
+/* Igual que "Marcar pagado" del panel (guarda la foto para poder deshacer y renueva la suscripción) */
+async function botMarcarPagado(env, token, fsId, pagoNuevo) {
+  const doc = await fsGet(env, `documentos/${fsId}`, token);
+  if (!doc) return { aviso: 'Esa factura ya no existe' };
+  if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada', html: `ℹ️ ${escHtml(doc.docId || fsId)} ya estaba marcada como pagada.` };
+  const hoy = hoyVE();
+  const sub = doc.suscripcionId ? await fsGet(env, `suscripciones/${doc.suscripcionId}`, token).catch(() => null) : null;
+  const estadoAnterior = {
+    type: doc.type || 'factura', pagadoParcial: !!doc.pagadoParcial, montoPagado: Number(doc.montoPagado) || 0,
+    fechaPago: doc.fechaPago || null, docId: doc.docId || '', ref: doc.ref ?? '', pagosN: (doc.pagos || []).length,
+    sus: sub ? { id: doc.suscripcionId, proximoPago: sub.proximoPago || '', ultimoPago: sub.ultimoPago || '' } : null,
+    fecha: new Date().toISOString(), por: 'telegram'
+  };
+  const nuevoId = 'REC-' + String(doc.docId || '').replace(/^FAC-/, '');
+  const campos = { type: 'recibo', pagado: true, pagadoParcial: false, fechaPago: isoADmy(hoy), docId: nuevoId,
+    ref: doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado', estadoAnterior, pagoRechazado: null };
+  if (pagoNuevo) { campos.pagos = [...(doc.pagos || []), pagoNuevo]; campos.montoPagado = r2((Number(doc.montoPagado) || 0) + pagoNuevo.monto); }
+  await fsUpdate(env, `documentos/${fsId}`, campos, Object.keys(campos), token);
+  let extra = '';
+  if (sub && sub.estado === 'activa' && sub.proximoPago && (!doc.periodo || doc.periodo === sub.proximoPago)) {
+    const nueva = sumarCiclo(sub.proximoPago, sub.ciclo);
+    await fsUpdate(env, `suscripciones/${doc.suscripcionId}`, { proximoPago: nueva, ultimoPago: hoy }, ['proximoPago', 'ultimoPago'], token);
+    if (sub.portalCodigo) await fsUpdate(env, `portal/${sub.portalCodigo}/suscripciones/${doc.suscripcionId}`, { proximoPago: nueva }, ['proximoPago'], token).catch(() => {});
+    extra = `\n🔁 Suscripción renovada · próximo pago ${escHtml(fechaCorta(nueva))}`;
+  }
+  return { aviso: 'Pago confirmado ✅', html: `✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
+}
+async function botAbono(env, token, fsId, monto) {
+  if (!(monto > 0)) return { aviso: 'Monto no válido' };
+  const doc = await fsGet(env, `documentos/${fsId}`, token);
+  if (!doc) return { aviso: 'Esa factura ya no existe' };
+  if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada' };
+  const pago = { monto: r2(monto), ref: 'Confirmado por Telegram', fecha: isoADmy(hoyVE()) };
+  const nuevo = r2((Number(doc.montoPagado) || 0) + pago.monto);
+  if (nuevo >= (Number(doc.total) || 0) - 0.009) return botMarcarPagado(env, token, fsId, pago);
+  await fsUpdate(env, `documentos/${fsId}`, { pagos: [...(doc.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true, pagoRechazado: null },
+    ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado'], token);
+  return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>` };
+}
+async function botRechazar(env, token, fsId) {
+  const doc = await fsGet(env, `documentos/${fsId}`, token);
+  if (!doc) return { aviso: 'Esa factura ya no existe' };
+  const comps = listaComprobantes(doc);
+  const ult = comps[comps.length - 1];
+  await fsUpdate(env, `documentos/${fsId}`, { pagoRechazado: { url: ult?.url || '', fecha: new Date().toISOString() } }, ['pagoRechazado'], token);
+  return { aviso: 'Comprobante rechazado', html: `❌ <b>Comprobante rechazado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nEn su factura el cliente verá que no pudimos confirmar el pago y que puede subir otro comprobante o escribirte.\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver factura</a>` };
+}
+
+/* ── Mensajes: voz o texto → factura / cotización ── */
+async function tgMensaje(env, msg) {
+  const chat = String(msg.chat?.id || '');
+  if (chat !== TG_CHAT) return tgApi(env, 'sendMessage', { chat_id: chat, text: 'Este bot es privado de DGP Group USA.' });
+  const texto = String(msg.text || msg.caption || '').trim();
+  if (/^\/(start|ayuda|help)\b/i.test(texto)) return tgEnviar(env, AYUDA_BOT);
+  if (/^\/meta\b/i.test(texto)) { const token = await firebaseLogin(env); return tgEnviar(env, (await lineaMeta(env, token)) || '🎯 Aún no tienes una meta del mes. Ponla en el panel → Dashboard.'); }
+  if (msg.voice || msg.audio) {
+    await tgApi(env, 'sendChatAction', { chat_id: chat, action: 'typing' });
+    const dicho = await transcribir(env, (msg.voice || msg.audio).file_id);
+    if (!dicho) return tgEnviar(env, '🎧 No logré entender el audio. Intenta de nuevo hablando un poco más despacio.');
+    return prepararDocumento(env, dicho, true);
+  }
+  if (texto) {
+    const cmd = texto.match(/^\/(factura|cotizacion|cotización)(@\w+)?\s*/i);
+    if (cmd || /\b(factura|cotiza|cobrar|cóbrale|cobrale)\w*/i.test(texto)) {
+      const t = cmd ? (/^cotiz/i.test(cmd[1]) ? 'cotización ' : 'factura ') + texto.slice(cmd[0].length) : texto;
+      if (t.trim().split(/\s+/).length < 3) return tgEnviar(env, '✍️ Dime para quién y de cuánto. Ejemplo:\n<code>/factura Pedro Ruiz 200 página web</code>');
+      await tgApi(env, 'sendChatAction', { chat_id: chat, action: 'typing' });
+      return prepararDocumento(env, t, false);
+    }
+  }
+  return tgEnviar(env, AYUDA_BOT);
+}
+const AYUDA_BOT = `🤖 <b>Asistente de DGP Group USA</b>
+
+🎙 <b>Mándame una nota de voz</b> como:
+<i>"Crea una factura para Pedro Ruiz de 200 dólares por una página web"</i>
+<i>"Cotización para Ana: hosting anual 120 y dominio 20"</i>
+
+✍️ O escríbelo: <code>/factura Pedro 200 página web</code>
+
+Te muestro el borrador y lo creas con un toque.
+
+💳 Cuando un cliente suba un comprobante te llegan botones para <b>confirmar</b>, <b>registrar abono</b> o <b>rechazar</b>.
+🎯 /meta — cómo vas con la meta del mes`;
+
+async function transcribir(env, fileId) {
+  if (!env.AI) throw new Error('Workers AI no está conectado');
+  const f = await tgApi(env, 'getFile', { file_id: fileId });
+  if (!f.ok) throw new Error('No pude descargar el audio de Telegram');
+  const buf = await (await fetch(`https://api.telegram.org/file/bot${tgToken(env)}/${f.result.file_path}`)).arrayBuffer();
+  let error = null;
+  try {
+    const out = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: aBase64(buf), language: 'es' });
+    if (out?.text?.trim()) return out.text.trim();
+  } catch (e) { error = e; }
+  try {
+    const out = await env.AI.run('@cf/openai/whisper', { audio: [...new Uint8Array(buf)] });
+    if (out?.text?.trim()) return out.text.trim();
+  } catch (e) { error = e; }
+  if (error) throw new Error('No pude transcribir el audio: ' + (error.message || error));
+  return '';
+}
+
+async function aiTexto(env, system, user, maxTokens = 900) {
+  if (!env.AI) throw new Error('Workers AI no está conectado');
+  let ultimo = null;
+  for (const modelo of MODELOS_TEXTO) {
+    try {
+      const out = await env.AI.run(modelo, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: maxTokens, temperature: 0.2 });
+      const t = textoDeRespuestaAI(out).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      if (t) return t;
+    } catch (e) { ultimo = e.message || String(e); }
+  }
+  throw new Error('IA: ' + (ultimo || 'sin respuesta'));
+}
+
+const PROMPT_DOC = `Conviertes pedidos de un dueño de agencia (en español, a veces transcritos de voz) en un documento de cobro.
+Responde SOLO un objeto JSON válido, sin texto extra:
+{"tipo":"factura"|"cotizacion","cliente":"nombre","items":[{"s":"descripción del servicio","p":precio unitario en dólares (número),"c":cantidad (entero)}],"nota":"texto o null","entendido":true|false}
+Reglas:
+- "tipo" es "cotizacion" solo si pide una cotización, presupuesto o propuesta; si no, "factura".
+- Si el nombre del cliente se parece a uno de la lista de CLIENTES, usa EXACTAMENTE ese nombre.
+- Si un servicio se parece a uno del CATÁLOGO y no dicen precio, usa el precio del catálogo y su nombre.
+- "doscientos" = 200, "ciento veinte" = 120, "mil quinientos" = 1500. Cantidad por defecto 1.
+- Escribe los servicios con la primera letra en mayúscula (ej. "Página web", "Hosting anual").
+- Si no hay cliente o ningún precio, "entendido": false.`;
+
+async function prepararDocumento(env, texto, desdeVoz) {
+  const token = await firebaseLogin(env);
+  const [clientes, portales, catalogo] = await Promise.all([
+    fsList(env, 'clientes', token).catch(() => []), fsList(env, 'portal', token).catch(() => []), fsList(env, 'catalogo', token).catch(() => [])
+  ]);
+  const nombres = [...new Set([...clientes.map(c => [c.nombre, c.apellido].filter(Boolean).join(' ')), ...portales.map(p => p.nombre)].filter(Boolean))].slice(0, 400);
+  const cat = catalogo.filter(x => x.activo !== false).map(x => `${x.nombre}: $${x.precio}`).slice(0, 120);
+  const resp = await aiTexto(env, PROMPT_DOC, `CLIENTES: ${nombres.join(' | ') || '(ninguno)'}\nCATÁLOGO: ${cat.join(' | ') || '(vacío)'}\n\nPEDIDO: ${texto}`);
+  const d = extraerJSON(resp) || {};
+  const items = (Array.isArray(d.items) ? d.items : []).map(i => ({ s: String(i.s || '').trim().slice(0, 140), p: r2(Number(i.p) || 0), c: Math.max(1, parseInt(i.c) || 1) }))
+    .filter(i => i.s && i.p > 0).map(i => ({ ...i, t: r2(i.p * i.c) }));
+  const cliente = String(d.cliente || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+  const oido = desdeVoz ? `\n\n🎙 <i>"${escHtml(texto)}"</i>` : '';
+  if (!cliente || !items.length || d.entendido === false) return tgEnviar(env, `🤔 No logré armar el documento: me falta ${!cliente ? 'el cliente' : 'el precio de al menos un servicio'}.${oido}\n\nEjemplo: <i>"Factura para Pedro Ruiz de 200 dólares por página web"</i>`);
+  const tipo = d.tipo === 'cotizacion' ? 'cotizacion' : 'factura';
+  const existe = nombres.find(n => normNombre(n) === normNombre(cliente));
+  const total = r2(items.reduce((a, i) => a + i.t, 0));
+  const borradorId = await fsCreate(env, 'borradoresBot', { tipo, cliente: existe || cliente, items, total, nota: d.nota ? String(d.nota).slice(0, 300) : '', texto: texto.slice(0, 600), creadoAt: new Date() }, token);
+  const html = `${tipo === 'cotizacion' ? '📋' : '🧾'} <b>Borrador de ${tipo === 'cotizacion' ? 'cotización' : 'factura'}</b>
+👤 ${escHtml(existe || cliente)} ${existe ? '<i>(cliente registrado)</i>' : '<i>(cliente nuevo)</i>'}
+
+${items.map(i => `• ${escHtml(i.s)}${i.c > 1 ? ` × ${i.c}` : ''} — ${dinero(i.t)}`).join('\n')}
+<b>Total: ${dinero(total)}</b>${d.nota ? `\n📝 ${escHtml(d.nota)}` : ''}${oido}`;
+  return tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: html, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[
+    { text: `✅ Crear ${tipo === 'cotizacion' ? 'cotización' : 'factura'}`, callback_data: `c:${borradorId}` }, { text: '❌ Cancelar', callback_data: `x:${borradorId}` }]] } });
+}
+
+async function fsBorrar(env, path, token) {
+  await fetch(docUrl(env, path), { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+}
+/* Últimos documentos creados (para copiar los datos de pago de tu factura más reciente) */
+async function fsUltimos(env, coleccion, n, token) {
+  const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+  const res = await fetch(`https://firestore.googleapis.com/v1/${base}:runQuery`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coleccion }], orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }], limit: n } })
+  });
+  const data = await res.json().catch(() => []);
+  return (Array.isArray(data) ? data : []).filter(x => x.document).map(x => ({ _id: x.document.name.split('/').pop(), ...fromFields(x.document.fields || {}) }));
+}
+async function botCancelarBorrador(env, token, id) {
+  await fsBorrar(env, `borradoresBot/${id}`, token);
+  return { aviso: 'Cancelado', html: '🗑 Borrador descartado.' };
+}
+async function botCrearDesdeBorrador(env, token, id) {
+  const b = await fsGet(env, `borradoresBot/${id}`, token);
+  if (!b) return { aviso: 'Ese borrador ya se usó' };
+  const [clientes, portales, recientes] = await Promise.all([
+    fsList(env, 'clientes', token).catch(() => []), fsList(env, 'portal', token).catch(() => []), fsUltimos(env, b.tipo === 'cotizacion' ? 'cotizaciones' : 'documentos', 15, token).catch(() => [])
+  ]);
+  const n = normNombre(b.cliente);
+  const cli = clientes.find(c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' ')) === n);
+  const portal = portales.find(p => p.activo !== false && normNombre(p.nombre) === n);
+  const conPago = recientes.find(d => d.metodoPago && d.infoPago && Object.keys(d.infoPago).length && !String(d._id).startsWith('__diag'));
+  const correo = cli?.correo || portal?.correo || null;
+  const tel = String(cli?.telefono || portal?.telefono || '').replace(/[^0-9]/g, '');
+  const hoy = hoyVE();
+  const comun = {
+    cli: b.cliente, ref: '—', nota: b.nota || '', fecha: isoADmy(hoy), total: b.total, moneda: conPago?.moneda || 'usd',
+    emisor: conPago?.emisor || '', metodoPago: conPago?.metodoPago || null, infoPago: conPago?.infoPago || {},
+    items: b.items, clienteCorreo: correo, portalCodigo: portal?._id || null, createdBy: 'telegram', createdAt: new Date()
+  };
+  const sufijo = Date.now().toString(36).toUpperCase().slice(-6);
+  let docId, link, nuevoId;
+  if (b.tipo === 'cotizacion') {
+    const vence = new Date(Date.now() + 15 * 864e5).toISOString().slice(0, 10);
+    docId = 'COT-' + sufijo;
+    nuevoId = await fsCreate(env, 'cotizaciones', { ...comun, docId, estado: 'enviada', venceEl: vence }, token);
+    if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'cotizacionIds', nuevoId, token).catch(() => {});
+    link = `${SITIO}/cotizacion.html?id=${nuevoId}`;
+  } else {
+    docId = 'FAC-' + sufijo;
+    nuevoId = await fsCreate(env, 'documentos', { ...comun, docId, type: 'factura', contrato: false, pagado: false, fechaPago: null }, token);
+    if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'facturaIds', nuevoId, token).catch(() => {});
+    link = `${SITIO}/factura-publica.html?id=${nuevoId}`;
+  }
+  // Cliente nuevo → se agenda en Clientes
+  if (!cli) {
+    const partes = b.cliente.split(' ');
+    const cid = n.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    if (cid && !(await fsGet(env, `clientes/${cid}`, token).catch(() => null))) {
+      await fetch(`${docUrl(env, `clientes/${cid}`)}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: toValue({ nombre: partes[0], apellido: partes.slice(1).join(' '), correo: '', telefono: '', creadoPor: 'telegram', createdAt: new Date() }).mapValue.fields }) }).catch(() => {});
+    }
+  }
+  await fsBorrar(env, `borradoresBot/${id}`, token);
+  const nombre = b.cliente.split(' ')[0];
+  const textoWa = `Hola ${nombre}! Te comparto tu ${b.tipo === 'cotizacion' ? 'cotización' : 'factura'} ${docId} por ${dinero(b.total)}:\n${link}\n\n${b.tipo === 'cotizacion' ? 'Desde el enlace puedes revisarla y aceptarla.' : 'Desde el enlace puedes pagar y subir tu comprobante.'} ¡Gracias!`;
+  return {
+    aviso: b.tipo === 'cotizacion' ? 'Cotización creada ✅' : 'Factura creada ✅',
+    html: `✅ <b>${b.tipo === 'cotizacion' ? 'Cotización' : 'Factura'} creada</b> · ${escHtml(docId)}\n👤 ${escHtml(b.cliente)} · ${dinero(b.total)}${conPago?.metodoPago ? `\n💳 Datos de pago: ${escHtml(conPago.metodoPago)} (los de tu última factura)` : '\n⚠️ Sin datos de pago: agrégalos en el panel si hace falta.'}${correo ? `\n✉️ ${escHtml(correo)}` : ''}`,
+    markup: { inline_keyboard: [[{ text: '🔗 Abrir', url: link }, { text: '💬 Enviar por WhatsApp', url: `https://wa.me/${tel}?text=${encodeURIComponent(textoWa)}` }]] }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Meta del mes y resumen semanal con IA
+══════════════════════════════════════════════════════════════ */
+/* Fecha (YYYY-MM-DD, hora de Venezuela) de "dd/mm/aaaa" o de un timestamp */
+function fechaISO(v) {
+  if (!v) return null;
+  const s = String(v);
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) { const [d, m, y] = s.split('/'); return `${y}-${m}-${d}`; }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const t = new Date(s); return isNaN(t) ? null : new Date(t.getTime() - 4 * 3600e3).toISOString().slice(0, 10);
+}
+/* Cada cobro con su fecha (misma lógica que el panel: abonos + saldo final al pagarse) */
+function cobrosDe(docs) {
+  const out = [];
+  for (const d of docs) {
+    if (String(d._id || '').startsWith('__diag')) continue;
+    const pagos = Array.isArray(d.pagos) ? d.pagos : [];
+    let suma = 0;
+    pagos.forEach(p => { const f = fechaISO(p.fecha), m = Number(p.monto) || 0; if (f && m) { out.push({ f, m, d }); suma += m; } });
+    if (d.pagado || d.type === 'recibo') {
+      const resto = (Number(d.total) || 0) - suma;
+      if (resto > 0.009) out.push({ f: fechaISO(d.fechaPago) || fechaISO(d.fecha) || fechaISO(d.createdAt), m: resto, d });
+    } else if (d.pagadoParcial && (Number(d.montoPagado) || 0) > suma + 0.009) {
+      out.push({ f: fechaISO(d.createdAt) || fechaISO(d.fecha), m: (Number(d.montoPagado) || 0) - suma, d });
+    }
+  }
+  return out.filter(x => x.f);
+}
+async function lineaMeta(env, token, docs) {
+  const cfg = await fsGet(env, 'config/meta', token).catch(() => null);
+  const meta = Number(cfg?.mensual) || 0;
+  if (!meta) return '';
+  docs = docs || await fsList(env, 'documentos', token);
+  const hoy = hoyVE(), mes = hoy.slice(0, 7);
+  const llevas = cobrosDe(docs).filter(x => x.f.slice(0, 7) === mes).reduce((a, x) => a + x.m, 0);
+  const [y, m] = mes.split('-').map(Number);
+  const diasMes = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const quedan = diasMes - Number(hoy.slice(8, 10)) + 1;
+  const pct = Math.round(llevas / meta * 100);
+  const falta = Math.max(meta - llevas, 0);
+  const barra = '▰'.repeat(Math.min(10, Math.round(pct / 10))) + '▱'.repeat(Math.max(0, 10 - Math.round(pct / 10)));
+  if (falta <= 0) return `🎯 <b>¡Meta del mes cumplida!</b> ${dinero(llevas)} de ${dinero(meta)} (${pct}%) 🎉`;
+  // ¿Va a tiempo? Compara con lo esperado a esta altura del mes
+  const esperado = meta * (diasMes - quedan + 1) / diasMes;
+  const ritmo = llevas >= esperado ? 'vas a buen ritmo 💪' : `necesitas ~${dinero(falta / quedan)} por día`;
+  return `🎯 <b>Meta del mes:</b> ${dinero(llevas)} de ${dinero(meta)} (${pct}%)\n${barra}\nFaltan ${dinero(falta)} y quedan ${quedan} día${quedan !== 1 ? 's' : ''}: ${ritmo}`;
+}
+
+async function resumenSemanal(env) {
+  const token = await firebaseLogin(env);
+  const [docs, subs, clientes, encuestas] = await Promise.all(['documentos', 'suscripciones', 'clientes', 'encuestas'].map(c => fsList(env, c, token).catch(() => [])));
+  const hoy = hoyVE();
+  const menos = n => { const d = new Date(hoy + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+  const ini = menos(6), iniAnt = menos(13), finAnt = menos(7);
+  const cobros = cobrosDe(docs);
+  const semana = cobros.filter(x => x.f >= ini && x.f <= hoy), anterior = cobros.filter(x => x.f >= iniAnt && x.f <= finAnt);
+  const cobrado = semana.reduce((a, x) => a + x.m, 0), cobradoAnt = anterior.reduce((a, x) => a + x.m, 0);
+  const cambio = cobradoAnt > 0 ? Math.round((cobrado - cobradoAnt) / cobradoAnt * 100) : null;
+  const reales = docs.filter(d => !String(d._id).startsWith('__diag'));
+  const nuevas = reales.filter(d => { const f = fechaISO(d.createdAt) || fechaISO(d.fecha); return f && f >= ini && f <= hoy; });
+  // Servicios más vendidos (cobrados en la semana)
+  const porServicio = {};
+  semana.forEach(x => { const s = (x.d.items || [])[0]?.s || 'Otro'; const k = s.replace(/\s*\(.*\)$/, '').trim(); porServicio[k] = (porServicio[k] || 0) + x.m; });
+  const top = Object.entries(porServicio).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const pendientes = reales.filter(d => saldoDoc(d) > 0.009);
+  const deuda = pendientes.reduce((a, d) => a + saldoDoc(d), 0);
+  const viejas = pendientes.filter(d => { const f = fechaDoc(d); return f && diasEntre(f, hoy) > 30; });
+  const activas = subs.filter(s => s.estado === 'activa' && s.proximoPago);
+  const prox30 = activas.filter(s => { const d = diasEntre(hoy, s.proximoPago); return d >= 0 && d <= 30; });
+  const anualesPorMes = {};
+  activas.filter(s => s.ciclo === 'anual').forEach(s => { const k = s.proximoPago.slice(0, 7); (anualesPorMes[k] = anualesPorMes[k] || []).push(s.cliente); });
+  const mesesCargados = Object.entries(anualesPorMes).filter(([, v]) => v.length >= 3).map(([k, v]) => ({ mes: k, clientes: v.length }));
+  const nuevosClientes = clientes.filter(c => { const f = fechaISO(c.createdAt); return f && f >= ini; }).length;
+  const encSemana = encuestas.filter(e => { const f = fechaISO(e.fecha); return f && f >= ini; });
+  const prom = encSemana.length ? encSemana.reduce((a, e) => a + (Number(e.promedio) || 0), 0) / encSemana.length : null;
+  const meta = await lineaMeta(env, token, docs);
+
+  const datos = {
+    semana: `${ini} a ${hoy}`, cobrado: r2(cobrado), cobradoSemanaAnterior: r2(cobradoAnt), cambioPorcentaje: cambio,
+    pagosRecibidos: semana.length, facturasNuevas: nuevas.length, montoFacturado: r2(nuevas.reduce((a, d) => a + (Number(d.total) || 0), 0)),
+    serviciosMasCobrados: top.map(([s, m]) => ({ servicio: s, monto: r2(m) })),
+    porCobrarTotal: r2(deuda), facturasPendientes: pendientes.length, pendientesDeMasDe30Dias: viejas.length,
+    suscripcionesQueVencenEn30Dias: prox30.length, montoSuscripciones30Dias: r2(prox30.reduce((a, s) => a + (Number(s.precio) || 0), 0)),
+    mesesConVariasRenovacionesAnuales: mesesCargados, clientesNuevos: nuevosClientes,
+    encuestasSemana: encSemana.length, promedioEstrellas: prom ? r2(prom) : null, metaDelMes: meta.replace(/<[^>]+>/g, '') || null
+  };
+  let analisis = '';
+  try {
+    analisis = await aiTexto(env, `Eres el analista de negocio de una agencia digital pequeña (DGP Group USA). Con los DATOS de la semana escribe entre 3 y 5 viñetas en español, muy concretas, cada una de una o dos líneas.
+Incluye: cómo le fue comparado con la semana anterior, qué se vendió más, riesgos (cobros atrasados, meses con muchas renovaciones) y UNA recomendación accionable para la próxima semana.
+Usa los números exactos de los DATOS, no inventes nada. Sin títulos ni introducción. Cada línea empieza con "• ".`, JSON.stringify(datos), 600);
+    analisis = analisis.split('\n').map(l => l.trim()).filter(l => l.startsWith('•')).slice(0, 6).map(escHtml).join('\n');
+  } catch (e) { console.warn('Análisis IA', e); }
+
+  const L = [`📊 <b>Resumen de la semana</b> · ${escHtml(fechaCorta(ini))} – ${escHtml(fechaCorta(hoy))}`, '',
+    `💵 Cobrado: <b>${dinero(cobrado)}</b>${cambio !== null ? ` (${cambio >= 0 ? '▲' : '▼'} ${Math.abs(cambio)}% vs semana anterior)` : ''} · ${semana.length} pago${semana.length !== 1 ? 's' : ''}`,
+    `🧾 Facturas nuevas: ${nuevas.length} por ${dinero(datos.montoFacturado)}`,
+    top.length ? `🏆 Más vendido: ${top.map(([s, m]) => `${escHtml(s)} (${dinero(m)})`).join(', ')}` : '',
+    `⏳ Por cobrar: ${dinero(deuda)} en ${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''}${viejas.length ? ` · ${viejas.length} con más de 30 días` : ''}`,
+    prox30.length ? `🔁 Suscripciones en los próximos 30 días: ${prox30.length} (${dinero(datos.montoSuscripciones30Dias)})` : '',
+    nuevosClientes ? `👥 Clientes nuevos: ${nuevosClientes}` : '',
+    prom ? `⭐ Encuestas: ${encSemana.length} · promedio ${prom.toFixed(1)}/5` : '',
+    meta ? '\n' + meta : '',
+    analisis ? `\n🧠 <b>Análisis</b>\n${analisis}` : '',
+    `\n<a href="${SITIO}/">Abrir el panel</a>`].filter(Boolean);
+  await tgEnviar(env, L.join('\n'));
+  return { cobrado };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Correos automáticos del día: encuesta tras completar un proyecto,
+   aniversario del lanzamiento y cumpleaños del cliente.
+══════════════════════════════════════════════════════════════ */
+const OFERTA_ANIVERSARIO = '15% de descuento en tu próximo servicio este mes. Responde este correo para usarlo.';
+const OFERTA_CUMPLE = '20% de descuento en cualquier servicio durante los próximos 15 días. Responde este correo para usarlo.';
+const DIAS_ENCUESTA = 3;
+
+async function enviarCorreoBot(env, para, asunto, html, texto) {
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE || !para) return false;
+  const res = await fetch(env.EMAIL_WEBHOOK, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
+  });
+  const r = await res.json().catch(() => ({}));
+  if (!r.ok) console.warn('Correo automático', para, r.error);
+  return !!r.ok;
+}
+/* Marca de "ya enviado" (una vez por cliente y año) */
+async function yaEnviado(env, token, clave) { return !!(await fsGet(env, `enviosAuto/${clave}`, token).catch(() => null)); }
+async function marcarEnviado(env, token, clave, datos) {
+  await fetch(docUrl(env, `enviosAuto/${clave}`), { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toValue({ ...datos, fecha: new Date() }).mapValue.fields }) }).catch(() => {});
+}
+
+async function correosAutomaticos(env, token, docs, clientes, correoDe) {
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
+  const hoy = hoyVE(), mmdd = hoy.slice(5), anio = hoy.slice(0, 4);
+  const enviados = [];
+  const nombreCli = c => [c.nombre, c.apellido].filter(Boolean).join(' ');
+  const bajas = new Set(clientes.filter(c => c.noCorreos).map(c => normNombre(nombreCli(c))));
+  const reales = docs.filter(d => !String(d._id).startsWith('__diag'));
+
+  // 1) Encuesta unos días después de completar el proyecto
+  for (const d of reales) {
+    if (!d.proyectoCompletadoAt || d.encuestaCompletada || d.encuestaEnviadaAt) continue;
+    const f = fechaISO(d.proyectoCompletadoAt);
+    if (!f || diasEntre(f, hoy) < DIAS_ENCUESTA || diasEntre(f, hoy) > 45) continue;
+    const correo = d.clienteCorreo || correoDe(d.cli);
+    if (!correo) continue;
+    const nombre = String(d.cli || '').split(' ')[0] || 'hola';
+    const servicio = (d.items || [])[0]?.s || 'tu proyecto';
+    const ok = await enviarCorreoBot(env, correo, `${nombre}, ¿cómo te fue con ${servicio}?`,
+      correoBotHTML({ icono: 'encuesta', titulo: `¿Cómo te fue, ${nombre}?`, texto: `Hace unos días terminamos ${servicio} y queremos saber cómo fue tu experiencia con nosotros. Son solo 3 preguntas y nos ayudan muchísimo a mejorar.`, boton: 'Responder la encuesta', link: `${SITIO}/encuesta.html?id=${d._id}`, nota: 'Toma menos de un minuto.' }),
+      `¿Cómo te fue, ${nombre}? Cuéntanos tu experiencia (menos de un minuto): ${SITIO}/encuesta.html?id=${d._id}`);
+    if (ok) {
+      await fsUpdate(env, `documentos/${d._id}`, { encuestaEnviadaAt: new Date() }, ['encuestaEnviadaAt'], token).catch(() => {});
+      enviados.push({ tipo: 'Encuesta', cliente: d.cli, correo });
+    }
+  }
+
+  // 2) Aniversario del lanzamiento (proyecto completado, o primera página web pagada)
+  const lanzamientos = {};
+  for (const d of reales) {
+    const esWeb = (d.items || []).some(i => /web|p[aá]gina|sitio|tienda|landing|e-?commerce/i.test(i.s || ''));
+    const f = fechaISO(d.proyectoCompletadoAt) || (esWeb && (d.pagado || d.type === 'recibo') ? (fechaISO(d.fechaPago) || fechaISO(d.fecha)) : null);
+    if (!f || !d.cli) continue;
+    const k = normNombre(d.cli);
+    if (!lanzamientos[k] || f < lanzamientos[k].f) lanzamientos[k] = { f, d };
+  }
+  for (const [k, { f, d }] of Object.entries(lanzamientos)) {
+    if (f.slice(5) !== mmdd || f.slice(0, 4) >= anio || bajas.has(k)) continue;
+    const anios = Number(anio) - Number(f.slice(0, 4));
+    const clave = `aniv_${k.replace(/[^a-z0-9]+/g, '_')}_${anio}`;
+    const correo = d.clienteCorreo || correoDe(d.cli);
+    if (!correo || await yaEnviado(env, token, clave)) continue;
+    const nombre = String(d.cli).split(' ')[0];
+    const ok = await enviarCorreoBot(env, correo, `${nombre}, ¡hoy cumplimos ${anios} año${anios > 1 ? 's' : ''} juntos!`,
+      correoBotHTML({ icono: 'cohete', titulo: `¡Hace ${anios} año${anios > 1 ? 's' : ''} lanzamos tu proyecto, ${nombre}!`, texto: `Un día como hoy pusimos en marcha ${(d.items || [])[0]?.s || 'tu proyecto'}. Gracias por crecer con DGP Group USA. Para celebrarlo te tenemos un regalo:`, oferta: OFERTA_ANIVERSARIO, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¿Una idea nueva para tu negocio? Responde este correo y la hacemos realidad.' }),
+      `¡Hace ${anios} año(s) lanzamos tu proyecto, ${nombre}! Tu regalo: ${OFERTA_ANIVERSARIO}`);
+    if (ok) { await marcarEnviado(env, token, clave, { tipo: 'aniversario', cliente: d.cli, correo }); enviados.push({ tipo: 'Aniversario', cliente: d.cli, correo }); }
+  }
+
+  // 3) Cumpleaños (campo "Cumpleaños" en la ficha del cliente)
+  for (const c of clientes) {
+    const cum = String(c.cumpleanos || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cum) || cum.slice(5) !== mmdd || c.noCorreos) continue;
+    const nombre = c.nombre || nombreCli(c).split(' ')[0];
+    const correo = c.correo || correoDe(nombreCli(c));
+    const clave = `cumple_${c._id}_${anio}`;
+    if (!correo || await yaEnviado(env, token, clave)) continue;
+    const ok = await enviarCorreoBot(env, correo, `¡Feliz cumpleaños, ${nombre}!`,
+      correoBotHTML({ icono: 'regalo', titulo: `¡Feliz cumpleaños, ${nombre}!`, texto: 'Todo el equipo de DGP Group USA te desea un día increíble y un año lleno de éxitos para ti y tu negocio. Como regalo:', oferta: OFERTA_CUMPLE, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¡Que lo disfrutes mucho!' }),
+      `¡Feliz cumpleaños, ${nombre}! Tu regalo: ${OFERTA_CUMPLE}`);
+    if (ok) { await marcarEnviado(env, token, clave, { tipo: 'cumpleanos', cliente: nombreCli(c), correo }); enviados.push({ tipo: 'Cumpleaños', cliente: nombreCli(c), correo }); }
+  }
+  return enviados;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Formulario de contacto de la web → CRM (POST /contacto)
+   Crea el cliente con la etiqueta "Prospecto" (o suma el mensaje si ya existe)
+   y avisa por Telegram con un botón para responder por WhatsApp.
+══════════════════════════════════════════════════════════════ */
+const ORIGENES_CONTACTO = ['https://dgpglobalgroup.com', 'https://www.dgpglobalgroup.com', 'https://adv.dgp-link.com', 'http://localhost:8765'];
+function corsContacto(request) {
+  const o = request.headers.get('Origin') || '';
+  return { 'Access-Control-Allow-Origin': ORIGENES_CONTACTO.includes(o) ? o : ORIGENES_CONTACTO[0], 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' };
+}
+async function handleContacto(request, env) {
+  const h = corsContacto(request);
+  const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
+  const b = await request.json().catch(() => ({}));
+  // Anti-spam: campo trampa invisible y tiempo mínimo llenando el formulario
+  if (b.web || (Number(b.t) && Number(b.t) < 2500)) return resp({ ok: true });
+  const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase(), telefono = limpiar(b.telefono, 40);
+  const servicio = limpiar(b.servicio, 80), negocio = limpiar(b.negocio, 100);
+  const mensaje = String(b.mensaje || '').replace(/[<>]/g, '').trim().slice(0, 1500);
+  if (nombre.length < 2) return resp({ error: 'Escribe tu nombre.' }, 400);
+  if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
+  if (!correo && telefono.replace(/\D/g, '').length < 7) return resp({ error: 'Déjanos tu correo o tu WhatsApp para responderte.' }, 400);
+  if (/https?:\/\/\S+.*https?:\/\//i.test(mensaje)) return resp({ ok: true }); // varios enlaces = spam
+  try {
+    const token = await firebaseLogin(env);
+    const clientes = await fsList(env, 'clientes', token);
+    const tel = telefono.replace(/\D/g, '');
+    const existe = clientes.find(c => (correo && String(c.correo || '').toLowerCase() === correo) || (tel.length >= 7 && String(c.telefono || '').replace(/\D/g, '').endsWith(tel.slice(-9))))
+      || clientes.find(c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' ')) === normNombre(nombre));
+    const entrada = { fecha: new Date().toISOString(), servicio, negocio, mensaje: mensaje.slice(0, 600) };
+    const hoy = isoADmy(hoyVE());
+    if (existe) {
+      const upd = { mensajesWeb: [...(Array.isArray(existe.mensajesWeb) ? existe.mensajesWeb : []), entrada].slice(-20), ultimoContactoWeb: new Date() };
+      const mask = ['mensajesWeb', 'ultimoContactoWeb'];
+      if (!existe.correo && correo) { upd.correo = correo; mask.push('correo'); }
+      if (!existe.telefono && telefono) { upd.telefono = telefono; mask.push('telefono'); }
+      await fsUpdate(env, `clientes/${existe._id}`, upd, mask, token);
+    } else {
+      const partes = nombre.split(' ');
+      await fsCreate(env, 'clientes', {
+        nombre: partes[0], apellido: partes.slice(1).join(' '), correo, telefono, empresa: negocio,
+        notas: `Escribió desde la web el ${hoy}${servicio ? ` · Le interesa: ${servicio}` : ''}${mensaje ? `\n"${mensaje.slice(0, 600)}"` : ''}`,
+        tags: ['Prospecto', ...(servicio ? [servicio.slice(0, 24)] : [])], origen: 'web', mensajesWeb: [entrada],
+        creadoPor: 'web', createdAt: new Date()
+      }, token);
+    }
+    const primer = nombre.split(' ')[0];
+    const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Group USA por tu mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}. ¿Cuándo podemos conversar?`)}` : null;
+    await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
+      text: `📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en Clientes con la etiqueta <b>Prospecto</b>.'}`,
+      reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
+    }).catch(() => {});
+    return resp({ ok: true });
+  } catch (e) {
+    console.error('contacto', e);
+    await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
+    return resp({ ok: true });
+  }
 }
