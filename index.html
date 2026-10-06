@@ -1870,6 +1870,22 @@
         <label>Nombre del cliente</label>
         <input type="text" id="edit-cli" placeholder="Nombre cliente" list="clientes-list">
       </div>
+      <div class="ff" id="edit-mp-wrap">
+        <label>Método de pago (lo que ve el cliente)</label>
+        <select id="edit-mp" onchange="onEditMetodoChange()">
+          <option value="">— Sin especificar —</option>
+          <option value="zelle">Zelle</option>
+          <option value="bizum">Bizum</option>
+          <option value="usdt">USDT TRC20</option>
+          <option value="binancepay">Binance Pay</option>
+          <option value="bolivares">Pago Móvil</option>
+          <option value="transferencia">Transferencia Interbancaria (USD)</option>
+          <option value="paypal">PayPal</option>
+          <option value="westernunion">Western Union</option>
+        </select>
+        <div id="edit-mp-guardados"></div>
+        <div class="metodo-fields" id="edit-mp-fields"></div>
+      </div>
       <div class="ff">
         <label>Referencia de pago</label>
         <input type="text" id="edit-ref" placeholder="Ej. Zelle / Binance">
@@ -3561,6 +3577,8 @@ function openEditModal(fsId) {
 
   const showNota = (doc.type === 'factura');
   document.getElementById('edit-field-nota').style.display = showNota ? 'block' : 'none';
+  document.getElementById('edit-mp').value = doc.metodoPago || '';
+  onEditMetodoChange(doc.infoPago || {});
 
   document.getElementById('edit-srv-sel').selectedIndex = 0;
   document.getElementById('edit-srv-otro-wrap').style.display = 'none';
@@ -3633,7 +3651,10 @@ async function saveEditDoc() {
     total,
     items: [...editCart],
     pagado: type === 'recibo' ? true : (doc.pagado || false),
+    metodoPago: document.getElementById('edit-mp').value || null,
+    infoPago: getEditInfoPago(),
   };
+  const cambioPago = (doc.metodoPago || null) !== updates.metodoPago || cpKey(updates.metodoPago || '', updates.infoPago) !== cpKey(doc.metodoPago || '', doc.infoPago || {});
 
   /* Update docId prefix if type changed */
   const oldDocId = doc.docId || '';
@@ -3646,13 +3667,52 @@ async function saveEditDoc() {
   try {
     await db.collection('documentos').doc(editFsId).update(updates);
     logActividad('Documento editado', docsMap[editFsId]?.docId || editFsId);
-    toast('Documento actualizado ✅');
+    if (cambioPago && updates.metodoPago) guardarCuentaPago(updates.metodoPago, updates.infoPago);
+    toast(cambioPago ? 'Factura actualizada con los nuevos datos de pago ✅' : 'Documento actualizado ✅');
     closeEditModal();
   } catch(err) {
     toast('Error al guardar cambios.', 'err');
   }
 }
 
+/* ── Método de pago en el editor ── */
+function onEditMetodoChange(infoInicial) {
+  const metodo = document.getElementById('edit-mp').value;
+  const wrap = document.getElementById('edit-mp-fields');
+  wrap.innerHTML = metodo && METODOS_CAMPOS[metodo] ? METODOS_CAMPOS[metodo].map(f => `
+    <div class="ff" style="margin:0">
+      <label style="font-size:10px">${f.label}</label>
+      <input type="text" id="e${f.id}" placeholder="${f.placeholder}" oninput="renderEditCuentas()">
+    </div>`).join('') : '';
+  const info = infoInicial && typeof infoInicial === 'object' ? infoInicial : null;
+  if (info) (METODOS_CAMPOS[metodo] || []).forEach(f => { const el = document.getElementById('e' + f.id); if (el) el.value = info[f.id.replace('mp-', '')] || ''; });
+  else if (metodo) { const l = cpLista(metodo); if (l.length) editRellenar(metodo, l[0].info); }
+  renderEditCuentas();
+}
+function getEditInfoPago() {
+  const metodo = document.getElementById('edit-mp').value;
+  const info = {};
+  (METODOS_CAMPOS[metodo] || []).forEach(f => { const el = document.getElementById('e' + f.id); if (el) info[f.id.replace('mp-', '')] = el.value.trim(); });
+  return cpLimpiar(info);
+}
+function editRellenar(metodo, info) {
+  (METODOS_CAMPOS[metodo] || []).forEach(f => { const el = document.getElementById('e' + f.id); if (el) el.value = info[f.id.replace('mp-', '')] || ''; });
+  renderEditCuentas();
+}
+function usarCuentaEdit(k) {
+  const metodo = document.getElementById('edit-mp').value;
+  const c = cpLista(metodo).find(x => x.k === k);
+  if (c) editRellenar(metodo, c.info);
+}
+function renderEditCuentas() {
+  const cont = document.getElementById('edit-mp-guardados');
+  const metodo = document.getElementById('edit-mp').value;
+  const lista = metodo ? cpLista(metodo) : [];
+  const actual = cpKey(metodo, getEditInfoPago());
+  cont.innerHTML = lista.length ? `<div class="cp-wrap"><div class="cp-label">Tus cuentas guardadas</div><div class="cp-list">
+    ${lista.slice(0, 10).map(c => `<span class="cp-chip ${c.k === actual ? 'sel' : ''}"><button type="button" class="cp-use" title="${esc(cpEtiqueta(metodo, c.info))}" onclick="usarCuentaEdit('${esc(c.k)}')">${esc(cpEtiqueta(metodo, c.info))}</button></span>`).join('')}
+  </div></div>` : '';
+}
 function closeEditModal() {
   document.getElementById('modalEdit').classList.remove('show');
   editFsId = null;
