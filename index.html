@@ -2138,7 +2138,7 @@ const CATALOGO_BASE = [
   ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
   ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
   ['Seguidores', '1,000 Seguidores', 55, 51], ['Seguidores', '3,000 Seguidores', 75, 70], ['Seguidores', '5,000 Seguidores', 125, 116], ['Seguidores', '10,000 Seguidores', 190, 177],
-  ['Hosting y dominios', 'Hosting mensual', 15, 14], ['Hosting y dominios', 'Hosting anual', 120, 112]
+  ['Hosting y dominios', 'Hosting mensual', 15, 14], ['Hosting y dominios', 'Hosting anual', 145, 135]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
 let _catSembrado = false;
@@ -2159,6 +2159,9 @@ function initCatalogo() {
       await lote.commit().catch(e => console.warn('Catálogo', e));
       return;
     }
+    // Ajuste de precio: Hosting anual pasa de $120 a $145 (una sola vez)
+    const ha = catalogoList.find(x => x.nombre === 'Hosting anual' && Number(x.precio) === 120 && !x.ajuste202610);
+    if (ha) db.collection('catalogo').doc(ha._id).update({ precio: 145, precioEur: 135, ajuste202610: true }).catch(() => {});
     refrescarServicios();
   }, e => console.warn('Catálogo:', e));
 }
@@ -4933,9 +4936,15 @@ function ptBriefValor(v) {
   if (v === 'si') return 'Sí';
   return String(v);
 }
+/* Solo piden brief los servicios que necesitan información del cliente (web, redes, ads, seguidores) — igual que el portal y la factura */
+function necesitaBrief(items) {
+  const t = (items || []).map(i => (i.s || '').toLowerCase()).filter(x => !/hosting|dominio|\bssl\b|mantenimiento|soporte|renovaci|suscripci|correo corporativo|\bemail\b|backup|respaldo/.test(x)).join(' ');
+  return /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web|redes|social|instagram|facebook|contenido|community|manejo|ads|publicidad|pauta|campa[ñn]a|seguidor|follower|crecimiento/.test(t);
+}
 function ptBriefBox(fsId) {
   const f = docsMap[fsId];
   if (!f) return '';
+  if (!f.brief && !necesitaBrief(f.items)) return '';
   if (!f.brief) return `<div class="pt-sub" style="margin-top:8px;">Brief: <span style="color:var(--amber);font-weight:600;">pendiente del cliente</span></div>`;
   const filas = Object.entries(f.brief)
     .filter(([k]) => !['tipo', 'fechaEnvio', 'completado', 'completadoAt'].includes(k))

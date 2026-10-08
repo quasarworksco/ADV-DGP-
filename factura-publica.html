@@ -347,8 +347,10 @@
     }
   }
 
+  // Servicios que no necesitan brief (hosting, dominios, mantenimiento, renovaciones...)
+  const SIN_BRIEF = /hosting|dominio|\bssl\b|mantenimiento|soporte|renovaci|suscripci|correo corporativo|\bemail\b|backup|respaldo/;
   function detectServicios(items) {
-    const texto = (items || []).map(i => (i.s || '').toLowerCase()).join(' ');
+    const texto = (items || []).map(i => (i.s || '').toLowerCase()).filter(t => !SIN_BRIEF.test(t)).join(' ');
     return {
       web:        /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web/.test(texto),
       redes:      /redes|social|instagram|facebook|contenido|community|manejo/.test(texto),
