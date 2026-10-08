@@ -2480,6 +2480,11 @@ function briefImagenes(b) {
     mini(u) ? `<img src="${esc(mini(u))}" alt="${esc(t)}" title="${esc(t)}" onclick="verImagen('${esc(u)}')" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--border);">`
       : `<a href="${esc(u)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);">${esc(t)} (PDF)</a>`).join('')}</span></span></div>`;
 }
+/* Reglas de marca que van al final de todos los prompts */
+const REGLAS_MARCA_PROMPT = `## Reglas de marca (obligatorias)
+- No uses emojis en ningún lugar (textos, botones, títulos ni código). Usa solo íconos SVG de línea, limpios y consistentes (por ejemplo, del estilo Lucide o Heroicons), insertados como SVG en línea.
+- Al final de la página, en el pie (footer), agrega la firma del creador en letra pequeña y discreta:
+  "Diseñado y desarrollado por DGP Global Group", con "DGP Global Group" como enlace a https://dgpglobalgroup.com (abre en una pestaña nueva, con rel="noopener").`;
 /* Prompt listo para pegar en una IA (Claude, Lovable, v0, Cursor...) y construir el sitio */
 const PALETAS_BRIEF = { 'azul-profesional': ['#1438cc', '#2979ff', '#e8eeff'], 'negro-dorado': ['#0a0f1e', '#d4af37', '#f8f5ee'], 'verde-natural': ['#15803d', '#4ade80', '#f0fdf4'],
   'naranja-moderno': ['#ea580c', '#fb923c', '#fff7ed'], 'morado-creativo': ['#7c3aed', '#a78bfa', '#f5f3ff'], 'rosa-elegante': ['#be185d', '#f472b6', '#fdf2f8'],
@@ -2533,7 +2538,9 @@ ${b.testimonios ? `- Testimonios reales:\n${b.testimonios.split('\n').filter(Boo
 ${b.tieneDominio === 'si' && b.dominio ? `- Dominio del cliente: ${b.dominio}\n` : b.dominio ? `- Dominio sugerido: ${b.dominio} (verificar disponibilidad)\n` : ''}${b.fechaDeseada ? `- Fecha deseada de lanzamiento: ${b.fechaDeseada}\n` : ''}- Diseño mobile-first, probado en celular y computadora.
 - Formulario de contacto funcional y aviso de privacidad en el pie de página.
 
-Referencia interna: factura ${doc.docId || fsId} · cliente ${doc.cli || '—'} · DGP Group USA`;
+${REGLAS_MARCA_PROMPT}
+
+Referencia interna: factura ${doc.docId || fsId} · cliente ${doc.cli || '—'} · DGP Global Group`;
 }
 function generarPromptBrief(fsId) {
   const box = document.getElementById('proy-prompt-' + fsId);
@@ -2553,19 +2560,19 @@ function generarPromptBrief(fsId) {
     const cuentas = (b.cuentas || []).map(c => `${c.red}: ${c.usuario}${c.cantidad ? ` (${c.cantidad} seguidores)` : ''}`).join('\n  · ') || '—';
     prompt = `Hola Andrés, aquí está el brief para el servicio de seguidores:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 BRIEF — SEGUIDORES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BRIEF — SEGUIDORES
 
-👤 CONTACTO
+CONTACTO
   · Nombre: ${b.nombre || '—'}
   · Correo: ${b.correo || '—'}
 
-📱 CUENTAS A TRABAJAR
+CUENTAS A TRABAJAR
   · ${cuentas}
 
-💬 NOTAS
+NOTAS
   ${b.extra || 'Ninguna'}
+
+${REGLAS_MARCA_PROMPT.replace('Al final de la página, en el pie (footer)', 'En los diseños, publicaciones o páginas que se creen')}
 
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 
@@ -2574,39 +2581,39 @@ Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
       .filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join('\n  · ') : '—';
     prompt = `Hola Andrés, aquí está el brief para manejo de redes sociales:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 BRIEF — REDES SOCIALES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BRIEF — REDES SOCIALES
 
-👤 CONTACTO
+CONTACTO
   · Negocio: ${b.negocio || '—'}
   · Nombre: ${b.nombre || '—'}
   · Correo: ${b.correo || '—'}
 
-📱 PERFILES
+PERFILES
   · ${redesArr}
 
-🎯 COMUNICACIÓN
+COMUNICACIÓN
   · Tono: ${b.tono || '—'}
   · Descripción: ${b.extra || '—'}
+
+${REGLAS_MARCA_PROMPT.replace('Al final de la página, en el pie (footer)', 'En los diseños, publicaciones o páginas que se creen')}
 
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 
   } else if (tipo === 'ads') {
     prompt = `Hola Andrés, aquí está el brief para la campaña publicitaria:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 BRIEF — PUBLICIDAD (ADS)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BRIEF — PUBLICIDAD (ADS)
 
-👤 CONTACTO
+CONTACTO
   · Negocio: ${b.negocio || '—'}
   · Correo: ${b.correo || '—'}
 
-🎯 CAMPAÑA
+CAMPAÑA
   · Objetivo: ${b.objetivo || '—'}
   · Red publicitaria: ${b.red || '—'}
   · Descripción / público: ${b.extra || '—'}
+
+${REGLAS_MARCA_PROMPT.replace('Al final de la página, en el pie (footer)', 'En los diseños, publicaciones o páginas que se creen')}
 
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
   }
