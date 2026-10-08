@@ -2471,6 +2471,70 @@ const SVG_CHECK  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" 
 const SVG_BOLT   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
 const SVG_CIRCLE = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`;
 
+/* Logo y fotos que subió el cliente en su brief (miniaturas que se abren en grande) */
+function briefImagenes(b) {
+  const urls = [...(b.logoUrl ? [['Logo', b.logoUrl]] : []), ...(b.fotos || []).map((u, i) => [`Foto ${i + 1}`, u])];
+  if (!urls.length) return '';
+  const mini = u => /\.pdf$/i.test(u) ? '' : u.replace('/upload/', '/upload/w_160,h_160,c_fill,q_auto,f_auto/');
+  return `<div class="proy-row"><span class="proy-row-key">Archivos</span><span class="proy-row-val"><span style="display:flex;flex-wrap:wrap;gap:6px;">${urls.map(([t, u]) =>
+    mini(u) ? `<img src="${esc(mini(u))}" alt="${esc(t)}" title="${esc(t)}" onclick="verImagen('${esc(u)}')" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--border);">`
+      : `<a href="${esc(u)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);">${esc(t)} (PDF)</a>`).join('')}</span></span></div>`;
+}
+/* Prompt listo para pegar en una IA (Claude, Lovable, v0, Cursor...) y construir el sitio */
+const PALETAS_BRIEF = { 'azul-profesional': ['#1438cc', '#2979ff', '#e8eeff'], 'negro-dorado': ['#0a0f1e', '#d4af37', '#f8f5ee'], 'verde-natural': ['#15803d', '#4ade80', '#f0fdf4'],
+  'naranja-moderno': ['#ea580c', '#fb923c', '#fff7ed'], 'morado-creativo': ['#7c3aed', '#a78bfa', '#f5f3ff'], 'rosa-elegante': ['#be185d', '#f472b6', '#fdf2f8'],
+  'gris-minimalista': ['#1e293b', '#64748b', '#f8fafc'], 'rojo-impacto': ['#dc2626', '#f87171', '#fef2f2'] };
+function promptSitioWeb(b, doc, fsId) {
+  const linea = (t, v) => v ? `- ${t}: ${v}\n` : '';
+  const lista = arr => (arr || []).filter(Boolean).map(x => `- ${x}`).join('\n');
+  const pal = b.colores?.paleta && PALETAS_BRIEF[b.colores.paleta];
+  const colores = pal ? `${b.colores.paleta.replace(/-/g, ' ')}: principal ${pal[0]}, secundario ${pal[1]}, fondo ${pal[2]}`
+    : b.colores ? `personalizados: principal ${b.colores.c1 || '—'}, secundario ${b.colores.c2 || '—'}, fondo ${b.colores.c3 || '—'}` : 'a tu criterio, coherentes con el rubro';
+  const redes = b.redes ? Object.entries({ Instagram: b.redes.ig, Facebook: b.redes.fb, TikTok: b.redes.tt, YouTube: b.redes.yt, 'X/Twitter': b.redes.tw, LinkedIn: b.redes.li, WhatsApp: b.redes.wa, 'Google Business': b.redes.gmb })
+    .filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`) : [];
+  const idioma = b.idioma || 'Español';
+  const paginas = (b.paginas || []).length ? b.paginas : ['Inicio', 'Servicios', 'Nosotros', 'Contacto'];
+  const accion = b.accion || (b.redes?.wa ? 'Escribir por WhatsApp' : 'Llenar un formulario');
+  const contenido = { si: 'el cliente tiene textos y fotos; usa los que envió', parcial: 'el cliente tiene algo de contenido; completa lo que falte', no: 'el cliente no tiene contenido; redáctalo tú a partir de este brief' }[b.contenido] || 'redacta los textos a partir de este brief';
+  const ciudad = b.ubicacion || b.zona || '';
+  return `Actúa como diseñador web y redactor publicitario senior. Construye un sitio web profesional, moderno y listo para publicar para el siguiente negocio. Entrega el código completo (HTML, CSS y JavaScript o el stack que te indique), responsive, rápido y accesible.
+
+## 1. El negocio
+${linea('Nombre', b.negocio)}${linea('Eslogan', b.slogan)}${linea('Desde', b.anio)}${linea('A qué se dedica', b.descripcion)}${linea('Qué lo hace diferente', b.diferencia)}${linea('Clientes ideales', b.publico)}${linea('Ubicación', b.ubicacion)}${linea('Dirección', b.direccion)}${linea('Horario', b.horario)}${linea('Zonas de servicio', b.zona)}
+### Servicios / productos
+${(b.servicios || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => `- ${x}`).join('\n') || '- (definir con el cliente)'}
+
+## 2. Objetivo y conversión
+- Objetivo principal del sitio: ${b.objetivo || 'generar contactos de clientes nuevos'}
+- Acción principal que debe hacer el visitante: **${accion}**. Ponla en el encabezado, en la portada (hero) y al final de cada sección, con un botón visible y fijo en móvil.
+${b.redes?.wa ? `- Botón flotante de WhatsApp con el número ${b.redes.wa} y un mensaje inicial prellenado.\n` : ''}${b.tel ? `- Teléfono para llamar con un toque: ${b.tel}\n` : ''}- Correo de contacto: ${b.correo || '—'}
+
+## 3. Páginas y secciones
+${lista(paginas)}
+${(b.funciones || []).length ? `\n### Funciones requeridas\n${lista(b.funciones)}\n` : ''}
+## 4. Diseño
+- Estilo visual: ${b.estilo || 'moderno y limpio'}
+- Colores: ${colores}
+- Tono de los textos: ${b.tono || 'cercano y profesional'}
+- Logo: ${b.logoUrl ? b.logoUrl : b.logo === 'no' ? 'no tiene; usa el nombre del negocio como logotipo tipográfico elegante' : 'pendiente'}
+${(b.fotos || []).length ? `- Fotos reales del negocio (úsalas en hero, galería y secciones):\n${b.fotos.map(u => `  - ${u}`).join('\n')}\n` : '- Sin fotos propias: usa imágenes de stock de alta calidad y coherentes con el rubro (marca dónde reemplazarlas).\n'}${(b.referencias || []).length ? `- Sitios de referencia que le gustan:\n${b.referencias.map(u => `  - ${u}`).join('\n')}\n` : ''}${b.noGusta ? `- Evitar: ${b.noGusta}\n` : ''}${b.competencia ? `- Competencia (diferenciarse de): ${b.competencia}\n` : ''}
+## 5. Contenido y textos
+- Idioma del sitio: ${idioma}${idioma.includes('e inglés') ? ' (selector de idioma ES/EN en el encabezado)' : ''}
+- Contenido: ${contenido}.
+- Textos persuasivos, claros y orientados a beneficios; titulares cortos; nada de "lorem ipsum".
+${b.testimonios ? `- Testimonios reales:\n${b.testimonios.split('\n').filter(Boolean).map(x => `  - ${x.trim()}`).join('\n')}\n` : '- Incluye una sección de testimonios con 3 reseñas de ejemplo marcadas para reemplazar.\n'}${redes.length ? `- Redes sociales (íconos en el pie de página):\n${redes.map(x => `  - ${x}`).join('\n')}\n` : ''}${b.direccion ? `- Mapa de Google Maps embebido con la dirección.\n` : ''}${b.extra ? `- Notas del cliente: ${b.extra}\n` : ''}
+## 6. SEO local y técnico
+- Etiqueta <title> y meta description por página con palabras clave del rubro${ciudad ? ` + "${ciudad}"` : ''}.
+- Datos estructurados schema.org LocalBusiness (nombre, dirección, teléfono, horario, redes).
+- Open Graph para compartir en WhatsApp e Instagram, favicon, sitemap.xml y robots.txt.
+- Imágenes optimizadas (WebP, lazy loading) y buen puntaje en Core Web Vitals.
+
+## 7. Entrega
+${b.tieneDominio === 'si' && b.dominio ? `- Dominio del cliente: ${b.dominio}\n` : b.dominio ? `- Dominio sugerido: ${b.dominio} (verificar disponibilidad)\n` : ''}${b.fechaDeseada ? `- Fecha deseada de lanzamiento: ${b.fechaDeseada}\n` : ''}- Diseño mobile-first, probado en celular y computadora.
+- Formulario de contacto funcional y aviso de privacidad en el pie de página.
+
+Referencia interna: factura ${doc.docId || fsId} · cliente ${doc.cli || '—'} · DGP Group USA`;
+}
 function generarPromptBrief(fsId) {
   const box = document.getElementById('proy-prompt-' + fsId);
   if (!box) return;
@@ -2484,55 +2548,7 @@ function generarPromptBrief(fsId) {
   let prompt = '';
 
   if (tipo === 'web') {
-    const paginas  = (b.paginas || []).join(', ') || 'No especificadas';
-    const estilo   = b.estilo   ? b.estilo.charAt(0).toUpperCase() + b.estilo.slice(1) : 'No especificado';
-    const colores  = b.colores  ? `${b.colores.paleta || 'personalizada'} (${[b.colores.c1,b.colores.c2,b.colores.c3].filter(Boolean).join(', ')})` : 'No especificados';
-    const logo     = b.logo === 'si' ? 'Sí tiene logo' : b.logo === 'no' ? 'No tiene logo' : 'No especificado';
-    const contenido = b.contenido === 'si' ? 'Sí tiene contenido listo' : b.contenido === 'parcial' ? 'Tiene contenido parcial' : 'No tiene contenido aún';
-    const refs     = (b.referencias || []).filter(Boolean).join('\n  · ') || 'No proporcionadas';
-    const redesArr = b.redes ? Object.entries({
-      Instagram:b.redes.ig, Facebook:b.redes.fb, TikTok:b.redes.tt, YouTube:b.redes.yt,
-      'Twitter/X':b.redes.tw, LinkedIn:b.redes.li, WhatsApp:b.redes.wa, 'Google Business':b.redes.gmb
-    }).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join('\n  · ') : 'No proporcionadas';
-
-    prompt = `Hola Andrés, aquí está el brief completo del proyecto de sitio web para que lo trabajes:
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 BRIEF DE PROYECTO — SITIO WEB
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🏢 NEGOCIO
-  · Nombre: ${b.negocio || '—'}
-  · Contacto: ${b.nombre || '—'}
-  · Correo: ${b.correo || '—'}
-  · Teléfono: ${b.tel || '—'}
-  · Ubicación: ${b.ubicacion || '—'}
-  · Descripción: ${b.descripcion || '—'}
-
-🎨 DISEÑO
-  · Estilo: ${estilo}
-  · Colores: ${colores}
-  · Logo: ${logo}
-
-📄 PÁGINAS REQUERIDAS
-  · ${paginas.split(', ').join('\n  · ')}
-
-📱 REDES SOCIALES
-  · ${redesArr || 'No proporcionadas'}
-
-🎯 OBJETIVOS
-  · Objetivo principal: ${b.objetivo || '—'}
-  · Contenido disponible: ${contenido}
-  · Sitios de referencia:
-  · ${refs}
-
-💬 NOTAS ADICIONALES
-  ${b.extra || 'Ninguna'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
+    prompt = promptSitioWeb(b, doc, fsId);
   } else if (tipo === 'seguidores') {
     const cuentas = (b.cuentas || []).map(c => `${c.red}: ${c.usuario}${c.cantidad ? ` (${c.cantidad} seguidores)` : ''}`).join('\n  · ') || '—';
     prompt = `Hola Andrés, aquí está el brief para el servicio de seguidores:
@@ -2718,6 +2734,8 @@ function renderProyectos() {
       }).filter(([,v])=>v).map(([k,v])=>`<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val">${esc(v)}</span></div>`).join('') : '';
 
       const refs = (b.referencias||[]).filter(Boolean);
+      const fila = (k, v) => v ? `<div class="proy-row"><span class="proy-row-key">${esc(k)}</span><span class="proy-row-val" style="white-space:pre-line;">${esc(Array.isArray(v) ? v.join(', ') : v)}</span></div>` : '';
+      const imgs = briefImagenes(b);
 
       detalles = `
         <div class="proy-section">
@@ -2728,16 +2746,21 @@ function renderProyectos() {
           <div class="proy-row"><span class="proy-row-key">Teléfono</span><span class="proy-row-val">${esc(b.tel||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Ubicación</span><span class="proy-row-val">${esc(b.ubicacion||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Descripción</span><span class="proy-row-val">${esc(b.descripcion||'—')}</span></div>
+          ${fila('Eslogan', b.slogan)}${fila('Desde', b.anio)}${fila('Servicios', b.servicios)}${fila('Diferencial', b.diferencia)}${fila('Clientes ideales', b.publico)}
+          ${fila('Dirección', b.direccion)}${fila('Horario', b.horario)}${fila('Zonas', b.zona)}
         </div>
         <div class="proy-section">
           <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Diseño</div>
           <div class="proy-row"><span class="proy-row-key">Estilo</span><span class="proy-row-val" style="text-transform:capitalize;">${esc(b.estilo||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Colores</span><span class="proy-row-val">${colores}</span></div>
           <div class="proy-row"><span class="proy-row-key">Logo</span><span class="proy-row-val" style="display:inline-flex;align-items:center;gap:4px;">${b.logo === 'si' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Tiene logo' : b.logo === 'no' ? 'Sin logo' : '—'}</span></div>
+          ${fila('Tono', b.tono)}
+          ${imgs}
         </div>
         <div class="proy-section">
           <div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Páginas</div>
           ${paginas}
+          <div style="margin-top:8px;">${fila('Funciones', b.funciones)}${fila('Acción principal', b.accion)}</div>
         </div>
         ${redes ? `<div class="proy-section"><div class="proy-section-title" style="display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes sociales</div>${redes}</div>` : ''}
         <div class="proy-section">
@@ -2745,6 +2768,8 @@ function renderProyectos() {
           <div class="proy-row"><span class="proy-row-key">Objetivo</span><span class="proy-row-val">${esc(b.objetivo||'—')}</span></div>
           <div class="proy-row"><span class="proy-row-key">Contenido</span><span class="proy-row-val">${esc(b.contenido||'—')}</span></div>
           ${refs.length ? `<div class="proy-row"><span class="proy-row-key">Referencias</span><span class="proy-row-val">${refs.map(r=>`<a href="${esc(r)}" target="_blank" style="display:block;color:var(--blue);font-size:11px;">${esc(r)}</a>`).join('')}</span></div>` : ''}
+          ${fila('Competencia', b.competencia)}${fila('Evitar', b.noGusta)}${fila('Testimonios', b.testimonios)}
+          ${fila('Dominio', [b.tieneDominio === 'si' ? 'Ya tiene' : b.tieneDominio === 'no' ? 'Necesita uno' : '', b.dominio].filter(Boolean).join(' · '))}${fila('Idioma', b.idioma)}${fila('Fecha deseada', b.fechaDeseada ? ptFmt(b.fechaDeseada) : '')}
           ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Notas</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
         </div>`;
 
@@ -4927,7 +4952,11 @@ const PT_BRIEF_LABELS = {
   negocio: 'Negocio', nombre: 'Contacto', correo: 'Correo', tel: 'Teléfono', ubicacion: 'Ubicación', descripcion: 'Descripción',
   estilo: 'Estilo', colores: 'Colores', logo: 'Logo', paginas: 'Páginas', redes: 'Redes', referencias: 'Referencias',
   objetivo: 'Objetivo', publico: 'Público', presupuesto: 'Presupuesto', plataformas: 'Plataformas', cuenta: 'Cuenta',
-  usuario: 'Usuario', red: 'Red social', cantidad: 'Cantidad', notas: 'Notas', comentarios: 'Comentarios'
+  usuario: 'Usuario', red: 'Red social', cantidad: 'Cantidad', notas: 'Notas', comentarios: 'Comentarios',
+  slogan: 'Eslogan', anio: 'Desde', servicios: 'Servicios', diferencia: 'Diferencial', direccion: 'Dirección', horario: 'Horario',
+  zona: 'Zonas', tono: 'Tono', funciones: 'Funciones', accion: 'Acción principal', tieneDominio: '¿Tiene dominio?', dominio: 'Dominio',
+  idioma: 'Idioma', fechaDeseada: 'Fecha deseada', noGusta: 'Evitar', competencia: 'Competencia', testimonios: 'Testimonios',
+  logoUrl: 'Logo', fotos: 'Fotos', contenido: 'Contenido', extra: 'Notas', tel: 'Teléfono'
 };
 function ptBriefValor(v) {
   if (v === null || v === undefined || v === '') return '';
@@ -4947,11 +4976,12 @@ function ptBriefBox(fsId) {
   if (!f.brief && !necesitaBrief(f.items)) return '';
   if (!f.brief) return `<div class="pt-sub" style="margin-top:8px;">Brief: <span style="color:var(--amber);font-weight:600;">pendiente del cliente</span></div>`;
   const filas = Object.entries(f.brief)
-    .filter(([k]) => !['tipo', 'fechaEnvio', 'completado', 'completadoAt'].includes(k))
+    .filter(([k]) => !['tipo', 'fechaEnvio', 'completado', 'completadoAt', 'logoUrl', 'fotos'].includes(k))
     .map(([k, v]) => [PT_BRIEF_LABELS[k] || k, ptBriefValor(v)]).filter(([, v]) => v);
   return `<details style="margin-top:10px;border:1px solid var(--border);border-radius:10px;background:var(--off);">
     <summary style="cursor:pointer;padding:8px 12px;font-size:12px;font-weight:700;color:var(--green-dark);">Brief recibido${f.brief.fechaEnvio ? ' · ' + ptFmt(f.brief.fechaEnvio) : ''}</summary>
-    <div style="padding:0 12px 10px;">${filas.map(([k, v]) => `<div style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-top:1px solid var(--border);"><span style="color:var(--text-soft);min-width:110px;">${esc(k)}</span><span style="word-break:break-word;">${esc(v)}</span></div>`).join('')}
+    <div style="padding:0 12px 10px;">${filas.map(([k, v]) => `<div style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-top:1px solid var(--border);"><span style="color:var(--text-soft);min-width:110px;">${esc(k)}</span><span style="word-break:break-word;white-space:pre-line;">${esc(v)}</span></div>`).join('')}
+      ${briefImagenes(f.brief).replace(/proy-row-key/, '').replace('class="proy-row"', 'style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-top:1px solid var(--border);"').replace('<span class=""', '<span style="color:var(--text-soft);min-width:110px;"')}
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
         <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);" onclick="generarPromptBrief('${esc(fsId)}');switchPage('proyectos', document.querySelector('.nav-tab[onclick*=\'proyectos\']'))">Generar prompt</button>
       </div>

@@ -179,6 +179,16 @@
     .brief-chk input { width:15px; height:15px; accent-color:#1438cc; flex-shrink:0; }
     .brief-chk label { font-size:12px; color:#475569; cursor:pointer; }
     .brief-chk:has(input:checked) { border-color:#1438cc; background:#eff3ff; }
+    .brief-opciones { display:flex; flex-wrap:wrap; gap:7px; }
+    .brief-op { padding:8px 13px; border:1.5px solid #e2e8f0; border-radius:30px; background:#fff; color:#475569; font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+    .brief-op:hover { border-color:#1438cc; color:#1438cc; }
+    .brief-op.sel { background:#1438cc; border-color:#1438cc; color:#fff; }
+    .brief-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .brief-thumb { width:64px; height:64px; border-radius:10px; overflow:hidden; background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#64748b; }
+    .brief-thumb img { width:100%; height:100%; object-fit:cover; }
+    .brief-thumb.cargando { animation:bPulso 1s infinite alternate; }
+    .brief-thumb.err { color:#dc2626; background:#fef2f2; }
+    @keyframes bPulso { from { opacity:.5; } to { opacity:1; } }
     .brief-chk:has(input:checked) label { color:#1438cc; font-weight:500; }
     /* Sociales */
     .brief-social-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
@@ -972,7 +982,7 @@
     }
 
     let formHTML = '';
-    if (s.web)        formHTML = _briefWebForm(fsId);
+    if (s.web)        formHTML = _briefWebForm(fsId, doc);
     else if (s.seguidores) formHTML = _briefSeguidoresForm(doc, fsId);
     else if (s.redes) formHTML = _briefRedesForm(fsId);
     else if (s.ads)   formHTML = _briefAdsForm(fsId);
@@ -1009,6 +1019,38 @@
   function bSelPalette(el) {
     document.querySelectorAll('.brief-palette').forEach(p => p.classList.remove('sel'));
     el.classList.add('sel');
+    // Los selectores de color toman los colores de la paleta (así se guardan los correctos)
+    (el.dataset.c || '').split(',').forEach((c, i) => { const inp = document.getElementById('b-c' + (i + 1)); if (inp && c) inp.value = c; });
+  }
+  function bOpcion(el) {
+    el.parentElement.querySelectorAll('.brief-op').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  function bOpcionDe(grupo) { return document.querySelector(`.brief-opciones[data-grupo="${grupo}"] .brief-op.sel`)?.dataset.v || ''; }
+  /* Sube logo y fotos del brief a Cloudinary al elegirlos */
+  const _briefArch = { logo: [], fotos: [] };
+  let _briefSubiendo = 0;
+  async function bSubir(input, tipo) {
+    const files = [...(input.files || [])].slice(0, tipo === 'logo' ? 1 : 12 - _briefArch.fotos.length);
+    const caja = document.getElementById('b-thumbs-' + tipo);
+    if (tipo === 'logo') _briefArch.logo = [];
+    for (const f of files) {
+      if (f.size > 10 * 1024 * 1024) { alert(`"${f.name}" pesa más de 10 MB.`); continue; }
+      const ph = document.createElement('div'); ph.className = 'brief-thumb cargando'; ph.textContent = 'Subiendo…';
+      if (tipo === 'logo') caja.innerHTML = '';
+      caja.appendChild(ph); _briefSubiendo++;
+      try {
+        const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (!d.secure_url) throw new Error();
+        _briefArch[tipo].push(d.secure_url);
+        ph.className = 'brief-thumb';
+        ph.innerHTML = /\.pdf$/i.test(d.secure_url) ? '<span>PDF</span>' : `<img src="${d.secure_url.replace('/upload/', '/upload/w_200,h_200,c_fill,q_auto,f_auto/')}" alt="">`;
+      } catch (e) { ph.className = 'brief-thumb err'; ph.textContent = 'Error'; }
+      finally { _briefSubiendo--; }
+    }
+    input.value = '';
   }
   function bToggleLogo(val) {
     document.querySelectorAll('.brief-logo-opt').forEach(o => o.classList.remove('sel'));
@@ -1017,7 +1059,8 @@
     document.getElementById('brief-logo-no').style.display  = val === 'no' ? 'block' : 'none';
   }
 
-  function _briefWebForm(fsId) {
+  function _briefWebForm(fsId, doc) {
+    doc = doc || {};
     const paginas = ['Inicio','Nosotros / Equipo','Servicios','Portafolio','Blog','Tienda / E-commerce','Contacto','Preguntas frecuentes'];
     const redes   = [
       ['📸','Instagram','@usuario o URL','ig'],
@@ -1047,18 +1090,42 @@
           <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
             <input id="b-negocio" class="brief-input" type="text" placeholder="Ej: Mi Empresa"></div>
           <div class="brief-field"><label class="brief-label">Tu nombre completo <span class="req">*</span></label>
-            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido" value="${esc(doc.cli || '')}"></div>
         </div>
         <div class="brief-2col">
           <div class="brief-field"><label class="brief-label">Correo electrónico <span class="req">*</span></label>
-            <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+            <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com" value="${esc(doc.clienteCorreo || '')}"></div>
           <div class="brief-field"><label class="brief-label">WhatsApp / Teléfono</label>
-            <input id="b-tel" class="brief-input" type="tel" placeholder="+1 000 000 0000"></div>
+            <input id="b-tel" class="brief-input" type="tel" placeholder="+1 000 000 0000" value="${esc(doc.clienteTelefono || '')}"></div>
         </div>
         <div class="brief-field"><label class="brief-label">Ciudad / Estado</label>
           <input id="b-ubi" class="brief-input" type="text" placeholder="Ej: Miami, Florida"></div>
         <div class="brief-field"><label class="brief-label">¿A qué se dedica tu negocio? <span class="req">*</span></label>
-          <textarea id="b-desc" class="brief-input brief-textarea" placeholder="Describe tu negocio, productos/servicios y tus clientes ideales..."></textarea></div>
+          <textarea id="b-desc" class="brief-input brief-textarea" placeholder="Ej: Somos una pizzería familiar en Doral con 10 años de experiencia, horno de leña y servicio a domicilio..."></textarea></div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Eslogan o frase del negocio</label>
+            <input id="b-slogan" class="brief-input" type="text" placeholder="Ej: La mejor pizza de leña de Miami"></div>
+          <div class="brief-field"><label class="brief-label">Año en que empezaste</label>
+            <input id="b-anio" class="brief-input" type="text" inputmode="numeric" maxlength="4" placeholder="Ej: 2015"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Tus servicios o productos principales <span class="req">*</span></label>
+          <textarea id="b-servicios" class="brief-input brief-textarea" placeholder="Uno por línea, con precio si quieres mostrarlo:&#10;Pizza margarita — $12&#10;Catering para eventos&#10;Delivery en Doral y Miami"></textarea></div>
+        <div class="brief-field"><label class="brief-label">¿Qué te hace diferente de la competencia?</label>
+          <textarea id="b-diferencia" class="brief-input brief-textarea" style="min-height:64px;" placeholder="Ej: Ingredientes importados de Italia, entrega en 30 minutos, garantía de satisfacción..."></textarea></div>
+        <div class="brief-field"><label class="brief-label">¿Quiénes son tus clientes ideales?</label>
+          <input id="b-publico" class="brief-input" type="text" placeholder="Ej: Familias y oficinas de Doral, 25 a 50 años, que buscan comida rápida de calidad"></div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Ubicación y horario</div>
+        <div class="brief-field"><label class="brief-label">Dirección (si quieres que aparezca con mapa)</label>
+          <input id="b-direccion" class="brief-input" type="text" placeholder="Ej: 1234 NW 87th Ave, Doral, FL 33178"></div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Horario de atención</label>
+            <input id="b-horario" class="brief-input" type="text" placeholder="Ej: Lun–Sáb 9am–7pm"></div>
+          <div class="brief-field"><label class="brief-label">Zonas donde das servicio</label>
+            <input id="b-zona" class="brief-input" type="text" placeholder="Ej: Miami-Dade y Broward"></div>
+        </div>
       </div>
 
       <div class="brief-step">
@@ -1097,14 +1164,17 @@
             <div class="brief-style-lbl">Elegante</div>
           </div>
         </div>
-      </div>
+        <label class="brief-label" style="margin:16px 0 8px;">¿Cómo quieres que suenen los textos?</label>
+        <div class="brief-opciones" data-grupo="tono">
+          ${['Cercano y amigable', 'Profesional y serio', 'Divertido y juvenil', 'Lujoso y exclusivo', 'Técnico y experto'].map(t => `<button type="button" class="brief-op" onclick="bOpcion(this)" data-v="${t}">${t}</button>`).join('')}
+        </div>
 
       <div class="brief-step">
         <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Paleta de colores</div>
         <label class="brief-label" style="margin-bottom:10px;">Selecciona una paleta o elige tus colores</label>
         <div class="brief-palette-grid">
           ${paletas.map(([c1,c2,c3,id]) => `
-            <div class="brief-palette" onclick="bSelPalette(this)" data-pal="${id}" title="${id.replace(/-/g,' ')}">
+            <div class="brief-palette" onclick="bSelPalette(this)" data-pal="${id}" data-c="${c1},${c2},${c3}" title="${id.replace(/-/g,' ')}">
               <div class="brief-palette-sw" style="background:${c1}"></div>
               <div class="brief-palette-sw" style="background:${c2}"></div>
               <div class="brief-palette-sw" style="background:${c3}"></div>
@@ -1112,9 +1182,9 @@
         </div>
         <div class="brief-custom-row">
           <label>O mis colores:</label>
-          <input type="color" class="brief-cpick" id="b-c1" value="#1438cc" title="Principal">
-          <input type="color" class="brief-cpick" id="b-c2" value="#ffffff" title="Secundario">
-          <input type="color" class="brief-cpick" id="b-c3" value="#f1f5f9" title="Fondo">
+          <input type="color" class="brief-cpick" id="b-c1" value="#1438cc" title="Principal" oninput="document.querySelectorAll('.brief-palette').forEach(p => p.classList.remove('sel'))">
+          <input type="color" class="brief-cpick" id="b-c2" value="#ffffff" title="Secundario" oninput="document.querySelectorAll('.brief-palette').forEach(p => p.classList.remove('sel'))">
+          <input type="color" class="brief-cpick" id="b-c3" value="#f1f5f9" title="Fondo" oninput="document.querySelectorAll('.brief-palette').forEach(p => p.classList.remove('sel'))">
           <span style="font-size:10px;color:#94a3b8;">Principal · Secundario · Fondo</span>
         </div>
       </div>
@@ -1131,12 +1201,17 @@
           </div>
         </div>
         <div id="brief-logo-si" style="display:none;">
-          <label class="brief-label">Sube tu logo (PNG, SVG o PDF)</label>
-          <input id="b-logo" type="file" class="brief-input" accept="image/*,.svg,.pdf" style="padding:6px;">
+          <label class="brief-label">Sube tu logo (PNG, JPG, SVG o PDF)</label>
+          <input id="b-logo" type="file" class="brief-input" accept="image/*,.svg,.pdf" style="padding:6px;" onchange="bSubir(this, 'logo')">
+          <div class="brief-thumbs" id="b-thumbs-logo"></div>
         </div>
         <div id="brief-logo-no" style="display:none;background:#eff3ff;border-radius:10px;padding:12px;font-size:12px;color:#1438cc;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <strong>¿Necesitas un logo?</strong> En DGP Group también hacemos logos profesionales. Coméntaselo a Andrés al comenzar el proyecto.
         </div>
+        <label class="brief-label" style="margin:16px 0 6px;">Fotos de tu negocio, productos o equipo <span style="font-weight:400;color:#94a3b8;">(hasta 12)</span></label>
+        <input id="b-fotos" type="file" class="brief-input" accept="image/*" multiple style="padding:6px;" onchange="bSubir(this, 'fotos')">
+        <div class="brief-thumbs" id="b-thumbs-fotos"></div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Fotos reales hacen que tu sitio se vea mucho mejor. Si no tienes, usaremos imágenes profesionales.</div>
       </div>
 
       <div class="brief-step">
@@ -1153,6 +1228,35 @@
           <label class="brief-label">Otras páginas que necesitas</label>
           <input id="b-otras" class="brief-input" type="text" placeholder="Ej: Calculadora, Reservas online...">
         </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Funciones del sitio</div>
+        <label class="brief-label" style="margin-bottom:10px;">¿Qué funciones necesitas?</label>
+        <div class="brief-pages-grid" id="b-funciones">
+          ${['Botón de WhatsApp', 'Formulario de contacto', 'Reservas o citas online', 'Tienda y pagos online', 'Galería de fotos', 'Testimonios / reseñas', 'Mapa de ubicación', 'Menú o lista de precios', 'Blog / noticias', 'Suscripción a boletín'].map((f, i) => `
+            <div class="brief-chk"><input type="checkbox" id="bf${i}" value="${f}"><label for="bf${i}">${f}</label></div>`).join('')}
+        </div>
+        <label class="brief-label" style="margin:16px 0 8px;">¿Qué quieres que haga el visitante principalmente? <span class="req">*</span></label>
+        <div class="brief-opciones" data-grupo="accion">
+          ${['Escribir por WhatsApp', 'Llamar', 'Llenar un formulario', 'Reservar una cita', 'Comprar online', 'Visitar el local'].map(t => `<button type="button" class="brief-op" onclick="bOpcion(this)" data-v="${t}">${t}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="brief-step">
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Dominio e idioma</div>
+        <label class="brief-label" style="margin-bottom:8px;">¿Ya tienes un dominio (www.tunegocio.com)?</label>
+        <div class="brief-opciones" data-grupo="dominio">
+          ${[['si', 'Sí, ya tengo'], ['no', 'No, necesito uno'], ['nose', 'No sé']].map(([v, t]) => `<button type="button" class="brief-op" onclick="bOpcion(this)" data-v="${v}">${t}</button>`).join('')}
+        </div>
+        <div class="brief-field" style="margin-top:10px;"><label class="brief-label">¿Cuál es, o qué nombre te gustaría?</label>
+          <input id="b-dominio" class="brief-input" type="text" placeholder="Ej: pizzeriadonluigi.com"></div>
+        <label class="brief-label" style="margin:6px 0 8px;">Idioma del sitio</label>
+        <div class="brief-opciones" data-grupo="idioma">
+          ${['Español', 'Inglés', 'Español e inglés'].map(t => `<button type="button" class="brief-op" onclick="bOpcion(this)" data-v="${t}">${t}</button>`).join('')}
+        </div>
+        <div class="brief-field" style="margin-top:12px;"><label class="brief-label">¿Para cuándo te gustaría tenerlo?</label>
+          <input id="b-fecha" class="brief-input" type="date"></div>
       </div>
 
       <div class="brief-step">
@@ -1175,6 +1279,14 @@
           <input id="b-r3" class="brief-input" type="url" placeholder="https://...">
         </div>
         <div class="brief-field">
+          <label class="brief-label">¿Algo que NO te guste ver en una página?</label>
+          <input id="b-nogusta" class="brief-input" type="text" placeholder="Ej: Colores muy oscuros, demasiado texto, animaciones exageradas...">
+        </div>
+        <div class="brief-field">
+          <label class="brief-label">Competidores (nombre o página web)</label>
+          <input id="b-competencia" class="brief-input" type="text" placeholder="Ej: pizzeriaroma.com, Papa Johns Doral">
+        </div>
+        <div class="brief-field">
           <label class="brief-label">¿Cuál es el objetivo principal del sitio? <span class="req">*</span></label>
           <textarea id="b-objetivo" class="brief-input brief-textarea" placeholder="Ej: Quiero que los clientes vean mis servicios y me contacten. También vender productos online..."></textarea>
         </div>
@@ -1186,6 +1298,10 @@
                 <input type="radio" name="b-cont" value="${v}"> ${l}
               </label>`).join('')}
           </div>
+        </div>
+        <div class="brief-field">
+          <label class="brief-label">Testimonios de clientes (si tienes)</label>
+          <textarea id="b-testimonios" class="brief-input brief-textarea" style="min-height:64px;" placeholder="Ej: &quot;La mejor pizza que he probado&quot; — María G.&#10;O el enlace a tus reseñas de Google"></textarea>
         </div>
         <div class="brief-field">
           <label class="brief-label">¿Algo más que quieras que sepamos?</label>
@@ -1338,7 +1454,12 @@
     let brief = { tipo, nombre, correo, fechaEnvio: new Date().toISOString() };
 
     if (tipo === 'web') {
-      if (!v('b-objetivo')) {
+      if (_briefSubiendo > 0) {
+        errEl.style.display = 'block'; errEl.textContent = 'Espera a que terminen de subir tus fotos…';
+        btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief del Proyecto';
+        return;
+      }
+      if (!v('b-objetivo') || !v('b-desc') || !v('b-negocio') || !v('b-servicios')) {
         errEl.style.display = 'block';
         errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
         btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar Brief del Proyecto';
@@ -1346,7 +1467,7 @@
       }
       const estiloEl  = document.querySelector('.brief-style-card.sel');
       const paletteEl = document.querySelector('.brief-palette.sel');
-      const paginas   = [...document.querySelectorAll('.brief-pages-grid input:checked')].map(c => c.value);
+      const paginas   = [...document.querySelectorAll('.brief-pages-grid:not(#b-funciones) input:checked')].map(c => c.value);
       const otrasPag  = v('b-otras');
       brief = { ...brief,
         negocio,
@@ -1367,6 +1488,26 @@
         objetivo:    v('b-objetivo'),
         contenido:   document.querySelector('input[name="b-cont"]:checked')?.value || '',
         extra:       v('b-extra'),
+        slogan:      v('b-slogan'),
+        anio:        v('b-anio'),
+        servicios:   v('b-servicios'),
+        diferencia:  v('b-diferencia'),
+        publico:     v('b-publico'),
+        direccion:   v('b-direccion'),
+        horario:     v('b-horario'),
+        zona:        v('b-zona'),
+        tono:        bOpcionDe('tono'),
+        funciones:   [...document.querySelectorAll('#b-funciones input:checked')].map(c => c.value),
+        accion:      bOpcionDe('accion'),
+        tieneDominio: bOpcionDe('dominio'),
+        dominio:     v('b-dominio'),
+        idioma:      bOpcionDe('idioma'),
+        fechaDeseada: v('b-fecha'),
+        noGusta:     v('b-nogusta'),
+        competencia: v('b-competencia'),
+        testimonios: v('b-testimonios'),
+        logoUrl:     _briefArch.logo[0] || '',
+        fotos:       _briefArch.fotos.slice(0, 12),
       };
     } else if (tipo === 'seguidores') {
       const redes = ['instagram','facebook','tiktok','youtube','twitterx'];
