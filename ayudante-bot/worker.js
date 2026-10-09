@@ -117,10 +117,9 @@ Puntos clave:
 → Habla solo de beneficios. No menciones limitaciones técnicas.
 
 🎨 DISEÑO & IDENTIDAD VISUAL
-• Identidad Visual (logo + paleta + tipografías)  →  $85
+• Identidad Visual (logo + manual de marca: paleta, tipografías y usos)  →  $185
 • Tarjeta de Presentación                         →  $20
 • Post / Flyer para redes sociales                →  $10 por pieza
-• Office Pack (papelería completa)                →  $80
 • Paquete Básico (logo, manual de marca, revisión de redes, 1,000 seguidores, tarjeta; 48h)  →  $320
 • Paquete Intermedio (lo del Básico + 3,000 seguidores + 10 posts; 72h)                    →  $480
 • Paquete Avanzado (5,000 seguidores, 10 posts, factura y business card, web One Page, panel admin con CRM; 72h)  →  $840

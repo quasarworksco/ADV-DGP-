@@ -365,7 +365,8 @@
       web:        /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web/.test(texto),
       redes:      /redes|social|instagram|facebook|contenido|community|manejo/.test(texto),
       ads:        /ads|publicidad|pauta|campa[ñn]a|google ads|meta ads/.test(texto),
-      seguidores: /seguidor|follower|crecimiento|seguidores/.test(texto)
+      seguidores: /seguidor|follower|crecimiento|seguidores/.test(texto),
+      logo:       /identidad|logo|marca|branding|paquete/.test(texto)
     };
   }
 
@@ -968,7 +969,7 @@
   ══════════════════════════════════════════ */
   function renderBrief(doc, fsId) {
     const s = detectServicios(doc.items);
-    if (!s.web && !s.seguidores && !s.redes && !s.ads) return '';
+    if (!s.web && !s.seguidores && !s.redes && !s.ads && !s.logo) return '';
 
     const contactName = 'Andrés';
     if (doc.brief) {
@@ -983,6 +984,7 @@
 
     let formHTML = '';
     if (s.web)        formHTML = _briefWebForm(fsId, doc);
+    else if (s.logo)  formHTML = _briefLogoForm(fsId);
     else if (s.seguidores) formHTML = _briefSeguidoresForm(doc, fsId);
     else if (s.redes) formHTML = _briefRedesForm(fsId);
     else if (s.ads)   formHTML = _briefAdsForm(fsId);
@@ -1397,6 +1399,55 @@
       <div class="brief-err" id="brief-err"></div>`;
   }
 
+
+  /* Brief de identidad visual / logo */
+  function _briefLogoForm(fsId) {
+    const chips = (name, opts, multi) => `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">${opts.map(t => `
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:6px 11px;border:1.5px solid #e2e8f0;border-radius:20px;">
+        <input type="${multi ? 'checkbox' : 'radio'}" name="${name}" value="${t}"> ${t}
+      </label>`).join('')}</div>`;
+    const ico = d => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;">${ico('<path d="M3 21h18M5 21V7l7-4 7 4v14"/>')} Tu negocio</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label>
+            <input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa LLC"></div>
+          <div class="brief-field"><label class="brief-label">Tu nombre <span class="req">*</span></label>
+            <input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Correo <span class="req">*</span></label>
+          <input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com"></div>
+        <div class="brief-field"><label class="brief-label">¿A qué se dedica tu negocio? <span class="req">*</span></label>
+          <textarea id="b-desc" class="brief-input brief-textarea" placeholder="Qué vendes u ofreces y qué te hace diferente"></textarea></div>
+        <div class="brief-field"><label class="brief-label">¿A quién le vendes?</label>
+          <input id="b-publico" class="brief-input" type="text" placeholder="Ej: familias, empresas, jóvenes, clientes de alto nivel..."></div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title" style="display:flex;align-items:center;gap:6px;">${ico('<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>')} Tu logo</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Texto exacto del logo</label>
+            <input id="b-logotexto" class="brief-input" type="text" placeholder="Como debe leerse en el logo"></div>
+          <div class="brief-field"><label class="brief-label">Eslogan (opcional)</label>
+            <input id="b-slogan" class="brief-input" type="text" placeholder="Frase corta debajo del nombre"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Estilo que te gusta</label>${chips('b-estilo', ['Moderno', 'Elegante', 'Minimalista', 'Clásico', 'Divertido', 'Tecnológico', 'Artesanal'], true)}</div>
+        <div class="brief-field"><label class="brief-label">Tipo de logo</label>${chips('b-tipologo', ['Solo texto', 'Ícono + texto', 'Emblema o sello', 'Que lo decidan ustedes'])}</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Colores que quieres</label>
+            <input id="b-colores" class="brief-input" type="text" placeholder="Ej: azul y dorado"></div>
+          <div class="brief-field"><label class="brief-label">Colores o cosas a evitar</label>
+            <input id="b-nogusta" class="brief-input" type="text" placeholder="Lo que no te gusta"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Logos o marcas que te gustan (nombres o enlaces)</label>
+          <input id="b-ref" class="brief-input" type="text" placeholder="Para entender tu gusto"></div>
+        <div class="brief-field"><label class="brief-label">¿Dónde lo vas a usar?</label>${chips('b-usos', ['Redes sociales', 'Página web', 'Tarjetas', 'Letreros', 'Uniformes', 'Vehículos', 'Empaques'], true)}</div>
+        <div class="brief-field"><label class="brief-label">Algo más que debamos saber</label>
+          <textarea id="b-extra" class="brief-input brief-textarea" placeholder="Ideas, símbolos, significado del nombre..."></textarea></div>
+      </div>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','logo')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar brief</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
   function _briefAdsForm(fsId) {
     return `
       <div class="brief-step">
@@ -1522,6 +1573,20 @@
         redes:  { ig:v('b-sn-ig'), fb:v('b-sn-fb'), tt:v('b-sn-tt'), yt:v('b-sn-yt') },
         tono:   document.querySelector('input[name="b-tono"]:checked')?.value || '',
         extra:  v('b-extra'),
+      };
+    } else if (tipo === 'logo') {
+      if (!negocio || !v('b-desc')) {
+        errEl.style.display = 'block';
+        errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
+        btn.disabled = false; btn.textContent = 'Enviar brief';
+        return;
+      }
+      const marcados = n => [...document.querySelectorAll(`input[name="${n}"]:checked`)].map(c => c.value);
+      brief = { ...brief, negocio,
+        descripcion: v('b-desc'), publico: v('b-publico'), logoTexto: v('b-logotexto'), slogan: v('b-slogan'),
+        estilo: marcados('b-estilo').join(', '), tipoLogo: marcados('b-tipologo')[0] || '',
+        colores: v('b-colores'), noGusta: v('b-nogusta'), referencias: v('b-ref'),
+        usos: marcados('b-usos'), extra: v('b-extra'),
       };
     } else if (tipo === 'ads') {
       brief = { ...brief, negocio,
