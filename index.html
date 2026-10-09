@@ -1381,6 +1381,31 @@
   .pt-side { top:calc(var(--hdr-h, 71px) + 12px); max-height:calc(100vh - var(--hdr-h, 71px) - 24px); }
   #subtab-nuevo > .panel-f:last-child { top:calc(var(--hdr-h, 71px) + 16px); }
 }
+
+/* ── Menú lateral plegable + más contraste ── */
+.nav-toggle { display:none; }
+@media (min-width: 900px) {
+  body { background:#e3e8f2; }
+  body::before { opacity:.10; }
+  .nav-tabs, #app-shell .page { transition:width .22s ease, margin-left .22s ease; }
+  .nav-toggle { display:flex; align-items:center; gap:12px; width:100%; padding:9px 12px; margin-bottom:6px; border:1px solid rgba(255,255,255,.10); border-radius:10px; background:rgba(255,255,255,.04); color:rgba(255,255,255,.6); font:500 12px 'DM Sans',sans-serif; cursor:pointer; transition:background .15s, color .15s; }
+  .nav-toggle:hover { background:rgba(255,255,255,.10); color:#fff; }
+  .nav-toggle i { width:18px; text-align:center; transition:transform .22s ease; }
+  /* Plegado: solo íconos */
+  body.menu-min { --side-w:72px; }
+  body.menu-min .nav-tabs { padding-left:10px; padding-right:10px; overflow-x:hidden; }
+  body.menu-min .nav-toggle { justify-content:center; padding:9px 0; }
+  body.menu-min .nav-toggle span { display:none; }
+  body.menu-min .nav-toggle i { transform:rotate(180deg); }
+  body.menu-min .nav-group { font-size:0; padding:10px 0 4px; }
+  body.menu-min .nav-group::after { content:''; display:block; height:1px; margin:0 8px; background:rgba(255,255,255,.12); }
+  body.menu-min .nav-tab { font-size:0; justify-content:center; padding:11px 0; gap:0; position:relative; }
+  body.menu-min .nav-tab > i { font-size:16px; width:auto; }
+  body.menu-min .nav-tab > span[id$="-badge"] { position:absolute; top:5px; right:9px; font-size:9px !important; margin:0 !important; }
+  /* Tarjetas más marcadas sobre el fondo */
+  .panel-f, .cb-tile, .cb-card, .hr-list, .proy-card, .ma-wrap, .mw-link { border-color:#d6dcea; box-shadow:0 1px 2px rgba(11,22,64,.05), 0 6px 18px rgba(11,22,64,.06); }
+  .panel-title-v { color:var(--blue); }
+}
 </style>
 </head>
 <body>
@@ -1461,6 +1486,9 @@
 
 <!-- NAVIGATION -->
 <nav class="nav-tabs">
+  <button class="nav-toggle" onclick="toggleMenuLateral()" title="Ocultar o mostrar el menú" aria-label="Ocultar o mostrar el menú">
+    <i class="fa-solid fa-angles-left"></i><span>Ocultar menú</span>
+  </button>
   <div class="nav-group">Resumen</div>
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
     <i class="fa-solid fa-chart-pie"></i> Dashboard
@@ -2604,6 +2632,21 @@ function switchPage(page, btn) {
   if (page === 'miweb')      renderMiWeb();
 }
 
+
+/* Menú lateral plegable (se recuerda en este navegador) */
+function toggleMenuLateral(forzar) {
+  const min = typeof forzar === 'boolean' ? forzar : !document.body.classList.contains('menu-min');
+  document.body.classList.toggle('menu-min', min);
+  try { localStorage.setItem('menuMin', min ? '1' : '0'); } catch (e) {}
+  const t = document.querySelector('.nav-toggle span'); if (t) t.textContent = 'Ocultar menú';
+}
+(function () {
+  // Nombre de cada sección como globo al pasar el mouse (útil con el menú plegado)
+  document.querySelectorAll('.nav-tab').forEach(b => { if (!b.title) b.title = b.textContent.replace(/\s+/g, ' ').replace(/\+?\d+$/, '').trim(); });
+  let guardado = null;
+  try { guardado = localStorage.getItem('menuMin'); } catch (e) {}
+  toggleMenuLateral(guardado === null ? window.innerWidth < 1200 : guardado === '1');
+})();
 /* Alto real del encabezado para ubicar el menú lateral */
 (function () {
   const h = document.querySelector('.header');
