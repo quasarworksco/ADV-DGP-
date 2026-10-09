@@ -2068,6 +2068,12 @@ async function japLlamar(env, datos) {
 }
 async function handleSmm(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  // ?ping=1 solo dice si la llave funciona (sin mostrar saldo ni datos), para revisar la instalación
+  if (new URL(request.url).searchParams.has('ping')) {
+    if (!env.JAP_API_KEY) return json(request, { configurado: false });
+    try { const d = await japLlamar(env, { action: 'balance' }); return json(request, { configurado: true, ok: d.balance !== undefined }); }
+    catch (e) { return json(request, { configurado: true, ok: false, detalle: String(e.message).slice(0, 120) }); }
+  }
   const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
   if (quien.error) return json(request, { error: quien.error }, quien.status);
   if (!env.JAP_API_KEY) return json(request, { configurado: false });

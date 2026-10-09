@@ -3158,7 +3158,7 @@ function smmPintar() {
   if (!_smm.productos) return;
   if (_smm.saldo && _smm.saldo.sinLlave) body.innerHTML = _smmComoConectar(); else body.innerHTML = '';
   body.innerHTML += ({ nuevo: _smmNuevo, pedidos: _smmPedidos, servicios: _smmServicios, jap: _smmJap }[_smm.tab])();
-  if (_smm.tab === 'jap' && !_smm.servicios) smmCargarJap();
+  if (['jap', 'servicios', 'nuevo'].includes(_smm.tab) && !_smm.servicios && !_smm.cargandoJap && !(_smm.saldo && _smm.saldo.sinLlave)) smmCargarJap();
 }
 function _smmComoConectar() {
   return `<div class="cb-card" style="padding:18px 20px;margin-bottom:14px;border-color:rgba(217,119,6,.35);background:#fffbeb;">
@@ -3260,7 +3260,7 @@ function _smmServicios() {
       <td>${_smmRed(p.red)}</td><td>${SMM_TIPOS[p.tipo]}</td><td>${p.cantidad.toLocaleString('en-US')}</td>
       <td><input type="number" step="0.01" value="${Number(p.precio) || 0}" onchange="smmGuardarProd('${p._id}',{precio:Number(this.value)||0})"></td>
       <td><input value="${esc(p.servicioJap || '')}" placeholder="Ej. 1234" onchange="smmGuardarProd('${p._id}',{servicioJap:this.value.replace(/\\D/g,'')})"></td>
-      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? '<span style="color:var(--text-soft);">Abre "Servicios de JAP" para ver el detalle</span>' : '<span style="color:#b45309;">Sin asignar</span>')}</td>
+      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? (_smm.servicios ? '<span style="color:#b91c1c;">Ese ID no existe en JAP</span>' : '<span style="color:var(--text-soft);">Cargando datos de JAP…</span>') : '<span style="color:#b45309;">Sin asignar</span>')}</td>
       <td><button class="hr-btn" style="color:var(--text-mid);border-color:var(--border);" onclick="smmGuardarProd('${p._id}',{activo:${p.activo === false}})">${p.activo === false ? 'Activar' : 'Ocultar'}</button></td></tr>`; }).join('')}
     </tbody></table></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
@@ -3282,8 +3282,9 @@ async function smmAgregarProd() {
   renderSmm();
 }
 async function smmCargarJap() {
-  try { const d = await smmApi('services'); _smm.servicios = d.servicios || []; }
-  catch (e) { _smm.servicios = null; document.getElementById('smm-body').innerHTML = (e.sinLlave ? _smmComoConectar() : `<div class="cb-card" style="color:#b91c1c;">No se pudo cargar la lista de JAP: ${esc(e.message)}</div>`); return; }
+  _smm.cargandoJap = true;
+  try { const d = await smmApi('services'); _smm.servicios = d.servicios || []; _smm.cargandoJap = false; }
+  catch (e) { _smm.servicios = null; _smm.cargandoJap = false; if (_smm.tab !== 'jap') return; document.getElementById('smm-body').innerHTML = (e.sinLlave ? _smmComoConectar() : `<div class="cb-card" style="color:#b91c1c;">No se pudo cargar la lista de JAP: ${esc(e.message)}</div>`); return; }
   smmPintar();
 }
 function _smmJap() {
