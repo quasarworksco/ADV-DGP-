@@ -583,8 +583,8 @@
     .sheet-status-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); color:white; font-size:10px; font-weight:600; letter-spacing:2px; padding:4px 12px; border-radius:20px; margin-top:10px; font-family:'Plus Jakarta Sans',sans-serif; }
     .sheet-status-badge.pendiente::before { content:''; width:6px; height:6px; border-radius:50%; background:#fbbf24; display:block; }
     .sheet-status-badge.pagado::before   { content:''; width:6px; height:6px; border-radius:50%; background:#34d399; display:block; }
-    .sheet-zigzag-dark { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#1e3a5f; background-size:16px 16px; background-repeat:repeat-x; }
-    .sheet-zigzag-blue { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#2979ff; background-size:16px 16px; background-repeat:repeat-x; }
+    .sheet-zigzag-dark { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#14246b; background-size:16px 16px; background-repeat:repeat-x; }
+    .sheet-zigzag-blue { height:16px; background:linear-gradient(-45deg,white 8px,transparent 0) 0 0,linear-gradient(45deg,white 8px,transparent 0) 0 0; background-color:#2a52e0; background-size:16px 16px; background-repeat:repeat-x; }
     .sheet-body { padding:26px 30px 0; }
     .sheet-brandrow { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
     .sheet-logo { width:40px; height:40px; object-fit:contain; display:block; }
@@ -1467,6 +1467,30 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .csel-list li { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font:500 13px 'Plus Jakarta Sans',sans-serif; color:var(--black); cursor:pointer; }
 .csel-list li:hover { background:#f1f4fb; }
 .csel-list li.on { background:var(--blue-xlight); color:var(--blue); font-weight:600; }
+
+/* ── Factura: diseño de marca y botones organizados ── */
+.sheet-top-factura { background:linear-gradient(135deg,#0b1640 0%,#14246b 60%,#1438cc 130%) !important; }
+.sheet-top-recibo { background:linear-gradient(135deg,#1438cc 0%,#2a52e0 60%,#3b82f6 120%) !important; }
+.sheet-brand { font-family:'Plus Jakarta Sans',sans-serif !important; font-weight:800 !important; font-size:15px !important; letter-spacing:2.5px !important; }
+.sheet-brand-sub { letter-spacing:.4px; }
+.sheet-total-block.factura-style { background:linear-gradient(135deg,#0b1640,#1438cc) !important; }
+.sheet-total-block.recibo-style { background:linear-gradient(135deg,#059669,#10b981) !important; }
+.sheet-items td .item-name { font-weight:600; }
+.sheet-actions.sa-v2 { display:flex !important; flex-direction:column; gap:10px; padding:4px 30px 26px; }
+.sa-v2 .sa-row { display:grid; gap:8px; }
+.sa-v2 .sa-main { grid-template-columns:1fr 1fr; }
+.sa-v2 .sa-main .btn-sheet { padding:14px; font-size:12px; }
+.sa-v2 .sa-main .btn-sheet.marcar { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+.sa-v2 .sa-main .btn-sheet.marcar:hover { background:#047857; }
+.sa-v2 .sa-3 { grid-template-columns:repeat(3,1fr); }
+.sa-v2 .sa-more { grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); }
+.sa-v2 .sa-label { font-size:9px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-soft); margin-top:4px; }
+.sa-v2 .btn-sheet { display:inline-flex; align-items:center; justify-content:center; gap:7px; letter-spacing:.3px; text-transform:none; font-size:12px; }
+.sa-v2 .btn-sheet.link { background:#f5f3ff; color:#6d28d9; border-color:rgba(109,40,217,.2); }
+.sa-v2 .btn-sheet.ghost { background:#fff; color:var(--text-mid); border-color:var(--border); font-weight:500; padding:10px; }
+.sa-v2 .btn-sheet.ghost:hover { background:#f8fafc; color:var(--black); }
+.sa-v2 .btn-sheet.close { margin-top:2px; }
+@media (max-width:480px) { .sa-v2 { padding:4px 20px 24px !important; } .sa-v2 .sa-3 .btn-sheet span { font-size:11px; } }
 </style>
 </head>
 <body>
@@ -3788,7 +3812,7 @@ function openSheet(doc) {
     <div class="${headerClass}" style="position:relative;">
       <div class="sheet-brandrow">
         <img src="/logo-white.png" alt="DGP Group" class="sheet-logo">
-        <div><div class="sheet-brand">DGP GROUP USA</div><div class="sheet-brand-sub">dgp-link.com · ${L('Servicios digitales','Digital services')}</div></div>
+        <div><div class="sheet-brand">DGP GLOBAL GROUP</div><div class="sheet-brand-sub">dgpglobalgroup.com · ${L('Diseño web y sistemas','Web design & systems')}</div></div>
       </div>
       <div class="sheet-title">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO DE PAGO','PAYMENT RECEIPT')}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:2px;">N° ${esc(doc.docId || '—')}</div>
@@ -3868,50 +3892,48 @@ function openSheet(doc) {
   document.getElementById('s-total').textContent = (doc.total || 0).toFixed(2);
 
   document.getElementById('s-footer-text').innerHTML = isRecibo
-    ? L('¡Gracias por su preferencia!','Thank you for your business!') + '<br><strong>DGP Group — Servicios Digitales Profesionales</strong>'
-    : L('Una vez realizado el pago, recibirás tu recibo de confirmación.','Once payment is received, you will get your receipt.') + '<br><strong>DGP Group — Servicios Digitales Profesionales</strong>';
+    ? L('¡Gracias por su preferencia!','Thank you for your business!') + '<br><strong>DGP Global Group — dgpglobalgroup.com</strong>'
+    : L('Una vez realizado el pago, recibirás tu recibo de confirmación.','Once payment is received, you will get your receipt.') + '<br><strong>DGP Global Group — dgpglobalgroup.com</strong>';
 
   const fsId = doc._fsId || '';
   const actions = document.getElementById('sheet-actions');
   actions.style.gridTemplateColumns = '';
-  if (isParcial) {
-    actions.className = 'sheet-actions four';
-    actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
-      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Correo</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
-      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Registrar Pago</button>
-      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
-      <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
-      ${fsId && (doc.pagos || []).length ? `<button class="btn-sheet deshacer" onclick="deshacerUltimoAbono('${esc(fsId)}')" style="grid-column:1/-1;">${SVG_DESHACER} Quitar el último abono ($${(Number(doc.pagos[doc.pagos.length - 1].monto) || 0).toFixed(2)})</button>` : ''}
-      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
-  } else if (isFactura) {
-    actions.className = 'sheet-actions four';
-    actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
-      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Correo</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
-      <button class="btn-sheet parcial" onclick="abrirPagoParcial('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pago parcial</button>
-      <button class="btn-sheet marcar" onclick="marcarPagado('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Marcar pagado</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
-      <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
-      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
-  } else {
-    actions.className = 'sheet-actions three';
-    actions.innerHTML = `
-      <button class="btn-sheet print"  onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
-      <button class="btn-sheet wa"     onclick="enviarWhatsApp('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
-      <button class="btn-sheet link"   onclick="copiarLinkFactura('${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Link público</button>
-      <button class="btn-sheet" style="background:#f0fdf4;color:#059669;border-color:rgba(5,150,105,0.3);display:inline-flex;align-items:center;gap:6px;" onclick="copiarLinkEncuesta('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Encuesta</button>
-      <button class="btn-sheet email"  onclick="abrirCorreo('documentos','${esc(fsId)}')" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</button>
-      <button class="btn-sheet" style="background:var(--off);color:var(--text-mid);border-color:var(--border);display:inline-flex;align-items:center;gap:6px;" onclick="guardarComoPlantilla('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Plantilla</button>
-      <button class="btn-sheet" style="background:#fffbeb;color:#92400e;border-color:rgba(146,64,14,0.25);display:inline-flex;align-items:center;gap:6px;" onclick="duplicarFactura('${esc(fsId)}')" ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
-      ${fsId ? `<button class="btn-sheet deshacer" onclick="deshacerPago('${esc(fsId)}')" style="grid-column:1/-1;">${SVG_DESHACER} Volver a pendiente de pago</button>` : ''}
-      <button class="btn-sheet close"  onclick="closeModal()" style="grid-column:1/-1;">Cerrar</button>`;
-  }
+  actions.className = 'sheet-actions sa-v2';
+  const ic = d => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const I = {
+    ok: ic('<path d="M20 6 9 17l-5-5"/>'),
+    abono: ic('<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>'),
+    wa: ic('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'),
+    mail: ic('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>'),
+    link: ic('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'),
+    print: ic('<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
+    save: ic('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>'),
+    star: ic('<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>')
+  };
+  const B = (cls, fn, icon, txt) => `<button class="btn-sheet ${cls}" onclick="${fn}">${icon}<span>${txt}</span></button>`;
+  const id = esc(fsId);
+  // 1) Lo principal: cobrar
+  const cobrar = (isFactura || isParcial) ? `<div class="sa-row sa-main">
+      ${B('marcar', `marcarPagado('${id}')`, I.ok, 'Marcar pagado')}
+      ${B('parcial', `abrirPagoParcial('${id}')`, I.abono, 'Registrar abono')}
+    </div>` : '';
+  // 2) Enviar al cliente
+  const enviar = `<div class="sa-label">Enviar al cliente</div><div class="sa-row sa-3">
+      ${B('wa', `enviarWhatsApp('${id}')`, I.wa, 'WhatsApp')}
+      ${B('email', `abrirCorreo('documentos','${id}')`, I.mail, 'Correo')}
+      ${B('link', `copiarLinkFactura('${id}')`, I.link, 'Copiar link')}
+    </div>`;
+  // 3) Más opciones (discretas)
+  const mas = `<div class="sa-row sa-more">
+      ${B('ghost', 'window.print()', I.print, 'Imprimir / PDF')}
+      ${B('ghost', `guardarComoPlantilla('${id}')`, I.save, 'Guardar plantilla')}
+      ${isRecibo ? B('ghost', `copiarLinkEncuesta('${id}')`, I.star, 'Link de encuesta') : ''}
+    </div>`;
+  // 4) Deshacer (solo si aplica)
+  const deshacer = isParcial && fsId && (doc.pagos || []).length
+    ? `<button class="btn-sheet deshacer" onclick="deshacerUltimoAbono('${id}')">${SVG_DESHACER} Quitar el último abono ($${(Number(doc.pagos[doc.pagos.length - 1].monto) || 0).toFixed(2)})</button>`
+    : (isRecibo && fsId ? `<button class="btn-sheet deshacer" onclick="deshacerPago('${id}')">${SVG_DESHACER} Volver a pendiente de pago</button>` : '');
+  actions.innerHTML = cobrar + enviar + mas + deshacer + `<button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
 
   /* ── Comprobante del cliente (subido desde factura pública) ── */
   let existingComp = document.getElementById('s-comp-block');
@@ -4806,7 +4828,7 @@ function enviarWhatsApp(fsId) {
     `*Servicios:*\n${items}\n\n` +
     `💰 *Total: $${(doc.total || 0).toFixed(2)}*\n` +
     `${estado}\n\n` +
-    `_DGP Group USA — dgp-link.com_`;
+    `_DGP Global Group — dgpglobalgroup.com_`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -4821,7 +4843,7 @@ function enviarEmail(fsId) {
     `Fecha: ${doc.fecha || '—'}\n\n` +
     `Servicios:\n${items}\n\n` +
     `Total: $${(doc.total || 0).toFixed(2)}\n\n` +
-    `DGP Group USA — dgp-link.com`;
+    `DGP Global Group — dgpglobalgroup.com`;
   window.location.href = `mailto:?subject=${encodeURIComponent(tipo + ' ' + (doc.docId || ''))}&body=${encodeURIComponent(body)}`;
 }
 
@@ -7215,7 +7237,7 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="pad" style="padding:28px 34px ${titulo ? '32px' : '26px'};">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
           <td style="width:44px;"><img src="https://adv.dgp-link.com/logo-white.png" width="40" height="40" alt="DGP" style="display:block;border:0;"></td>
-          <td style="padding-left:12px;">${cmBlanco(`<div style="${CM_TIT}color:#ffffff;font-size:15px;font-weight:700;letter-spacing:2.5px;">DGP GROUP USA</div><div style="${CM_TXT}font-size:11.5px;letter-spacing:.5px;color:#bfe9fa;margin-top:2px;">Servicios Digitales Profesionales</div>`)}</td>
+          <td style="padding-left:12px;">${cmBlanco(`<div style="${CM_TIT}color:#ffffff;font-size:15px;font-weight:700;letter-spacing:2.5px;">DGP GLOBAL GROUP</div><div style="${CM_TXT}font-size:11.5px;letter-spacing:.5px;color:#bfe9fa;margin-top:2px;">dgpglobalgroup.com</div>`)}</td>
           ${etiqueta ? `<td align="right" class="etq"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border:1px solid #6fb6dc;border-radius:30px;padding:7px 14px;">${cmBlanco(`<span style="${CM_TIT}color:#ffffff;font-size:10px;font-weight:600;letter-spacing:1.8px;white-space:nowrap;">${e(etiqueta)}</span>`)}</td></tr></table></td>` : ''}
         </tr></table>
         ${titulo ? cmBlanco(`<div class="h1" style="${CM_TIT}color:#ffffff;font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.5px;margin-top:26px;">${e(titulo)}</div>${subtitulo ? `<div style="${CM_TXT}color:#bfe9fa;font-size:13px;font-weight:500;letter-spacing:1.5px;margin-top:7px;">${e(subtitulo)}</div>` : ''}`) : ''}
@@ -7251,7 +7273,7 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
         <td style="padding:10px 16px;font-size:12.5px;"><a href="${WEB_DGP}" class="lk" style="${CM_TIT}color:${CM.azul};text-decoration:none;font-weight:600;"><img src="${CM_ICO}web-b.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; dgpglobalgroup.com</a></td>
       </tr></table>
       <div class="tx2" style="font-size:12.5px;color:${CM.suave};margin-top:16px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" class="lk" style="color:${CM.azul};text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
-      <div class="tx2" style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:12px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GROUP USA</div>
+      <div class="tx2" style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:12px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GLOBAL GROUP</div>
       ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Group USA.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
     </td></tr>
 

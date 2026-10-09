@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script type="module" crossorigin src="https://embed.hel.io/assets/index-v1.js"></script>
@@ -18,11 +18,11 @@
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { background:#f1f5f9; font-family:'IBM Plex Sans',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px; }
     .pub-card { background:white; max-width:520px; width:100%; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.12); }
-    .pub-header-factura { background:linear-gradient(135deg,#0f172a,#1e3a5f); padding:28px 32px 24px; position:relative; }
+    .pub-header-factura { background:linear-gradient(135deg,#0b1640 0%,#14246b 60%,#1438cc 130%); padding:28px 32px 24px; position:relative; }
     .pub-header-recibo  { background:linear-gradient(135deg,#1438cc,#2979ff); padding:28px 32px 24px; position:relative; }
     .pub-brandrow { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
     .pub-logo { width:42px; height:42px; object-fit:contain; display:block; }
-    .pub-brand { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:white; line-height:1; }
+    .pub-brand { font-family:'Plus Jakarta Sans','DM Sans',sans-serif; font-weight:800; font-size:15px; letter-spacing:2.5px; color:white; line-height:1; }
     .pub-brand-sub { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.55); margin-top:3px; }
     .pub-title { font-family:'Bebas Neue',sans-serif; font-size:36px; color:white; letter-spacing:1px; }
     .pub-docnum { font-family:'Bebas Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.45); margin-top:4px; letter-spacing:2px; }
@@ -31,8 +31,8 @@
     .pub-badge.pendiente::before { background:#fbbf24; }
     .pub-badge.pagado::before   { background:#34d399; }
     .pub-badge.parcial::before  { background:#fb923c; }
-    .pub-zigzag-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#1e3a5f; background-size:14px 14px; background-repeat:repeat-x; }
-    .pub-zigzag-blue { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#2979ff; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-zigzag-dark { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#14246b; background-size:14px 14px; background-repeat:repeat-x; }
+    .pub-zigzag-blue { height:14px; background:linear-gradient(-45deg,white 7px,transparent 0) 0 0,linear-gradient(45deg,white 7px,transparent 0) 0 0; background-color:#2a52e0; background-size:14px 14px; background-repeat:repeat-x; }
     .pub-body { padding:26px 32px 0; }
     .pub-meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #eef2f7; }
     .pub-meta-col { }
@@ -115,7 +115,7 @@
     @media print { .helio-section { display:none; } }
     /* ── Brief del Proyecto ── */
     .brief-section { margin:0 32px 20px; }
-    .brief-toggle { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#0f172a,#1e3a5f); border-radius:12px; padding:14px 18px; cursor:pointer; user-select:none; }
+    .brief-toggle { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#0b1640 0%,#14246b 60%,#1438cc 130%); border-radius:12px; padding:14px 18px; cursor:pointer; user-select:none; }
     .brief-toggle-left { display:flex; align-items:center; gap:10px; }
     .brief-toggle-icon { font-size:22px; }
     .brief-toggle-text strong { display:block; font-size:13px; font-weight:600; color:white; }
@@ -782,11 +782,11 @@
     const campo = 'width:100%;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;box-sizing:border-box;';
     const etiqueta = 'display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:6px;';
     card.innerHTML = `
-      <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:30px 32px 26px;">
+      <div style="background:linear-gradient(135deg,#0b1640 0%,#14246b 60%,#1438cc 130%);padding:30px 32px 26px;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
           <img src="/logo-white.png" alt="DGP Group" style="width:42px;height:42px;object-fit:contain;">
-          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff;line-height:1;">DGP GROUP USA</div>
-          <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:3px;">dgp-link.com · Servicios digitales</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff;line-height:1;">DGP GLOBAL GROUP</div>
+          <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:3px;">dgpglobalgroup.com · Diseño web y sistemas</div></div>
         </div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:1px;line-height:1;">TU ${tipo.toUpperCase()}</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:6px;">N° ${String(doc.docId || id).replace(/[<>&"]/g, '')}</div>
@@ -866,7 +866,7 @@
       <div class="${headerClass}">
         <div class="pub-brandrow">
           <img src="/logo-white.png" alt="DGP Group" class="pub-logo">
-          <div><div class="pub-brand">DGP GROUP USA</div><div class="pub-brand-sub">dgp-link.com · Servicios digitales</div></div>
+          <div><div class="pub-brand">DGP GLOBAL GROUP</div><div class="pub-brand-sub">dgpglobalgroup.com · Diseño web y sistemas</div></div>
         </div>
         <div class="pub-title">${docTitle}</div>
         <div class="pub-docnum">N° ${esc(doc.docId || id)}</div>
@@ -896,7 +896,7 @@
         <span class="pub-total-amount">$${(doc.total||0).toFixed(2)}</span>
       </div>
       <div class="pub-footer">
-        <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Group USA — Servicios Digitales Profesionales</strong></p>
+        <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Global Group — dgpglobalgroup.com</strong></p>
       </div>
       ${!isRecibo ? renderContrato(doc, doc._fsId) : ''}
       ${!isRecibo && (!doc.contrato || doc.contratoFirmado) ? renderPago(doc) : ''}
