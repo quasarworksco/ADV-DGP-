@@ -106,8 +106,9 @@ Para la publicidad masiva de WhatsApp SÍ puedes decir que llega a gente real en
 
 🌐 SITIOS WEB
 • Web Básica        →  $280  (diseño profesional, hasta 3 páginas, contacto, responsive)
-• Web Estándar      →  $455  (hasta 6 páginas, SEO básico, formularios, galería)
+• Web Estándar      →  $455  (hasta 5 páginas, WhatsApp, formularios, galería)
 • Web Premium       →  $950  (sitio completo, SEO avanzado, animaciones, integraciones, blog)
+Todos los planes incluyen un dominio gratis tunegocio.dgp-link.com. Solo el Premium incluye 12 meses de hosting; en los otros el hosting se cobra aparte ($25 al mes o $145 al año).
 
 Puntos clave:
 → Diseño personalizado, no plantillas genéricas.
