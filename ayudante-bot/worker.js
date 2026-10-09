@@ -207,6 +207,8 @@ export default {
     if (ruta === '/email') return handleEmail(request, env);
     if (ruta === '/resena') return handleResena(request, env);
     if (ruta === '/encuesta') return handleEncuesta(request, env);
+    if (ruta === '/resenas-web') return handleResenasWeb(request, env, ctx);
+    if (ruta === '/meta-ads') return handleMetaAds(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -674,7 +676,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-06a';
+const WORKER_VERSION = '2026-10-09a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1223,7 +1225,9 @@ async function tgCallback(env, cq) {
     a: () => botAbono(env, token, id, Number(extra)),
     r: () => botRechazar(env, token, id),
     c: () => botCrearDesdeBorrador(env, token, id),
-    x: () => botCancelarBorrador(env, token, id)
+    x: () => botCancelarBorrador(env, token, id),
+    wa: () => botResenaWeb(env, token, id, 'aprobada'),
+    wr: () => botResenaWeb(env, token, id, 'rechazada')
   };
   const res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' };
   await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
@@ -1764,5 +1768,199 @@ async function handleContacto(request, env) {
     console.error('contacto', e);
     await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
     return resp({ ok: true });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RESEÑAS DE LA WEB (dgpglobalgroup.com) con aprobación desde el panel
+//  POST /resenas-web  {nombre, correo, valoracion, comentario, idioma, _hp_dgp, t}
+//       → se guarda en resenasWeb con estado "pendiente" y avisa por Telegram
+//  GET  /resenas-web  → reseñas "aprobada" para mostrar en la web (sin correos)
+//  La primera vez importa las reseñas que estaban en el Google Sheet.
+// ══════════════════════════════════════════════════════════════
+const RESENAS_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPpmwX4hdgbUsrtTk9_-jDaWpqjB-ixIrHfPqDj5y0HqvJ-fEdbj-0B78jgxQ3lXRji9Z9teaRl9O6/pub?output=csv';
+const RESENAS_CACHE = 'https://cache.dgp/resenas-web-v1';
+
+function parseCSV(txt) {
+  const out = []; let row = [], f = '', q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && txt[i + 1] === '\n') i++; row.push(f); out.push(row); row = []; f = ''; }
+    else f += ch;
+  }
+  if (f || row.length) { row.push(f); out.push(row); }
+  return out;
+}
+// Crea un documento con ID fijo; si ya existe no hace nada (evita duplicados)
+async function fsCrearConId(env, coleccion, id, obj, token) {
+  const res = await fetch(`${docUrl(env, coleccion)}?documentId=${encodeURIComponent(id)}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toValue(obj).mapValue.fields })
+  });
+  if (res.status === 409) return false;
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore (crear): ' + (d.error?.message || res.status)); }
+  return true;
+}
+async function fsGuardar(env, path, obj, token) {
+  const res = await fetch(docUrl(env, path), {
+    method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toValue(obj).mapValue.fields })
+  });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore (guardar): ' + (d.error?.message || res.status)); }
+}
+// "8/3/2026 13:44:54" (día/mes/año del Sheet) → Date
+function fechaSheet(s) {
+  const m = String(s || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return new Date();
+  return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], (+m[4] || 0) + 4, +m[5] || 0, +m[6] || 0));
+}
+async function migrarResenasSheet(env, token) {
+  const cfg = await fsGet(env, 'config/resenasWeb', token).catch(() => null);
+  if (cfg?.migrado) return;
+  const txt = await fetch(RESENAS_SHEET_CSV).then(r => r.ok ? r.text() : '').catch(() => '');
+  const filas = parseCSV(txt).slice(1).filter(r => r.length >= 5 && r[1].trim() && r[4].trim());
+  for (const r of filas) {
+    const nombre = r[1].trim().slice(0, 80), comentario = r[4].trim().slice(0, 1500);
+    // Lo que no parece una reseña (nombres larguísimos, teléfonos) entra como pendiente para revisarlo
+    const sospechosa = nombre.length > 40 || /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(comentario);
+    const id = 'sheet-' + r[0].replace(/\D/g, '').slice(0, 20) + '-' + normNombre(nombre).replace(/[^a-z0-9]/g, '').slice(0, 20);
+    await fsCrearConId(env, 'resenasWeb', id, {
+      nombre, correo: r[2].trim().slice(0, 120), valoracion: Math.min(5, Math.max(1, parseInt(r[3]) || 5)), comentario,
+      estado: sospechosa ? 'pendiente' : 'aprobada', origen: 'sheet', fecha: fechaSheet(r[0])
+    }, token);
+  }
+  await fsGuardar(env, 'config/resenasWeb', { migrado: true, migradoEl: new Date(), importadas: filas.length }, token);
+}
+async function handleResenasWeb(request, env, ctx) {
+  const h = { ...corsContacto(request), 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+  const resp = (d, st = 200, extra = {}) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h, ...extra } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+
+  if (request.method === 'GET') {
+    const url = new URL(request.url);
+    const cache = caches.default, clave = new Request(RESENAS_CACHE);
+    if (!url.searchParams.has('fresco')) {
+      const hit = await cache.match(clave);
+      if (hit) return resp(await hit.json(), 200, { 'Cache-Control': 'public, max-age=60' });
+    }
+    try {
+      const token = await firebaseLogin(env);
+      await migrarResenasSheet(env, token);
+      const todas = await fsList(env, 'resenasWeb', token);
+      const resenas = todas.filter(r => r.estado === 'aprobada')
+        .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+        .map(r => ({ nombre: r.nombre, valoracion: r.valoracion, comentario: r.comentario, fecha: r.fecha }));
+      const datos = { resenas, total: resenas.length };
+      ctx.waitUntil(cache.put(clave, new Response(JSON.stringify(datos), { headers: { 'Cache-Control': 'max-age=120' } })));
+      return resp(datos, 200, { 'Cache-Control': 'public, max-age=60' });
+    } catch (e) {
+      console.error('resenas-web', e);
+      return resp({ resenas: [], total: 0, error: 'No disponible' }, 503);
+    }
+  }
+
+  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
+  const b = await request.json().catch(() => ({}));
+  if (b._hp_dgp || (Number(b.t) && Number(b.t) < 3000)) return resp({ ok: true });
+  const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase();
+  const comentario = String(b.comentario || '').replace(/[<>]/g, '').trim().slice(0, 1500);
+  const valoracion = Math.min(5, Math.max(1, parseInt(b.valoracion) || 0));
+  if (nombre.length < 2 || !comentario || !parseInt(b.valoracion)) return resp({ error: 'Completa todos los campos.' }, 400);
+  if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
+  if (/https?:\/\//i.test(comentario)) return resp({ ok: true }); // las reseñas con enlaces son spam
+  try {
+    const token = await firebaseLogin(env);
+    const id = await fsCreate(env, 'resenasWeb', {
+      nombre, correo, valoracion, comentario, estado: 'pendiente', origen: 'web', idioma: b.idioma === 'en' ? 'en' : 'es', fecha: new Date()
+    }, token);
+    await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
+      text: `⭐ <b>Nueva reseña en la web</b> (pendiente)\n\n${'★'.repeat(valoracion)}${'☆'.repeat(5 - valoracion)}\n👤 ${escHtml(nombre)}${correo ? ` · ${escHtml(correo)}` : ''}\n\n💬 “${escHtml(comentario.slice(0, 900))}”\n\nNo se publica hasta que la apruebes (aquí o en el panel → Reseñas web).`,
+      reply_markup: { inline_keyboard: [[{ text: '✅ Publicar', callback_data: `wa:${id}` }, { text: '🗑 Rechazar', callback_data: `wr:${id}` }]] }
+    }).catch(() => {});
+    return resp({ ok: true });
+  } catch (e) {
+    console.error('resenas-web POST', e);
+    await tgEnviar(env, `⭐ Llegó una reseña de la web pero no se pudo guardar:\n${escHtml(nombre)} (${valoracion}★)\n${escHtml(comentario.slice(0, 500))}`).catch(() => {});
+    return resp({ ok: true });
+  }
+}
+async function botResenaWeb(env, token, id, estado) {
+  const r = await fsGet(env, `resenasWeb/${id}`, token);
+  if (!r) return { aviso: 'Esa reseña ya no existe' };
+  await fsUpdate(env, `resenasWeb/${id}`, { estado, revisadaEl: new Date(), revisadaPor: 'telegram' }, ['estado', 'revisadaEl', 'revisadaPor'], token);
+  await caches.default.delete(new Request(RESENAS_CACHE)).catch(() => {});
+  return { aviso: estado === 'aprobada' ? 'Publicada en la web ✓' : 'Rechazada ✓',
+    html: estado === 'aprobada' ? `✅ La reseña de <b>${escHtml(r.nombre)}</b> ya está publicada en dgpglobalgroup.com.` : `🗑 Reseña de <b>${escHtml(r.nombre)}</b> rechazada. No se mostrará en la web.` };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  META ADS: GET /meta-ads?periodo=last_30d  (solo equipo, con sesión del panel)
+//  Secretos: META_TOKEN (token de usuario del sistema con permiso ads_read)
+//  Opcional: META_AD_ACCOUNT (por defecto la cuenta de DGP), META_API_VERSION
+// ══════════════════════════════════════════════════════════════
+const META_CUENTA_DEFAULT = '2922697711266686';
+const META_PERIODOS = ['today', 'yesterday', 'last_7d', 'last_14d', 'last_30d', 'this_month', 'last_month', 'last_90d', 'maximum'];
+const META_ACCIONES = {
+  conversaciones: ['onsite_conversion.messaging_conversation_started_7d'],
+  clientes_potenciales: ['lead', 'onsite_conversion.lead_grouped', 'offsite_conversion.fb_pixel_lead'],
+  clics_enlace: ['link_click'],
+  visitas_web: ['landing_page_view', 'omni_landing_page_view']
+};
+function metaSumar(acciones, tipos) {
+  return (acciones || []).filter(a => tipos.includes(a.action_type)).reduce((s, a) => Math.max(s, Number(a.value) || 0), 0);
+}
+function metaResumen(ins) {
+  const i = ins || {};
+  const o = { gastado: Number(i.spend) || 0, impresiones: Number(i.impressions) || 0, alcance: Number(i.reach) || 0, clics: Number(i.clicks) || 0, ctr: Number(i.ctr) || 0, cpc: Number(i.cpc) || 0, frecuencia: Number(i.frequency) || 0 };
+  for (const [k, tipos] of Object.entries(META_ACCIONES)) o[k] = metaSumar(i.actions, tipos);
+  return o;
+}
+async function metaGet(env, ruta, params) {
+  const v = env.META_API_VERSION || 'v23.0';
+  const qs = new URLSearchParams({ ...params, access_token: env.META_TOKEN });
+  const res = await fetch(`https://graph.facebook.com/${v}/${ruta}?${qs}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) {
+    const e = data.error || {};
+    const err = new Error(e.code === 190 ? 'El token de Meta venció o no es válido. Genera uno nuevo.' : (e.message || 'Error de Meta ' + res.status));
+    err.meta = e.code; throw err;
+  }
+  return data;
+}
+async function handleMetaAds(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+  if (!env.META_TOKEN) return json(request, { configurado: false });
+  const url = new URL(request.url);
+  const periodo = META_PERIODOS.includes(url.searchParams.get('periodo')) ? url.searchParams.get('periodo') : 'last_30d';
+  const cuenta = 'act_' + String(env.META_AD_ACCOUNT || META_CUENTA_DEFAULT).replace(/^act_/, '');
+  const camposIns = 'spend,impressions,reach,clicks,ctr,cpc,frequency,actions';
+  try {
+    const [info, total, diario, campanas] = await Promise.all([
+      metaGet(env, cuenta, { fields: 'name,currency,account_status,amount_spent,balance,spend_cap' }),
+      metaGet(env, `${cuenta}/insights`, { fields: camposIns, date_preset: periodo }),
+      metaGet(env, `${cuenta}/insights`, { fields: 'spend,actions', date_preset: periodo === 'maximum' ? 'last_90d' : periodo, time_increment: '1', limit: '100' }),
+      metaGet(env, `${cuenta}/campaigns`, { fields: `name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time,insights.date_preset(${periodo}){${camposIns}}`, limit: '50' })
+    ]);
+    const lista = (campanas.data || []).map(c => ({
+      id: c.id, nombre: c.name, estado: c.effective_status || c.status, objetivo: c.objective,
+      presupuestoDiario: c.daily_budget ? Number(c.daily_budget) / 100 : null, presupuestoTotal: c.lifetime_budget ? Number(c.lifetime_budget) / 100 : null,
+      inicio: c.start_time || null, fin: c.stop_time || null, ...metaResumen(c.insights?.data?.[0])
+    })).filter(c => c.gastado > 0 || c.estado === 'ACTIVE')
+      .sort((a, b) => (b.estado === 'ACTIVE') - (a.estado === 'ACTIVE') || b.gastado - a.gastado);
+    return json(request, {
+      configurado: true, periodo, cuenta: { id: cuenta, nombre: info.name, moneda: info.currency, estado: info.account_status, gastadoHistorico: Number(info.amount_spent || 0) / 100 },
+      total: metaResumen(total.data?.[0]),
+      diario: (diario.data || []).map(d => ({ fecha: d.date_start, gastado: Number(d.spend) || 0, conversaciones: metaSumar(d.actions, META_ACCIONES.conversaciones) })),
+      campanas: lista, actualizado: new Date().toISOString()
+    });
+  } catch (e) {
+    console.error('meta-ads', e);
+    return json(request, { configurado: true, error: e.message, tokenInvalido: e.meta === 190 }, 502);
   }
 }

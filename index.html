@@ -1310,6 +1310,38 @@
 .cp-baja:hover { color:#b91c1c; border-color:rgba(185,28,28,.35); background:rgba(185,28,28,.05); }
 .cp-cuenta { font-size:11px; color:var(--text-soft); padding:9px 12px; border-top:1px solid var(--border); background:var(--off); font-family:'IBM Plex Sans',sans-serif; }
 @media (max-width:560px) { .cp-tag { display:none; } }
+
+/* ── Reseñas web · Meta Ads · Mi web ── */
+.rw-row { display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start; padding:14px 16px; border-top:1px solid #f1f5f9; font-family:'IBM Plex Sans',sans-serif; }
+.rw-row:first-child { border-top:0; }
+.rw-txt { font-size:13px; color:var(--black); line-height:1.55; margin-top:6px; white-space:pre-wrap; word-break:break-word; }
+.rw-meta { font-size:11px; color:var(--text-soft); margin-top:6px; }
+.rw-acc { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.hr-btn.del { color:#b91c1c; border-color:rgba(185,28,28,.25); } .hr-btn.del:hover { background:#fef2f2; }
+.ma-chart { display:flex; align-items:flex-end; gap:3px; height:120px; padding:8px 0 0; }
+.ma-bar { flex:1; background:var(--blue); border-radius:3px 3px 0 0; min-height:2px; position:relative; opacity:.85; }
+.ma-bar:hover { opacity:1; }
+.ma-bar span { display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:var(--black); color:#fff; font-size:10px; padding:3px 6px; border-radius:5px; white-space:nowrap; margin-bottom:4px; z-index:2; }
+.ma-bar:hover span { display:block; }
+.ma-tabla { width:100%; border-collapse:collapse; font-family:'IBM Plex Sans',sans-serif; font-size:12px; }
+.ma-tabla th { text-align:left; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); padding:10px 12px; border-bottom:1px solid var(--border); font-weight:700; }
+.ma-tabla td { padding:11px 12px; border-top:1px solid #f1f5f9; vertical-align:top; }
+.ma-tabla td.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ma-tabla th.n { text-align:right; }
+.ma-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:white; }
+.ma-pasos { margin:10px 0 0 18px; font-size:13px; line-height:1.7; color:var(--black); }
+.ma-pasos a { color:var(--blue); font-weight:600; }
+.ma-pasos code { background:var(--off); border:1px solid var(--border); border-radius:5px; padding:1px 6px; font-size:12px; }
+.mw-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.mw-link { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; background:white; border:1px solid var(--border); border-radius:12px; text-decoration:none; color:var(--black); transition:border-color .15s, box-shadow .15s; }
+.mw-link:hover { border-color:var(--blue); box-shadow:0 4px 14px rgba(20,56,204,.08); }
+.mw-link i { font-size:18px; color:var(--blue); width:22px; text-align:center; margin-top:2px; }
+.mw-link b { display:block; font-size:13px; font-family:'IBM Plex Sans',sans-serif; }
+.mw-link small { display:block; font-size:11px; color:var(--text-soft); margin-top:2px; line-height:1.4; }
+@media (max-width:700px) {
+  .rw-row { grid-template-columns:1fr; }
+  .rw-acc { justify-content:flex-start; }
+}
 </style>
 </head>
 <body>
@@ -1410,6 +1442,15 @@
   </button>
   <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('resenasweb', this)">
+    <i class="fa-solid fa-star"></i> Reseñas web<span id="resenasweb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('metaads', this)">
+    <i class="fa-brands fa-meta"></i> Meta Ads
+  </button>
+  <button class="nav-tab" onclick="switchPage('miweb', this)">
+    <i class="fa-solid fa-globe"></i> Mi web
   </button>
 </nav>
 
@@ -1790,6 +1831,72 @@
     </div>
     <div id="encuestas-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;"></div>
     <div id="encuestas-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: RESEÑAS DE LA WEB
+══════════════════════════════════════ -->
+<div id="page-resenasweb" class="page">
+  <div class="proy-main">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Reseñas de la web</div>
+        <div style="font-size:11px;color:var(--text-soft);">Las que dejan en dgpglobalgroup.com. Solo se publican las que apruebes.</div>
+      </div>
+      <button class="btn-logout" onclick="renderResenasWeb(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+    </div>
+    <div id="rw-stats" class="cb-tiles" style="margin-bottom:14px;"></div>
+    <div class="db-pills" id="rw-filtros" style="margin-bottom:14px;flex-wrap:wrap;">
+      <button class="dash-period-btn active" onclick="rwFiltrar('pendiente',this)">Pendientes</button>
+      <button class="dash-period-btn" onclick="rwFiltrar('aprobada',this)">Publicadas</button>
+      <button class="dash-period-btn" onclick="rwFiltrar('rechazada',this)">Rechazadas</button>
+      <button class="dash-period-btn" onclick="rwFiltrar('todas',this)">Todas</button>
+    </div>
+    <div id="rw-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: META ADS
+══════════════════════════════════════ -->
+<div id="page-metaads" class="page">
+  <div class="proy-main">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Meta Ads</div>
+        <div style="font-size:11px;color:var(--text-soft);" id="ma-sub">Resultados de tus anuncios en Facebook e Instagram</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn-logout" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=2922697711266686" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ads Manager</a>
+        <button class="btn-logout" onclick="renderMetaAds()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+      </div>
+    </div>
+    <div class="db-pills" id="ma-periodos" style="margin-bottom:14px;flex-wrap:wrap;">
+      <button class="dash-period-btn" onclick="maPeriodo('last_7d',this)">7 días</button>
+      <button class="dash-period-btn active" onclick="maPeriodo('last_30d',this)">30 días</button>
+      <button class="dash-period-btn" onclick="maPeriodo('this_month',this)">Este mes</button>
+      <button class="dash-period-btn" onclick="maPeriodo('last_90d',this)">90 días</button>
+      <button class="dash-period-btn" onclick="maPeriodo('maximum',this)">Todo</button>
+    </div>
+    <div id="ma-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: MI WEB (accesos directos)
+══════════════════════════════════════ -->
+<div id="page-miweb" class="page">
+  <div class="proy-main">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Mi web</div>
+        <div style="font-size:11px;color:var(--text-soft);">dgpglobalgroup.com — accesos directos y lo que llega desde la web</div>
+      </div>
+      <a class="btn-logout" href="https://dgpglobalgroup.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir web</a>
+    </div>
+    <div id="mw-stats" class="cb-tiles" style="margin-bottom:18px;"></div>
+    <div id="mw-links"></div>
   </div>
 </div>
 
@@ -2341,6 +2448,7 @@ function showApp(user) {
   const ini = (user.displayName || user.email || '?')[0].toUpperCase();
   document.getElementById('user-avatar-init').textContent = ini;
   initPage();
+  cargarBadgeResenasWeb();
 }
 
 function loginEmail() {
@@ -2438,6 +2546,237 @@ function switchPage(page, btn) {
   if (page === 'encuestas')  renderEncuestas();
   if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
   if (page === 'suscripciones') renderSuscripciones();
+  if (page === 'resenasweb') renderResenasWeb();
+  if (page === 'metaads')    renderMetaAds();
+  if (page === 'miweb')      renderMiWeb();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESEÑAS DE LA WEB — aprobar o rechazar antes de publicar
+   (la web solo muestra las que están en estado "aprobada")
+═══════════════════════════════════════════════════════ */
+const RW_WORKER = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev';
+let _rwFiltro = 'pendiente', _rwDocs = [];
+function _rwFecha(f) {
+  const d = f?.toDate ? f.toDate() : (f ? new Date(f) : null);
+  return d && !isNaN(d) ? d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+}
+function _rwStars(n) {
+  return Array.from({ length: 5 }, (_, i) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="${i < n ? '#f59e0b' : 'none'}" stroke="#f59e0b" stroke-width="2" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('');
+}
+function _rwBadge(n) {
+  const b = document.getElementById('resenasweb-badge');
+  if (!b) return;
+  b.textContent = n; b.style.display = n ? 'inline' : 'none';
+}
+// Al entrar al panel: muestra cuántas reseñas esperan aprobación
+function cargarBadgeResenasWeb() {
+  db.collection('resenasWeb').where('estado', '==', 'pendiente').get()
+    .then(s => _rwBadge(s.size)).catch(() => {});
+}
+async function renderResenasWeb(fresco) {
+  const listEl = document.getElementById('rw-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando...</div>';
+  try {
+    // La primera vez el bot importa las reseñas antiguas del Google Sheet
+    if (fresco || !_rwDocs.length) await fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {});
+    const snap = await db.collection('resenasWeb').get();
+    _rwDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.fecha?.toMillis?.() || 0) - (a.fecha?.toMillis?.() || 0));
+  } catch (e) {
+    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:#b91c1c;font-size:13px;">No se pudieron cargar las reseñas: ${esc(e.message)}</div>`;
+    return;
+  }
+  const pend = _rwDocs.filter(r => r.estado === 'pendiente'), apr = _rwDocs.filter(r => r.estado === 'aprobada');
+  const rech = _rwDocs.filter(r => r.estado === 'rechazada');
+  const prom = apr.length ? (apr.reduce((a, r) => a + (Number(r.valoracion) || 0), 0) / apr.length).toFixed(1) : '—';
+  _rwBadge(pend.length);
+  document.getElementById('rw-stats').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Por revisar</div><div class="cb-tile-v" style="color:${pend.length ? '#b45309' : 'var(--black)'};">${pend.length}</div><div class="cb-tile-n">Esperan tu aprobación</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Publicadas</div><div class="cb-tile-v" style="color:var(--green-dark);">${apr.length}</div><div class="cb-tile-n">Visibles en la web</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Promedio</div><div class="cb-tile-v">${prom}<small style="font-size:14px;color:var(--text-soft);"> / 5</small></div><div class="cb-tile-n">De las publicadas</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Rechazadas</div><div class="cb-tile-v">${rech.length}</div><div class="cb-tile-n">No se muestran</div></div>`;
+  if (!fresco && _rwFiltro === 'pendiente' && !pend.length && _rwDocs.length) {
+    _rwFiltro = 'aprobada';
+    document.querySelectorAll('#rw-filtros .dash-period-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
+  }
+  _rwPintar();
+}
+function rwFiltrar(f, btn) {
+  _rwFiltro = f;
+  document.querySelectorAll('#rw-filtros .dash-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _rwPintar();
+}
+function _rwPintar() {
+  const listEl = document.getElementById('rw-list');
+  const docs = _rwFiltro === 'todas' ? _rwDocs : _rwDocs.filter(r => r.estado === _rwFiltro);
+  const vacio = { pendiente: 'No hay reseñas por revisar. Cuando alguien deje una en la web te llegará un aviso por Telegram y aparecerá aquí.', aprobada: 'Aún no hay reseñas publicadas.', rechazada: 'No hay reseñas rechazadas.', todas: 'Aún no hay reseñas.' };
+  if (!docs.length) { listEl.innerHTML = `<div style="text-align:center;padding:44px 16px;color:var(--text-soft);font-size:13px;">${vacio[_rwFiltro]}</div>`; return; }
+  const pill = { pendiente: '<span class="hr-pill hr-p-parc" style="padding:3px 10px;">Por revisar</span>', aprobada: '<span class="hr-pill hr-p-ok" style="padding:3px 10px;">Publicada</span>', rechazada: '<span class="hr-pill hr-p-pend" style="padding:3px 10px;">Rechazada</span>' };
+  listEl.innerHTML = `<div class="hr-list">${docs.map(r => `
+    <div class="rw-row">
+      <div class="hr-main">
+        <div class="hr-top"><span class="hr-cli">${esc(r.nombre || '—')}</span><span style="display:inline-flex;gap:1px;">${_rwStars(Number(r.valoracion) || 0)}</span>${pill[r.estado] || ''}</div>
+        <div class="rw-txt">“${esc(r.comentario || '')}”</div>
+        <div class="rw-meta">${_rwFecha(r.fecha)}${r.correo ? ` · ${esc(r.correo)}` : ''}${r.origen === 'sheet' ? ' · importada del Google Sheet' : ''}${r.idioma === 'en' ? ' · desde la web en inglés' : ''}</div>
+      </div>
+      <div class="rw-acc">
+        ${r.estado !== 'aprobada' ? `<button class="hr-btn ok" onclick="rwCambiar('${r.id}','aprobada')"><i class="fa-solid fa-check"></i> Publicar</button>` : ''}
+        ${r.estado !== 'rechazada' ? `<button class="hr-btn warn" onclick="rwCambiar('${r.id}','rechazada')"><i class="fa-solid fa-eye-slash"></i> ${r.estado === 'aprobada' ? 'Ocultar' : 'Rechazar'}</button>` : ''}
+        <button class="hr-btn del" onclick="rwBorrar('${r.id}')" title="Borrar definitivamente"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+async function rwCambiar(id, estado) {
+  try {
+    await db.collection('resenasWeb').doc(id).update({ estado, revisadaEl: firebase.firestore.FieldValue.serverTimestamp(), revisadaPor: currentUser?.email || '' });
+    const r = _rwDocs.find(x => x.id === id); if (r) r.estado = estado;
+    fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {}); // refresca lo que muestra la web
+    toast(estado === 'aprobada' ? 'Publicada en la web ✓' : 'Ya no se muestra en la web', 'ok');
+    renderResenasWebLocal();
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function rwBorrar(id) {
+  if (!confirm('¿Borrar esta reseña definitivamente? Si solo quieres que no se vea, usa "Rechazar".')) return;
+  try {
+    await db.collection('resenasWeb').doc(id).delete();
+    _rwDocs = _rwDocs.filter(x => x.id !== id);
+    fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {});
+    toast('Reseña borrada', 'ok');
+    renderResenasWebLocal();
+  } catch (e) { toast('No se pudo borrar: ' + e.message, 'err'); }
+}
+// Repinta con los datos en memoria (sin volver a pedirlos)
+function renderResenasWebLocal() {
+  const pend = _rwDocs.filter(r => r.estado === 'pendiente').length;
+  _rwBadge(pend);
+  const apr = _rwDocs.filter(r => r.estado === 'aprobada'), rech = _rwDocs.filter(r => r.estado === 'rechazada').length;
+  const prom = apr.length ? (apr.reduce((a, r) => a + (Number(r.valoracion) || 0), 0) / apr.length).toFixed(1) : '—';
+  const v = document.querySelectorAll('#rw-stats .cb-tile-v');
+  if (v.length === 4) { v[0].textContent = pend; v[0].style.color = pend ? '#b45309' : 'var(--black)'; v[1].textContent = apr.length; v[2].innerHTML = `${prom}<small style="font-size:14px;color:var(--text-soft);"> / 5</small>`; v[3].textContent = rech; }
+  _rwPintar();
+}
+
+/* ═══════════════════════════════════════════════════════
+   META ADS — métricas de Facebook e Instagram
+   (el bot consulta la API de Meta con el secreto META_TOKEN)
+═══════════════════════════════════════════════════════ */
+let _maPeriodo = 'last_30d';
+function maPeriodo(p, btn) {
+  _maPeriodo = p;
+  document.querySelectorAll('#ma-periodos .dash-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMetaAds();
+}
+const _maUsd = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const _maNum = n => (Number(n) || 0).toLocaleString('en-US');
+const _maObj = { OUTCOME_ENGAGEMENT: 'Interacción / mensajes', OUTCOME_TRAFFIC: 'Tráfico', OUTCOME_LEADS: 'Clientes potenciales', OUTCOME_SALES: 'Ventas', OUTCOME_AWARENESS: 'Reconocimiento', OUTCOME_APP_PROMOTION: 'App' };
+const _maEstado = { ACTIVE: ['Activa', 'hr-p-ok'], PAUSED: ['Pausada', 'hr-p-parc'], CAMPAIGN_PAUSED: ['Pausada', 'hr-p-parc'], ARCHIVED: ['Archivada', 'hr-p-pend'], DELETED: ['Borrada', 'hr-p-pend'], IN_PROCESS: ['Procesando', 'hr-p-parc'], WITH_ISSUES: ['Con problemas', 'hr-p-pend'] };
+function _maComoConectar() {
+  return `<div class="cb-card" style="padding:20px 22px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.5px;">Conectar Meta Ads al panel</div>
+    <div style="font-size:13px;color:var(--text-soft);margin-top:4px;">Solo se hace una vez. Así el panel puede leer (no modificar) los resultados de tus anuncios.</div>
+    <ol class="ma-pasos">
+      <li>Entra a <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener">Meta Business → Configuración → Usuarios del sistema</a> y crea uno llamado <code>Panel DGP</code> (rol: Empleado).</li>
+      <li>En ese usuario toca <b>Asignar activos</b> → <b>Cuentas publicitarias</b> → tu cuenta de DGP → permiso <b>Ver rendimiento</b>.</li>
+      <li>Toca <b>Generar token</b>, elige tu app (si no tienes ninguna, créala gratis en <a href="https://developers.facebook.com/apps/creation/" target="_blank" rel="noopener">developers.facebook.com</a>, tipo <b>Empresa</b>), marca <code>ads_read</code> y caducidad <b>Nunca</b>. Copia el token.</li>
+      <li>En <a href="https://dash.cloudflare.com/?to=/:account/workers/services/view/ayudante-dgp-bot/production/settings" target="_blank" rel="noopener">Cloudflare → Workers → ayudante-dgp-bot → Configuración → Variables y secretos</a> agrega un <b>Secreto</b> llamado <code>META_TOKEN</code> y pega el token.</li>
+      <li>Vuelve aquí y toca <b>Actualizar</b>.</li>
+    </ol>
+  </div>`;
+}
+async function renderMetaAds() {
+  const el = document.getElementById('ma-body');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-soft);font-size:13px;">Consultando a Meta...</div>';
+  let d;
+  try {
+    const idToken = await currentUser.getIdToken();
+    const res = await fetch(`${RW_WORKER}/meta-ads?periodo=${_maPeriodo}`, { headers: { Authorization: `Bearer ${idToken}` } });
+    d = await res.json();
+    if (!res.ok && !d.configurado) throw new Error(d.error || res.status);
+  } catch (e) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#b91c1c;font-size:13px;">No se pudo consultar: ${esc(e.message)}</div>`;
+    return;
+  }
+  if (!d.configurado) { el.innerHTML = _maComoConectar(); return; }
+  if (d.error) {
+    el.innerHTML = `<div class="cb-card" style="border-color:rgba(185,28,28,.3);"><b style="color:#b91c1c;">Meta respondió con un error</b><div style="font-size:13px;margin-top:6px;">${esc(d.error)}</div></div>${d.tokenInvalido ? _maComoConectar() : ''}`;
+    return;
+  }
+  const t = d.total, conv = t.conversaciones, leads = t.clientes_potenciales;
+  const resultados = conv + leads;
+  document.getElementById('ma-sub').textContent = `${d.cuenta.nombre || 'Cuenta'} · ${d.cuenta.moneda} · actualizado ${new Date(d.actualizado).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  const max = Math.max(...d.diario.map(x => x.gastado), 0.01);
+  const activas = d.campanas.filter(c => c.estado === 'ACTIVE');
+  el.innerHTML = `
+    <div class="cb-tiles" style="margin-bottom:12px;">
+      <div class="cb-tile"><div class="cb-tile-l">Gastado</div><div class="cb-tile-v">${_maUsd(t.gastado)}</div><div class="cb-tile-n">${activas.length ? `${activas.length} campaña${activas.length > 1 ? 's' : ''} activa${activas.length > 1 ? 's' : ''}` : 'Sin campañas activas'}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Mensajes recibidos</div><div class="cb-tile-v" style="color:var(--green-dark);">${_maNum(conv)}</div><div class="cb-tile-n">${conv ? _maUsd(t.gastado / conv) + ' por conversación' : 'Conversaciones iniciadas'}${leads ? ` · ${leads} formularios` : ''}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Personas alcanzadas</div><div class="cb-tile-v">${_maNum(t.alcance)}</div><div class="cb-tile-n">${_maNum(t.impresiones)} impresiones${t.frecuencia ? ` · ${t.frecuencia.toFixed(1)} veces c/u` : ''}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Clics</div><div class="cb-tile-v">${_maNum(t.clics)}</div><div class="cb-tile-n">CTR ${t.ctr.toFixed(2)}%${t.cpc ? ` · ${_maUsd(t.cpc)} por clic` : ''}</div></div>
+    </div>
+    ${d.diario.length > 1 ? `<div class="cb-card" style="margin-bottom:14px;">
+      <div class="hr-sec-t" style="margin:0;"><span style="background:var(--blue);"></span>Gasto por día<b>${_maUsd(d.diario.reduce((a, x) => a + x.gastado, 0))}</b></div>
+      <div class="ma-chart">${d.diario.map(x => `<div class="ma-bar" style="height:${Math.max(2, x.gastado / max * 100)}%"><span>${new Date(x.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}: ${_maUsd(x.gastado)}${x.conversaciones ? ` · ${x.conversaciones} msj` : ''}</span></div>`).join('')}</div>
+    </div>` : ''}
+    <div class="hr-sec-t"><span style="background:#f59e0b;"></span>Campañas<em>${d.campanas.length}</em></div>
+    ${d.campanas.length ? `<div class="ma-wrap"><table class="ma-tabla">
+      <thead><tr><th>Campaña</th><th>Estado</th><th class="n">Gastado</th><th class="n">Alcance</th><th class="n">Clics</th><th class="n">Mensajes</th><th class="n">Costo/mensaje</th></tr></thead>
+      <tbody>${d.campanas.map(c => { const e = _maEstado[c.estado] || [c.estado, 'hr-p-parc']; const r = c.conversaciones + c.clientes_potenciales; return `<tr>
+        <td><div style="font-weight:600;">${esc(c.nombre)}</div><div style="font-size:11px;color:var(--text-soft);">${esc(_maObj[c.objetivo] || c.objetivo || '')}${c.presupuestoDiario ? ` · ${_maUsd(c.presupuestoDiario)}/día` : ''}</div></td>
+        <td><span class="hr-pill ${e[1]}" style="padding:3px 10px;white-space:nowrap;">${e[0]}</span></td>
+        <td class="n">${_maUsd(c.gastado)}</td><td class="n">${_maNum(c.alcance)}</td><td class="n">${_maNum(c.clics)}</td>
+        <td class="n">${r || '—'}</td><td class="n">${r ? _maUsd(c.gastado / r) : '—'}</td></tr>`; }).join('')}</tbody>
+    </table></div>` : '<div style="text-align:center;padding:36px;color:var(--text-soft);font-size:13px;">No hubo anuncios con gasto en este periodo.</div>'}
+    <div style="font-size:11px;color:var(--text-soft);margin-top:10px;">Total histórico de la cuenta: ${_maUsd(d.cuenta.gastadoHistorico)}. Para crear o pausar anuncios usa Ads Manager o pídeselo a Claude.</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MI WEB — accesos directos a dgpglobalgroup.com y sus herramientas
+═══════════════════════════════════════════════════════ */
+const MW_LINKS = [
+  ['fa-solid fa-house', 'Web en español', 'dgpglobalgroup.com', 'https://dgpglobalgroup.com/'],
+  ['fa-solid fa-language', 'Web en inglés', 'dgpglobalgroup.com/en/', 'https://dgpglobalgroup.com/en/'],
+  ['fa-solid fa-images', 'Portafolio', 'Los proyectos que se muestran en la web', 'https://dgpglobalgroup.com/portafolio/'],
+  ['fa-solid fa-handshake', 'Programa de aliados', 'Página y precios para aliados', 'https://dgpglobalgroup.com/aliados/'],
+  ['fa-brands fa-google', 'Google Search Console', 'Búsquedas por las que te encuentran', 'https://search.google.com/search-console?resource_id=sc-domain:dgpglobalgroup.com'],
+  ['fa-solid fa-location-dot', 'Perfil de Google (Maps)', 'Reseñas, fotos y publicaciones', 'https://business.google.com/'],
+  ['fa-solid fa-star', 'Pedir reseña en Google', 'Enlace para mandar a clientes', 'https://g.page/r/CbcyuFX7hqvuEAE/review'],
+  ['fa-solid fa-chart-line', 'Visitas de la web', 'Analítica (Databuddy)', 'https://app.databuddy.cc/'],
+  ['fa-solid fa-gauge-high', 'Velocidad de la web', 'Prueba de Google PageSpeed', 'https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fdgpglobalgroup.com%2F'],
+  ['fa-solid fa-envelope-open-text', 'Formularios (Formspree)', 'Mensajes del formulario de contacto', 'https://formspree.io/forms'],
+  ['fa-brands fa-github', 'Código de la web', 'Repositorio en GitHub', 'https://github.com/quasarworksco/dgpglobal'],
+  ['fa-brands fa-meta', 'Meta Business Suite', 'Facebook e Instagram', 'https://business.facebook.com/']
+];
+async function renderMiWeb() {
+  document.getElementById('mw-links').innerHTML = `<div class="hr-sec-t"><span style="background:var(--blue);"></span>Accesos directos</div>
+    <div class="mw-grid">${MW_LINKS.map(([ic, t, sub, url]) => `<a class="mw-link" href="${url}" target="_blank" rel="noopener"><i class="${ic}"></i><div><b>${t}</b><small>${sub}</small></div></a>`).join('')}</div>`;
+  const st = document.getElementById('mw-stats');
+  st.innerHTML = '<div class="cb-tile"><div class="cb-tile-l">Cargando...</div></div>';
+  try {
+    const hace30 = Date.now() - 30 * 864e5;
+    const [cli, rw] = await Promise.all([
+      db.collection('clientes').where('origen', '==', 'web').get(),
+      db.collection('resenasWeb').get()
+    ]);
+    const web = cli.docs.map(d => d.data());
+    const nuevos30 = web.filter(c => (c.createdAt?.toMillis?.() || 0) >= hace30).length;
+    const msj30 = cli.docs.reduce((a, d) => a + (d.data().mensajesWeb || []).filter(m => new Date(m.fecha).getTime() >= hace30).length, 0);
+    const pend = rw.docs.filter(d => d.data().estado === 'pendiente').length, pub = rw.docs.filter(d => d.data().estado === 'aprobada').length;
+    st.innerHTML = `
+      <div class="cb-tile"><div class="cb-tile-l">Mensajes desde la web</div><div class="cb-tile-v">${msj30}</div><div class="cb-tile-n">Últimos 30 días</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Clientes nuevos por la web</div><div class="cb-tile-v">${nuevos30}</div><div class="cb-tile-n">${web.length} en total con origen web</div></div>
+      <div class="cb-tile" style="cursor:pointer;" onclick="document.querySelector('[onclick*=resenasweb]').click()"><div class="cb-tile-l">Reseñas por revisar</div><div class="cb-tile-v" style="color:${pend ? '#b45309' : 'var(--black)'};">${pend}</div><div class="cb-tile-n">${pub} publicadas · toca para ver</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Proyectos en el portafolio</div><div class="cb-tile-v" id="mw-port">…</div><div class="cb-tile-n">Visibles en la web</div></div>`;
+    fetch('https://dgpglobalgroup.com/portafolio/').then(r => r.text()).then(h => {
+      const m = h.match(/(\d+)\s+(NEGOCIOS|BUSINESSES)/); const el = document.getElementById('mw-port'); if (el) el.textContent = m ? m[1] : '—';
+    }).catch(() => { const el = document.getElementById('mw-port'); if (el) el.textContent = '—'; });
+  } catch (e) {
+    st.innerHTML = `<div class="cb-tile"><div class="cb-tile-l">No se pudieron cargar los datos</div><div class="cb-tile-n">${esc(e.message)}</div></div>`;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
