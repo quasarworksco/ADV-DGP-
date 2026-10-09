@@ -1512,6 +1512,25 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .mw-link-wrap .mw-link { height:100%; }
 .mw-copy { position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:8px; border:1px solid rgba(20,56,204,.25); background:var(--blue-xlight); color:var(--blue); font:600 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
 .mw-copy:hover { background:var(--blue); color:#fff; }
+
+/* ── Seguidores y likes ── */
+.smm-form { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
+.smm-form .full { grid-column:1/-1; }
+@media (max-width:700px) { .smm-form { grid-template-columns:1fr; } }
+.smm-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.smm-chip { display:inline-flex; align-items:center; gap:7px; padding:9px 13px; border-radius:10px; border:1.5px solid var(--border); background:#fff; font:600 12.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer; color:var(--text-mid); }
+.smm-chip.on { border-color:var(--blue); background:var(--blue-xlight); color:var(--blue); }
+.smm-chip small { font-weight:500; color:var(--text-soft); }
+.smm-resumen { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 16px; border-radius:12px; background:#f8fafc; border:1px dashed #cbd5e1; font-size:12.5px; }
+.smm-resumen b { font-size:15px; }
+.smm-tabla { width:100%; border-collapse:collapse; font:13px 'Plus Jakarta Sans',sans-serif; }
+.smm-l { display:block; font-size:9.5px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
+.smm-tabla th { text-align:left; font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); padding:10px 12px; border-bottom:1px solid var(--border); }
+.smm-tabla td { padding:10px 12px; border-top:1px solid #f1f5f9; vertical-align:middle; }
+.smm-tabla input { width:100%; padding:7px 9px; border:1.5px solid var(--border); border-radius:8px; font:13px 'Plus Jakarta Sans',sans-serif; background:#f8fafc; }
+.smm-tabla input:focus { outline:none; border-color:var(--blue); background:#fff; }
+.smm-est { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.5px; white-space:nowrap; }
+.smm-red { display:inline-flex; align-items:center; gap:6px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -1623,6 +1642,9 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
   </button>
   <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)">
     <i class="fa-solid fa-square-poll-vertical"></i> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('smm', this)">
+    <i class="fa-solid fa-arrow-trend-up"></i> Seguidores y likes<span id="smm-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('metaads', this)">
     <i class="fa-brands fa-meta"></i> Meta Ads
@@ -2042,6 +2064,32 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 </div>
 
 <!-- ══════════════════════════════════════
+     PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
+══════════════════════════════════════ -->
+<div id="page-smm" class="page">
+  <div class="proy-main">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Seguidores y likes</div>
+        <div style="font-size:11px;color:var(--text-soft);">Pedidos a JustAnotherPanel desde el panel. La llave de la API queda guardada en el servidor, nunca aquí.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn-logout" href="https://justanotherpanel.com/tickets" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;"><i class="fa-solid fa-life-ring"></i> Tickets en JAP</a>
+        <button class="btn-logout" onclick="renderSmm(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+      </div>
+    </div>
+    <div id="smm-stats" class="cb-tiles" style="margin-bottom:16px;"></div>
+    <div class="db-pills" id="smm-tabs" style="margin-bottom:14px;flex-wrap:wrap;">
+      <button class="dash-period-btn active" onclick="smmTab('nuevo',this)">Nuevo pedido</button>
+      <button class="dash-period-btn" onclick="smmTab('pedidos',this)">Pedidos</button>
+      <button class="dash-period-btn" onclick="smmTab('servicios',this)">Mis servicios</button>
+      <button class="dash-period-btn" onclick="smmTab('jap',this)">Servicios de JAP</button>
+    </div>
+    <div id="smm-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      PAGE: META ADS
 ══════════════════════════════════════ -->
 <div id="page-metaads" class="page">
@@ -2440,6 +2488,8 @@ const CATALOGO_BASE = [
   ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
   ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
   ['Seguidores', '1,000 Seguidores', 55, 51], ['Seguidores', '3,000 Seguidores', 75, 70], ['Seguidores', '5,000 Seguidores', 125, 116], ['Seguidores', '10,000 Seguidores', 190, 177],
+  ['Seguidores', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores', 'TikTok 10,000 Seguidores', 219, 204],
+  ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
@@ -2473,6 +2523,9 @@ function initCatalogo() {
       db.collection('catalogo').doc(x._id).update({ nombre: 'Identidad Visual (Logo + Manual de Marca)', precio: 185, precioEur: 172, ajusteIdv202610: true }).catch(() => {}));
     catalogoList.filter(x => x.nombre === 'Hosting mensual' && !x.ajusteHm202610).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ precio: 25, precioEur: 23, ajusteHm202610: true }).catch(() => {}));
+    // Servicios nuevos (likes y seguidores de TikTok): se agregan si aún no existen
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
     catalogoList.filter(x => /ecommerce/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
@@ -2756,6 +2809,7 @@ function switchPage(page, btn) {
   if (page === 'suscripciones') renderSuscripciones();
   if (page === 'resenasweb') renderResenasWeb();
   if (page === 'metaads')    renderMetaAds();
+  if (page === 'smm')        renderSmm();
   if (page === 'miweb')      renderMiWeb();
 }
 
@@ -3032,6 +3086,216 @@ async function renderMetaAds() {
     <div style="font-size:11px;color:var(--text-soft);margin-top:10px;">Total histórico de la cuenta: ${_maUsd(d.cuenta.gastadoHistorico)}. Para crear o pausar anuncios usa Ads Manager o pídeselo a Claude.</div>`;
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   SEGUIDORES Y LIKES — pedidos a JustAnotherPanel (vía el bot; la llave vive en Cloudflare)
+   Firestore: smmProductos (lo que vendes y qué servicio de JAP usa) y smmPedidos (historial)
+═══════════════════════════════════════════════════════ */
+const SMM_REDES = { instagram: ['Instagram', 'fa-brands fa-instagram', '#d6249f'], facebook: ['Facebook', 'fa-brands fa-facebook', '#1877f2'], tiktok: ['TikTok', 'fa-brands fa-tiktok', '#111827'], youtube: ['YouTube', 'fa-brands fa-youtube', '#ff0000'], x: ['X (Twitter)', 'fa-brands fa-x-twitter', '#111827'] };
+const SMM_TIPOS = { seguidores: 'Seguidores', likes: 'Likes' };
+function _smmBase() {
+  const out = [];
+  const seg = [[1000, 55], [3000, 75], [5000, 125], [10000, 190]];
+  ['instagram', 'facebook'].forEach(r => seg.forEach(([c, p]) => out.push({ red: r, tipo: 'seguidores', cantidad: c, precio: p })));
+  seg.forEach(([c, p]) => out.push({ red: 'tiktok', tipo: 'seguidores', cantidad: c, precio: Math.round(p * 1.15) }));   // TikTok: 15% más
+  Object.keys(SMM_REDES).forEach(r => [[1000, 25], [3000, 65], [5000, 95]].forEach(([c, p]) => out.push({ red: r, tipo: 'likes', cantidad: c, precio: p })));
+  return out.map((x, i) => ({ ...x, servicioJap: '', activo: true, orden: i }));
+}
+let _smm = { tab: 'nuevo', productos: null, pedidos: [], servicios: null, saldo: null, sel: { red: 'instagram', tipo: 'seguidores', id: null } };
+async function smmApi(accion, datos = {}) {
+  const tok = await currentUser.getIdToken();
+  const r = await fetch(`${RW_WORKER}/smm`, { method: 'POST', headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ accion, ...datos }) });
+  const d = await r.json().catch(() => ({}));
+  if (d.configurado === false) { const e = new Error('Falta conectar JustAnotherPanel'); e.sinLlave = true; throw e; }
+  if (!r.ok || d.error) throw new Error(d.error || ('Error ' + r.status));
+  return d;
+}
+function smmTab(t, btn) {
+  _smm.tab = t;
+  document.querySelectorAll('#smm-tabs .dash-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  smmPintar();
+}
+const _smmUsd = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function _smmRed(r) { const x = SMM_REDES[r] || [r, 'fa-solid fa-hashtag', '#64748b']; return `<span class="smm-red"><i class="${x[1]}" style="color:${x[2]}"></i>${x[0]}</span>`; }
+async function renderSmm(fresco) {
+  const body = document.getElementById('smm-body');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando...</div>';
+  try {
+    const [prods, peds] = await Promise.all([db.collection('smmProductos').get(), db.collection('smmPedidos').orderBy('createdAt', 'desc').limit(200).get()]);
+    if (prods.empty) {
+      const lote = db.batch();
+      _smmBase().forEach(x => lote.set(db.collection('smmProductos').doc(), { ...x, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
+      await lote.commit();
+      return renderSmm(fresco);
+    }
+    _smm.productos = prods.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    _smm.pedidos = peds.docs.map(d => ({ _id: d.id, ...d.data() }));
+  } catch (e) { body.innerHTML = `<div style="text-align:center;padding:32px;color:#b91c1c;font-size:13px;">No se pudo cargar: ${esc(e.message)}</div>`; return; }
+  smmPintar();
+  // Saldo y estados de los pedidos en curso (desde JAP)
+  try { _smm.saldo = await smmApi('balance'); } catch (e) { _smm.saldo = { error: e.message, sinLlave: e.sinLlave }; }
+  smmStats();
+  if (fresco || _smm.tab === 'pedidos') smmActualizarEstados(true);
+}
+function smmStats() {
+  const el = document.getElementById('smm-stats'); if (!el) return;
+  const hace30 = Date.now() - 30 * 864e5;
+  const mes = _smm.pedidos.filter(p => (p.createdAt?.toMillis?.() || 0) >= hace30);
+  const curso = _smm.pedidos.filter(p => !['Completed', 'Canceled', 'Partial', 'Error'].includes(p.estado)).length;
+  const sal = _smm.saldo;
+  el.innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Saldo en JAP</div><div class="cb-tile-v" style="color:${sal && !sal.error && Number(sal.balance) < 10 ? '#b91c1c' : 'var(--green-dark)'};">${sal ? (sal.error ? '—' : _smmUsd(sal.balance)) : '…'}</div><div class="cb-tile-n">${sal && sal.error ? esc(sal.sinLlave ? 'Falta conectar la API' : sal.error) : (sal ? (sal.currency || 'USD') : 'Consultando…')}</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">En curso</div><div class="cb-tile-v">${curso}</div><div class="cb-tile-n">Pedidos sin terminar</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Vendido (30 días)</div><div class="cb-tile-v">${_smmUsd(mes.reduce((a, p) => a + (Number(p.precio) || 0), 0))}</div><div class="cb-tile-n">${mes.length} pedido${mes.length !== 1 ? 's' : ''}</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Costo en JAP (30 días)</div><div class="cb-tile-v">${_smmUsd(mes.reduce((a, p) => a + (Number(p.costo) || 0), 0))}</div><div class="cb-tile-n">Lo que te cobró el proveedor</div></div>`;
+  const b = document.getElementById('smm-badge'); if (b) { b.textContent = curso; b.style.display = curso ? 'inline' : 'none'; }
+}
+function smmPintar() {
+  smmStats();
+  const body = document.getElementById('smm-body');
+  if (!_smm.productos) return;
+  if (_smm.saldo && _smm.saldo.sinLlave) body.innerHTML = _smmComoConectar(); else body.innerHTML = '';
+  body.innerHTML += ({ nuevo: _smmNuevo, pedidos: _smmPedidos, servicios: _smmServicios, jap: _smmJap }[_smm.tab])();
+  if (_smm.tab === 'jap' && !_smm.servicios) smmCargarJap();
+}
+function _smmComoConectar() {
+  return `<div class="cb-card" style="padding:18px 20px;margin-bottom:14px;border-color:rgba(217,119,6,.35);background:#fffbeb;">
+    <b>Falta conectar JustAnotherPanel</b>
+    <ol class="ma-pasos">
+      <li>En JustAnotherPanel ve a <b>Account</b> y copia tu <b>API Key</b>.</li>
+      <li>En <a href="https://dash.cloudflare.com/?to=/:account/workers/services/view/ayudante-dgp-bot/production/settings" target="_blank" rel="noopener">Cloudflare → ayudante-dgp-bot → Variables y secretos</a> agrega un <b>Secret</b> llamado <code>JAP_API_KEY</code> con esa llave.</li>
+      <li>Vuelve aquí y toca <b>Actualizar</b>.</li>
+    </ol></div>`;
+}
+function _smmNuevo() {
+  const s = _smm.sel;
+  const prods = _smm.productos.filter(p => p.activo !== false && p.red === s.red && p.tipo === s.tipo).sort((a, b) => a.cantidad - b.cantidad);
+  if (!prods.find(p => p._id === s.id)) s.id = prods[0]?._id || null;
+  const prod = prods.find(p => p._id === s.id);
+  const jap = prod && _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(prod.servicioJap)) : null;
+  const costo = jap ? jap.rate * prod.cantidad / 1000 : null;
+  const facturas = Object.values(docsMap).filter(d => (d.items || []).some(i => /seguidor|follower|\blikes?\b|me gusta/i.test(i.s || ''))).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 30);
+  const cuentas = (window._smmFactura && docsMap[window._smmFactura]?.brief?.cuentas) || [];
+  return `<div class="cb-card" style="padding:18px 20px;">
+    <div class="smm-form">
+      <div class="ff full" style="margin:0;"><label>Factura del cliente (opcional, trae el enlace que dejó en su brief)</label>
+        <select id="smm-fac" onchange="window._smmFactura=this.value;const d=docsMap[this.value];if(d)document.getElementById('smm-cli').value=d.cli||'';smmPintar()">
+          <option value="">— Sin factura —</option>${facturas.map(d => `<option value="${esc(d._fsId)}" ${window._smmFactura === d._fsId ? 'selected' : ''}>${esc(d.docId || '')} · ${esc(d.cli || '')} · ${esc((d.items || []).map(i => i.s).join(', ').slice(0, 60))}</option>`).join('')}
+        </select></div>
+      <div class="ff full" style="margin:0;"><label>Cliente</label><input id="smm-cli" list="smm-cli-list" value="${esc((window._smmFactura && docsMap[window._smmFactura]?.cli) || '')}" placeholder="Nombre del cliente">
+        <datalist id="smm-cli-list">${clientesList.map(c => `<option value="${esc([c.nombre, c.apellido].filter(Boolean).join(' '))}">`).join('')}</datalist></div>
+      <div class="full"><label class="smm-l">Red social</label><div class="smm-chips">${Object.keys(SMM_REDES).map(r => `<button type="button" class="smm-chip ${s.red === r ? 'on' : ''}" onclick="_smm.sel.red='${r}';smmPintar()">${_smmRed(r)}</button>`).join('')}</div></div>
+      <div class="full"><label class="smm-l">Servicio</label><div class="smm-chips">${Object.entries(SMM_TIPOS).map(([k, v]) => `<button type="button" class="smm-chip ${s.tipo === k ? 'on' : ''}" onclick="_smm.sel.tipo='${k}';smmPintar()">${v}</button>`).join('')}</div></div>
+      <div class="full"><label class="smm-l">Paquete</label><div class="smm-chips">${prods.length ? prods.map(p => `<button type="button" class="smm-chip ${s.id === p._id ? 'on' : ''}" onclick="_smm.sel.id='${p._id}';smmPintar()">${p.cantidad.toLocaleString('en-US')} <small>${_smmUsd(p.precio)}</small></button>`).join('') : '<span style="font-size:12px;color:var(--text-soft);">No hay paquetes para esta red. Agrégalos en "Mis servicios".</span>'}</div></div>
+      <div class="ff full" style="margin:0;"><label>${s.tipo === 'likes' ? 'Enlace de la publicación' : 'Enlace del perfil o @usuario'}</label><input id="smm-link" placeholder="${s.tipo === 'likes' ? 'https://www.instagram.com/p/...' : 'https://www.instagram.com/usuario o @usuario'}">
+        ${cuentas.length ? `<div class="smm-chips" style="margin-top:8px;">${cuentas.map(c => `<button type="button" class="smm-chip" onclick="document.getElementById('smm-link').value=this.dataset.u" data-u="${esc(c.usuario)}">${esc(c.red)}: ${esc(c.usuario)}${c.cantidad ? ` <small>${esc(c.cantidad)}</small>` : ''}</button>`).join('')}</div>` : ''}</div>
+      <div class="full smm-resumen">
+        <div>${prod ? `${_smmRed(prod.red)} · <b>${prod.cantidad.toLocaleString('en-US')} ${SMM_TIPOS[prod.tipo].toLowerCase()}</b> · le cobras <b>${_smmUsd(prod.precio)}</b>${costo != null ? ` · te cuesta ~<b>${_smmUsd(costo)}</b> · ganas ~<b style="color:var(--green-dark);">${_smmUsd(prod.precio - costo)}</b>` : ''}` : 'Elige un paquete'}
+          ${prod && !prod.servicioJap ? `<div style="color:#b45309;margin-top:4px;">Este paquete aún no tiene un servicio de JAP asignado. Ponlo en "Mis servicios".</div>` : ''}${prod && prod.servicioJap ? `<div style="color:var(--text-soft);margin-top:4px;">Servicio JAP #${esc(prod.servicioJap)}${jap ? ` · ${esc(jap.name)}` : ''}</div>` : ''}</div>
+        <button class="hr-btn ok" style="padding:10px 16px;font-size:13px;" ${prod && prod.servicioJap ? '' : 'disabled'} onclick="smmEnviar()"><i class="fa-solid fa-paper-plane"></i> Enviar a JustAnotherPanel</button>
+      </div>
+    </div></div>`;
+}
+async function smmEnviar() {
+  const prod = _smm.productos.find(p => p._id === _smm.sel.id);
+  const link = document.getElementById('smm-link').value.trim(), cli = document.getElementById('smm-cli').value.trim();
+  if (!prod || !prod.servicioJap) return toast('Este paquete no tiene servicio de JAP asignado', 'err');
+  if (!link) return toast('Escribe el enlace o el usuario', 'err');
+  if (!confirm(`¿Enviar ${prod.cantidad.toLocaleString('en-US')} ${SMM_TIPOS[prod.tipo].toLowerCase()} de ${SMM_REDES[prod.red][0]} a:\n${link}\n\nSe descuenta de tu saldo en JustAnotherPanel.`)) return;
+  try {
+    const d = await smmApi('add', { service: prod.servicioJap, link, quantity: prod.cantidad });
+    const jap = _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(prod.servicioJap)) : null;
+    await db.collection('smmPedidos').add({ cliente: cli, facturaId: window._smmFactura || '', red: prod.red, tipo: prod.tipo, cantidad: prod.cantidad, precio: Number(prod.precio) || 0,
+      link, servicioJap: String(prod.servicioJap), japOrder: String(d.order || ''), estado: 'Pending', costo: jap ? jap.rate * prod.cantidad / 1000 : 0,
+      refill: jap ? !!jap.refill : null, creadoPor: currentUser?.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    toast(`Pedido enviado · JAP #${d.order}`, 'ok');
+    document.getElementById('smm-link').value = '';
+    renderSmm();
+  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); }
+}
+const SMM_EST = { Pending: ['Pendiente', '#fffbeb', '#b45309'], 'In progress': ['En proceso', '#eff6ff', '#1d4ed8'], Processing: ['Procesando', '#eff6ff', '#1d4ed8'], Completed: ['Completado', '#ecfdf5', '#047857'], Partial: ['Parcial', '#fff7ed', '#c2410c'], Canceled: ['Cancelado', '#fef2f2', '#b91c1c'], Error: ['Error', '#fef2f2', '#b91c1c'] };
+function _smmPedidos() {
+  if (!_smm.pedidos.length) return '<div class="cb-card" style="text-align:center;padding:36px;color:var(--text-soft);font-size:13px;">Aún no hay pedidos.</div>';
+  return `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="hr-btn ok" onclick="smmActualizarEstados()"><i class="fa-solid fa-rotate"></i> Actualizar estados</button></div>
+    <div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Servicio</th><th>Enlace</th><th>Estado</th><th>Faltan</th><th></th></tr></thead><tbody>
+    ${_smm.pedidos.map(p => { const e = SMM_EST[p.estado] || [p.estado || '—', '#f1f5f9', '#475569']; return `<tr>
+      <td style="white-space:nowrap;">${p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '—'}</td>
+      <td>${esc(p.cliente || '—')}</td>
+      <td>${_smmRed(p.red)}<div style="font-size:11px;color:var(--text-soft);">${(p.cantidad || 0).toLocaleString('en-US')} ${esc(SMM_TIPOS[p.tipo] || '')} · ${_smmUsd(p.precio)}</div></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><a href="${esc(/^https?:/.test(p.link) ? p.link : '#')}" target="_blank" rel="noopener">${esc(p.link)}</a></td>
+      <td><span class="smm-est" style="background:${e[1]};color:${e[2]};">${e[0]}</span><div style="font-size:10.5px;color:var(--text-soft);margin-top:3px;">JAP #${esc(p.japOrder || '—')}</div></td>
+      <td>${p.remains != null && p.remains !== '' ? Number(p.remains).toLocaleString('en-US') : '—'}</td>
+      <td style="white-space:nowrap;">${p.japOrder ? `<button class="hr-btn" style="color:var(--blue);border-color:rgba(20,56,204,.25);" title="Pedir reposición si se cayeron" onclick="smmRefill('${p._id}')"><i class="fa-solid fa-arrows-rotate"></i> Reposición</button>
+        <button class="hr-btn" style="color:var(--text-mid);border-color:var(--border);" title="Copiar número de pedido para un ticket" onclick="navigator.clipboard.writeText('${esc(p.japOrder)}').then(()=>toast('Número de pedido copiado','ok'))"><i class="fa-regular fa-copy"></i></button>` : ''}</td></tr>`; }).join('')}
+    </tbody></table></div>
+    <div style="font-size:11px;color:var(--text-soft);margin-top:8px;">Si algo falla, copia el número del pedido y abre un ticket con el botón "Tickets en JAP" de arriba.</div>`;
+}
+async function smmActualizarEstados(silencioso) {
+  const activos = _smm.pedidos.filter(p => p.japOrder && !['Completed', 'Canceled'].includes(p.estado)).slice(0, 100);
+  if (!activos.length) { if (!silencioso) toast('No hay pedidos en curso', 'ok'); return; }
+  try {
+    const d = await smmApi('status', { orders: activos.map(p => p.japOrder) });
+    const est = d.estados || {};
+    await Promise.all(activos.map(p => { const x = est[p.japOrder]; if (!x || x.error) return null;
+      const upd = { estado: x.status || p.estado, remains: x.remains ?? null, startCount: x.start_count ?? null, ...(x.charge ? { costo: Number(x.charge) } : {}) };
+      Object.assign(p, upd); return db.collection('smmPedidos').doc(p._id).update(upd).catch(() => {}); }));
+    if (!silencioso) toast('Estados actualizados', 'ok');
+    smmPintar();
+  } catch (e) { if (!silencioso) toast('No se pudo actualizar: ' + e.message, 'err'); }
+}
+async function smmRefill(id) {
+  const p = _smm.pedidos.find(x => x._id === id); if (!p) return;
+  if (!confirm(`¿Pedir reposición del pedido JAP #${p.japOrder}? Úsalo si los ${SMM_TIPOS[p.tipo].toLowerCase()} se cayeron.`)) return;
+  try {
+    const d = await smmApi('refill', { order: p.japOrder });
+    await db.collection('smmPedidos').doc(id).update({ refills: firebase.firestore.FieldValue.arrayUnion({ refill: String(d.refill || ''), fecha: new Date().toISOString() }) }).catch(() => {});
+    toast(`Reposición pedida${d.refill ? ' · #' + d.refill : ''}`, 'ok');
+  } catch (e) { toast('JAP no aceptó la reposición: ' + e.message, 'err'); }
+}
+function _smmServicios() {
+  return `<div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>Red</th><th>Servicio</th><th>Cantidad</th><th style="width:110px;">Precio de venta</th><th style="width:140px;">ID servicio JAP</th><th>En JAP</th><th></th></tr></thead><tbody>
+    ${_smm.productos.map(p => { const j = _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(p.servicioJap)) : null; const costo = j ? j.rate * p.cantidad / 1000 : null; return `<tr style="${p.activo === false ? 'opacity:.5;' : ''}">
+      <td>${_smmRed(p.red)}</td><td>${SMM_TIPOS[p.tipo]}</td><td>${p.cantidad.toLocaleString('en-US')}</td>
+      <td><input type="number" step="0.01" value="${Number(p.precio) || 0}" onchange="smmGuardarProd('${p._id}',{precio:Number(this.value)||0})"></td>
+      <td><input value="${esc(p.servicioJap || '')}" placeholder="Ej. 1234" onchange="smmGuardarProd('${p._id}',{servicioJap:this.value.replace(/\\D/g,'')})"></td>
+      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? '<span style="color:var(--text-soft);">Abre "Servicios de JAP" para ver el detalle</span>' : '<span style="color:#b45309;">Sin asignar</span>')}</td>
+      <td><button class="hr-btn" style="color:var(--text-mid);border-color:var(--border);" onclick="smmGuardarProd('${p._id}',{activo:${p.activo === false}})">${p.activo === false ? 'Activar' : 'Ocultar'}</button></td></tr>`; }).join('')}
+    </tbody></table></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+      <select id="smm-n-red" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_REDES).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select>
+      <select id="smm-n-tipo" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <input id="smm-n-cant" type="number" placeholder="Cantidad" style="width:110px;padding:8px;border-radius:8px;border:1.5px solid var(--border);">
+      <input id="smm-n-precio" type="number" step="0.01" placeholder="Precio $" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid var(--border);">
+      <button class="hr-btn ok" onclick="smmAgregarProd()"><i class="fa-solid fa-plus"></i> Agregar paquete</button>
+    </div>`;
+}
+async function smmGuardarProd(id, cambios) {
+  try { await db.collection('smmProductos').doc(id).update(cambios); const p = _smm.productos.find(x => x._id === id); Object.assign(p, cambios); toast('Guardado', 'ok'); smmPintar(); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function smmAgregarProd() {
+  const cant = parseInt(document.getElementById('smm-n-cant').value, 10), precio = Number(document.getElementById('smm-n-precio').value);
+  if (!cant || !precio) return toast('Pon cantidad y precio', 'err');
+  await db.collection('smmProductos').add({ red: document.getElementById('smm-n-red').value, tipo: document.getElementById('smm-n-tipo').value, cantidad: cant, precio, servicioJap: '', activo: true, orden: _smm.productos.length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+  renderSmm();
+}
+async function smmCargarJap() {
+  try { const d = await smmApi('services'); _smm.servicios = d.servicios || []; }
+  catch (e) { _smm.servicios = null; document.getElementById('smm-body').innerHTML = (e.sinLlave ? _smmComoConectar() : `<div class="cb-card" style="color:#b91c1c;">No se pudo cargar la lista de JAP: ${esc(e.message)}</div>`); return; }
+  smmPintar();
+}
+function _smmJap() {
+  if (!_smm.servicios) return '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando servicios de JustAnotherPanel...</div>';
+  const q = (window._smmQ || '').toLowerCase();
+  const lista = _smm.servicios.filter(x => !q || `${x.service} ${x.name} ${x.category}`.toLowerCase().includes(q)).slice(0, 150);
+  return `<input placeholder="Buscar: instagram followers, tiktok likes, refill..." value="${esc(window._smmQ || '')}" oninput="window._smmQ=this.value;clearTimeout(window._smmT);window._smmT=setTimeout(smmPintar,250)" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px;font:13px 'Plus Jakarta Sans',sans-serif;">
+    <div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>ID</th><th>Servicio</th><th>Precio por 1000</th><th>Mín / Máx</th><th>Reposición</th></tr></thead><tbody>
+    ${lista.map(x => `<tr><td><button class="hr-btn" style="color:var(--blue);border-color:rgba(20,56,204,.25);" title="Copiar ID" onclick="navigator.clipboard.writeText('${x.service}').then(()=>toast('ID ${x.service} copiado','ok'))">${x.service}</button></td>
+      <td>${esc(x.name)}<div style="font-size:11px;color:var(--text-soft);">${esc(x.category)}</div></td><td>${_smmUsd(x.rate)}</td><td style="white-space:nowrap;">${x.min.toLocaleString('en-US')} / ${x.max.toLocaleString('en-US')}</td><td>${x.refill ? 'Sí' : 'No'}</td></tr>`).join('')}
+    </tbody></table></div><div style="font-size:11px;color:var(--text-soft);margin-top:8px;">${_smm.servicios.length.toLocaleString('en-US')} servicios. Copia el ID y pégalo en "Mis servicios".</div>`;
+}
 /* ═══════════════════════════════════════════════════════
    MI WEB — accesos directos a dgpglobalgroup.com y sus herramientas
 ═══════════════════════════════════════════════════════ */
@@ -5763,7 +6027,7 @@ function ptBriefValor(v) {
 /* Solo piden brief los servicios que necesitan información del cliente (web, redes, ads, seguidores) — igual que el portal y la factura */
 function necesitaBrief(items) {
   const t = (items || []).map(i => (i.s || '').toLowerCase()).filter(x => !/hosting|dominio|\bssl\b|mantenimiento|soporte|renovaci|suscripci|correo corporativo|\bemail\b|backup|respaldo/.test(x)).join(' ');
-  return /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web|redes|social|instagram|facebook|contenido|community|manejo|ads|publicidad|pauta|campa[ñn]a|seguidor|follower|crecimiento|identidad|logo|marca|branding|paquete/.test(t);
+  return /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web|redes|social|instagram|facebook|contenido|community|manejo|ads|publicidad|pauta|campa[ñn]a|seguidor|follower|crecimiento|\blikes?\b|identidad|logo|marca|branding|paquete/.test(t);
 }
 function ptBriefBox(fsId) {
   const f = docsMap[fsId];

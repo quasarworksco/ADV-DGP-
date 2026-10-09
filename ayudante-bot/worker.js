@@ -209,6 +209,7 @@ export default {
     if (ruta === '/meta-ads') return handleMetaAds(request, env);
     if (ruta === '/web-stats') return handleWebStats(request, env);
     if (ruta === '/chat-web') return handleChatWeb(request, env);
+    if (ruta === '/smm') return handleSmm(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -2048,4 +2049,53 @@ async function handleChatWeb(request, env) {
   const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
   await tgEnviar(env, `🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
   return resp({ ok: true });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SEGUIDORES Y LIKES (JustAnotherPanel): POST /smm {accion, ...}  (solo equipo)
+//  Secreto: JAP_API_KEY. La llave nunca sale del worker.
+//  accion: balance | services | add {service, link, quantity} | status {orders:[ids]}
+//          refill {order} | refill_status {refill} | cancel {orders:[ids]}
+// ══════════════════════════════════════════════════════════════
+const JAP_URL = 'https://justanotherpanel.com/api/v2';
+async function japLlamar(env, datos) {
+  const body = new URLSearchParams({ key: env.JAP_API_KEY, ...datos });
+  const res = await fetch(JAP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  const txt = await res.text();
+  let d; try { d = JSON.parse(txt); } catch (e) { throw new Error('JustAnotherPanel respondió algo inesperado (' + res.status + ')'); }
+  if (d && d.error) throw new Error(String(d.error));
+  return d;
+}
+async function handleSmm(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+  if (!env.JAP_API_KEY) return json(request, { configurado: false });
+  const b = await request.json().catch(() => ({}));
+  const ids = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).replace(/\D/g, '')).filter(Boolean).slice(0, 100).join(',');
+  try {
+    switch (b.accion) {
+      case 'balance': return json(request, { configurado: true, ...(await japLlamar(env, { action: 'balance' })) });
+      case 'services': {
+        const lista = await japLlamar(env, { action: 'services' });
+        return json(request, { configurado: true, servicios: (Array.isArray(lista) ? lista : []).map(s => ({
+          service: s.service, name: s.name, category: s.category, rate: Number(s.rate), min: Number(s.min), max: Number(s.max), refill: !!s.refill, cancel: !!s.cancel })) });
+      }
+      case 'add': {
+        const service = String(b.service || '').replace(/\D/g, ''), quantity = parseInt(b.quantity, 10), link = String(b.link || '').trim().slice(0, 300);
+        if (!service || !quantity || !link) return json(request, { error: 'Falta el servicio, la cantidad o el enlace.' }, 400);
+        const d = await japLlamar(env, { action: 'add', service, link, quantity: String(quantity) });
+        await tgEnviar(env, `📈 <b>Pedido enviado a JustAnotherPanel</b>\n${escHtml(String(quantity))} · servicio ${escHtml(service)}\n🔗 ${escHtml(link)}\nPedido JAP: <b>${escHtml(String(d.order || '—'))}</b>\nPor: ${escHtml(quien.email)}`).catch(() => {});
+        return json(request, { configurado: true, ...d });
+      }
+      case 'status': return json(request, { configurado: true, estados: await japLlamar(env, { action: 'status', orders: ids(b.orders) }) });
+      case 'refill': return json(request, { configurado: true, ...(await japLlamar(env, { action: 'refill', order: ids(b.order) })) });
+      case 'refill_status': return json(request, { configurado: true, ...(await japLlamar(env, { action: 'refill_status', refill: ids(b.refill) })) });
+      case 'cancel': return json(request, { configurado: true, resultado: await japLlamar(env, { action: 'cancel', orders: ids(b.orders) }) });
+      default: return json(request, { error: 'Acción no válida' }, 400);
+    }
+  } catch (e) {
+    console.error('smm', e);
+    return json(request, { configurado: true, error: e.message }, 502);
+  }
 }

@@ -527,7 +527,7 @@
   function necesitaBrief(items) {
     // Hosting, dominios, mantenimiento, renovaciones... no llevan brief
     const t = (items || []).map(i => (i.s || '').toLowerCase()).filter(x => !/hosting|dominio|\bssl\b|mantenimiento|soporte|renovaci|suscripci|correo corporativo|\bemail\b|backup|respaldo/.test(x)).join(' ');
-    return /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web|redes|social|instagram|facebook|contenido|community|manejo|ads|publicidad|pauta|campa[ñn]a|seguidor|follower|crecimiento|identidad|logo|marca|branding|paquete/.test(t);
+    return /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web|redes|social|instagram|facebook|contenido|community|manejo|ads|publicidad|pauta|campa[ñn]a|seguidor|follower|crecimiento|\blikes?\b|identidad|logo|marca|branding|paquete/.test(t);
   }
   const BRIEF_LABELS = {
     negocio: 'Negocio', nombre: 'Contacto', correo: 'Correo', tel: 'Teléfono', ubicacion: 'Ubicación', descripcion: 'Descripción',

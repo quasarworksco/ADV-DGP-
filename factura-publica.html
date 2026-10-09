@@ -365,7 +365,7 @@
       web:        /web|sitio|p[áa]gina|landing|desarrollo|dise[ñn]o web/.test(texto),
       redes:      /redes|social|instagram|facebook|contenido|community|manejo/.test(texto),
       ads:        /ads|publicidad|pauta|campa[ñn]a|google ads|meta ads/.test(texto),
-      seguidores: /seguidor|follower|crecimiento|seguidores/.test(texto),
+      seguidores: /seguidor|follower|crecimiento|seguidores|\blikes?\b|me gusta/.test(texto),
       logo:       /identidad|logo|marca|branding|paquete/.test(texto)
     };
   }
@@ -1343,8 +1343,8 @@
             <span class="brief-social-icon">${ic}</span>
             <span class="brief-social-lbl">${red}</span>
             <div style="flex:1;">
-              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}" type="text" placeholder="@usuario o URL del perfil" style="margin-bottom:4px;">
-              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}-cant" type="number" min="0" placeholder="Cantidad de seguidores para esta red">
+              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}" type="text" placeholder="@usuario o URL del perfil (para likes: enlace de la publicación)" style="margin-bottom:4px;">
+              <input class="brief-input" id="b-seg-${red.toLowerCase().replace(/[^a-z]/g,'')}-cant" type="number" min="0" placeholder="Cantidad (seguidores o likes) para esta red">
             </div>
           </div>`).join('')}
         <div style="background:#fffbeb;border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;margin-top:4px;">
