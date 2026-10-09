@@ -208,6 +208,7 @@ export default {
     if (ruta === '/resenas-web') return handleResenasWeb(request, env, ctx);
     if (ruta === '/meta-ads') return handleMetaAds(request, env);
     if (ruta === '/web-stats') return handleWebStats(request, env);
+    if (ruta === '/chat-web') return handleChatWeb(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -2027,4 +2028,24 @@ async function handleWebStats(request, env) {
     console.error('web-stats', e);
     return json(request, { configurado: true, error: e.message }, 502);
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CHAT DE LA WEB (Altair): POST /chat-web {mensajes:[{rol:'user'|'assistant', texto}], cerrado}
+//  Manda la conversación a Telegram desde aquí (la web ya no guarda la llave de Telegram)
+// ══════════════════════════════════════════════════════════════
+async function handleChatWeb(request, env) {
+  const h = corsContacto(request);
+  const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
+  if (!ORIGENES_CONTACTO.includes(request.headers.get('Origin') || '')) return resp({ ok: true });
+  const b = await request.json().catch(() => ({}));
+  const msgs = (Array.isArray(b.mensajes) ? b.mensajes : []).slice(-30)
+    .map(m => ({ rol: m.rol === 'user' ? 'user' : 'assistant', texto: String(m.texto || '').slice(0, 1500).trim() })).filter(m => m.texto);
+  if (!msgs.some(m => m.rol === 'user')) return resp({ ok: true });
+  const ahora = new Date().toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
+  const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
+  await tgEnviar(env, `🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
+  return resp({ ok: true });
 }
