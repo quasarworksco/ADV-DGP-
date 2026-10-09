@@ -2071,7 +2071,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Seguidores y likes</div>
-        <div style="font-size:11px;color:var(--text-soft);">Pedidos a JustAnotherPanel desde el panel. La llave de la API queda guardada en el servidor, nunca aquí.</div>
+        <div style="font-size:11px;color:var(--text-soft);">Pedidos a JustAnotherPanel desde el panel. Los IDs de servicio los copias de la web de JAP y los pegas en "Mis servicios".</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <a class="btn-logout" href="https://justanotherpanel.com/tickets" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;"><i class="fa-solid fa-life-ring"></i> Tickets en JAP</a>
@@ -2083,7 +2083,6 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
       <button class="dash-period-btn active" onclick="smmTab('nuevo',this)">Nuevo pedido</button>
       <button class="dash-period-btn" onclick="smmTab('pedidos',this)">Pedidos</button>
       <button class="dash-period-btn" onclick="smmTab('servicios',this)">Mis servicios</button>
-      <button class="dash-period-btn" onclick="smmTab('jap',this)">Servicios de JAP</button>
     </div>
     <div id="smm-body"></div>
   </div>
@@ -3132,7 +3131,7 @@ async function renderSmm(fresco) {
   if (!body) return;
   body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando...</div>';
   try {
-    const [prods, peds] = await Promise.all([db.collection('smmProductos').get(), db.collection('smmPedidos').orderBy('createdAt', 'desc').limit(200).get()]);
+    const [prods, peds] = await Promise.all([db.collection('smmProductos').get(), db.collection('smmPedidos').orderBy('createdAt', 'desc').limit(60).get()]);
     if (prods.empty) {
       const lote = db.batch();
       _smmBase().forEach(x => lote.set(db.collection('smmProductos').doc(), { ...x, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
@@ -3146,6 +3145,7 @@ async function renderSmm(fresco) {
   // Saldo y estados de los pedidos en curso (desde JAP)
   try { _smm.saldo = await smmApi('balance'); } catch (e) { _smm.saldo = { error: e.message, sinLlave: e.sinLlave }; }
   smmStats();
+  if (!_smm.saldo.sinLlave) smmRevisionSemanal();
   if (fresco || _smm.tab === 'pedidos') smmActualizarEstados(true);
 }
 function smmStats() {
@@ -3166,8 +3166,8 @@ function smmPintar() {
   const body = document.getElementById('smm-body');
   if (!_smm.productos) return;
   if (_smm.saldo && _smm.saldo.sinLlave) body.innerHTML = _smmComoConectar(); else body.innerHTML = '';
-  body.innerHTML += ({ nuevo: _smmNuevo, pedidos: _smmPedidos, servicios: _smmServicios, jap: _smmJap }[_smm.tab])();
-  if (['jap', 'servicios', 'nuevo'].includes(_smm.tab) && !_smm.servicios && !_smm.cargandoJap && !(_smm.saldo && _smm.saldo.sinLlave)) smmCargarJap();
+  body.innerHTML += ({ nuevo: _smmNuevo, pedidos: _smmPedidos, servicios: _smmServicios }[_smm.tab] || _smmNuevo)();
+
 }
 function _smmComoConectar() {
   return `<div class="cb-card" style="padding:18px 20px;margin-bottom:14px;border-color:rgba(217,119,6,.35);background:#fffbeb;">
@@ -3183,7 +3183,7 @@ function _smmNuevo() {
   const prods = _smm.productos.filter(p => p.activo !== false && p.red === s.red && p.tipo === s.tipo).sort((a, b) => a.cantidad - b.cantidad);
   if (!prods.find(p => p._id === s.id)) s.id = prods[0]?._id || null;
   const prod = prods.find(p => p._id === s.id);
-  const jap = prod && _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(prod.servicioJap)) : null;
+  const jap = prod && prod.servicioJap && prod.japInfo && String(prod.japInfo.service) === String(prod.servicioJap) ? prod.japInfo : null;
   const costo = jap ? jap.rate * prod.cantidad / 1000 : null;
   const facturas = Object.values(docsMap).filter(d => (d.items || []).some(i => /seguidor|follower|\blikes?\b|me gusta/i.test(i.s || ''))).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 30);
   const cuentas = (window._smmFactura && docsMap[window._smmFactura]?.brief?.cuentas) || [];
@@ -3215,7 +3215,7 @@ async function smmEnviar() {
   if (!confirm(`¿Enviar ${prod.cantidad.toLocaleString('en-US')} ${SMM_TIPOS[prod.tipo].toLowerCase()} de ${SMM_REDES[prod.red][0]} a:\n${link}\n\nSe descuenta de tu saldo en JustAnotherPanel.`)) return;
   try {
     const d = await smmApi('add', { service: prod.servicioJap, link, quantity: prod.cantidad });
-    const jap = _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(prod.servicioJap)) : null;
+    const jap = prod.japInfo && String(prod.japInfo.service) === String(prod.servicioJap) ? prod.japInfo : null;
     await db.collection('smmPedidos').add({ cliente: cli, facturaId: window._smmFactura || '', red: prod.red, tipo: prod.tipo, cantidad: prod.cantidad, precio: Number(prod.precio) || 0,
       link, servicioJap: String(prod.servicioJap), japOrder: String(d.order || ''), estado: 'Pending', costo: jap ? jap.rate * prod.cantidad / 1000 : 0,
       refill: jap ? !!jap.refill : null, creadoPor: currentUser?.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -3265,13 +3265,14 @@ async function smmRefill(id) {
 }
 function _smmServicios() {
   return `<div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>Red</th><th>Servicio</th><th>Cantidad</th><th style="width:110px;">Precio de venta</th><th style="width:140px;">ID servicio JAP</th><th>En JAP</th><th></th></tr></thead><tbody>
-    ${_smm.productos.map(p => { const j = _smm.servicios ? _smm.servicios.find(x => String(x.service) === String(p.servicioJap)) : null; const costo = j ? j.rate * p.cantidad / 1000 : null; return `<tr style="${p.activo === false ? 'opacity:.5;' : ''}">
+    ${_smm.productos.map(p => { const j = p.japInfo && String(p.japInfo.service) === String(p.servicioJap) ? p.japInfo : null; const costo = j ? j.rate * p.cantidad / 1000 : null; return `<tr style="${p.activo === false ? 'opacity:.5;' : ''}">
       <td>${_smmRed(p.red)}</td><td>${SMM_TIPOS[p.tipo]}</td><td>${p.cantidad.toLocaleString('en-US')}</td>
       <td><input type="number" step="0.01" value="${Number(p.precio) || 0}" onchange="smmGuardarProd('${p._id}',{precio:Number(this.value)||0})"></td>
-      <td><input value="${esc(p.servicioJap || '')}" placeholder="Ej. 1234" onchange="smmGuardarProd('${p._id}',{servicioJap:this.value.replace(/\\D/g,'')})"></td>
-      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? (_smm.servicios ? '<span style="color:#b91c1c;">Ese ID no existe en JAP</span>' : '<span style="color:var(--text-soft);">Cargando datos de JAP…</span>') : '<span style="color:#b45309;">Sin asignar</span>')}</td>
+      <td><input value="${esc(p.servicioJap || '')}" placeholder="Ej. 1234" onchange="smmAsignarServicio('${p._id}',this.value.replace(/\\D/g,''))"></td>
+      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? (p.japInfoNoExiste ? '<span style="color:#b91c1c;">Ese ID no existe en JAP</span>' : '<span style="color:var(--text-soft);">Consultando a JAP…</span>') : '<span style="color:#b45309;">Sin asignar</span>')}</td>
       <td><button class="hr-btn" style="color:var(--text-mid);border-color:var(--border);" onclick="smmGuardarProd('${p._id}',{activo:${p.activo === false}})">${p.activo === false ? 'Activar' : 'Ocultar'}</button></td></tr>`; }).join('')}
     </tbody></table></div>
+    <div style="font-size:11.5px;color:var(--text-soft);margin-top:8px;">Copia el ID desde <a href="https://justanotherpanel.com/services" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">justanotherpanel.com/services</a> y pégalo aquí. El panel consulta ese servicio una sola vez y lo vuelve a revisar cada 7 días.</div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
       <select id="smm-n-red" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_REDES).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select>
       <select id="smm-n-tipo" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -3290,22 +3291,37 @@ async function smmAgregarProd() {
   await db.collection('smmProductos').add({ red: document.getElementById('smm-n-red').value, tipo: document.getElementById('smm-n-tipo').value, cantidad: cant, precio, servicioJap: '', activo: true, orden: _smm.productos.length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   renderSmm();
 }
-async function smmCargarJap() {
-  _smm.cargandoJap = true;
-  try { const d = await smmApi('services'); _smm.servicios = d.servicios || []; _smm.cargandoJap = false; }
-  catch (e) { _smm.servicios = null; _smm.cargandoJap = false; if (_smm.tab !== 'jap') return; document.getElementById('smm-body').innerHTML = (e.sinLlave ? _smmComoConectar() : `<div class="cb-card" style="color:#b91c1c;">No se pudo cargar la lista de JAP: ${esc(e.message)}</div>`); return; }
-  smmPintar();
+// Consulta a JAP solo los servicios indicados y guarda su nombre/precio en el paquete (sin bajar la lista completa)
+async function smmInfoServicios(prods) {
+  const idsJap = [...new Set(prods.map(p => p.servicioJap).filter(Boolean))];
+  if (!idsJap.length) return;
+  const d = await smmApi('service_info', { ids: idsJap });
+  const porId = Object.fromEntries((d.servicios || []).map(x => [String(x.service), x]));
+  await Promise.all(prods.filter(p => p.servicioJap).map(p => {
+    const info = porId[String(p.servicioJap)] || null;
+    const upd = info ? { japInfo: info, japInfoNoExiste: false, japInfoAt: Date.now() } : { japInfo: null, japInfoNoExiste: true, japInfoAt: Date.now() };
+    Object.assign(p, upd);
+    return db.collection('smmProductos').doc(p._id).update(upd).catch(() => {});
+  }));
 }
-function _smmJap() {
-  if (!_smm.servicios) return '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando servicios de JustAnotherPanel...</div>';
-  const q = (window._smmQ || '').toLowerCase();
-  const lista = _smm.servicios.filter(x => !q || `${x.service} ${x.name} ${x.category}`.toLowerCase().includes(q)).slice(0, 150);
-  return `<input placeholder="Buscar: instagram followers, tiktok likes, refill..." value="${esc(window._smmQ || '')}" oninput="window._smmQ=this.value;clearTimeout(window._smmT);window._smmT=setTimeout(smmPintar,250)" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px;font:13px 'Plus Jakarta Sans',sans-serif;">
-    <div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>ID</th><th>Servicio</th><th>Precio por 1000</th><th>Mín / Máx</th><th>Reposición</th></tr></thead><tbody>
-    ${lista.map(x => `<tr><td><button class="hr-btn" style="color:var(--blue);border-color:rgba(20,56,204,.25);" title="Copiar ID" onclick="navigator.clipboard.writeText('${x.service}').then(()=>toast('ID ${x.service} copiado','ok'))">${x.service}</button></td>
-      <td>${esc(x.name)}<div style="font-size:11px;color:var(--text-soft);">${esc(x.category)}</div></td><td>${_smmUsd(x.rate)}</td><td style="white-space:nowrap;">${x.min.toLocaleString('en-US')} / ${x.max.toLocaleString('en-US')}</td><td>${x.refill ? 'Sí' : 'No'}</td></tr>`).join('')}
-    </tbody></table></div><div style="font-size:11px;color:var(--text-soft);margin-top:8px;">${_smm.servicios.length.toLocaleString('en-US')} servicios. Copia el ID y pégalo en "Mis servicios".</div>`;
+async function smmAsignarServicio(id, servicioJap) {
+  const p = _smm.productos.find(x => x._id === id); if (!p) return;
+  try {
+    await db.collection('smmProductos').doc(id).update({ servicioJap });
+    p.servicioJap = servicioJap; p.japInfo = null; p.japInfoNoExiste = false;
+    smmPintar();
+    if (servicioJap) await smmInfoServicios([p]);
+    toast(p.japInfoNoExiste ? 'Ese ID no existe en JAP' : 'Servicio asignado', p.japInfoNoExiste ? 'err' : 'ok');
+    smmPintar();
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
+// Revisión semanal: actualiza nombre y precio de los servicios asignados si pasaron 7 días
+async function smmRevisionSemanal() {
+  const viejos = (_smm.productos || []).filter(p => p.servicioJap && (!p.japInfoAt || Date.now() - p.japInfoAt > 7 * 864e5));
+  if (!viejos.length) return;
+  try { await smmInfoServicios(viejos); smmPintar(); } catch (e) {}
+}
+
 /* ═══════════════════════════════════════════════════════
    MI WEB — accesos directos a dgpglobalgroup.com y sus herramientas
 ═══════════════════════════════════════════════════════ */

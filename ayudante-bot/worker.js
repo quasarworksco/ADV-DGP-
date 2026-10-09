@@ -2087,6 +2087,12 @@ async function handleSmm(request, env) {
         return json(request, { configurado: true, servicios: (Array.isArray(lista) ? lista : []).map(s => ({
           service: s.service, name: s.name, category: s.category, rate: Number(s.rate), min: Number(s.min), max: Number(s.max), refill: !!s.refill, cancel: !!s.cancel })) });
       }
+      case 'service_info': {   // solo los servicios pedidos (no la lista completa)
+        const quiero = new Set(ids(b.ids).split(',').filter(Boolean));
+        const lista = await japLlamar(env, { action: 'services' });
+        return json(request, { configurado: true, servicios: (Array.isArray(lista) ? lista : []).filter(s => quiero.has(String(s.service))).map(s => ({
+          service: s.service, name: s.name, category: s.category, rate: Number(s.rate), min: Number(s.min), max: Number(s.max), refill: !!s.refill, cancel: !!s.cancel })) });
+      }
       case 'add': {
         const service = String(b.service || '').replace(/\D/g, ''), quantity = parseInt(b.quantity, 10), link = String(b.link || '').trim().slice(0, 300);
         if (!service || !quantity || !link) return json(request, { error: 'Falta el servicio, la cantidad o el enlace.' }, 400);
