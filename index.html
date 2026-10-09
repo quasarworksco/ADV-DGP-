@@ -2487,8 +2487,8 @@ const CATALOGO_BASE = [
   ['Diseño & Identidad', 'Paquete Básico', 320, 298], ['Diseño & Identidad', 'Paquete Intermedio', 480, 446], ['Diseño & Identidad', 'Paquete Avanzado', 840, 781],
   ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
   ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
-  ['Seguidores', '1,000 Seguidores', 55, 51], ['Seguidores', '3,000 Seguidores', 75, 70], ['Seguidores', '5,000 Seguidores', 125, 116], ['Seguidores', '10,000 Seguidores', 190, 177],
-  ['Seguidores', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores', 'TikTok 10,000 Seguidores', 219, 204],
+  ['Seguidores Instagram y Facebook', 'Instagram/Facebook 1,000 Seguidores', 55, 51], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 3,000 Seguidores', 75, 70], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 5,000 Seguidores', 125, 116], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 10,000 Seguidores', 190, 177],
+  ['Seguidores TikTok', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores TikTok', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores TikTok', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores TikTok', 'TikTok 10,000 Seguidores', 219, 204],
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
@@ -2523,6 +2523,15 @@ function initCatalogo() {
       db.collection('catalogo').doc(x._id).update({ nombre: 'Identidad Visual (Logo + Manual de Marca)', precio: 185, precioEur: 172, ajusteIdv202610: true }).catch(() => {}));
     catalogoList.filter(x => x.nombre === 'Hosting mensual' && !x.ajusteHm202610).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ precio: 25, precioEur: 23, ajusteHm202610: true }).catch(() => {}));
+    // Seguidores: Instagram/Facebook separados de TikTok (una sola vez)
+    catalogoList.filter(x => /^(\d[\d,]*) Seguidores$/.test(x.nombre || '') && x.categoria === 'Seguidores').forEach(x => {
+      const base = CATALOGO_BASE.find(b => b.nombre === 'Instagram/Facebook ' + x.nombre);
+      db.collection('catalogo').doc(x._id).update({ nombre: 'Instagram/Facebook ' + x.nombre, categoria: 'Seguidores Instagram y Facebook', ...(base ? { orden: base.orden } : {}) }).catch(() => {});
+    });
+    catalogoList.filter(x => /^TikTok .*Seguidores$/.test(x.nombre || '') && x.categoria !== 'Seguidores TikTok').forEach(x => {
+      const base = CATALOGO_BASE.find(b => b.nombre === x.nombre);
+      db.collection('catalogo').doc(x._id).update({ categoria: 'Seguidores TikTok', ...(base ? { orden: base.orden } : {}) }).catch(() => {});
+    });
     // Servicios nuevos (likes y seguidores de TikTok): se agregan si aún no existen
     const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
