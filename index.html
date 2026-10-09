@@ -1491,6 +1491,21 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .sa-v2 .btn-sheet.ghost:hover { background:#f8fafc; color:var(--black); }
 .sa-v2 .btn-sheet.close { margin-top:2px; }
 @media (max-width:480px) { .sa-v2 { padding:4px 20px 24px !important; } .sa-v2 .sa-3 .btn-sheet span { font-size:11px; } }
+
+/* ── Dashboard: resumen general por sección, con color ── */
+.rg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px; }
+@media (max-width:1100px) { .rg-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:480px) { .rg-grid { grid-template-columns:1fr; } }
+.rg-card { position:relative; display:flex; flex-direction:column; gap:6px; padding:16px 16px 14px; border-radius:14px; background:#fff; border:1px solid #d6dcea; box-shadow:0 1px 2px rgba(11,22,64,.05),0 6px 18px rgba(11,22,64,.06); cursor:pointer; text-align:left; overflow:hidden; transition:transform .15s, box-shadow .15s; font-family:'Plus Jakarta Sans',sans-serif; }
+.rg-card::before { content:''; position:absolute; left:0; top:0; right:0; height:4px; background:var(--rg); }
+.rg-card:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(11,22,64,.12); }
+.rg-top { display:flex; align-items:center; justify-content:space-between; }
+.rg-ico { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--rg-l); color:var(--rg); }
+.rg-go { color:#94a3b8; font-size:12px; }
+.rg-l { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); margin-top:4px; }
+.rg-v { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--rg-d); line-height:1.1; font-variant-numeric:tabular-nums; }
+.rg-n { font-size:11.5px; color:var(--text-mid); line-height:1.35; }
+.rg-n b { color:var(--black); }
 </style>
 </head>
 <body>
@@ -1791,6 +1806,10 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 
 <div id="page-dashboard" class="page">
   <div class="dash-main">
+
+    <!-- RESUMEN GENERAL: lo importante de cada sección -->
+    <div class="db-head"><div class="dash-section-label" style="margin:0;">Resumen general</div><span style="font-size:11px;color:var(--text-soft);">Toca una tarjeta para ir a la sección</span></div>
+    <div id="dash-resumen" class="rg-grid"></div>
 
     <!-- COBRANZA -->
     <div class="db-head"><div class="dash-section-label" style="margin:0;">Cobranza</div></div>
@@ -4499,7 +4518,55 @@ function setDashPeriod(p, btn) {
   renderDashboard();
 }
 
+
+/* Resumen general del Dashboard: un vistazo a cada sección */
+let _rgCache = { t: 0, web: null, meta: null, rw: null };
+const _rgIco = d => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+function irASeccion(p) { const b = [...document.querySelectorAll('.nav-tab')].find(x => (x.getAttribute('onclick') || '').includes(`'${p}'`)); if (b) b.click(); }
+function _rgCard(c) {
+  return `<button type="button" class="rg-card" style="--rg:${c.col};--rg-l:${c.col}1a;--rg-d:${c.dark || c.col};" onclick="irASeccion('${c.ir}')">
+    <div class="rg-top"><span class="rg-ico">${_rgIco(c.ico)}</span><span class="rg-go">Ver →</span></div>
+    <div class="rg-l">${c.l}</div><div class="rg-v">${c.v}</div><div class="rg-n">${c.n}</div></button>`;
+}
+async function renderResumenGeneral() {
+  const el = document.getElementById('dash-resumen');
+  if (!el) return;
+  const docs = Object.values(docsMap);
+  const porCobrar = docs.filter(d => cbSaldo(d) > 0);
+  const saldo = porCobrar.reduce((a, d) => a + cbSaldo(d), 0);
+  const ahora = new Date(), mes = ahora.getMonth(), anio = ahora.getFullYear();
+  const ventasMes = getMergedVentas().filter(v => { const f = v.fecha?.toDate ? v.fecha.toDate() : new Date(v.fecha); return f.getMonth() === mes && f.getFullYear() === anio; });
+  const cobradoMes = ventasMes.reduce((a, v) => a + (parseFloat(v.monto) || 0), 0);
+  const hace30 = Date.now() - 30 * 864e5;
+  const cliNuevos = clientesList.filter(c => (c.createdAt?.toMillis?.() || 0) >= hace30).length;
+  const cliWeb = clientesList.filter(c => c.origen === 'web' && (c.createdAt?.toMillis?.() || 0) >= hace30).length;
+  const susAct = suscripcionesList.filter(s => s.estado === 'activa');
+  const susVenc = susAct.filter(s => s.proximoPago && s.proximoPago < todayISO()).length;
+  const tarjetas = (extra = {}) => [
+    { ir: 'facturacion', col: '#d97706', dark: '#b45309', l: 'Por cobrar', v: cbMoney(saldo), n: `<b>${porCobrar.length}</b> factura${porCobrar.length !== 1 ? 's' : ''} pendiente${porCobrar.length !== 1 ? 's' : ''}`, ico: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>' },
+    { ir: 'facturacion', col: '#059669', dark: '#047857', l: 'Cobrado este mes', v: cbMoney(cobradoMes), n: `<b>${ventasMes.length}</b> pago${ventasMes.length !== 1 ? 's' : ''} recibido${ventasMes.length !== 1 ? 's' : ''}`, ico: '<path d="M20 6 9 17l-5-5"/>' },
+    { ir: 'clientes', col: '#1438cc', l: 'Clientes', v: clientesList.length, n: `<b>${cliNuevos}</b> nuevo${cliNuevos !== 1 ? 's' : ''} en 30 días${cliWeb ? ` · ${cliWeb} por la web` : ''}`, ico: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>' },
+    { ir: 'suscripciones', col: '#7c3aed', l: 'Suscripciones activas', v: susAct.length, n: susVenc ? `<b style="color:#b91c1c;">${susVenc}</b> con cobro vencido` : 'Todas al día', ico: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>' },
+    { ir: 'portal', col: '#0891b2', dark: '#0e7490', l: 'Portales de clientes', v: portalesList.length, n: 'Clientes con su portal privado', ico: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' },
+    { ir: 'resenasweb', col: '#db2777', dark: '#be185d', l: 'Reseñas de la web', v: extra.rw ? extra.rw.pend : '…', n: extra.rw ? `por revisar · <b>${extra.rw.pub}</b> publicadas` : 'Cargando…', ico: '<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' },
+    { ir: 'miweb', col: '#0d9488', dark: '#0f766e', l: 'Visitas web (30 días)', v: extra.web ? extra.web.visitantes.toLocaleString('en-US') : '…', n: extra.web ? `personas · <b>${extra.web.visitas.toLocaleString('en-US')}</b> páginas vistas` : (extra.webErr ? 'No disponible' : 'Cargando…'), ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' },
+    { ir: 'metaads', col: '#4f46e5', dark: '#4338ca', l: 'Meta Ads (30 días)', v: extra.meta ? cbMoney(extra.meta.gastado) : '…', n: extra.meta ? `gastado · <b>${extra.meta.conversaciones}</b> mensajes` : (extra.metaErr ? 'No disponible' : 'Cargando…'), ico: '<path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>' }
+  ].map(_rgCard).join('');
+  el.innerHTML = tarjetas(_rgCache);
+  if (Date.now() - _rgCache.t < 5 * 60e3 && _rgCache.web && _rgCache.meta && _rgCache.rw) return;
+  // Lo que viene de fuera (reseñas, Databuddy, Meta) se pide aparte y se guarda 5 minutos
+  const extra = { t: Date.now() };
+  const tok = await currentUser.getIdToken().catch(() => null);
+  await Promise.all([
+    Promise.resolve().then(() => db.collection('resenasWeb').get()).then(s => { const d = s.docs.map(x => x.data()); extra.rw = { pend: d.filter(r => r.estado === 'pendiente').length, pub: d.filter(r => r.estado === 'aprobada').length }; }).catch(() => {}),
+    fetch(`${RW_WORKER}/web-stats?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.resumen) extra.web = d.resumen; else extra.webErr = true; }).catch(() => { extra.webErr = true; }),
+    fetch(`${RW_WORKER}/meta-ads?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.total) extra.meta = d.total; else extra.metaErr = true; }).catch(() => { extra.metaErr = true; })
+  ]);
+  _rgCache = extra;
+  if (document.getElementById('page-dashboard').classList.contains('active')) el.innerHTML = tarjetas(extra);
+}
 function renderDashboard() {
+  renderResumenGeneral();
   renderCobranza();
   const now          = new Date();
   const semanaActual = Math.ceil(now.getDate() / 7);
