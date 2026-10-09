@@ -1406,6 +1406,41 @@
   .panel-f, .cb-tile, .cb-card, .hr-list, .proy-card, .ma-wrap, .mw-link { border-color:#d6dcea; box-shadow:0 1px 2px rgba(11,22,64,.05), 0 6px 18px rgba(11,22,64,.06); }
   .panel-title-v { color:var(--blue); }
 }
+
+/* ── Celular y tablet: menú desplegable con el mismo diseño del menú lateral ── */
+.menu-movil, .nav-overlay { display:none; }
+body { background:#e3e8f2; }
+body::before { opacity:.10; }
+.panel-f, .cb-tile, .cb-card, .hr-list, .proy-card, .ma-wrap, .mw-link { border-color:#d6dcea; box-shadow:0 1px 2px rgba(11,22,64,.05), 0 6px 18px rgba(11,22,64,.06); }
+@media (max-width: 899px) {
+  .menu-movil { display:inline-flex; align-items:center; justify-content:center; position:relative; width:40px; height:40px; flex-shrink:0; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--black); font-size:17px; cursor:pointer; }
+  .menu-movil-dot { display:none; position:absolute; top:6px; right:6px; width:9px; height:9px; border-radius:50%; background:#ef4444; border:2px solid #fff; }
+  .menu-movil.aviso .menu-movil-dot { display:block; }
+  .nav-tabs {
+    position:fixed; top:0; left:0; bottom:0; width:min(280px, 84vw); z-index:400;
+    flex-direction:column; flex-wrap:nowrap; justify-content:flex-start; gap:2px;
+    padding:20px 12px 32px; overflow-y:auto; overflow-x:hidden;
+    background:#0b1640; border:0; backdrop-filter:none;
+    transform:translateX(-102%); transition:transform .25s ease, box-shadow .25s ease;
+  }
+  body.menu-open .nav-tabs { transform:none; box-shadow:10px 0 40px rgba(8,13,26,.35); }
+  .nav-overlay { position:fixed; inset:0; z-index:350; background:rgba(8,13,26,.45); opacity:0; pointer-events:none; transition:opacity .25s ease; display:block; }
+  body.menu-open .nav-overlay { opacity:1; pointer-events:auto; }
+  body.menu-open { overflow:hidden; }
+  .nav-group { display:block; font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:rgba(255,255,255,.38); padding:16px 12px 6px; }
+  .nav-tab, .nav-tab:hover { width:100%; padding:12px; border:0; border-radius:10px; font-size:14px; letter-spacing:.2px; text-transform:none; font-weight:500; color:rgba(255,255,255,.75); gap:12px; justify-content:flex-start; }
+  .nav-tab > i, .nav-tab > svg { display:inline-block !important; width:18px; text-align:center; font-size:15px; }
+  .nav-tab.active { background:var(--blue); color:#fff; box-shadow:0 6px 18px rgba(20,56,204,.35); }
+  .nav-tab > span[id$="-badge"] { margin-left:auto !important; }
+}
+@media (max-width: 480px) {
+  .header { padding:10px 12px; gap:8px; }
+  .brand-mark { width:30px; height:30px; }
+  .logo-text { font-size:15px !important; letter-spacing:1.5px !important; white-space:nowrap; }
+  .logo-sub { display:none; }
+  .header-right { gap:6px !important; }
+}
+@media (max-width: 430px) { .header .logo-text { display:none; } }
 </style>
 </head>
 <body>
@@ -1456,6 +1491,7 @@
 <!-- HEADER -->
 <header class="header">
   <div style="display:flex;align-items:center;gap:10px;">
+    <button class="menu-movil" onclick="abrirMenuMovil()" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i><span class="menu-movil-dot"></span></button>
     <img src="/logo.png" alt="DGP Group" class="brand-mark">
     <div>
       <div class="logo-text">DGP GROUP <span>USA</span></div>
@@ -1524,6 +1560,7 @@
     <i class="fa-solid fa-globe"></i> Mi web
   </button>
 </nav>
+<div class="nav-overlay" onclick="cerrarMenuMovil()"></div>
 
 
 <!-- ══════════════════════════════════════
@@ -2633,6 +2670,20 @@ function switchPage(page, btn) {
 }
 
 
+
+/* Menú en celular */
+function abrirMenuMovil() { document.body.classList.add('menu-open'); }
+function cerrarMenuMovil() { document.body.classList.remove('menu-open'); }
+(function () {
+  document.querySelectorAll('.nav-tab').forEach(b => b.addEventListener('click', () => { if (window.innerWidth < 900) cerrarMenuMovil(); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenuMovil(); });
+  // Punto rojo en el botón del menú si alguna sección tiene avisos
+  const nav = document.querySelector('.nav-tabs'), btn = document.querySelector('.menu-movil');
+  if (!nav || !btn) return;
+  const revisar = () => btn.classList.toggle('aviso', [...nav.querySelectorAll('span[id$="-badge"]')].some(b => b.style.display && b.style.display !== 'none'));
+  new MutationObserver(revisar).observe(nav, { subtree: true, attributes: true, attributeFilter: ['style'] });
+  revisar();
+})();
 /* Menú lateral plegable (se recuerda en este navegador) */
 function toggleMenuLateral(forzar) {
   const min = typeof forzar === 'boolean' ? forzar : !document.body.classList.contains('menu-min');

@@ -1975,6 +1975,17 @@ const DATABUDDY_SITIO_DEFAULT = 'f3a183a0-2636-4c00-afbe-7e7670e99704';
 const DB_PERIODOS = ['today', 'yesterday', 'last_7d', 'last_14d', 'last_30d', 'last_90d', 'this_month', 'last_month', 'this_year'];
 async function handleWebStats(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  // ?ping=1 solo dice si la conexión con Databuddy funciona (sin datos), para revisar la instalación
+  if (new URL(request.url).searchParams.has('ping')) {
+    if (!env.DATABUDDY_API_KEY) return json(request, { configurado: false });
+    const r = await fetch(`https://api.databuddy.cc/v1/query?website_id=${encodeURIComponent(env.DATABUDDY_WEBSITE_ID || DATABUDDY_SITIO_DEFAULT)}`, {
+      method: 'POST', headers: { 'x-api-key': env.DATABUDDY_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'ping', preset: 'last_7d', parameters: ['summary_metrics'] })
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    const ok = !!r && r.ok && Array.isArray(d.data) && d.data.every(x => x.success !== false);
+    return json(request, { configurado: true, ok, status: r ? r.status : 0, detalle: ok ? '' : String(d.error || d.message || d.data?.[0]?.error || '').slice(0, 200) });
+  }
   const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
   if (quien.error) return json(request, { error: quien.error }, quien.status);
   if (!env.DATABUDDY_API_KEY) return json(request, { configurado: false });
