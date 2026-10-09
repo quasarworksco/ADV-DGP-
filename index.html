@@ -34,6 +34,7 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
+    @supports (overflow-x: clip) { html, body { overflow-x: clip; } }  /* clip no rompe los elementos fijos (sticky) */
 
     :root {
       --white:      #ffffff;
@@ -1370,6 +1371,16 @@
   #app-shell .page { margin-left:var(--side-w); }
   .fact-main, .dash-main, .proy-main { max-width:1240px; padding:24px 28px; }
 }
+
+/* Encabezado fijo en computadora: no se separa del menú lateral al bajar */
+@media (min-width: 900px) {
+  html { scroll-padding-top: calc(var(--hdr-h, 71px) + 12px); }
+  .header { transition:box-shadow .25s ease, background .25s ease; }
+  .header.hdr-scrolled { box-shadow:0 6px 24px rgba(11,22,64,.10); background:rgba(255,255,255,.99); }
+  .nav-tabs { box-shadow:inset -1px 0 0 rgba(255,255,255,.04); }
+  .pt-side { top:calc(var(--hdr-h, 71px) + 12px); max-height:calc(100vh - var(--hdr-h, 71px) - 24px); }
+  #subtab-nuevo > .panel-f:last-child { top:calc(var(--hdr-h, 71px) + 16px); }
+}
 </style>
 </head>
 <body>
@@ -2600,6 +2611,12 @@ function switchPage(page, btn) {
   const set = () => document.documentElement.style.setProperty('--hdr-h', (h.offsetHeight || 71) + 'px');
   if (window.ResizeObserver) new ResizeObserver(set).observe(h);
   window.addEventListener('resize', set); set();
+  // Sombra suave cuando bajas, para que el encabezado se vea separado del contenido
+  let pend = false;
+  window.addEventListener('scroll', () => {
+    if (pend) return; pend = true;
+    requestAnimationFrame(() => { h.classList.toggle('hdr-scrolled', window.scrollY > 4); pend = false; });
+  }, { passive: true });
 })();
 
 /* ═══════════════════════════════════════════════════════
@@ -2793,7 +2810,6 @@ const MW_LINKS = [
   ['fa-solid fa-language', 'Web en inglés', 'dgpglobalgroup.com/en/', 'https://dgpglobalgroup.com/en/'],
   ['fa-solid fa-images', 'Portafolio', 'Los proyectos que se muestran en la web', 'https://dgpglobalgroup.com/portafolio/'],
   ['fa-solid fa-handshake', 'Programa de aliados', 'Página y precios para aliados', 'https://dgpglobalgroup.com/aliados/'],
-  ['fa-brands fa-google', 'Google Search Console', 'Búsquedas por las que te encuentran', 'https://search.google.com/search-console?resource_id=sc-domain:dgpglobalgroup.com'],
   ['fa-solid fa-location-dot', 'Perfil de Google (Maps)', 'Reseñas, fotos y publicaciones', 'https://business.google.com/'],
   ['fa-solid fa-star', 'Pedir reseña en Google', 'Enlace para mandar a clientes', 'https://g.page/r/CbcyuFX7hqvuEAE/review'],
   ['fa-solid fa-chart-line', 'Databuddy completo', 'Todas las estadísticas de visitas', 'https://app.databuddy.cc/'],
