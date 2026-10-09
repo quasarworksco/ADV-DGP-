@@ -3193,9 +3193,9 @@ function _smmResumen() {
   const costo = jap ? jap.rate * total / 1000 : null;
   const precio = Number(_smm.precio) || 0;
   const n = (_smm.destinos || []).filter(d => d.link && parseInt(d.cant, 10) > 0).length;
-  const fuera = jap ? (_smm.destinos || []).filter(d => parseInt(d.cant, 10) > 0 && (parseInt(d.cant, 10) < jap.min || parseInt(d.cant, 10) > jap.max)) : [];
+  const fuera = jap ? (_smm.destinos || []).filter(d => parseInt(d.cant, 10) > 0 && ((jap.min && parseInt(d.cant, 10) < jap.min) || (jap.max && parseInt(d.cant, 10) > jap.max))) : [];
   return `<div>${_smmRed(s.red)} · <b>${total.toLocaleString('en-US')} ${SMM_TIPOS[s.tipo].toLowerCase()}</b> en ${n} cuenta${n !== 1 ? 's' : ''} · le cobras <b>${_smmUsd(precio)}</b>${costo != null ? ` · te cuesta ~<b>${_smmUsd(costo)}</b> · ganas ~<b style="color:var(--green-dark);">${_smmUsd(precio - costo)}</b>` : ''}
-      ${!base ? `<div style="color:#b45309;margin-top:4px;">No hay un servicio de JAP asignado para ${SMM_REDES[s.red][0]} · ${SMM_TIPOS[s.tipo]}. Ponlo en "Mis servicios".</div>` : `<div style="color:var(--text-soft);margin-top:4px;">Servicio JAP #${esc(base.servicioJap)}${jap ? ` · ${esc(jap.name)} · mín ${jap.min.toLocaleString('en-US')} / máx ${jap.max.toLocaleString('en-US')} por cuenta` : ''}</div>`}
+      ${!base ? `<div style="color:#b45309;margin-top:4px;">No hay un servicio de JAP asignado para ${SMM_REDES[s.red][0]} · ${SMM_TIPOS[s.tipo]}. Ponlo en "Mis servicios".</div>` : `<div style="color:var(--text-soft);margin-top:4px;">Servicio JAP #${esc(base.servicioJap)}${jap ? ` · ${esc(jap.name)} · mín ${Number(jap.min || 0).toLocaleString('en-US')} / máx ${Number(jap.max || 0).toLocaleString('en-US')} por cuenta` : ''}</div>`}
       ${fuera.length ? `<div style="color:#b91c1c;margin-top:4px;">Alguna cantidad está fuera del mínimo o máximo que acepta este servicio.</div>` : ''}</div>
     <button class="hr-btn ok" style="padding:10px 16px;font-size:13px;" ${base && total > 0 && n && !fuera.length ? '' : 'disabled'} onclick="smmEnviar()"><i class="fa-solid fa-paper-plane"></i> Enviar a JustAnotherPanel</button>`;
 }
@@ -3303,15 +3303,22 @@ async function smmRefill(id) {
   } catch (e) { toast('JAP no aceptó la reposición: ' + e.message, 'err'); }
 }
 function _smmServicios() {
-  return `<div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>Red</th><th>Servicio</th><th>Cantidad</th><th style="width:110px;">Precio de venta</th><th style="width:140px;">ID servicio JAP</th><th>En JAP</th><th></th></tr></thead><tbody>
-    ${_smm.productos.map(p => { const j = p.japInfo && String(p.japInfo.service) === String(p.servicioJap) ? p.japInfo : null; const costo = j ? j.rate * p.cantidad / 1000 : null; return `<tr style="${p.activo === false ? 'opacity:.5;' : ''}">
-      <td>${_smmRed(p.red)}</td><td>${SMM_TIPOS[p.tipo]}</td><td>${p.cantidad.toLocaleString('en-US')}</td>
-      <td><input type="number" step="0.01" value="${Number(p.precio) || 0}" onchange="smmGuardarProd('${p._id}',{precio:Number(this.value)||0})"></td>
-      <td><input value="${esc(p.servicioJap || '')}" placeholder="Ej. 1234" onchange="smmAsignarServicio('${p._id}',this.value.replace(/\\D/g,''))"></td>
-      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">Costo ~${_smmUsd(costo)} · ganas ~<b style="color:var(--green-dark);">${_smmUsd(p.precio - costo)}</b>${j.refill ? ' · con reposición' : ''}</div>` : (p.servicioJap ? (p.japInfoNoExiste ? '<span style="color:#b91c1c;">Ese ID no existe en JAP</span>' : '<span style="color:var(--text-soft);">Consultando a JAP…</span>') : '<span style="color:#b45309;">Sin asignar</span>')}</td>
-      <td><button class="hr-btn" style="color:var(--text-mid);border-color:var(--border);" onclick="smmGuardarProd('${p._id}',{activo:${p.activo === false}})">${p.activo === false ? 'Activar' : 'Ocultar'}</button></td></tr>`; }).join('')}
+  // Un ID de JAP por red y tipo; los paquetes de ese grupo solo cambian cantidad y precio
+  const grupos = [];
+  Object.keys(SMM_REDES).forEach(r => Object.keys(SMM_TIPOS).forEach(t => {
+    const prods = _smm.productos.filter(p => p.red === r && p.tipo === t).sort((a, b) => a.cantidad - b.cantidad);
+    if (prods.length) grupos.push({ r, t, prods, conId: prods.find(p => p.servicioJap) || null });
+  }));
+  return `<div class="ma-wrap"><table class="smm-tabla"><thead><tr><th>Red</th><th>Servicio</th><th style="width:150px;">ID servicio JAP</th><th>En JAP</th><th>Paquetes y precio de venta</th></tr></thead><tbody>
+    ${grupos.map(g => { const id = g.conId ? g.conId.servicioJap : ''; const j = g.conId && g.conId.japInfo && String(g.conId.japInfo.service) === String(id) ? g.conId.japInfo : null; return `<tr>
+      <td>${_smmRed(g.r)}</td><td>${SMM_TIPOS[g.t]}</td>
+      <td><input value="${esc(id)}" placeholder="Ej. 1234" onchange="smmAsignarServicio('${g.r}','${g.t}',this.value.replace(/\\D/g,''))"></td>
+      <td style="font-size:11.5px;">${j ? `${esc(j.name)}<div style="color:var(--text-soft);">$${Number(j.rate).toFixed(2)} por 1000 ${j.min ? ` · mín ${Number(j.min).toLocaleString('en-US')} / máx ${Number(j.max || 0).toLocaleString('en-US')}` : ''}${j.refill ? ' · con reposición' : ''}</div>` : (id ? (g.conId.japInfoNoExiste ? '<span style="color:#b91c1c;">Ese ID no existe en JAP</span>' : '<span style="color:var(--text-soft);">Consultando a JAP…</span>') : '<span style="color:#b45309;">Sin asignar</span>')}</td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:6px;">${g.prods.map(p => `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 6px 4px 9px;border:1px solid var(--border);border-radius:9px;background:#fff;${p.activo === false ? 'opacity:.45;' : ''}" title="${j ? 'Ganas ~$' + (p.precio - j.rate * p.cantidad / 1000).toFixed(2) : ''}">
+        <b>${p.cantidad.toLocaleString('en-US')}</b> $<input type="number" step="0.01" value="${Number(p.precio) || 0}" style="width:66px;padding:4px 6px;" onchange="smmGuardarProd('${p._id}',{precio:Number(this.value)||0})">
+        <button type="button" title="${p.activo === false ? 'Mostrar' : 'Ocultar'} este paquete" onclick="smmGuardarProd('${p._id}',{activo:${p.activo === false}})" style="border:0;background:none;cursor:pointer;color:var(--text-soft);padding:2px 4px;"><i class="fa-solid ${p.activo === false ? 'fa-eye' : 'fa-eye-slash'}"></i></button></label>`).join('')}</div></td></tr>`; }).join('')}
     </tbody></table></div>
-    <div style="font-size:11.5px;color:var(--text-soft);margin-top:8px;">Copia el ID desde <a href="https://justanotherpanel.com/services" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">justanotherpanel.com/services</a> y pégalo aquí. El panel consulta ese servicio una sola vez y lo vuelve a revisar cada 7 días.</div>
+    <div style="font-size:11.5px;color:var(--text-soft);margin-top:8px;">Copia el ID desde <a href="https://justanotherpanel.com/services" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">justanotherpanel.com/services</a> y pégalo una vez por red y tipo; sirve para todos sus paquetes y para cantidades libres. El panel consulta ese servicio una sola vez y lo revisa cada 7 días.</div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
       <select id="smm-n-red" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_REDES).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select>
       <select id="smm-n-tipo" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);">${Object.entries(SMM_TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -3327,7 +3334,9 @@ async function smmGuardarProd(id, cambios) {
 async function smmAgregarProd() {
   const cant = parseInt(document.getElementById('smm-n-cant').value, 10), precio = Number(document.getElementById('smm-n-precio').value);
   if (!cant || !precio) return toast('Pon cantidad y precio', 'err');
-  await db.collection('smmProductos').add({ red: document.getElementById('smm-n-red').value, tipo: document.getElementById('smm-n-tipo').value, cantidad: cant, precio, servicioJap: '', activo: true, orden: _smm.productos.length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+  const red = document.getElementById('smm-n-red').value, tipo = document.getElementById('smm-n-tipo').value;
+  const her = _smm.productos.find(p => p.red === red && p.tipo === tipo && p.servicioJap);
+  await db.collection('smmProductos').add({ red, tipo, cantidad: cant, precio, servicioJap: her ? her.servicioJap : '', ...(her && her.japInfo ? { japInfo: her.japInfo, japInfoAt: her.japInfoAt || Date.now() } : {}), activo: true, orden: _smm.productos.length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   renderSmm();
 }
 // Consulta a JAP solo los servicios indicados y guarda su nombre/precio en el paquete (sin bajar la lista completa)
@@ -3343,14 +3352,17 @@ async function smmInfoServicios(prods) {
     return db.collection('smmProductos').doc(p._id).update(upd).catch(() => {});
   }));
 }
-async function smmAsignarServicio(id, servicioJap) {
-  const p = _smm.productos.find(x => x._id === id); if (!p) return;
+async function smmAsignarServicio(red, tipo, servicioJap) {
+  const grupo = _smm.productos.filter(p => p.red === red && p.tipo === tipo);
+  if (!grupo.length) return;
   try {
-    await db.collection('smmProductos').doc(id).update({ servicioJap });
-    p.servicioJap = servicioJap; p.japInfo = null; p.japInfoNoExiste = false;
+    const lote = db.batch();
+    grupo.forEach(p => { lote.update(db.collection('smmProductos').doc(p._id), { servicioJap }); Object.assign(p, { servicioJap, japInfo: null, japInfoNoExiste: false }); });
+    await lote.commit();
     smmPintar();
-    if (servicioJap) await smmInfoServicios([p]);
-    toast(p.japInfoNoExiste ? 'Ese ID no existe en JAP' : 'Servicio asignado', p.japInfoNoExiste ? 'err' : 'ok');
+    if (servicioJap) await smmInfoServicios(grupo);
+    const malo = grupo[0].japInfoNoExiste;
+    toast(!servicioJap ? 'ID quitado' : (malo ? 'Ese ID no existe en JAP' : `ID asignado a ${grupo.length} paquetes`), malo ? 'err' : 'ok');
     smmPintar();
   } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
