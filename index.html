@@ -1525,6 +1525,8 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .smm-resumen b { font-size:15px; }
 .smm-tabla { width:100%; border-collapse:collapse; font:13px 'Plus Jakarta Sans',sans-serif; }
 .smm-l { display:block; font-size:9.5px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
+.smm-in { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font:13px 'Plus Jakarta Sans',sans-serif; background:#f8fafc; }
+.smm-in:focus { outline:none; border-color:var(--blue); background:#fff; }
 .smm-tabla th { text-align:left; font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); padding:10px 12px; border-bottom:1px solid var(--border); }
 .smm-tabla td { padding:10px 12px; border-top:1px solid #f1f5f9; vertical-align:middle; }
 .smm-tabla input { width:100%; padding:7px 9px; border:1.5px solid var(--border); border-radius:8px; font:13px 'Plus Jakarta Sans',sans-serif; background:#f8fafc; }
@@ -3178,51 +3180,88 @@ function _smmComoConectar() {
       <li>Vuelve aquí y toca <b>Actualizar</b>.</li>
     </ol></div>`;
 }
+// Producto que da el servicio de JAP para esta red y tipo (el del paquete elegido o el primero con ID)
+function _smmProdServicio() {
+  const s = _smm.sel;
+  const prods = _smm.productos.filter(p => p.activo !== false && p.red === s.red && p.tipo === s.tipo);
+  return prods.find(p => p._id === s.id && p.servicioJap) || prods.find(p => p.servicioJap) || null;
+}
+function _smmTotal() { return (_smm.destinos || []).reduce((a, d) => a + (parseInt(d.cant, 10) || 0), 0); }
+function _smmResumen() {
+  const s = _smm.sel, base = _smmProdServicio(), total = _smmTotal();
+  const jap = base && base.japInfo && String(base.japInfo.service) === String(base.servicioJap) ? base.japInfo : null;
+  const costo = jap ? jap.rate * total / 1000 : null;
+  const precio = Number(_smm.precio) || 0;
+  const n = (_smm.destinos || []).filter(d => d.link && parseInt(d.cant, 10) > 0).length;
+  const fuera = jap ? (_smm.destinos || []).filter(d => parseInt(d.cant, 10) > 0 && (parseInt(d.cant, 10) < jap.min || parseInt(d.cant, 10) > jap.max)) : [];
+  return `<div>${_smmRed(s.red)} · <b>${total.toLocaleString('en-US')} ${SMM_TIPOS[s.tipo].toLowerCase()}</b> en ${n} cuenta${n !== 1 ? 's' : ''} · le cobras <b>${_smmUsd(precio)}</b>${costo != null ? ` · te cuesta ~<b>${_smmUsd(costo)}</b> · ganas ~<b style="color:var(--green-dark);">${_smmUsd(precio - costo)}</b>` : ''}
+      ${!base ? `<div style="color:#b45309;margin-top:4px;">No hay un servicio de JAP asignado para ${SMM_REDES[s.red][0]} · ${SMM_TIPOS[s.tipo]}. Ponlo en "Mis servicios".</div>` : `<div style="color:var(--text-soft);margin-top:4px;">Servicio JAP #${esc(base.servicioJap)}${jap ? ` · ${esc(jap.name)} · mín ${jap.min.toLocaleString('en-US')} / máx ${jap.max.toLocaleString('en-US')} por cuenta` : ''}</div>`}
+      ${fuera.length ? `<div style="color:#b91c1c;margin-top:4px;">Alguna cantidad está fuera del mínimo o máximo que acepta este servicio.</div>` : ''}</div>
+    <button class="hr-btn ok" style="padding:10px 16px;font-size:13px;" ${base && total > 0 && n && !fuera.length ? '' : 'disabled'} onclick="smmEnviar()"><i class="fa-solid fa-paper-plane"></i> Enviar a JustAnotherPanel</button>`;
+}
+function smmRefrescarResumen() { const el = document.getElementById('smm-res'); if (el) el.innerHTML = _smmResumen(); const t = document.getElementById('smm-total'); if (t) t.textContent = _smmTotal().toLocaleString('en-US'); }
+// Elegir paquete: pone la cantidad y el precio del paquete (se pueden cambiar)
+function smmElegirPaquete(id) {
+  _smm.sel.id = id;
+  const p = _smm.productos.find(x => x._id === id);
+  if (p) { _smm.precio = p.precio; _smm.destinos = [{ link: (_smm.destinos || [])[0]?.link || '', cant: p.cantidad }]; }
+  smmPintar();
+}
+function smmDestino(i, campo, valor) { _smm.destinos[i][campo] = valor; smmRefrescarResumen(); }
+function smmAgregarDestino() { _smm.destinos.push({ link: '', cant: '' }); smmPintar(); }
+function smmQuitarDestino(i) { _smm.destinos.splice(i, 1); if (!_smm.destinos.length) _smm.destinos = [{ link: '', cant: '' }]; smmPintar(); }
 function _smmNuevo() {
   const s = _smm.sel;
   const prods = _smm.productos.filter(p => p.activo !== false && p.red === s.red && p.tipo === s.tipo).sort((a, b) => a.cantidad - b.cantidad);
-  if (!prods.find(p => p._id === s.id)) s.id = prods[0]?._id || null;
-  const prod = prods.find(p => p._id === s.id);
-  const jap = prod && prod.servicioJap && prod.japInfo && String(prod.japInfo.service) === String(prod.servicioJap) ? prod.japInfo : null;
-  const costo = jap ? jap.rate * prod.cantidad / 1000 : null;
+  if (!_smm.destinos) { const p0 = prods[0]; _smm.destinos = [{ link: '', cant: p0 ? p0.cantidad : '' }]; _smm.precio = p0 ? p0.precio : 0; s.id = p0?._id || null; }
   const facturas = Object.values(docsMap).filter(d => (d.items || []).some(i => /seguidor|follower|\blikes?\b|me gusta/i.test(i.s || ''))).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 30);
   const cuentas = (window._smmFactura && docsMap[window._smmFactura]?.brief?.cuentas) || [];
+  const ph = s.tipo === 'likes' ? 'Enlace de la publicación' : 'Enlace del perfil o @usuario';
   return `<div class="cb-card" style="padding:18px 20px;">
     <div class="smm-form">
-      <div class="ff full" style="margin:0;"><label>Factura del cliente (opcional, trae el enlace que dejó en su brief)</label>
+      <div class="ff full" style="margin:0;"><label>Factura del cliente (opcional, trae las cuentas que dejó en su brief)</label>
         <select id="smm-fac" onchange="window._smmFactura=this.value;const d=docsMap[this.value];if(d)document.getElementById('smm-cli').value=d.cli||'';smmPintar()">
           <option value="">— Sin factura —</option>${facturas.map(d => `<option value="${esc(d._fsId)}" ${window._smmFactura === d._fsId ? 'selected' : ''}>${esc(d.docId || '')} · ${esc(d.cli || '')} · ${esc((d.items || []).map(i => i.s).join(', ').slice(0, 60))}</option>`).join('')}
         </select></div>
-      <div class="ff full" style="margin:0;"><label>Cliente</label><input id="smm-cli" list="smm-cli-list" value="${esc((window._smmFactura && docsMap[window._smmFactura]?.cli) || '')}" placeholder="Nombre del cliente">
+      <div class="ff full" style="margin:0;"><label>Cliente</label><input id="smm-cli" list="smm-cli-list" value="${esc(_smm.cliente ?? ((window._smmFactura && docsMap[window._smmFactura]?.cli) || ''))}" oninput="_smm.cliente=this.value" placeholder="Nombre del cliente">
         <datalist id="smm-cli-list">${clientesList.map(c => `<option value="${esc([c.nombre, c.apellido].filter(Boolean).join(' '))}">`).join('')}</datalist></div>
-      <div class="full"><label class="smm-l">Red social</label><div class="smm-chips">${Object.keys(SMM_REDES).map(r => `<button type="button" class="smm-chip ${s.red === r ? 'on' : ''}" onclick="_smm.sel.red='${r}';smmPintar()">${_smmRed(r)}</button>`).join('')}</div></div>
-      <div class="full"><label class="smm-l">Servicio</label><div class="smm-chips">${Object.entries(SMM_TIPOS).map(([k, v]) => `<button type="button" class="smm-chip ${s.tipo === k ? 'on' : ''}" onclick="_smm.sel.tipo='${k}';smmPintar()">${v}</button>`).join('')}</div></div>
-      <div class="full"><label class="smm-l">Paquete</label><div class="smm-chips">${prods.length ? prods.map(p => `<button type="button" class="smm-chip ${s.id === p._id ? 'on' : ''}" onclick="_smm.sel.id='${p._id}';smmPintar()">${p.cantidad.toLocaleString('en-US')} <small>${_smmUsd(p.precio)}</small></button>`).join('') : '<span style="font-size:12px;color:var(--text-soft);">No hay paquetes para esta red. Agrégalos en "Mis servicios".</span>'}</div></div>
-      <div class="ff full" style="margin:0;"><label>${s.tipo === 'likes' ? 'Enlace de la publicación' : 'Enlace del perfil o @usuario'}</label><input id="smm-link" placeholder="${s.tipo === 'likes' ? 'https://www.instagram.com/p/...' : 'https://www.instagram.com/usuario o @usuario'}">
-        ${cuentas.length ? `<div class="smm-chips" style="margin-top:8px;">${cuentas.map(c => `<button type="button" class="smm-chip" onclick="document.getElementById('smm-link').value=this.dataset.u" data-u="${esc(c.usuario)}">${esc(c.red)}: ${esc(c.usuario)}${c.cantidad ? ` <small>${esc(c.cantidad)}</small>` : ''}</button>`).join('')}</div>` : ''}</div>
-      <div class="full smm-resumen">
-        <div>${prod ? `${_smmRed(prod.red)} · <b>${prod.cantidad.toLocaleString('en-US')} ${SMM_TIPOS[prod.tipo].toLowerCase()}</b> · le cobras <b>${_smmUsd(prod.precio)}</b>${costo != null ? ` · te cuesta ~<b>${_smmUsd(costo)}</b> · ganas ~<b style="color:var(--green-dark);">${_smmUsd(prod.precio - costo)}</b>` : ''}` : 'Elige un paquete'}
-          ${prod && !prod.servicioJap ? `<div style="color:#b45309;margin-top:4px;">Este paquete aún no tiene un servicio de JAP asignado. Ponlo en "Mis servicios".</div>` : ''}${prod && prod.servicioJap ? `<div style="color:var(--text-soft);margin-top:4px;">Servicio JAP #${esc(prod.servicioJap)}${jap ? ` · ${esc(jap.name)}` : ''}</div>` : ''}</div>
-        <button class="hr-btn ok" style="padding:10px 16px;font-size:13px;" ${prod && prod.servicioJap ? '' : 'disabled'} onclick="smmEnviar()"><i class="fa-solid fa-paper-plane"></i> Enviar a JustAnotherPanel</button>
-      </div>
+      <div class="full"><label class="smm-l">Red social</label><div class="smm-chips">${Object.keys(SMM_REDES).map(r => `<button type="button" class="smm-chip ${s.red === r ? 'on' : ''}" onclick="_smm.sel.red='${r}';_smm.destinos=null;smmPintar()">${_smmRed(r)}</button>`).join('')}</div></div>
+      <div class="full"><label class="smm-l">Servicio</label><div class="smm-chips">${Object.entries(SMM_TIPOS).map(([k, v]) => `<button type="button" class="smm-chip ${s.tipo === k ? 'on' : ''}" onclick="_smm.sel.tipo='${k}';_smm.destinos=null;smmPintar()">${v}</button>`).join('')}</div></div>
+      <div class="full"><label class="smm-l">Paquete vendido (pone cantidad y precio; puedes cambiarlos abajo)</label><div class="smm-chips">${prods.length ? prods.map(p => `<button type="button" class="smm-chip ${s.id === p._id ? 'on' : ''}" onclick="smmElegirPaquete('${p._id}')">${p.cantidad.toLocaleString('en-US')} <small>${_smmUsd(p.precio)}</small></button>`).join('') : '<span style="font-size:12px;color:var(--text-soft);">No hay paquetes para esta red. Agrégalos en "Mis servicios".</span>'}</div></div>
+      <div class="full"><label class="smm-l">Cuentas y cantidad para cada una</label>
+        ${_smm.destinos.map((d, i) => `<div style="display:grid;grid-template-columns:1fr 150px auto;gap:8px;margin-bottom:8px;">
+          <input class="smm-in" value="${esc(d.link || '')}" placeholder="${ph}" oninput="smmDestino(${i},'link',this.value.trim())">
+          <input class="smm-in" type="number" min="1" value="${esc(String(d.cant ?? ''))}" placeholder="Cantidad" oninput="smmDestino(${i},'cant',this.value)">
+          <button type="button" class="hr-btn" style="color:#b91c1c;border-color:rgba(185,28,28,.25);" title="Quitar" onclick="smmQuitarDestino(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join('')}
+        ${cuentas.length ? `<div class="smm-chips" style="margin:2px 0 8px;">${cuentas.map(c => `<button type="button" class="smm-chip" title="Agregar esta cuenta" onclick="_smm.destinos=_smm.destinos.filter(x=>x.link);_smm.destinos.push({link:this.dataset.u,cant:this.dataset.c});smmPintar()" data-u="${esc(c.usuario)}" data-c="${esc(String(parseInt(c.cantidad, 10) || ''))}">+ ${esc(c.red)}: ${esc(c.usuario)}${c.cantidad ? ` <small>${esc(c.cantidad)}</small>` : ''}</button>`).join('')}</div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="hr-btn" style="color:var(--blue);border-color:rgba(20,56,204,.25);" onclick="smmAgregarDestino()"><i class="fa-solid fa-plus"></i> Agregar otra cuenta</button>
+          <div style="font-size:12.5px;">Total: <b id="smm-total">${_smmTotal().toLocaleString('en-US')}</b> · Precio de venta $ <input class="smm-in" type="number" step="0.01" style="width:110px;display:inline-block;" value="${Number(_smm.precio) || 0}" oninput="_smm.precio=this.value;smmRefrescarResumen()"></div>
+        </div></div>
+      <div class="full smm-resumen" id="smm-res">${_smmResumen()}</div>
     </div></div>`;
 }
 async function smmEnviar() {
-  const prod = _smm.productos.find(p => p._id === _smm.sel.id);
-  const link = document.getElementById('smm-link').value.trim(), cli = document.getElementById('smm-cli').value.trim();
-  if (!prod || !prod.servicioJap) return toast('Este paquete no tiene servicio de JAP asignado', 'err');
-  if (!link) return toast('Escribe el enlace o el usuario', 'err');
-  if (!confirm(`¿Enviar ${prod.cantidad.toLocaleString('en-US')} ${SMM_TIPOS[prod.tipo].toLowerCase()} de ${SMM_REDES[prod.red][0]} a:\n${link}\n\nSe descuenta de tu saldo en JustAnotherPanel.`)) return;
-  try {
-    const d = await smmApi('add', { service: prod.servicioJap, link, quantity: prod.cantidad });
-    const jap = prod.japInfo && String(prod.japInfo.service) === String(prod.servicioJap) ? prod.japInfo : null;
-    await db.collection('smmPedidos').add({ cliente: cli, facturaId: window._smmFactura || '', red: prod.red, tipo: prod.tipo, cantidad: prod.cantidad, precio: Number(prod.precio) || 0,
-      link, servicioJap: String(prod.servicioJap), japOrder: String(d.order || ''), estado: 'Pending', costo: jap ? jap.rate * prod.cantidad / 1000 : 0,
-      refill: jap ? !!jap.refill : null, creadoPor: currentUser?.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    toast(`Pedido enviado · JAP #${d.order}`, 'ok');
-    document.getElementById('smm-link').value = '';
-    renderSmm();
-  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); }
+  const base = _smmProdServicio(), cli = (document.getElementById('smm-cli').value || '').trim();
+  const destinos = _smm.destinos.map(d => ({ link: (d.link || '').trim(), cant: parseInt(d.cant, 10) || 0 })).filter(d => d.link && d.cant > 0);
+  const total = destinos.reduce((a, d) => a + d.cant, 0), precio = Number(_smm.precio) || 0;
+  if (!base) return toast('No hay servicio de JAP asignado para esta red', 'err');
+  if (!destinos.length) return toast('Escribe al menos una cuenta con su cantidad', 'err');
+  const tipo = SMM_TIPOS[_smm.sel.tipo].toLowerCase(), red = SMM_REDES[_smm.sel.red][0];
+  if (!confirm(`¿Enviar a JustAnotherPanel?\n\n${destinos.map(d => `• ${d.cant.toLocaleString('en-US')} ${tipo} → ${d.link}`).join('\n')}\n\n${red} · total ${total.toLocaleString('en-US')} · se descuenta de tu saldo en JAP.`)) return;
+  const jap = base.japInfo && String(base.japInfo.service) === String(base.servicioJap) ? base.japInfo : null;
+  const grupo = Date.now().toString(36);
+  let ok = 0;
+  for (const d of destinos) {
+    try {
+      const r = await smmApi('add', { service: base.servicioJap, link: d.link, quantity: d.cant });
+      await db.collection('smmPedidos').add({ cliente: cli, facturaId: window._smmFactura || '', red: _smm.sel.red, tipo: _smm.sel.tipo, cantidad: d.cant,
+        precio: total ? Math.round(precio * d.cant / total * 100) / 100 : 0, link: d.link, servicioJap: String(base.servicioJap), japOrder: String(r.order || ''), estado: 'Pending',
+        costo: jap ? jap.rate * d.cant / 1000 : 0, refill: jap ? !!jap.refill : null, grupo, creadoPor: currentUser?.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      ok++;
+    } catch (e) { toast(`No se pudo enviar ${d.link}: ${e.message}`, 'err'); }
+  }
+  if (ok) { toast(`${ok} pedido${ok > 1 ? 's' : ''} enviado${ok > 1 ? 's' : ''} a JAP`, 'ok'); _smm.destinos = null; _smm.cliente = null; renderSmm(); }
 }
 const SMM_EST = { Pending: ['Pendiente', '#fffbeb', '#b45309'], 'In progress': ['En proceso', '#eff6ff', '#1d4ed8'], Processing: ['Procesando', '#eff6ff', '#1d4ed8'], Completed: ['Completado', '#ecfdf5', '#047857'], Partial: ['Parcial', '#fff7ed', '#c2410c'], Canceled: ['Cancelado', '#fef2f2', '#b91c1c'], Error: ['Error', '#fef2f2', '#b91c1c'] };
 function _smmPedidos() {
