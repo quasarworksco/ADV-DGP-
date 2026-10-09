@@ -1343,6 +1343,33 @@
   .rw-row { grid-template-columns:1fr; }
   .rw-acc { justify-content:flex-start; }
 }
+
+/* ── Menú lateral en computadora + fondo gris suave (más contraste, menos vacío) ── */
+.nav-group { display:none; }
+:root { --side-w:232px; }
+@media (max-width: 1199px) { :root { --side-w:200px; } }
+@media (min-width: 900px) {
+  body { background:#eef1f7; }
+  body::before { opacity:.12; }
+  body::after { display:none; }
+  .header { background:rgba(255,255,255,0.97); }
+  .nav-tabs {
+    position:fixed; top:var(--hdr-h, 71px); left:0; bottom:0; width:var(--side-w); z-index:150;
+    flex-direction:column; flex-wrap:nowrap; justify-content:flex-start; gap:2px;
+    padding:14px 12px 24px; overflow-y:auto; scrollbar-width:thin;
+    background:#0b1640; border-bottom:0; border-right:1px solid #0b1640; backdrop-filter:none;
+  }
+  .nav-group { display:block; font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:rgba(255,255,255,.38); padding:16px 12px 6px; }
+  .nav-group:first-child { padding-top:4px; }
+  .nav-tab, .nav-tab:hover { width:100%; padding:10px 12px; border:0; border-radius:10px; font-size:13px; letter-spacing:.2px; text-transform:none; font-weight:500; color:rgba(255,255,255,.72); gap:12px; text-align:left; }
+  .nav-tab > i, .nav-tab > svg { display:inline-block !important; width:18px; text-align:center; font-size:14px; opacity:.85; }
+  .nav-tab:hover { background:rgba(255,255,255,.07); color:#fff; }
+  .nav-tab.active { background:var(--blue); color:#fff; border:0; box-shadow:0 6px 18px rgba(20,56,204,.35); }
+  .nav-tab.active > i { opacity:1; }
+  .nav-tab > span[id$="-badge"] { margin-left:auto !important; }
+  #app-shell .page { margin-left:var(--side-w); }
+  .fact-main, .dash-main, .proy-main { max-width:1240px; padding:24px 28px; }
+}
 </style>
 </head>
 <body>
@@ -1423,14 +1450,13 @@
 
 <!-- NAVIGATION -->
 <nav class="nav-tabs">
-  <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
-    <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" onclick="switchPage('portal', this)">
-    <i class="fa-solid fa-user-shield"></i> Portal<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
+  <div class="nav-group">Resumen</div>
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
     <i class="fa-solid fa-chart-pie"></i> Dashboard
+  </button>
+  <div class="nav-group">Ventas</div>
+  <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
+    <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('clientes', this)">
     <i class="fa-solid fa-address-book"></i> Clientes
@@ -1438,14 +1464,19 @@
   <button class="nav-tab" onclick="switchPage('suscripciones', this)">
     <i class="fa-solid fa-rotate"></i> Suscripciones<span id="sus-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
+  <div class="nav-group">Proyectos</div>
   <button class="nav-tab" onclick="switchPage('proyectos', this)">
     <i class="fa-solid fa-layer-group"></i> Proyectos
   </button>
-  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  <button class="nav-tab" onclick="switchPage('portal', this)">
+    <i class="fa-solid fa-user-shield"></i> Portal<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
+  <div class="nav-group">Marketing</div>
   <button class="nav-tab" onclick="switchPage('resenasweb', this)">
     <i class="fa-solid fa-star"></i> Reseñas web<span id="resenasweb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)">
+    <i class="fa-solid fa-square-poll-vertical"></i> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('metaads', this)">
     <i class="fa-brands fa-meta"></i> Meta Ads
@@ -2551,6 +2582,15 @@ function switchPage(page, btn) {
   if (page === 'metaads')    renderMetaAds();
   if (page === 'miweb')      renderMiWeb();
 }
+
+/* Alto real del encabezado para ubicar el menú lateral */
+(function () {
+  const h = document.querySelector('.header');
+  if (!h) return;
+  const set = () => document.documentElement.style.setProperty('--hdr-h', (h.offsetHeight || 71) + 'px');
+  if (window.ResizeObserver) new ResizeObserver(set).observe(h);
+  window.addEventListener('resize', set); set();
+})();
 
 /* ═══════════════════════════════════════════════════════
    RESEÑAS DE LA WEB — aprobar o rechazar antes de publicar
