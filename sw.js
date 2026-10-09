@@ -26,6 +26,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('/contenido/')) return;
   if (e.request.url.includes('firestore') || e.request.url.includes('googleapis.com/identitytoolkit')) return;
   e.respondWith(
     fetch(e.request).catch(() =>

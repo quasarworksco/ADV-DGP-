@@ -905,6 +905,20 @@
 
 /* ─── PROYECTOS ─── */
 .proy-main { max-width:900px; margin:0 auto; padding:28px 24px; }
+.cd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+.cd-card { background:var(--white,#fff); border:1px solid var(--border); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.cd-prev { background:#eef2ff; display:flex; align-items:center; justify-content:center; aspect-ratio:4/5; overflow:hidden; }
+.cd-prev img, .cd-prev video { width:100%; height:100%; object-fit:contain; display:block; background:#eef2ff; }
+.cd-info { padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; flex:1; }
+.cd-t { font-size:13px; font-weight:600; color:var(--text); line-height:1.3; }
+.cd-tags { display:flex; flex-wrap:wrap; gap:5px; }
+.cd-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; background:#eef2ff; color:#1438cc; }
+.cd-tag.v { background:#fdf2f8; color:#be185d; }
+.cd-acts { display:flex; gap:6px; margin-top:auto; }
+.cd-acts a, .cd-acts button { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; padding:9px 8px; border-radius:9px; cursor:pointer; text-decoration:none; font-family:inherit; }
+.cd-dl { background:#1438cc; color:#fff; border:none; }
+.cd-cp { background:transparent; color:var(--text); border:1.5px solid var(--border); }
+@media (max-width:600px){ .cd-grid { grid-template-columns:1fr 1fr; gap:10px; } .cd-info { padding:10px; } .cd-acts { flex-direction:column; } }
 .proy-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
 .proy-filter-row { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
 .proy-filter-btn { padding:7px 16px; border:1.5px solid var(--border); border-radius:20px; background:var(--off); color:var(--text-mid); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s; }
@@ -1078,6 +1092,24 @@
 .pt-send { border:0; background:var(--blue); color:white; border-radius:10px; padding:0 16px; font-weight:600; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:'Plus Jakarta Sans',sans-serif; }
 .pt-hint { font-size:11px; margin-top:6px; color:var(--green-dark); display:flex; align-items:center; gap:5px; }
 .pt-hint.none { color:var(--text-soft); }
+.pt-main > * { min-width:0; }
+.pt-detail, .pt-side { overflow-wrap:anywhere; }
+.pt-back { display:none; }
+@media (max-width:700px) {
+  #page-portal .pt-main { padding:10px 8px; gap:10px; }
+  .pt-main.has-sel .pt-side { display:none; }
+  .pt-main:not(.has-sel) .pt-detail { display:none; }
+  .pt-back { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; margin-bottom:10px; cursor:pointer; font-family:inherit; }
+  .pt-head { padding:14px 16px; }
+  .pt-head-name { font-size:22px; }
+  .pt-code { font-size:13px; letter-spacing:2px; }
+  .pt-head-actions { display:grid; grid-template-columns:1fr 1fr; }
+  .pt-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; border-bottom:0; overflow:visible; }
+  .pt-tab { justify-content:center; padding:9px 4px; font-size:10px; letter-spacing:.5px; background:white; border:1px solid var(--border); border-radius:9px; }
+  .pt-tab.active { background:var(--blue); color:white; border-color:var(--blue); }
+  .pt-hbtn { justify-content:center; padding:8px 6px; font-size:11px; }
+  #page-portal .pt-chat { height:calc(100dvh - 240px); min-height:320px; }
+}
 @media (max-width:900px) {
   .pt-main { grid-template-columns:1fr; padding:14px 12px; }
   .pt-side { position:static; max-height:340px; }
@@ -1654,6 +1686,9 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
   <button class="nav-tab" onclick="switchPage('miweb', this)">
     <i class="fa-solid fa-globe"></i> Mi web
   </button>
+  <button class="nav-tab" onclick="switchPage('contenido', this)">
+    <i class="fa-solid fa-photo-film"></i> Contenido digital
+  </button>
 </nav>
 <div class="nav-overlay" onclick="cerrarMenuMovil()"></div>
 
@@ -2035,7 +2070,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
         <div class="panel-title-v" style="margin-bottom:2px;">Encuestas de Satisfacción</div>
         <div style="font-size:11px;color:var(--text-soft);">Respuestas de clientes enviadas desde sus facturas</div>
       </div>
-      <button class="btn-logout" onclick="renderEncuestas()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+      <button class="btn-logout" onclick="renderEncuestas(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
     </div>
     <div id="encuestas-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;"></div>
     <div id="encuestas-list"></div>
@@ -2068,6 +2103,19 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-contenido" class="page">
+  <div class="proy-main" style="max-width:1100px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Contenido digital</div>
+        <div style="font-size:11px;color:var(--text-soft);">Videos e imágenes de DGP listos para historias, publicaciones y anuncios. Descárgalos y copia el texto sugerido para publicarlos.</div>
+      </div>
+    </div>
+    <div class="db-pills" id="cd-filtros" style="margin-bottom:16px;flex-wrap:wrap;"></div>
+    <div id="cd-grid" class="cd-grid"></div>
+  </div>
+</div>
+
 <div id="page-smm" class="page">
   <div class="proy-main">
     <div class="proy-header">
@@ -2356,6 +2404,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
+try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
 // Cloudinary — reemplaza a Firebase Storage (gratis hasta 25GB)
 const CLOUDINARY_CLOUD_NAME   = 'dgden7fws';
 const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
@@ -2821,6 +2870,8 @@ function switchPage(page, btn) {
   if (page === 'metaads')    renderMetaAds();
   if (page === 'smm')        renderSmm();
   if (page === 'miweb')      renderMiWeb();
+  if (page === 'contenido')  renderContenido();
+  if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
 }
 
 
@@ -2931,6 +2982,14 @@ function _rwBadge(n) {
   if (!b) return;
   b.textContent = n; b.style.display = n ? 'inline' : 'none';
 }
+// Todas las reseñas, compartidas entre Reseñas web, Mi web y Dashboard (se releen como mucho cada 5 min)
+let _rwCache = { t: 0, snap: null };
+async function rwTodas(fresco) {
+  if (!fresco && _rwCache.snap && Date.now() - _rwCache.t < 5 * 60e3) return _rwCache.snap;
+  const snap = await db.collection('resenasWeb').get();
+  _rwCache = { t: Date.now(), snap };
+  return snap;
+}
 // Al entrar al panel: muestra cuántas reseñas esperan aprobación
 function cargarBadgeResenasWeb() {
   db.collection('resenasWeb').where('estado', '==', 'pendiente').get()
@@ -2943,7 +3002,7 @@ async function renderResenasWeb(fresco) {
   try {
     // La primera vez el bot importa las reseñas antiguas del Google Sheet
     if (fresco || !_rwDocs.length) await fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {});
-    const snap = await db.collection('resenasWeb').get();
+    const snap = await rwTodas(fresco || !_rwDocs.length);
     _rwDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (b.fecha?.toMillis?.() || 0) - (a.fecha?.toMillis?.() || 0));
   } catch (e) {
@@ -2994,7 +3053,7 @@ function _rwPintar() {
 async function rwCambiar(id, estado) {
   try {
     await db.collection('resenasWeb').doc(id).update({ estado, revisadaEl: firebase.firestore.FieldValue.serverTimestamp(), revisadaPor: currentUser?.email || '' });
-    const r = _rwDocs.find(x => x.id === id); if (r) r.estado = estado;
+    const r = _rwDocs.find(x => x.id === id); if (r) r.estado = estado; _rwCache.t = 0;
     fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {}); // refresca lo que muestra la web
     toast(estado === 'aprobada' ? 'Publicada en la web ✓' : 'Ya no se muestra en la web', 'ok');
     renderResenasWebLocal();
@@ -3004,7 +3063,7 @@ async function rwBorrar(id) {
   if (!confirm('¿Borrar esta reseña definitivamente? Si solo quieres que no se vea, usa "Rechazar".')) return;
   try {
     await db.collection('resenasWeb').doc(id).delete();
-    _rwDocs = _rwDocs.filter(x => x.id !== id);
+    _rwDocs = _rwDocs.filter(x => x.id !== id); _rwCache.t = 0;
     fetch(RW_WORKER + '/resenas-web?fresco=1').catch(() => {});
     toast('Reseña borrada', 'ok');
     renderResenasWebLocal();
@@ -3098,10 +3157,58 @@ async function renderMetaAds() {
 
 
 /* ═══════════════════════════════════════════════════════
+   CONTENIDO DIGITAL — videos e imágenes para redes (archivos en /contenido, sin lecturas de Firestore)
+═══════════════════════════════════════════════════════ */
+const CONTENIDO = [
+  { tipo: 'video', lang: 'es', titulo: 'Video historias · Páginas web', formato: 'Historia 9:16 · MP4 · 30 s', archivo: 'contenido/video-historias-web-es.mp4', poster: 'contenido/video-historias-web-es.jpg',
+    texto: '¿Tu negocio aún no tiene página web? En DGP Global Group te la dejamos lista en 48 horas: diseño profesional, en español e inglés, con botón de WhatsApp y lista para aparecer en Google. Escríbenos hoy por DM o al WhatsApp +1 (239) 823-1738. dgpglobalgroup.com' },
+  { tipo: 'video', lang: 'en', titulo: 'Story video · Websites', formato: 'Story 9:16 · MP4 · 30 s', archivo: 'contenido/video-historias-web-en.mp4', poster: 'contenido/video-historias-web-en.jpg',
+    texto: "Does your business have a website yet? At DGP Global Group we get yours live in 48 hours: professional design, in English and Spanish, with a WhatsApp button and ready for Google. Message us today by DM or WhatsApp +1 (239) 823-1738. dgpglobalgroup.com" },
+  { tipo: 'imagen', lang: 'es', titulo: 'Tu página web lista en 48 horas', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-1-48h-es.jpg',
+    texto: 'Tu página web lista en 48 horas. Diseño profesional, bilingüe y pensado para que tus clientes te escriban. Escríbenos hoy y empezamos. dgpglobalgroup.com' },
+  { tipo: 'imagen', lang: 'es', titulo: 'Portafolio · Negocios que ya venden', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-2-portafolio-es.jpg',
+    texto: 'Negocios reales que ya venden con su página web. ¿El tuyo es el siguiente? Mira nuestro portafolio en dgpglobalgroup.com y escríbenos.' },
+  { tipo: 'imagen', lang: 'es', titulo: '¿Tu negocio no aparece en Google?', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-3-google-es.jpg',
+    texto: '¿Tu negocio no aparece en Google? Te hacemos una web que sí trae clientes: lista en 24–48 horas, en español e inglés, con WhatsApp y preparada para Google y Maps. dgpglobalgroup.com' },
+  { tipo: 'imagen', lang: 'en', titulo: 'Your website live in 48 hours', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-1-48h-en.jpg',
+    texto: 'Your website live in 48 hours. Professional, bilingual and built so customers reach out to you. Message us today. dgpglobalgroup.com' },
+  { tipo: 'imagen', lang: 'en', titulo: 'Portfolio · Businesses already selling', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-2-portafolio-en.jpg',
+    texto: 'Real businesses already selling with their website. Is yours next? See our portfolio at dgpglobalgroup.com and message us.' },
+  { tipo: 'imagen', lang: 'en', titulo: 'Is your business missing on Google?', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-3-google-en.jpg',
+    texto: 'Is your business missing on Google? We build a website that actually brings customers: live in 24–48 hours, English and Spanish, WhatsApp and ready for Google and Maps. dgpglobalgroup.com' }
+];
+let _cdFiltro = 'todo';
+function renderContenido() {
+  const filtros = [['todo', 'Todo'], ['video', 'Videos'], ['imagen', 'Imágenes'], ['es', 'Español'], ['en', 'English']];
+  document.getElementById('cd-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_cdFiltro === k ? 'active' : ''}" onclick="_cdFiltro='${k}';renderContenido()">${v}</button>`).join('');
+  const lista = CONTENIDO.map((c, i) => ({ ...c, i })).filter(c => _cdFiltro === 'todo' || c.tipo === _cdFiltro || c.lang === _cdFiltro);
+  const icDl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>';
+  const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  document.getElementById('cd-grid').innerHTML = lista.map(c => `
+    <div class="cd-card">
+      <div class="cd-prev" ${c.tipo === 'video' ? 'style="aspect-ratio:9/16"' : ''}>${c.tipo === 'video'
+        ? `<video src="${c.archivo}" poster="${c.poster}" controls playsinline muted preload="none"></video>`
+        : `<img src="${c.archivo}" alt="${esc(c.titulo)}" loading="lazy">`}</div>
+      <div class="cd-info">
+        <div class="cd-t">${esc(c.titulo)}</div>
+        <div class="cd-tags"><span class="cd-tag ${c.tipo === 'video' ? 'v' : ''}">${esc(c.formato)}</span><span class="cd-tag">${c.lang === 'es' ? 'Español' : 'English'}</span></div>
+        <div class="cd-acts">
+          <a class="cd-dl" href="${c.archivo}" download="${c.archivo.split('/').pop()}">${icDl} Descargar</a>
+          <button class="cd-cp" onclick="cdCopiar(${c.i})">${icCp} Copiar texto</button>
+        </div>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>';
+}
+function cdCopiar(i) {
+  const t = CONTENIDO[i].texto;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Texto copiado', 'ok')).catch(() => { prompt('Copia el texto:', t); });
+}
+
+/* ═══════════════════════════════════════════════════════
    SEGUIDORES Y LIKES — pedidos a JustAnotherPanel (vía el bot; la llave vive en Cloudflare)
    Firestore: smmProductos (lo que vendes y qué servicio de JAP usa) y smmPedidos (historial)
 ═══════════════════════════════════════════════════════ */
-const SMM_REDES = { instagram: ['Instagram', 'fa-brands fa-instagram', '#d6249f'], facebook: ['Facebook', 'fa-brands fa-facebook', '#1877f2'], tiktok: ['TikTok', 'fa-brands fa-tiktok', '#111827'], youtube: ['YouTube', 'fa-brands fa-youtube', '#ff0000'], x: ['X (Twitter)', 'fa-brands fa-x-twitter', '#111827'] };
+const SMM_REDES = { instagram: ['Instagram', 'fa-brands fa-instagram', '#d6249f'], facebook: ['Facebook', 'fa-brands fa-facebook', '#1877f2'], tiktok: ['TikTok', 'fa-brands fa-tiktok', '#111827'] };
 const SMM_TIPOS = { seguidores: 'Seguidores', likes: 'Likes' };
 function _smmBase() {
   const out = [];
@@ -3133,14 +3240,21 @@ async function renderSmm(fresco) {
   if (!body) return;
   body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando...</div>';
   try {
-    const [prods, peds] = await Promise.all([db.collection('smmProductos').get(), db.collection('smmPedidos').orderBy('createdAt', 'desc').limit(60).get()]);
-    if (prods.empty) {
+    // Los productos casi no cambian: se leen una vez por sesión (o al pulsar actualizar)
+    const [prods, peds] = await Promise.all([(_smm.productos && !fresco) ? null : db.collection('smmProductos').get(), db.collection('smmPedidos').orderBy('createdAt', 'desc').limit(60).get()]);
+    if (prods && prods.empty) {
       const lote = db.batch();
       _smmBase().forEach(x => lote.set(db.collection('smmProductos').doc(), { ...x, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
       await lote.commit();
       return renderSmm(fresco);
     }
-    _smm.productos = prods.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    if (prods) {
+      const todos = prods.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // Redes que ya no ofrecemos (YouTube, X): se borran del catálogo
+      const fuera = todos.filter(p => !SMM_REDES[p.red]);
+      if (fuera.length) { const lote = db.batch(); fuera.forEach(p => lote.delete(db.collection('smmProductos').doc(p._id))); lote.commit().catch(() => {}); }
+      _smm.productos = todos.filter(p => SMM_REDES[p.red]).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    }
     _smm.pedidos = peds.docs.map(d => ({ _id: d.id, ...d.data() }));
   } catch (e) { body.innerHTML = `<div style="text-align:center;padding:32px;color:#b91c1c;font-size:13px;">No se pudo cargar: ${esc(e.message)}</div>`; return; }
   smmPintar();
@@ -3337,7 +3451,7 @@ async function smmAgregarProd() {
   const red = document.getElementById('smm-n-red').value, tipo = document.getElementById('smm-n-tipo').value;
   const her = _smm.productos.find(p => p.red === red && p.tipo === tipo && p.servicioJap);
   await db.collection('smmProductos').add({ red, tipo, cantidad: cant, precio, servicioJap: her ? her.servicioJap : '', ...(her && her.japInfo ? { japInfo: her.japInfo, japInfoAt: her.japInfoAt || Date.now() } : {}), activo: true, orden: _smm.productos.length, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-  renderSmm();
+  _smm.productos = null; renderSmm();
 }
 // Consulta a JAP solo los servicios indicados y guarda su nombre/precio en el paquete (sin bajar la lista completa)
 async function smmInfoServicios(prods) {
@@ -3468,8 +3582,9 @@ async function renderMiWeb() {
   try {
     const hace30 = Date.now() - 30 * 864e5;
     const [cli, rw] = await Promise.all([
-      db.collection('clientes').where('origen', '==', 'web').get(),
-      db.collection('resenasWeb').get()
+      Promise.resolve(clientesList.length ? { docs: clientesList.filter(c => c.origen === 'web').map(c => ({ data: () => c })) } : null)
+        .then(r => r || db.collection('clientes').where('origen', '==', 'web').get()),
+      rwTodas()
     ]);
     const web = cli.docs.map(d => d.data());
     const nuevos30 = web.filter(c => (c.createdAt?.toMillis?.() || 0) >= hace30).length;
@@ -4946,7 +5061,7 @@ async function renderResumenGeneral() {
   const extra = { t: Date.now() };
   const tok = await currentUser.getIdToken().catch(() => null);
   await Promise.all([
-    Promise.resolve().then(() => db.collection('resenasWeb').get()).then(s => { const d = s.docs.map(x => x.data()); extra.rw = { pend: d.filter(r => r.estado === 'pendiente').length, pub: d.filter(r => r.estado === 'aprobada').length }; }).catch(() => {}),
+    rwTodas().then(s => { const d = s.docs.map(x => x.data()); extra.rw = { pend: d.filter(r => r.estado === 'pendiente').length, pub: d.filter(r => r.estado === 'aprobada').length }; }).catch(() => {}),
     fetch(`${RW_WORKER}/web-stats?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.resumen) extra.web = d.resumen; else extra.webErr = true; }).catch(() => { extra.webErr = true; }),
     fetch(`${RW_WORKER}/meta-ads?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.total) extra.meta = d.total; else extra.metaErr = true; }).catch(() => { extra.metaErr = true; })
   ]);
@@ -5162,7 +5277,8 @@ function duplicarFactura(fsId) {
 /* ═══════════════════════════════════════════════════════
    ENCUESTAS DE SATISFACCIÓN
 ═══════════════════════════════════════════════════════ */
-function renderEncuestas() {
+let _encCache = { t: 0, snap: null };
+function renderEncuestas(fresco) {
   const listEl  = document.getElementById('encuestas-list');
   const statsEl = document.getElementById('encuestas-stats');
   if (!listEl) return;
@@ -5172,7 +5288,9 @@ function renderEncuestas() {
   const badge = document.getElementById('encuestas-badge');
   if (badge) badge.style.display = 'none';
 
-  db.collection('encuestas').orderBy('fecha', 'desc').get().then(snap => {
+  // Se releen como mucho cada 5 minutos (o al pulsar Actualizar)
+  const usarCache = !fresco && _encCache.snap && Date.now() - _encCache.t < 5 * 60e3;
+  (usarCache ? Promise.resolve(_encCache.snap) : db.collection('encuestas').orderBy('fecha', 'desc').limit(200).get().then(sn => (_encCache = { t: Date.now(), snap: sn }, sn))).then(snap => {
     if (snap.empty) {
       listEl.innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--text-soft);font-size:13px;">No hay encuestas completadas aún.</div>';
       return;
@@ -5308,10 +5426,7 @@ function enviarEmail(fsId) {
 let clientesCache = [];
 
 function initClientes() {
-  db.collection('clientes').orderBy('nombre').get().then(snap => {
-    clientesCache = snap.docs.map(d => d.data().nombre);
-    refreshClientesDatalist();
-  }).catch(() => {});
+  // Los clientes ya llegan por el listener de initClientesCRM (no se leen dos veces)
 }
 
 function saveCliente(nombre) {
@@ -5889,7 +6004,13 @@ function initPortales() {
 }
 
 /* Borra los mensajes del chat con más de 48 h (se ejecuta al abrir el sistema) */
+// Ejecuta una tarea de mantenimiento como máximo una vez cada `horas` por navegador
+function _tocaMantenimiento(clave, horas) {
+  try { const t = Number(localStorage.getItem('dgp_mant_' + clave)) || 0; if (Date.now() - t < horas * 36e5) return false; localStorage.setItem('dgp_mant_' + clave, String(Date.now())); } catch (e) {}
+  return true;
+}
 async function limpiarChatsViejos() {
+  if (!_tocaMantenimiento('chats', 24)) return;
   const corte = firebase.firestore.Timestamp.fromDate(new Date(Date.now() - PT_CHAT_MS));
   let borrados = 0;
   for (const p of portalesList) {
@@ -5963,6 +6084,15 @@ function selectPortal(code, tab) {
   renderPortalDetail();
 }
 
+// Suelta el portal abierto (deja de escuchar sus datos) y en el celular vuelve a la lista
+function ptVolverLista() {
+  _ptUnsubs.forEach(u => u()); _ptUnsubs = [];
+  _ptSub = { proyectos:[], suscripciones:[], archivos:[], mensajes:[] };
+  portalSel = null;
+  renderPortalList(); renderPortalDetail();
+  window.scrollTo(0, 0);
+}
+
 function setPortalTab(t) { portalTab = t; renderPortalDetail(); }
 
 /* ── Detalle ── */
@@ -5981,7 +6111,7 @@ function renderPortalDetail() {
   const el = document.getElementById('pt-detail');
   if (!el) return;
   const p = portalActual();
-  if (!p) { el.innerHTML = '<div class="pt-empty">Selecciona un cliente para ver su portal, o crea uno nuevo.</div>'; return; }
+  if (!p) { document.querySelector('#page-portal .pt-main')?.classList.remove('has-sel'); el.innerHTML = '<div class="pt-empty">Selecciona un cliente para ver su portal, o crea uno nuevo.</div>'; return; }
 
   // Mantener el borrador del chat entre renders
   const draft = document.getElementById('pt-chat-input')?.value || '';
@@ -6009,8 +6139,10 @@ function renderPortalDetail() {
   else if (portalTab === 'archivos') body = ptVArchivos();
   else if (portalTab === 'chat') body = ptVChat(p);
 
+  document.querySelector('#page-portal .pt-main')?.classList.add('has-sel');
   el.innerHTML = `
     <div class="pt-head">
+      <button class="pt-back" onclick="ptVolverLista()">&larr; Portales</button>
       <div class="pt-head-name">${esc(p.nombre || '—')}</div>
       <div class="pt-head-sub">${[p.empresa, p.correo, p.telefono].filter(Boolean).map(esc).join(' · ') || 'Sin datos de contacto'}${p.activo === false ? ' · <strong>DESACTIVADO</strong>' : ''}</div>
       <div class="pt-code">${esc(p._id)}</div>
@@ -7261,6 +7393,7 @@ function actualizarBadgeSuscripciones() {
 async function migrarSuscripcionesPortal() {
   if (_susMigrada || !_susCargadas || !portalesList.length) return;
   _susMigrada = true;
+  if (!_tocaMantenimiento('susMigracion', 24 * 7)) return;
   const existentes = new Set(suscripcionesList.map(s => s._id));
   let n = 0;
   for (const p of portalesList) {
