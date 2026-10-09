@@ -209,6 +209,7 @@ export default {
     if (ruta === '/encuesta') return handleEncuesta(request, env);
     if (ruta === '/resenas-web') return handleResenasWeb(request, env, ctx);
     if (ruta === '/meta-ads') return handleMetaAds(request, env);
+    if (ruta === '/web-stats') return handleWebStats(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -676,7 +677,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-09a';
+const WORKER_VERSION = '2026-10-09b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1962,5 +1963,51 @@ async function handleMetaAds(request, env) {
   } catch (e) {
     console.error('meta-ads', e);
     return json(request, { configurado: true, error: e.message, tokenInvalido: e.meta === 190 }, 502);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ANALÍTICA DE LA WEB (Databuddy): GET /web-stats?periodo=last_30d  (solo equipo)
+//  Secreto: DATABUDDY_API_KEY (clave con permiso read:data)
+//  Opcional: DATABUDDY_WEBSITE_ID (por defecto el de dgpglobalgroup.com)
+// ══════════════════════════════════════════════════════════════
+const DATABUDDY_SITIO_DEFAULT = 'f3a183a0-2636-4c00-afbe-7e7670e99704';
+const DB_PERIODOS = ['today', 'yesterday', 'last_7d', 'last_14d', 'last_30d', 'last_90d', 'this_month', 'last_month', 'this_year'];
+async function handleWebStats(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+  if (!env.DATABUDDY_API_KEY) return json(request, { configurado: false });
+  const url = new URL(request.url);
+  const periodo = DB_PERIODOS.includes(url.searchParams.get('periodo')) ? url.searchParams.get('periodo') : 'last_30d';
+  const sitio = env.DATABUDDY_WEBSITE_ID || DATABUDDY_SITIO_DEFAULT;
+  try {
+    const res = await fetch(`https://api.databuddy.cc/v1/query?website_id=${encodeURIComponent(sitio)}`, {
+      method: 'POST',
+      headers: { 'x-api-key': env.DATABUDDY_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 'panel', preset: periodo, timeZone: 'America/New_York', limit: 8, granularity: 'daily',
+        parameters: ['summary_metrics', 'events_by_date', 'top_pages', 'top_referrers', 'country', 'device_types']
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = res.status === 401 || res.status === 403 ? 'La clave de Databuddy no es válida o no tiene permiso read:data para este sitio.' : (data.error || data.message || 'Databuddy respondió ' + res.status);
+      return json(request, { configurado: true, error: msg }, 502);
+    }
+    const lista = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+    const de = p => (lista.find(x => x.parameter === p)?.data) || [];
+    const fila = r => ({ nombre: String(r.name ?? ''), visitas: Number(r.pageviews) || 0, visitantes: Number(r.visitors) || 0, porcentaje: Number(r.percentage) || 0 });
+    const s = de('summary_metrics')[0] || {};
+    return json(request, {
+      configurado: true, periodo,
+      resumen: { visitas: Number(s.pageviews) || 0, visitantes: Number(s.unique_visitors) || 0, sesiones: Number(s.sessions) || 0, rebote: Number(s.bounce_rate) || 0, duracion: Number(s.median_session_duration) || 0 },
+      diario: de('events_by_date').map(r => ({ fecha: String(r.date || '').slice(0, 10), visitas: Number(r.pageviews) || 0, visitantes: Number(r.visitors) || 0 })),
+      paginas: de('top_pages').map(fila), origenes: de('top_referrers').map(fila), paises: de('country').map(fila), dispositivos: de('device_types').map(fila),
+      actualizado: new Date().toISOString()
+    });
+  } catch (e) {
+    console.error('web-stats', e);
+    return json(request, { configurado: true, error: e.message }, 502);
   }
 }

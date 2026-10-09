@@ -1928,6 +1928,16 @@
       <a class="btn-logout" href="https://dgpglobalgroup.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir web</a>
     </div>
     <div id="mw-stats" class="cb-tiles" style="margin-bottom:18px;"></div>
+    <div class="proy-header" style="margin:6px 0 10px;">
+      <div class="hr-sec-t" style="margin:0;"><span style="background:#059669;"></span>Visitas de la web</div>
+      <div class="db-pills" id="mw-periodos" style="flex-wrap:wrap;">
+        <button class="dash-period-btn" onclick="mwPeriodo('last_7d',this)">7 días</button>
+        <button class="dash-period-btn active" onclick="mwPeriodo('last_30d',this)">30 días</button>
+        <button class="dash-period-btn" onclick="mwPeriodo('this_month',this)">Este mes</button>
+        <button class="dash-period-btn" onclick="mwPeriodo('last_90d',this)">90 días</button>
+      </div>
+    </div>
+    <div id="mw-analitica" style="margin-bottom:22px;"></div>
     <div id="mw-links"></div>
   </div>
 </div>
@@ -2786,15 +2796,86 @@ const MW_LINKS = [
   ['fa-brands fa-google', 'Google Search Console', 'Búsquedas por las que te encuentran', 'https://search.google.com/search-console?resource_id=sc-domain:dgpglobalgroup.com'],
   ['fa-solid fa-location-dot', 'Perfil de Google (Maps)', 'Reseñas, fotos y publicaciones', 'https://business.google.com/'],
   ['fa-solid fa-star', 'Pedir reseña en Google', 'Enlace para mandar a clientes', 'https://g.page/r/CbcyuFX7hqvuEAE/review'],
-  ['fa-solid fa-chart-line', 'Visitas de la web', 'Analítica (Databuddy)', 'https://app.databuddy.cc/'],
+  ['fa-solid fa-chart-line', 'Databuddy completo', 'Todas las estadísticas de visitas', 'https://app.databuddy.cc/'],
   ['fa-solid fa-gauge-high', 'Velocidad de la web', 'Prueba de Google PageSpeed', 'https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fdgpglobalgroup.com%2F'],
   ['fa-solid fa-envelope-open-text', 'Formularios (Formspree)', 'Mensajes del formulario de contacto', 'https://formspree.io/forms'],
   ['fa-brands fa-github', 'Código de la web', 'Repositorio en GitHub', 'https://github.com/quasarworksco/dgpglobal'],
   ['fa-brands fa-meta', 'Meta Business Suite', 'Facebook e Instagram', 'https://business.facebook.com/']
 ];
+
+/* Analítica de la web (Databuddy) dentro de Mi web */
+let _mwPeriodo = 'last_30d';
+function mwPeriodo(p, btn) {
+  _mwPeriodo = p;
+  document.querySelectorAll('#mw-periodos .dash-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderWebStats();
+}
+const _mwBandera = c => /^[A-Z]{2}$/.test(c) ? String.fromCodePoint(...[...c].map(ch => 127397 + ch.charCodeAt(0))) + ' ' : '';
+const _mwPaisNombre = c => { try { return new Intl.DisplayNames(['es'], { type: 'region' }).of(c) || c; } catch (e) { return c; } };
+function _mwDuracion(seg) { seg = Math.round(Number(seg) || 0); return seg >= 60 ? `${Math.floor(seg / 60)} min ${seg % 60}s` : `${seg}s`; }
+function _mwLista(titulo, color, filas, fmt) {
+  const max = Math.max(...filas.map(f => f.visitantes || f.visitas), 1);
+  return `<div class="cb-card" style="padding:14px 16px;">
+    <div class="hr-sec-t" style="margin:0 0 10px;"><span style="background:${color};"></span>${titulo}</div>
+    ${filas.length ? filas.map(f => `<div style="position:relative;display:flex;justify-content:space-between;gap:10px;padding:6px 8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;border-radius:6px;overflow:hidden;">
+      <span style="position:absolute;inset:0;width:${Math.round((f.visitantes || f.visitas) / max * 100)}%;background:${color};opacity:.09;"></span>
+      <span style="position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${fmt(f)}</span>
+      <b style="position:relative;font-variant-numeric:tabular-nums;">${(f.visitantes || f.visitas).toLocaleString('en-US')}</b></div>`).join('')
+      : '<div style="font-size:12px;color:var(--text-soft);padding:6px 0;">Sin datos en este periodo</div>'}
+  </div>`;
+}
+function _mwComoConectar() {
+  return `<div class="cb-card" style="padding:20px 22px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.5px;">Ver las visitas de tu web aquí</div>
+    <div style="font-size:13px;color:var(--text-soft);margin-top:4px;">Tu web ya mide las visitas con Databuddy. Solo falta darle al panel una clave de lectura (una sola vez).</div>
+    <ol class="ma-pasos">
+      <li>Entra a <a href="https://app.databuddy.cc/" target="_blank" rel="noopener">Databuddy</a> → <b>Organization Settings</b> → <b>API Keys</b> → <b>Create API key</b>.</li>
+      <li>Nombre: <code>Panel DGP</code>. Permiso: solo <code>read:data</code>. Copia la clave (empieza con <code>dbdy_</code>; solo se muestra una vez).</li>
+      <li>En <a href="https://dash.cloudflare.com/?to=/:account/workers/services/view/ayudante-dgp-bot/production/settings" target="_blank" rel="noopener">Cloudflare → Workers → ayudante-dgp-bot → Configuración → Variables y secretos</a> agrega un <b>Secreto</b> llamado <code>DATABUDDY_API_KEY</code> y pega la clave.</li>
+      <li>Vuelve aquí y abre de nuevo <b>Mi web</b>.</li>
+    </ol>
+  </div>`;
+}
+async function renderWebStats() {
+  const el = document.getElementById('mw-analitica');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-soft);font-size:13px;">Cargando visitas...</div>';
+  let d;
+  try {
+    const idToken = await currentUser.getIdToken();
+    const res = await fetch(`${RW_WORKER}/web-stats?periodo=${_mwPeriodo}`, { headers: { Authorization: `Bearer ${idToken}` } });
+    d = await res.json();
+    if (!res.ok && !d.configurado) throw new Error(d.error || res.status);
+  } catch (e) {
+    el.innerHTML = `<div style="text-align:center;padding:28px;color:#b91c1c;font-size:13px;">No se pudieron cargar las visitas: ${esc(e.message)}</div>`;
+    return;
+  }
+  if (!d.configurado) { el.innerHTML = _mwComoConectar(); return; }
+  if (d.error) { el.innerHTML = `<div class="cb-card" style="border-color:rgba(185,28,28,.3);"><b style="color:#b91c1c;">Databuddy respondió con un error</b><div style="font-size:13px;margin-top:6px;">${esc(d.error)}</div></div>`; return; }
+  const r = d.resumen, max = Math.max(...d.diario.map(x => x.visitantes), 1);
+  el.innerHTML = `
+    <div class="cb-tiles" style="margin-bottom:12px;">
+      <div class="cb-tile"><div class="cb-tile-l">Visitantes</div><div class="cb-tile-v" style="color:var(--green-dark);">${r.visitantes.toLocaleString('en-US')}</div><div class="cb-tile-n">Personas distintas</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Páginas vistas</div><div class="cb-tile-v">${r.visitas.toLocaleString('en-US')}</div><div class="cb-tile-n">${r.sesiones.toLocaleString('en-US')} visitas (sesiones)</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Tiempo en la web</div><div class="cb-tile-v">${_mwDuracion(r.duracion)}</div><div class="cb-tile-n">Mediana por visita</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Se van sin mirar</div><div class="cb-tile-v" style="color:${r.rebote > 70 ? '#b91c1c' : r.rebote > 50 ? '#b45309' : 'var(--green-dark)'};">${Math.round(r.rebote)}%</div><div class="cb-tile-n">Tasa de rebote</div></div>
+    </div>
+    ${d.diario.length > 1 ? `<div class="cb-card" style="margin-bottom:12px;">
+      <div class="hr-sec-t" style="margin:0;"><span style="background:#059669;"></span>Visitantes por día</div>
+      <div class="ma-chart">${d.diario.map(x => `<div class="ma-bar" style="background:#059669;height:${Math.max(2, x.visitantes / max * 100)}%"><span>${new Date(x.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}: ${x.visitantes} visitantes · ${x.visitas} páginas</span></div>`).join('')}</div>
+    </div>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+      ${_mwLista('Páginas más vistas', 'var(--blue)', d.paginas, f => esc(f.nombre || '/'))}
+      ${_mwLista('De dónde llegan', '#f59e0b', d.origenes, f => esc(f.nombre || 'Directo'))}
+      ${_mwLista('Países', '#059669', d.paises, f => _mwBandera(f.nombre) + esc(_mwPaisNombre(f.nombre)))}
+      ${_mwLista('Dispositivos', '#7c3aed', d.dispositivos, f => esc(f.nombre))}
+    </div>`;
+}
 async function renderMiWeb() {
   document.getElementById('mw-links').innerHTML = `<div class="hr-sec-t"><span style="background:var(--blue);"></span>Accesos directos</div>
     <div class="mw-grid">${MW_LINKS.map(([ic, t, sub, url]) => `<a class="mw-link" href="${url}" target="_blank" rel="noopener"><i class="${ic}"></i><div><b>${t}</b><small>${sub}</small></div></a>`).join('')}</div>`;
+  renderWebStats();
   const st = document.getElementById('mw-stats');
   st.innerHTML = '<div class="cb-tile"><div class="cb-tile-l">Cargando...</div></div>';
   try {
