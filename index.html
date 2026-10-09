@@ -1507,6 +1507,11 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .rg-v { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--rg-d); line-height:1.1; font-variant-numeric:tabular-nums; }
 .rg-n { font-size:11.5px; color:var(--text-mid); line-height:1.35; }
 .rg-n b { color:var(--black); }
+
+.mw-link-wrap { position:relative; }
+.mw-link-wrap .mw-link { height:100%; }
+.mw-copy { position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:8px; border:1px solid rgba(20,56,204,.25); background:var(--blue-xlight); color:var(--blue); font:600 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.mw-copy:hover { background:var(--blue); color:#fff; }
 </style>
 </head>
 <body>
@@ -2331,20 +2336,19 @@ function resolveEmpleado(emailOrName) {
 }
 
 function getMergedVentas() {
-  // Fuente única: facturas pagadas (totalmente o parcial) de Facturación
-  return Object.values(docsMap)
-    .filter(d => d.pagado || d.pagadoParcial)
-    .map(d => ({
-      _id:          '_fac_' + d._fsId,
-      empleado:     d.emisor || resolveEmpleado(d.createdBy || ''),
-      cliente:      d.cli || d.cliente || '',
-      servicio:     d.items && d.items[0] ? d.items[0].s : '—',
-      monto:        d.pagado ? (d.total || 0) : (d.montoPagado || 0),
-      fecha:        d.createdAt,
-      facturaId:    d._fsId,
-      docId:        d.docId || '',
-      _fromFactura: true
-    }));
+  // Fuente única: cada pago registrado en Facturación, con la fecha en que se cobró
+  // (así cuadra con Cobranza: un abono de octubre cuenta en octubre aunque la factura sea de septiembre)
+  return cbCobros().map(({ f, m, d }, i) => ({
+    _id:          '_fac_' + d._fsId + '_' + i,
+    empleado:     d.emisor || resolveEmpleado(d.createdBy || ''),
+    cliente:      d.cli || d.cliente || '',
+    servicio:     d.items && d.items[0] ? d.items[0].s : '—',
+    monto:        m,
+    fecha:        f,
+    facturaId:    d._fsId,
+    docId:        d.docId || '',
+    _fromFactura: true
+  }));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3040,7 +3044,6 @@ const MW_LINKS = [
   ['fa-solid fa-star', 'Pedir reseña en Google', 'Enlace para mandar a clientes', 'https://g.page/r/CbcyuFX7hqvuEAE/review'],
   ['fa-solid fa-chart-line', 'Databuddy completo', 'Todas las estadísticas de visitas', 'https://app.databuddy.cc/'],
   ['fa-solid fa-gauge-high', 'Velocidad de la web', 'Prueba de Google PageSpeed', 'https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fdgpglobalgroup.com%2F'],
-  ['fa-solid fa-envelope-open-text', 'Formularios (Formspree)', 'Mensajes del formulario de contacto', 'https://formspree.io/forms'],
   ['fa-brands fa-github', 'Código de la web', 'Repositorio en GitHub', 'https://github.com/quasarworksco/dgpglobal'],
   ['fa-brands fa-meta', 'Meta Business Suite', 'Facebook e Instagram', 'https://business.facebook.com/']
 ];
@@ -3117,7 +3120,7 @@ async function renderWebStats() {
 }
 async function renderMiWeb() {
   document.getElementById('mw-links').innerHTML = `<div class="hr-sec-t"><span style="background:var(--blue);"></span>Accesos directos</div>
-    <div class="mw-grid">${MW_LINKS.map(([ic, t, sub, url]) => `<a class="mw-link" href="${url}" target="_blank" rel="noopener"><i class="${ic}"></i><div><b>${t}</b><small>${sub}</small></div></a>`).join('')}</div>`;
+    <div class="mw-grid">${MW_LINKS.map(([ic, t, sub, url]) => `<div class="mw-link-wrap"><a class="mw-link" href="${url}" target="_blank" rel="noopener"><i class="${ic}"></i><div><b>${t}</b><small>${sub}</small></div></a>${/g\.page\/r\//.test(url) ? `<button type="button" class="mw-copy" title="Copiar enlace" onclick="navigator.clipboard.writeText('${url}').then(() => toast('Enlace de reseña copiado', 'ok'))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar</button>` : ''}</div>`).join('')}</div>`;
   renderWebStats();
   const st = document.getElementById('mw-stats');
   st.innerHTML = '<div class="cb-tile"><div class="cb-tile-l">Cargando...</div></div>';
@@ -4621,7 +4624,7 @@ function renderDashboard() {
     if (dashPeriod === 'todo') return true;
     const fd = f.fecha && f.fecha.toDate ? f.fecha.toDate() : new Date(f.fecha);
     if (dashPeriod === 'mes')    return fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
-    if (dashPeriod === 'semana') return Math.ceil(fd.getDate() / 7) === semanaActual && fd.getMonth() === mesActual && fd.getFullYear() === añoActual;
+    if (dashPeriod === 'semana') { const lunes = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)); return fd >= lunes && fd <= now; }
     return true;
   });
 
@@ -6451,12 +6454,12 @@ function cbCobros() {
   Object.values(docsMap).forEach(d => {
     const pagos = Array.isArray(d.pagos) ? d.pagos : [];
     let sumaPagos = 0;
-    pagos.forEach(p => { const f = cbFecha(p.fecha); const m = Number(p.monto) || 0; if (f && m) { out.push({ f, m }); sumaPagos += m; } });
+    pagos.forEach(p => { const f = cbFecha(p.fecha); const m = Number(p.monto) || 0; if (f && m) { out.push({ f, m, d }); sumaPagos += m; } });
     if (d.pagado || d.type === 'recibo') {
       const resto = (d.total || 0) - sumaPagos;
-      if (resto > 0.009) out.push({ f: cbFecha(d.fechaPago) || cbFecha(d.fecha) || cbFecha(d.createdAt), m: resto });
+      if (resto > 0.009) out.push({ f: cbFecha(d.fechaPago) || cbFecha(d.fecha) || cbFecha(d.createdAt), m: resto, d });
     } else if (d.pagadoParcial && (d.montoPagado || 0) > sumaPagos + 0.009) {
-      out.push({ f: cbFecha(d.createdAt) || cbFecha(d.fecha), m: (d.montoPagado || 0) - sumaPagos });
+      out.push({ f: cbFecha(d.createdAt) || cbFecha(d.fecha), m: (d.montoPagado || 0) - sumaPagos, d });
     }
   });
   return out.filter(x => x.f);
