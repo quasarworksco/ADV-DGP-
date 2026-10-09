@@ -1934,6 +1934,14 @@ async function metaGet(env, ruta, params) {
 }
 async function handleMetaAds(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  // ?ping=1 solo dice si la conexión con Meta funciona (sin datos), para revisar la instalación
+  if (new URL(request.url).searchParams.has('ping')) {
+    if (!env.META_TOKEN) return json(request, { configurado: false });
+    try {
+      const c = await metaGet(env, 'act_' + String(env.META_AD_ACCOUNT || META_CUENTA_DEFAULT).replace(/^act_/, ''), { fields: 'account_status' });
+      return json(request, { configurado: true, ok: true, estadoCuenta: c.account_status });
+    } catch (e) { return json(request, { configurado: true, ok: false, detalle: String(e.message).slice(0, 200) }); }
+  }
   const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
   if (quien.error) return json(request, { error: quien.error }, quien.status);
   if (!env.META_TOKEN) return json(request, { configurado: false });
