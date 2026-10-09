@@ -1452,8 +1452,21 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .cb-tile-l { font-size:10px; letter-spacing:.9px; }
 .nav-tab { font-family:'Plus Jakarta Sans', sans-serif; }
 
-/* Ícono SVG pequeño dentro de los selectores (en vez de emojis) */
-select.sel-ico { padding-left:38px !important; background-repeat:no-repeat; background-position:14px center; background-size:16px 16px; }
+/* Menú desplegable propio con ícono en cada opción */
+.csel { position:relative; }
+.csel-btn { width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; background:#f8fafc; border:1.5px solid var(--border); border-radius:10px; color:var(--black); font:500 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; text-align:left; transition:border-color .2s, box-shadow .2s, background .2s; }
+.csel-btn:hover { border-color:#c7d0e3; }
+.csel.open .csel-btn, .csel-btn:focus-visible { border-color:var(--blue); background:#fff; box-shadow:0 0 0 3px rgba(20,56,204,.08); outline:none; }
+.csel-ico { display:inline-flex; color:var(--blue); flex-shrink:0; }
+.csel-txt { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.csel-chev { display:inline-flex; color:var(--text-soft); transition:transform .2s; }
+.csel.open .csel-chev { transform:rotate(180deg); }
+.csel-list { display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:60; margin:0; padding:6px; list-style:none; background:#fff; border:1px solid #d6dcea; border-radius:12px; box-shadow:0 14px 34px rgba(11,22,64,.16); max-height:300px; overflow-y:auto; }
+.csel.open .csel-list { display:block; animation:cselIn .14s ease-out; }
+@keyframes cselIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+.csel-list li { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font:500 13px 'Plus Jakarta Sans',sans-serif; color:var(--black); cursor:pointer; }
+.csel-list li:hover { background:#f1f4fb; }
+.csel-list li.on { background:var(--blue-xlight); color:var(--blue); font-weight:600; }
 </style>
 </head>
 <body>
@@ -2099,7 +2112,7 @@ select.sel-ico { padding-left:38px !important; background-repeat:no-repeat; back
     <div class="edit-sheet-body">
       <div class="ff">
         <label>Tipo de documento</label>
-        <select id="edit-type" data-ico>
+        <select id="edit-type">
           <option value="factura">Factura (pendiente de pago)</option>
           <option value="recibo">Recibo (pago ya recibido)</option>
         </select>
@@ -2256,7 +2269,6 @@ const WA_NUM = '584121002090';
 const EMPLEADOS = [
   { nombre: 'Kevin Bermudez',    ini: 'K', id: 'Kevin'  },
   { nombre: 'Angel Rosales',     ini: 'A', id: 'Angel'  },
-  { nombre: 'Jose Acosta',       ini: 'J', id: 'Jose'   },
   { nombre: 'Paul Espina',       ini: 'P', id: 'Paul'   },
 ];
 
@@ -2373,9 +2385,9 @@ const METODOS_CAMPOS = {
    CATÁLOGO DE SERVICIOS (editable, colección "catalogo")
 ═══════════════════════════════════════════════════════ */
 const CATALOGO_BASE = [
-  ['Sitios Web', 'Web Básica', 280, 260], ['Sitios Web', 'Web Estándar', 455, 423], ['Sitios Web', 'Web Premium', 950, 884], ['Sitios Web', 'Plan Gestión Ecommerce', 750, 698],
+  ['Sitios Web', 'Web Básica', 280, 260], ['Sitios Web', 'Web Estándar', 455, 423], ['Sitios Web', 'Web Premium', 950, 884],
   ['Diseño & Identidad', 'Identidad Visual', 85, 79], ['Diseño & Identidad', 'Tarjeta de Presentación', 20, 19], ['Diseño & Identidad', 'Post / Flyers RRSS', 10, 9],
-  ['Diseño & Identidad', 'Office Pack', 80, 74], ['Diseño & Identidad', 'Paquete Básico', 124, 115], ['Diseño & Identidad', 'Paquete Intermedio', 221, 206], ['Diseño & Identidad', 'Paquete Avanzado', 553, 514],
+  ['Diseño & Identidad', 'Office Pack', 80, 74], ['Diseño & Identidad', 'Paquete Básico', 320, 298], ['Diseño & Identidad', 'Paquete Intermedio', 480, 446], ['Diseño & Identidad', 'Paquete Avanzado', 840, 781],
   ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
   ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
   ['Seguidores', '1,000 Seguidores', 55, 51], ['Seguidores', '3,000 Seguidores', 75, 70], ['Seguidores', '5,000 Seguidores', 125, 116], ['Seguidores', '10,000 Seguidores', 190, 177],
@@ -2403,6 +2415,12 @@ function initCatalogo() {
     // Ajuste de precio: Hosting anual pasa de $120 a $145 (una sola vez)
     const ha = catalogoList.find(x => x.nombre === 'Hosting anual' && Number(x.precio) === 120 && !x.ajuste202610);
     if (ha) db.collection('catalogo').doc(ha._id).update({ precio: 145, precioEur: 135, ajuste202610: true }).catch(() => {});
+    // Paquetes profesionales con precios nuevos y sin Gestión Ecommerce (una sola vez)
+    const NUEVOS_PAQ = { 'Paquete Básico': [320, 298], 'Paquete Intermedio': [480, 446], 'Paquete Avanzado': [840, 781] };
+    catalogoList.filter(x => NUEVOS_PAQ[x.nombre] && !x.ajustePaq202610).forEach(x =>
+      db.collection('catalogo').doc(x._id).update({ precio: NUEVOS_PAQ[x.nombre][0], precioEur: NUEVOS_PAQ[x.nombre][1], ajustePaq202610: true }).catch(() => {}));
+    catalogoList.filter(x => /ecommerce/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
+      db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
     refrescarServicios();
   }, e => console.warn('Catálogo:', e));
 }
@@ -2688,28 +2706,51 @@ function switchPage(page, btn) {
 
 
 
-/* Íconos SVG para los selectores de Facturación */
-const _ICO = (d) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#1438cc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${d}</svg>`)}")`;
+/* Selectores de Facturación con ícono SVG en cada opción (menú propio; el <select> original
+   sigue oculto y es el que guarda el valor, así el resto del código no cambia) */
+const _svg = d => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SEL_ICONOS = {
-  factura: _ICO("<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6M16 13H8M16 17H8M10 9H8'/>"),
-  recibo: _ICO("<circle cx='12' cy='12' r='10'/><path d='m9 12 2 2 4-4'/>"),
-  cotizacion: _ICO("<rect x='8' y='2' width='8' height='4' rx='1'/><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01'/>"),
-  zelle: _ICO("<circle cx='12' cy='12' r='10'/><path d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 18V6'/>"),
-  bizum: _ICO("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
-  bolivares: _ICO("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
-  usdt: _ICO("<circle cx='8' cy='8' r='6'/><path d='M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82'/>"),
-  binancepay: _ICO("<path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/>"),
-  transferencia: _ICO("<path d='M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z'/>")
+  factura: _svg("<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6M16 13H8M16 17H8M10 9H8'/>"),
+  recibo: _svg("<circle cx='12' cy='12' r='10'/><path d='m9 12 2 2 4-4'/>"),
+  cotizacion: _svg("<rect x='8' y='2' width='8' height='4' rx='1'/><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01'/>"),
+  zelle: _svg("<circle cx='12' cy='12' r='10'/><path d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 18V6'/>"),
+  bizum: _svg("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
+  bolivares: _svg("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
+  usdt: _svg("<circle cx='8' cy='8' r='6'/><path d='M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82'/>"),
+  binancepay: _svg("<path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/>"),
+  transferencia: _svg("<path d='M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z'/>"),
+  '': _svg("<circle cx='12' cy='12' r='10'/><path d='M8 12h8'/>")
 };
-function selIcono(sel) {
-  if (!sel) return;
-  const ico = SEL_ICONOS[sel.value];
-  sel.classList.toggle('sel-ico', !!ico);
-  sel.style.backgroundImage = ico || '';
+const _CHEV = _svg("<path d='m6 9 6 6 6-6'/>");
+function cselPintar(sel) {
+  const w = sel._csel; if (!w) return;
+  const op = sel.options[sel.selectedIndex];
+  w.btn.innerHTML = `<span class="csel-ico">${SEL_ICONOS[sel.value] || ''}</span><span class="csel-txt">${esc(op ? op.textContent : '')}</span><span class="csel-chev">${_CHEV}</span>`;
+  w.list.innerHTML = [...sel.options].map((o, i) => `<li role="option" data-i="${i}" class="${i === sel.selectedIndex ? 'on' : ''}" aria-selected="${i === sel.selectedIndex}"><span class="csel-ico">${SEL_ICONOS[o.value] || ''}</span>${esc(o.textContent)}</li>`).join('');
+  w.valor = sel.value;
 }
-document.addEventListener('change', e => { if (e.target.matches && e.target.matches('#doc-type, #metodo-pago, select[data-ico]')) selIcono(e.target); });
-['doc-type', 'metodo-pago'].forEach(id => selIcono(document.getElementById(id)));
-setInterval(() => document.querySelectorAll('#doc-type, #metodo-pago, select[data-ico]').forEach(selIcono), 1500); // también cuando el valor cambia por código
+function cselMejorar(sel) {
+  if (!sel || sel._csel) return;
+  const box = document.createElement('div'); box.className = 'csel';
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'csel-btn'; btn.setAttribute('aria-haspopup', 'listbox');
+  const list = document.createElement('ul'); list.className = 'csel-list'; list.setAttribute('role', 'listbox');
+  box.append(btn, list); sel.after(box); sel.style.display = 'none';
+  sel._csel = { box, btn, list, valor: null };
+  btn.addEventListener('click', e => { e.preventDefault(); document.querySelectorAll('.csel.open').forEach(b => b !== box && b.classList.remove('open')); box.classList.toggle('open'); });
+  list.addEventListener('click', e => {
+    const li = e.target.closest('li'); if (!li) return;
+    sel.selectedIndex = Number(li.dataset.i);
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    box.classList.remove('open'); cselPintar(sel);
+  });
+  cselPintar(sel);
+}
+document.addEventListener('click', e => { if (!e.target.closest('.csel')) document.querySelectorAll('.csel.open').forEach(b => b.classList.remove('open')); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.csel.open').forEach(b => b.classList.remove('open')); });
+['doc-type', 'metodo-pago', 'edit-type'].forEach(id => cselMejorar(document.getElementById(id)));
+// Si el código cambia el valor (al editar o cargar una plantilla), el menú se actualiza solo
+setInterval(() => document.querySelectorAll('#doc-type, #metodo-pago, #edit-type').forEach(sel => { if (sel._csel && sel._csel.valor !== sel.value) cselPintar(sel); }), 400);
+
 /* Menú en celular */
 function abrirMenuMovil() { document.body.classList.add('menu-open'); }
 function cerrarMenuMovil() { document.body.classList.remove('menu-open'); }

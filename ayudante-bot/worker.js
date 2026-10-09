@@ -60,7 +60,7 @@ SOBRE LA EMPRESA
 DGP Group USA — servicios digitales profesionales.
 Fundador: Andrés Espina | dgpgroup.usa@gmail.com | +1 (239) 823-1738 | dgp-link.com
 
-Equipo: Kevin Bermudez, Angel Rosales, Jose Acosta, Paul Espina.
+Equipo: Kevin Bermudez, Angel Rosales, Paul Espina.
 
 ════════════════════════════════════════
 CÓMO FUNCIONA EL PROCESO DE PAGO (MUY IMPORTANTE)
@@ -108,7 +108,6 @@ Para la publicidad masiva de WhatsApp SÍ puedes decir que llega a gente real en
 • Web Básica        →  $280  (diseño profesional, hasta 3 páginas, contacto, responsive)
 • Web Estándar      →  $455  (hasta 6 páginas, SEO básico, formularios, galería)
 • Web Premium       →  $950  (sitio completo, SEO avanzado, animaciones, integraciones, blog)
-• Gestión Ecommerce →  $750  (tienda online con pagos integrados)
 
 Puntos clave:
 → Diseño personalizado, no plantillas genéricas.
@@ -122,9 +121,9 @@ Puntos clave:
 • Tarjeta de Presentación                         →  $20
 • Post / Flyer para redes sociales                →  $10 por pieza
 • Office Pack (papelería completa)                →  $80
-• Paquete Básico (logo + tarjeta + 3 posts)       →  $124
-• Paquete Intermedio                              →  $221
-• Paquete Avanzado                                →  $553
+• Paquete Básico (logo, manual de marca, revisión de redes, 1,000 seguidores, tarjeta; 48h)  →  $320
+• Paquete Intermedio (lo del Básico + 3,000 seguidores + 10 posts; 72h)                    →  $480
+• Paquete Avanzado (5,000 seguidores, 10 posts, factura y business card, web One Page, panel admin con CRM; 72h)  →  $840
 
 📲 WHATSAPP MARKETING (envío masivo a grupos)
 IMPORTANTE: Este servicio NO es envío a contactos personales del cliente.
