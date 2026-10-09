@@ -1451,6 +1451,9 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .dash-kpi-value { font-size:24px; }
 .cb-tile-l { font-size:10px; letter-spacing:.9px; }
 .nav-tab { font-family:'Plus Jakarta Sans', sans-serif; }
+
+/* Ícono SVG pequeño dentro de los selectores (en vez de emojis) */
+select.sel-ico { padding-left:38px !important; background-repeat:no-repeat; background-position:14px center; background-size:16px 16px; }
 </style>
 </head>
 <body>
@@ -1596,9 +1599,9 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
         <div class="ff" style="margin:0">
           <label>Tipo de documento</label>
           <select id="doc-type" onchange="onTypeChange()">
-            <option value="factura">🧾 Factura (por cobrar)</option>
-            <option value="recibo">✅ Recibo (ya pagado)</option>
-            <option value="cotizacion">📋 Cotización</option>
+            <option value="factura">Factura (por cobrar)</option>
+            <option value="recibo">Recibo (ya pagado)</option>
+            <option value="cotizacion">Cotización</option>
           </select>
         </div>
         <div class="ff" style="margin:0">
@@ -1642,20 +1645,20 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
         <div class="ff">
           <label>Moneda</label>
           <div class="moneda-toggle">
-            <button type="button" class="moneda-btn active" id="btn-usd" onclick="selectMoneda('usd');event.preventDefault();event.stopPropagation();">🇺🇸 USD — Dólar</button>
-            <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur');event.preventDefault();event.stopPropagation();">🇪🇺 EUR — Euro</button>
+            <button type="button" class="moneda-btn active" id="btn-usd" onclick="selectMoneda('usd');event.preventDefault();event.stopPropagation();"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>USD — Dólar</button>
+            <button type="button" class="moneda-btn" id="btn-eur" onclick="selectMoneda('eur');event.preventDefault();event.stopPropagation();"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M15.5 8.5a4.5 4.5 0 1 0 0 7"/><path d="M7 10.5h6M7 13.5h6"/></svg>EUR — Euro</button>
           </div>
         </div>
         <div class="ff">
           <label>Método de pago (para la factura del cliente)</label>
           <select id="metodo-pago" onchange="onMetodoPagoChange()">
             <option value="">— Sin especificar —</option>
-            <option value="zelle">💸 Zelle</option>
-            <option value="bizum">📱 Bizum</option>
-            <option value="usdt">🔐 USDT TRC20</option>
-            <option value="binancepay">🟡 Binance Pay</option>
-            <option value="bolivares">📱 Pago Móvil</option>
-            <option value="transferencia">🏦 Transferencia Interbancaria (USD)</option>
+            <option value="zelle">Zelle</option>
+            <option value="bizum">Bizum</option>
+            <option value="usdt">USDT TRC20</option>
+            <option value="binancepay">Binance Pay</option>
+            <option value="bolivares">Pago Móvil</option>
+            <option value="transferencia">Transferencia Interbancaria (USD)</option>
             <option value="paypal">PayPal</option>
             <option value="westernunion">Western Union</option>
           </select>
@@ -2096,9 +2099,9 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
     <div class="edit-sheet-body">
       <div class="ff">
         <label>Tipo de documento</label>
-        <select id="edit-type">
-          <option value="factura">🧾 Factura (pendiente de pago)</option>
-          <option value="recibo">✅ Recibo (pago ya recibido)</option>
+        <select id="edit-type" data-ico>
+          <option value="factura">Factura (pendiente de pago)</option>
+          <option value="recibo">Recibo (pago ya recibido)</option>
         </select>
       </div>
       <div class="ff">
@@ -2296,7 +2299,10 @@ function esc(s) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// Sin emojis en los avisos: se quitan aquí para todo el panel
+const _sinEmoji = m => String(m ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B50}\u{23F0}-\u{23FF}]\uFE0F?/gu, '').replace(/\s{2,}/g, ' ').trim();
 function toast(msg, type='ok') {
+  msg = _sinEmoji(msg);
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `toast show ${type}`;
@@ -2536,7 +2542,7 @@ auth.onAuthStateChanged(async user => {
     const permitido = await verificarAcceso(user);
     if (!permitido) {
       await auth.signOut();
-      showLoginError('⛔ No tienes acceso al sistema. Contacta al administrador.');
+      showLoginError('No tienes acceso al sistema. Contacta al administrador.');
       return;
     }
     currentUser = user;
@@ -2681,6 +2687,29 @@ function switchPage(page, btn) {
 
 
 
+
+/* Íconos SVG para los selectores de Facturación */
+const _ICO = (d) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#1438cc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${d}</svg>`)}")`;
+const SEL_ICONOS = {
+  factura: _ICO("<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6M16 13H8M16 17H8M10 9H8'/>"),
+  recibo: _ICO("<circle cx='12' cy='12' r='10'/><path d='m9 12 2 2 4-4'/>"),
+  cotizacion: _ICO("<rect x='8' y='2' width='8' height='4' rx='1'/><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01'/>"),
+  zelle: _ICO("<circle cx='12' cy='12' r='10'/><path d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 18V6'/>"),
+  bizum: _ICO("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
+  bolivares: _ICO("<rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/>"),
+  usdt: _ICO("<circle cx='8' cy='8' r='6'/><path d='M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82'/>"),
+  binancepay: _ICO("<path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/>"),
+  transferencia: _ICO("<path d='M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z'/>")
+};
+function selIcono(sel) {
+  if (!sel) return;
+  const ico = SEL_ICONOS[sel.value];
+  sel.classList.toggle('sel-ico', !!ico);
+  sel.style.backgroundImage = ico || '';
+}
+document.addEventListener('change', e => { if (e.target.matches && e.target.matches('#doc-type, #metodo-pago, select[data-ico]')) selIcono(e.target); });
+['doc-type', 'metodo-pago'].forEach(id => selIcono(document.getElementById(id)));
+setInterval(() => document.querySelectorAll('#doc-type, #metodo-pago, select[data-ico]').forEach(selIcono), 1500); // también cuando el valor cambia por código
 /* Menú en celular */
 function abrirMenuMovil() { document.body.classList.add('menu-open'); }
 function cerrarMenuMovil() { document.body.classList.remove('menu-open'); }
@@ -4117,7 +4146,7 @@ function renderHistorial() {
     return `<div class="hr-row" onclick="openSheetById('${id}')" title="Abrir ${esc(d.docId || '')}">
       <span class="hr-pill ${pill[1]}">${pill[0]}</span>
       <div class="hr-main">
-        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}">✉ Enviada</span>` : ''}</div>
+        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Enviada</span>` : ''}</div>
         <div class="hr-cli">${esc(d.cli || '—')}</div>
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
@@ -6404,7 +6433,7 @@ function diagRender() {
   const hechos = _diagRes.filter(r => r.estado !== 'wait');
   const fallos = hechos.filter(r => r.estado === 'fail').length;
   el.innerHTML = `
-    ${hechos.length === _diagRes.length && _diagRes.length ? `<div style="padding:10px 12px;border-radius:10px;margin-bottom:10px;font-size:12px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;${fallos ? 'background:#fef2f2;color:#b91c1c;' : 'background:#ecfdf5;color:#047857;'}">${fallos ? `${fallos} cosa(s) por arreglar. Abajo te digo qué hacer en cada una.` : 'Todo funciona correctamente ✅'}</div>` : ''}
+    ${hechos.length === _diagRes.length && _diagRes.length ? `<div style="padding:10px 12px;border-radius:10px;margin-bottom:10px;font-size:12px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;${fallos ? 'background:#fef2f2;color:#b91c1c;' : 'background:#ecfdf5;color:#047857;'}">${fallos ? `${fallos} cosa(s) por arreglar. Abajo te digo qué hacer en cada una.` : 'Todo funciona correctamente.'}</div>` : ''}
     ${_diagRes.map(r => `<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;">
       <div style="flex-shrink:0;margin-top:1px;">${DIAG_ICON[r.estado]}</div>
       <div style="min-width:0;">
