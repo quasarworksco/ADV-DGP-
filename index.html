@@ -917,6 +917,11 @@
 .cd-acts { display:flex; gap:6px; margin-top:auto; }
 .cd-acts a, .cd-acts button { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; padding:9px 8px; border-radius:9px; cursor:pointer; text-decoration:none; font-family:inherit; }
 .cd-dl { background:#1438cc; color:#fff; border:none; }
+.cd-sec { margin-bottom:26px; }
+.cd-sec-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.cd-folder { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text); }
+.cd-folder svg { color:#f59e0b; }
+.cd-mes { font-size:11px; font-weight:600; color:var(--text-soft); letter-spacing:.5px; text-transform:uppercase; }
 .cd-cp { background:transparent; color:var(--text); border:1.5px solid var(--border); }
 @media (max-width:600px){ .cd-grid { grid-template-columns:1fr 1fr; gap:10px; } .cd-info { padding:10px; } .cd-acts { flex-direction:column; } }
 .proy-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
@@ -2112,7 +2117,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
       </div>
     </div>
     <div class="db-pills" id="cd-filtros" style="margin-bottom:16px;flex-wrap:wrap;"></div>
-    <div id="cd-grid" class="cd-grid"></div>
+    <div id="cd-grid"></div>
   </div>
 </div>
 
@@ -3159,49 +3164,88 @@ async function renderMetaAds() {
 /* ═══════════════════════════════════════════════════════
    CONTENIDO DIGITAL — videos e imágenes para redes (archivos en /contenido, sin lecturas de Firestore)
 ═══════════════════════════════════════════════════════ */
+// Archivos en /contenido/<tipo>/<AAAA-MM>/ — para agregar uno nuevo basta con sumarlo a esta lista
+const CD_TIPOS = {
+  video:    { nombre: 'Videos',              carpeta: 'videos',    ratio: '9/16', fmt: 'Video 9:16 · MP4' },
+  historia: { nombre: 'Historias 9:16',      carpeta: 'historias', ratio: '9/16', fmt: 'Historia 9:16 · JPG' },
+  post:     { nombre: 'Publicaciones 1:1',   carpeta: 'posts',     ratio: '1/1',  fmt: 'Post 1:1 · JPG' },
+  anuncio:  { nombre: 'Anuncios 4:5',        carpeta: 'anuncios',  ratio: '4/5',  fmt: 'Anuncio 4:5 · JPG' }
+};
+const _cdTx = {
+  h48: 'Tu página web lista en 48 horas. Diseño profesional, en español e inglés y con botón de WhatsApp. Escríbenos hoy por DM o WhatsApp +1 (239) 823-1738. dgpglobalgroup.com',
+  google: '¿Tu negocio no aparece en Google? Te hacemos una web lista para que te encuentren en Google y Maps, en 48 horas. Escríbenos y empezamos. dgpglobalgroup.com',
+  porque: 'Solo redes sociales no es suficiente. Con tu página web te encuentran en Google, das una imagen profesional y recibes clientes las 24 horas. Tu web lista en 48 horas. dgpglobalgroup.com',
+  facil: 'Así de fácil: 1) Escríbenos 2) Diseñamos tu web 3) La revisas, con 2 rondas de cambios 4) La publicamos en 48 horas. Escríbenos por WhatsApp +1 (239) 823-1738.',
+  porta: 'Más de 50 proyectos entregados en EE. UU. Negocios reales con webs que venden. ¿El tuyo es el siguiente? Mira nuestro trabajo en dgpglobalgroup.com',
+  chat: '¿Hablamos? Escríbenos por Messenger o WhatsApp y te contamos cómo dejar tu página web lista en 48 horas. Respondemos en minutos.'
+};
 const CONTENIDO = [
-  { tipo: 'video', lang: 'es', titulo: 'Motion · Sitios web y sistemas a medida', formato: 'Historia 9:16 · MP4 · 31 s', archivo: 'contenido/video-motion-web-sistemas-es.mp4', poster: 'contenido/video-motion-web-sistemas-es.jpg',
+  { tipo: 'video', fecha: '2026-10-10', lang: 'es', titulo: 'Motion · Sitios web y sistemas a medida', dur: '31 s', archivo: 'video-motion-web-sistemas-es.mp4', poster: 'video-motion-web-sistemas-es.jpg',
     texto: 'Sitios web y sistemas a medida para negocios que quieren crecer. Construcción, limpieza, salud, tiendas, restaurantes, transporte y más: si lo puedes imaginar, lo construimos. Cuéntanos tu idea por DM o al WhatsApp +1 (239) 823-1738. dgpglobalgroup.com' },
-  { tipo: 'video', lang: 'en', titulo: 'Motion · Websites & custom systems', formato: 'Story 9:16 · MP4 · 31 s', archivo: 'contenido/video-motion-web-sistemas-en.mp4', poster: 'contenido/video-motion-web-sistemas-en.jpg',
+  { tipo: 'video', fecha: '2026-10-10', lang: 'en', titulo: 'Motion · Websites & custom systems', dur: '31 s', archivo: 'video-motion-web-sistemas-en.mp4', poster: 'video-motion-web-sistemas-en.jpg',
     texto: "Websites and custom systems for businesses ready to grow. Construction, cleaning, health, retail, restaurants, trucking and more: if you can imagine it, we build it. Tell us your idea by DM or WhatsApp +1 (239) 823-1738. dgpglobalgroup.com" },
-  { tipo: 'video', lang: 'es', titulo: 'Video historias · Páginas web', formato: 'Historia 9:16 · MP4 · 30 s', archivo: 'contenido/video-historias-web-es.mp4', poster: 'contenido/video-historias-web-es.jpg',
+  { tipo: 'video', fecha: '2026-10-09', lang: 'es', titulo: 'Video historias · Páginas web', dur: '30 s', archivo: 'video-historias-web-es.mp4', poster: 'video-historias-web-es.jpg',
     texto: '¿Tu negocio aún no tiene página web? En DGP Global Group te la dejamos lista en 48 horas: diseño profesional, en español e inglés, con botón de WhatsApp y lista para aparecer en Google. Escríbenos hoy por DM o al WhatsApp +1 (239) 823-1738. dgpglobalgroup.com' },
-  { tipo: 'video', lang: 'en', titulo: 'Story video · Websites', formato: 'Story 9:16 · MP4 · 30 s', archivo: 'contenido/video-historias-web-en.mp4', poster: 'contenido/video-historias-web-en.jpg',
+  { tipo: 'video', fecha: '2026-10-09', lang: 'en', titulo: 'Story video · Websites', dur: '30 s', archivo: 'video-historias-web-en.mp4', poster: 'video-historias-web-en.jpg',
     texto: "Does your business have a website yet? At DGP Global Group we get yours live in 48 hours: professional design, in English and Spanish, with a WhatsApp button and ready for Google. Message us today by DM or WhatsApp +1 (239) 823-1738. dgpglobalgroup.com" },
-  { tipo: 'imagen', lang: 'es', titulo: 'Tu página web lista en 48 horas', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-1-48h-es.jpg',
+  ...[['web-48-horas', 'Tu web lista en 48 horas', 'h48'], ['aparece-en-google', '¿No apareces en Google?', 'google'], ['por-que-tener-web', '¿Por qué tener página web?', 'porque'],
+      ['asi-de-facil', 'Así de fácil · 4 pasos', 'facil'], ['portafolio-50-proyectos', 'Portafolio · +50 proyectos', 'porta'], ['hablamos-chat', '¿Hablamos? · Messenger y WhatsApp', 'chat']]
+    .flatMap(([slug, titulo, tx], i) => [
+      { tipo: 'historia', fecha: '2026-10-10', lang: 'es', titulo, archivo: `historia-${i + 1}-${slug}-es.jpg`, texto: _cdTx[tx] },
+      { tipo: 'post', fecha: '2026-10-10', lang: 'es', titulo, archivo: `post-${i + 1}-${slug}-es.jpg`, texto: _cdTx[tx] }]),
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'es', titulo: 'Tu página web lista en 48 horas', archivo: 'anuncio-1-48h-es.jpg',
     texto: 'Tu página web lista en 48 horas. Diseño profesional, bilingüe y pensado para que tus clientes te escriban. Escríbenos hoy y empezamos. dgpglobalgroup.com' },
-  { tipo: 'imagen', lang: 'es', titulo: 'Portafolio · Negocios que ya venden', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-2-portafolio-es.jpg',
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'es', titulo: 'Portafolio · Negocios que ya venden', archivo: 'anuncio-2-portafolio-es.jpg',
     texto: 'Negocios reales que ya venden con su página web. ¿El tuyo es el siguiente? Mira nuestro portafolio en dgpglobalgroup.com y escríbenos.' },
-  { tipo: 'imagen', lang: 'es', titulo: '¿Tu negocio no aparece en Google?', formato: 'Publicación 4:5 · JPG', archivo: 'contenido/anuncio-3-google-es.jpg',
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'es', titulo: '¿Tu negocio no aparece en Google?', archivo: 'anuncio-3-google-es.jpg',
     texto: '¿Tu negocio no aparece en Google? Te hacemos una web que sí trae clientes: lista en 24–48 horas, en español e inglés, con WhatsApp y preparada para Google y Maps. dgpglobalgroup.com' },
-  { tipo: 'imagen', lang: 'en', titulo: 'Your website live in 48 hours', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-1-48h-en.jpg',
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'en', titulo: 'Your website live in 48 hours', archivo: 'anuncio-1-48h-en.jpg',
     texto: 'Your website live in 48 hours. Professional, bilingual and built so customers reach out to you. Message us today. dgpglobalgroup.com' },
-  { tipo: 'imagen', lang: 'en', titulo: 'Portfolio · Businesses already selling', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-2-portafolio-en.jpg',
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'en', titulo: 'Portfolio · Businesses already selling', archivo: 'anuncio-2-portafolio-en.jpg',
     texto: 'Real businesses already selling with their website. Is yours next? See our portfolio at dgpglobalgroup.com and message us.' },
-  { tipo: 'imagen', lang: 'en', titulo: 'Is your business missing on Google?', formato: 'Post 4:5 · JPG', archivo: 'contenido/anuncio-3-google-en.jpg',
+  { tipo: 'anuncio', fecha: '2026-10-08', lang: 'en', titulo: 'Is your business missing on Google?', archivo: 'anuncio-3-google-en.jpg',
     texto: 'Is your business missing on Google? We build a website that actually brings customers: live in 24–48 hours, English and Spanish, WhatsApp and ready for Google and Maps. dgpglobalgroup.com' }
-];
-let _cdFiltro = 'todo';
+].map((c, i) => {
+  const dir = `contenido/${CD_TIPOS[c.tipo].carpeta}/${c.fecha.slice(0, 7)}/`;
+  return { ...c, i, url: dir + c.archivo, posterUrl: c.poster ? dir + c.poster : '' };
+});
+let _cdFiltro = 'todo', _cdLang = 'todos';
+const _cdMes = f => { const [y, m] = f.split('-'); return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][+m - 1] + ' ' + y; };
 function renderContenido() {
-  const filtros = [['todo', 'Todo'], ['video', 'Videos'], ['imagen', 'Imágenes'], ['es', 'Español'], ['en', 'English']];
-  document.getElementById('cd-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_cdFiltro === k ? 'active' : ''}" onclick="_cdFiltro='${k}';renderContenido()">${v}</button>`).join('');
-  const lista = CONTENIDO.map((c, i) => ({ ...c, i })).filter(c => _cdFiltro === 'todo' || c.tipo === _cdFiltro || c.lang === _cdFiltro);
+  const cnt = t => CONTENIDO.filter(c => (t === 'todo' || c.tipo === t) && (_cdLang === 'todos' || c.lang === _cdLang)).length;
+  const pill = (sel, k, v, fn) => `<button class="dash-period-btn ${sel === k ? 'active' : ''}" onclick="${fn}='${k}';renderContenido()">${v}</button>`;
+  document.getElementById('cd-filtros').innerHTML =
+    [['todo', 'Todo'], ...Object.entries(CD_TIPOS).map(([k, v]) => [k, v.nombre])].map(([k, v]) => pill(_cdFiltro, k, `${v} <span style="opacity:.6">${cnt(k)}</span>`, '_cdFiltro')).join('') +
+    '<span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch"></span>' +
+    [['todos', 'ES + EN'], ['es', 'Español'], ['en', 'English']].map(([k, v]) => pill(_cdLang, k, v, '_cdLang')).join('');
+  const lista = CONTENIDO.filter(c => (_cdFiltro === 'todo' || c.tipo === _cdFiltro) && (_cdLang === 'todos' || c.lang === _cdLang));
   const icDl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>';
   const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
-  document.getElementById('cd-grid').innerHTML = lista.map(c => `
+  const card = c => { const T = CD_TIPOS[c.tipo]; return `
     <div class="cd-card">
-      <div class="cd-prev" ${c.tipo === 'video' ? 'style="aspect-ratio:9/16"' : ''}>${c.tipo === 'video'
-        ? `<video src="${c.archivo}" poster="${c.poster}" controls playsinline muted preload="none"></video>`
-        : `<img src="${c.archivo}" alt="${esc(c.titulo)}" loading="lazy">`}</div>
+      <div class="cd-prev" style="aspect-ratio:${T.ratio}">${c.tipo === 'video'
+        ? `<video src="${c.url}" poster="${c.posterUrl}" controls playsinline muted preload="none"></video>`
+        : `<img src="${c.url}" alt="${esc(c.titulo)}" loading="lazy">`}</div>
       <div class="cd-info">
         <div class="cd-t">${esc(c.titulo)}</div>
-        <div class="cd-tags"><span class="cd-tag ${c.tipo === 'video' ? 'v' : ''}">${esc(c.formato)}</span><span class="cd-tag">${c.lang === 'es' ? 'Español' : 'English'}</span></div>
+        <div class="cd-tags"><span class="cd-tag ${c.tipo === 'video' ? 'v' : ''}">${esc(T.fmt)}${c.dur ? ' · ' + c.dur : ''}</span><span class="cd-tag">${c.lang === 'es' ? 'Español' : 'English'}</span></div>
         <div class="cd-acts">
-          <a class="cd-dl" href="${c.archivo}" download="${c.archivo.split('/').pop()}">${icDl} Descargar</a>
+          <a class="cd-dl" href="${c.url}" download="${c.archivo}">${icDl} Descargar</a>
           <button class="cd-cp" onclick="cdCopiar(${c.i})">${icCp} Copiar texto</button>
         </div>
       </div>
-    </div>`).join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>';
+    </div>`; };
+  // Agrupado por tipo (carpeta) y, dentro, por mes — lo más nuevo primero
+  const grupos = [];
+  Object.keys(CD_TIPOS).forEach(t => {
+    const deTipo = lista.filter(c => c.tipo === t);
+    [...new Set(deTipo.map(c => c.fecha.slice(0, 7)))].sort().reverse().forEach(mes => {
+      const items = deTipo.filter(c => c.fecha.startsWith(mes)).sort((a, b) => b.fecha.localeCompare(a.fecha));
+      grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${CD_TIPOS[t].nombre}</span><span class="cd-mes">${_cdMes(mes)} · ${items.length}</span></div>
+        <div class="cd-grid">${items.map(card).join('')}</div></div>`);
+    });
+  });
+  document.getElementById('cd-grid').innerHTML = grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>';
 }
 function cdCopiar(i) {
   const t = CONTENIDO[i].texto;
