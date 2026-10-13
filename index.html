@@ -1268,6 +1268,21 @@
     .cat-p small { font-weight:500; color:var(--text-soft); }
     .cat-form { border:1px solid var(--border); background:var(--off); border-radius:12px; padding:12px; margin:16px 0 8px; }
     #cat-lista { max-height:340px; overflow-y:auto; }
+    .alt-hero { display:flex; gap:14px; align-items:flex-start; padding:14px; border-radius:14px; background:linear-gradient(135deg,#0b1633,#172b5e 55%,#166baf); color:#fff; margin-bottom:16px; font-family:'IBM Plex Sans',sans-serif; }
+    .alt-hero b { display:block; font-size:14px; margin-bottom:4px; } .alt-hero small { font-size:11.5px; color:#bfe9fa; line-height:1.55; display:block; }
+    .alt-orb { flex-shrink:0; width:46px; height:46px; border-radius:50%; background:radial-gradient(circle at 30% 30%,#8fdcf5,#3eaedd 45%,#166baf); display:flex; align-items:center; justify-content:center; box-shadow:0 0 24px rgba(62,174,221,.6); animation:altPulso 2.4s ease-in-out infinite; }
+    @keyframes altPulso { 50% { box-shadow:0 0 38px rgba(62,174,221,.9); transform:scale(1.04); } }
+    .alt-t { font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:6px; }
+    .alt-row { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:11px 2px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; text-transform:none; letter-spacing:0; }
+    .alt-row b { display:block; font-size:13px; color:var(--black); } .alt-row small { font-size:11.5px; color:var(--text-soft); line-height:1.45; display:block; margin-top:2px; }
+    .alt-sw { appearance:none; -webkit-appearance:none; flex-shrink:0; width:42px !important; height:24px; border-radius:20px; background:#cbd5e1; position:relative; cursor:pointer; transition:background .2s; padding:0 !important; border:0 !important; }
+    .alt-sw::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .alt-sw:checked { background:var(--blue); } .alt-sw:checked::after { left:21px; }
+    .pi { margin:10px 0 4px; border:1px solid rgba(20,56,204,.18); background:var(--blue-xlight); border-radius:10px; padding:10px 12px; font-family:'IBM Plex Sans',sans-serif; }
+    .pi-t { display:flex; align-items:center; gap:6px; font-size:9.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--blue); margin-bottom:6px; }
+    .pi-row { font-size:11.5px; color:var(--text-mid); line-height:1.5; padding:4px 0; border-top:1px solid rgba(20,56,204,.1); }
+    .pi-row:first-of-type { border-top:0; }
+    .pi-tip { font-weight:600; margin-top:2px; } .pi-alto .pi-tip { color:#b45309; } .pi-bajo .pi-tip { color:#047857; }
     .sf-ciclos { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
     .sf-ciclo { padding:10px 6px; border:1.5px solid var(--border); border-radius:10px; background:#fff; font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-mid); cursor:pointer; transition:all .15s; }
     .sf-ciclo:hover { border-color:var(--blue); color:var(--blue); }
@@ -1628,6 +1643,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
     </div>
   </div>
   <div class="header-right">
+    <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente y automatizaciones" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg><span class="hide-m">Altair</span></button>
     <button class="btn-logout" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
     <div style="position:relative;">
       <button class="btn-logout" onclick="document.getElementById('color-menu').classList.toggle('open')" title="Color del sistema" aria-label="Color del sistema" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"/></svg></button>
@@ -1823,6 +1839,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
           <thead><tr><th>Servicio</th><th style="text-align:right">Subtotal</th><th></th></tr></thead>
           <tbody id="cart-list"></tbody>
         </table>
+        <div id="precio-intel"></div>
         <div class="cart-total" id="cart-total" style="display:none;">
           <span class="cart-total-label">Total</span>
           <span class="cart-total-value" id="cart-total-val">$0.00</span>
@@ -1856,7 +1873,10 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 
     <div id="subtab-cotizaciones" style="display:none;">
       <div class="panel-f panel-f-full">
-        <div class="panel-title-f">Cotizaciones</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="panel-title-f" style="margin:0;">Cotizaciones</div>
+          <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);display:inline-flex;align-items:center;gap:6px;" onclick="abrirGeneradorMockup()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Crear mockup de web</button>
+        </div>
         <div class="hist-search-bar">
           <input type="text" id="cot-search" placeholder="Buscar por cliente o N° de cotización..." oninput="renderCotizaciones()">
           <div class="hist-filters">
@@ -2832,6 +2852,7 @@ function initPage() {
   initSuscripciones();
   initMeta();
   initCatalogo();
+  initAutomatizaciones();
   onTypeChange();
 }
 
@@ -4095,6 +4116,7 @@ function renderProyectos() {
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <button class="proy-done-btn${isDone ? ' done' : ''}" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? SVG_CHECK : SVG_CIRCLE} ${isDone ? 'Completado' : 'Marcar completado'}</button>
             <button class="proy-prompt-btn" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();generarPromptBrief('${esc(id)}')">${SVG_BOLT} Generar prompt</button>
+            ${tipo === 'web' ? `<button class="proy-prompt-btn" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();abrirMockupBrief('${esc(id)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Mockup</button>` : ''}
             <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
           </div>
           <div class="proy-prompt-box" id="proy-prompt-${esc(id)}"></div>
@@ -4141,6 +4163,8 @@ function initDocs() {
         Object.entries(newMap).forEach(([id, doc]) => {
           const prev = _prevDocsSnapshot[id];
           if (!prev) return;
+          const pagadoAhora = (doc.pagado || doc.type === 'recibo') && !(prev.pagado || prev.type === 'recibo');
+          if (pagadoAhora || (Number(doc.montoPagado) || 0) > (Number(prev.montoPagado) || 0) + 0.009) celebrarPago(doc, prev);
           if (doc.clienteCorreo && !prev.clienteCorreo) toast(`📧 ${doc.cli || 'Un cliente'} registró su correo: ${doc.clienteCorreo}`, 'ok');
           if (doc.brief && !prev.brief) {
             toast(`Brief recibido — ${doc.cli || doc.docId || ''}`, 'ok');
@@ -4274,6 +4298,7 @@ function renderCart() {
     </tr>`;
   });
   document.getElementById('cart-list').innerHTML = html;
+  renderPrecioInteligente();
   document.getElementById('cart-total-val').textContent = '$' + cart.reduce((a,b) => a+b.t, 0).toFixed(2);
 }
 
@@ -8207,6 +8232,150 @@ async function enviarCampana(prueba) {
   } finally { _camp.enviando = false; btn.disabled = false; }
 }
 
+/* ═══════════════════════════════════════════════════════
+   ALTAIR — celebración de pagos, automatizaciones y precio inteligente
+═══════════════════════════════════════════════════════ */
+function chachingActivo() { try { return localStorage.getItem('dgp-chaching') !== '0'; } catch (e) { return true; } }
+let _audioCtx = null;
+function sonarChaching() {
+  try {
+    _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _audioCtx, t0 = ctx.currentTime;
+    const nota = (f, t, d, tipo = 'triangle', vol = .18) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = tipo; o.frequency.setValueAtTime(f, t0 + t);
+      g.gain.setValueAtTime(0, t0 + t); g.gain.linearRampToValueAtTime(vol, t0 + t + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + t + d);
+      o.connect(g).connect(ctx.destination); o.start(t0 + t); o.stop(t0 + t + d + .05);
+    };
+    // "cha" (golpe metálico) + "ching" (campanita de caja registradora)
+    nota(180, 0, .08, 'square', .12); nota(140, .05, .1, 'square', .1);
+    nota(1318, .16, .6); nota(1760, .2, .7); nota(2637, .24, .9, 'sine', .12);
+  } catch (e) {}
+}
+function lanzarConfeti() {
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100000;';
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d'), W = c.width = innerWidth, H = c.height = innerHeight;
+  const colores = ['#1438cc', '#3eaedd', '#22c55e', '#f59e0b', '#ec4899', '#a78bfa'];
+  const ps = Array.from({ length: 160 }, () => ({ x: W / 2 + (Math.random() - .5) * 200, y: H * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 13 - 4,
+    r: Math.random() * 6 + 4, c: colores[Math.floor(Math.random() * colores.length)], a: Math.random() * 6, va: (Math.random() - .5) * .3 }));
+  let f = 0;
+  (function paso() {
+    ctx.clearRect(0, 0, W, H);
+    ps.forEach(p => { p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.globalAlpha = Math.max(0, 1 - f / 150); ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore(); });
+    if (++f < 150) requestAnimationFrame(paso); else c.remove();
+  })();
+}
+function celebrarPago(doc, prev) {
+  if (!chachingActivo()) return;
+  const monto = (doc.pagado || doc.type === 'recibo') ? (Number(doc.total) || 0) - (Number(prev.montoPagado) || 0) : (Number(doc.montoPagado) || 0) - (Number(prev.montoPagado) || 0);
+  sonarChaching(); lanzarConfeti();
+  const frases = ['¡Cha-ching!', '¡Brutal!', '¡Eso es!', '¡Vamos con todo!', '¡Así se hace!'];
+  toast(`${frases[Math.floor(Math.random() * frases.length)]} Entró ${cbMoney(monto > 0 ? monto : doc.total)} de ${doc.cli || 'un cliente'} 💰`);
+}
+
+/* Panel de Altair: interruptores (config/automatizaciones) */
+let _auto = { cobrador: true, vendedor: true, briefing: true };
+function abrirAltair() {
+  const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
+    <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
+  ptModal('Altair', 'Tu asistente: háblale en Telegram y deja que trabaje por ti', `
+    <div class="alt-hero">
+      <div class="alt-orb"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg></div>
+      <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz: "¿Cuánto me debe Ana?", "¿Quién vence esta semana?", "Recuérdale a Luis que pague", "Crea una factura para Pedro de 200 por una web". Te responde con su voz.</small></div>
+    </div>
+    <div class="alt-t">Automatizaciones</div>
+    ${fila('cobrador', 'Cobrador amable', 'Día 3 y día 8 de atraso le escribe al cliente por correo; el día 15 te avisa para que llames.')}
+    ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
+    ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
+    ${fila('chaching', 'Cha-ching al cobrar', 'Sonido de caja registradora y confeti en este panel cuando entra un pago.')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+      <button class="btn-edit-cancel" style="margin:0;" onclick="ejecutarTareaBot('briefing', this)">Probar briefing</button>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="sonarChaching();lanzarConfeti();">Probar cha-ching</button>
+    </div>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
+}
+async function cambiarAuto(k, on) {
+  if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) { sonarChaching(); lanzarConfeti(); } return; }
+  _auto[k] = on;
+  try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
+  catch (e) { toast('No se pudo guardar.', 'err'); }
+}
+function initAutomatizaciones() {
+  db.collection('config').doc('automatizaciones').onSnapshot(s => { if (s.exists) _auto = { ..._auto, ...s.data() }; }, () => {});
+}
+
+/* Precio inteligente: historial real de cada servicio del carrito (sin IA, sin inventar) */
+function renderPrecioInteligente() {
+  const el = document.getElementById('precio-intel');
+  if (!el) return;
+  const filas = [];
+  cart.forEach(it => {
+    const n = ptNorm(it.s);
+    const ventas = [], cots = [];
+    Object.values(docsMap).forEach(d => (d.items || []).forEach(x => { if (ptNorm(x.s) === n && Number(x.p) > 0) ventas.push({ p: Number(x.p), pagado: !!(d.pagado || d.type === 'recibo') }); }));
+    (cotizacionesList || []).forEach(c => (c.items || []).forEach(x => { if (ptNorm(x.s) === n && Number(x.p) > 0) cots.push({ p: Number(x.p), ok: ['aceptada', 'facturada'].includes(c.estado), no: c.estado === 'rechazada' || (c.estado === 'enviada' && c.venceEl && c.venceEl < todayISO()) }); }));
+    const pagadas = ventas.filter(v => v.pagado);
+    if (pagadas.length < 2 && cots.length < 2) return;
+    const ps = pagadas.map(v => v.p);
+    const min = Math.min(...ps), max = Math.max(...ps), prom = ps.reduce((a, b) => a + b, 0) / (ps.length || 1);
+    const resueltas = cots.filter(c => c.ok || c.no);
+    const aEste = resueltas.filter(c => c.p <= it.p + 0.01), aceptadas = aEste.filter(c => c.ok);
+    let tono = 'ok', consejo = '';
+    if (ps.length && it.p > max * 1.1) { tono = 'alto'; consejo = 'Está por encima de lo que te han pagado antes.'; }
+    else if (ps.length && it.p < min * 0.9) { tono = 'bajo'; consejo = 'Está por debajo de tu historial: podrías cobrar más.'; }
+    filas.push(`<div class="pi-row pi-${tono}"><b>${esc(it.s)}</b> · ${ps.length ? `vendido ${ps.length} ${ps.length === 1 ? 'vez' : 'veces'} entre ${cbMoney(min)} y ${cbMoney(max)} (prom. ${cbMoney(prom)})` : 'sin ventas pagadas aún'}${aEste.length >= 2 ? ` · cotizaciones a ${cbMoney(it.p)} o menos: <b>${aceptadas.length} de ${aEste.length}</b> aceptadas (${Math.round(aceptadas.length / aEste.length * 100)}%)` : ''}${consejo ? `<div class="pi-tip">${consejo}</div>` : ''}</div>`);
+  });
+  el.innerHTML = filas.length ? `<div class="pi"><div class="pi-t"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Precio inteligente · según tu historial</div>${filas.join('')}</div>` : '';
+}
+/* ═══════════════════════════════════════════════════════
+   MOCKUP DE SITIO WEB (mockup.html) — gancho para cotizaciones
+═══════════════════════════════════════════════════════ */
+const MOCKUP_URL = 'https://adv.dgp-link.com/mockup.html';
+function compartirMockup(url, nombre, cliente) {
+  const tel = String(clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(cliente || ''))?.telefono || '').replace(/\D/g, '');
+  const wa = `https://wa.me/${tel}?text=${encodeURIComponent(`Hola${cliente ? ' ' + cliente.split(' ')[0] : ''}! Te preparamos una vista previa de cómo podría verse la web de ${nombre}:\n${url}\n\n¿Qué te parece?`)}`;
+  ptModal('Mockup listo', nombre, `
+    <p style="font-size:12.5px;color:var(--text-soft);margin-bottom:12px;line-height:1.5;font-family:'IBM Plex Sans',sans-serif;">Es una vista previa con su nombre, colores${cliente ? '' : ' y servicios'}. Se ve en computadora y en celular.</p>
+    <div class="ff"><label>Enlace</label><input readonly value="${esc(url)}" onclick="this.select()"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <a class="btn-edit-cancel" style="margin:0;text-align:center;text-decoration:none;" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a>
+      <button class="btn-edit-cancel" style="margin:0;" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Enlace copiado ✅')">Copiar</button>
+      <a class="btn-edit-save" style="margin:0;text-align:center;text-decoration:none;" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>
+    </div>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
+}
+function abrirMockupBrief(fsId) {
+  const d = docsMap[fsId]; if (!d) return;
+  compartirMockup(`${MOCKUP_URL}?id=${encodeURIComponent(fsId)}`, d.brief?.negocio || d.cli || 'tu negocio', d.cli);
+}
+function abrirGeneradorMockup() {
+  const opts = (arr, sel) => arr.map(([v, t]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${t}</option>`).join('');
+  ptModal('Mockup de página web', 'Muéstrale al cliente cómo podría verse su web antes de pagar', `
+    <div class="ff"><label>Cliente (opcional)</label><input id="mk-cli" list="clientes-list" placeholder="Para enviárselo por WhatsApp"></div>
+    <div class="ff"><label>Nombre del negocio</label><input id="mk-n" maxlength="60" placeholder="Ej. Spa Serena"></div>
+    <div class="ff"><label>Frase principal</label><input id="mk-s" maxlength="90" placeholder="Ej. Relájate como nunca"></div>
+    <div class="ff"><label>Descripción corta</label><input id="mk-d" maxlength="200" placeholder="Ej. Masajes y tratamientos faciales en Doral"></div>
+    <div class="ff"><label>Servicios (uno por línea, con precio opcional)</label><textarea id="mk-srv" rows="3" style="resize:vertical;" placeholder="Masajes — $60&#10;Faciales&#10;Manicure"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="ff"><label>Estilo</label><select id="mk-e">${opts([['creativo', 'Creativo'], ['minimalista', 'Minimalista'], ['corporativo', 'Corporativo'], ['elegante', 'Elegante']], 'creativo')}</select></div>
+      <div class="ff"><label>Botón principal</label><select id="mk-cta">${opts([['Escribir por WhatsApp', 'WhatsApp'], ['Llamar', 'Llamar'], ['Reservar una cita', 'Reservar'], ['Comprar online', 'Comprar'], ['Llenar un formulario', 'Cotizar']], 'Escribir por WhatsApp')}</select></div>
+    </div>
+    <div class="ff"><label>Colores</label><div style="display:flex;gap:10px;align-items:center;">
+      <input type="color" id="mk-c1" value="#1438cc" style="width:52px;height:36px;padding:2px;"><input type="color" id="mk-c2" value="#3eaedd" style="width:52px;height:36px;padding:2px;">
+      <span style="font-size:11px;color:var(--text-soft);">Principal · secundario</span></div></div>
+    <button class="btn-edit-save" onclick="generarMockup()">Crear mockup</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
+}
+function generarMockup() {
+  const v = id => document.getElementById(id).value.trim();
+  if (!v('mk-n')) { toast('Escribe el nombre del negocio.', 'err'); return; }
+  const q = new URLSearchParams({ n: v('mk-n'), s: v('mk-s'), d: v('mk-d'), srv: v('mk-srv').split('\n').map(x => x.trim()).filter(Boolean).join('|'), e: v('mk-e'), cta: v('mk-cta'), c1: v('mk-c1'), c2: v('mk-c2') });
+  [...q.keys()].forEach(k => { if (!q.get(k)) q.delete(k); });
+  compartirMockup(`${MOCKUP_URL}?${q.toString()}`, v('mk-n'), v('mk-cli'));
+}
 /* ═══════════════════════════════════════════════════════
    FACTURA EN INGLÉS — Sheet language toggle
 ═══════════════════════════════════════════════════════ */
