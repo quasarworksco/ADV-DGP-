@@ -681,7 +681,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-13c';
+const WORKER_VERSION = '2026-10-13d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -937,6 +937,8 @@ async function tareaDiaria(env) {
   }
   const meta = await lineaMeta(env, token, docs).catch(() => '');
   if (meta) L.push('', meta);
+  const bots = await bloqueosDeAyer();
+  if (bots && (bots.spam || bots.limite)) L.push('', `🛡️ Ayer el escudo bloqueó ${bots.spam + bots.limite} intento${bots.spam + bots.limite !== 1 ? 's' : ''} de spam en tu web${bots.limite ? ` (${bots.limite} por enviar demasiados mensajes)` : ''}.`);
   if (L.length === 1 || (meta && L.length === 3)) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
   L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
   await tgEnviar(env, L.join('\n'));
@@ -1897,6 +1899,10 @@ async function handleContacto(request, env) {
   if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
   if (!correo && telefono.replace(/\D/g, '').length < 7) return resp({ error: 'Déjanos tu correo o tu WhatsApp para responderte.' }, 400);
   if (/https?:\/\/\S+.*https?:\/\//i.test(mensaje)) return resp({ ok: true }); // varios enlaces = spam
+  // Escudo antispam: palabras típicas, alfabetos raros y correos desechables. Al bot se le responde "ok" para que no insista
+  if (esSpam({ nombre, correo, mensaje: `${servicio} ${negocio} ${mensaje}` })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
+  // Máximo 3 mensajes por hora desde la misma conexión
+  if (await superaLimite(request, 'contacto', 3, 3600)) { await contarBloqueo(env, 'limite'); return resp({ error: 'Ya recibimos tus mensajes. Te responderemos pronto; si es urgente, escríbenos por WhatsApp.' }, 429); }
   try {
     const token = await firebaseLogin(env);
     const clientes = await fsList(env, 'clientes', token);
@@ -2048,6 +2054,8 @@ async function handleResenasWeb(request, env, ctx) {
   if (nombre.length < 2 || !comentario || !parseInt(b.valoracion)) return resp({ error: 'Completa todos los campos.' }, 400);
   if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
   if (/https?:\/\//i.test(comentario)) return resp({ ok: true }); // las reseñas con enlaces son spam
+  if (esSpam({ nombre, correo, mensaje: comentario })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
+  if (await superaLimite(request, 'resena', 2, 3600)) { await contarBloqueo(env, 'limite'); return resp({ error: 'Ya recibimos tu reseña. ¡Gracias!' }, 429); }
   try {
     const token = await firebaseLogin(env);
     const id = await fsCreate(env, 'resenasWeb', {
@@ -2220,6 +2228,8 @@ async function handleChatWeb(request, env) {
   const msgs = (Array.isArray(b.mensajes) ? b.mensajes : []).slice(-30)
     .map(m => ({ rol: m.rol === 'user' ? 'user' : 'assistant', texto: String(m.texto || '').slice(0, 1500).trim() })).filter(m => m.texto);
   if (!msgs.some(m => m.rol === 'user')) return resp({ ok: true });
+  if (esSpam({ mensaje: msgs.filter(m => m.rol === 'user').map(m => m.texto).join(' ') })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
+  if (await superaLimite(request, 'chat', 12, 3600)) { await contarBloqueo(env, 'limite'); return resp({ ok: true }); }
   const ahora = new Date().toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
   const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
   await tgEnviar(env, `🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
@@ -2510,4 +2520,70 @@ async function registrarApertura(env, c, id, t, r) {
   const veces = (Number(doc.aperturas) || 0) + 1;
   const link = c === 'cotizaciones' ? `${SITIO}/cotizacion.html?id=${id}` : `${SITIO}/factura-publica.html?id=${id}`;
   await tgEnviar(env, `👀 <b>${escHtml(doc.cli || 'Un cliente')}</b> abrió su ${c === 'cotizaciones' ? 'cotización' : 'factura'} ${escHtml(doc.docId || '')} · ${dinero(c === 'cotizaciones' ? doc.total : saldoDoc(doc))}${cuando}${veces > 1 ? `\nYa la abrió ${veces} veces.` : ''}\n${veces >= 3 ? '💡 La está mirando seguido: buen momento para escribirle.' : ''}\n<a href="${link}">Ver</a>`);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ESCUDO ANTISPAM para los formularios de la web
+   · esSpam: palabras típicas de spam, alfabetos raros, enlaces en el nombre,
+     correos desechables y texto basura
+   · superaLimite: máximo N envíos por hora desde la misma conexión (IP),
+     usando la caché de Cloudflare (sin cuentas ni costos)
+══════════════════════════════════════════════════════════════ */
+const SPAM_PALABRAS = [
+  'casino', 'slot', 'betting', 'apuestas online', 'crypto', 'cripto', 'bitcoin', 'btc', 'ethereum', 'forex', 'binary option', 'nft',
+  'viagra', 'cialis', 'pharmacy', 'porn', 'xxx', 'sexy', 'dating', 'onlyfans', 'escort', 'loan', 'préstamo rápido', 'payday',
+  'seo service', 'seo services', 'backlink', 'guest post', 'rank your website', 'first page of google', 'web traffic', 'increase your traffic',
+  'link building', 'domain authority', 'dear sir', 'dear madam', 'kindly', 'click here', 'unsubscribe', 'make money', 'earn $', 'work from home',
+  'investment opportunity', 'wire transfer', 'inheritance', 'lottery', 'you have won', 'gana dinero', 'ganaste', 'herencia'
+];
+const SPAM_DOMINIOS = ['mailinator.com', 'tempmail', 'temp-mail', '10minutemail', 'guerrillamail', 'yopmail', 'trashmail', 'sharklasers', 'getnada', 'dispostable', 'fakeinbox', 'throwaway'];
+function esSpam({ nombre = '', correo = '', mensaje = '' }) {
+  const t = `${nombre} ${mensaje}`.toLowerCase();
+  if (SPAM_PALABRAS.some(p => new RegExp(`(^|[^a-záéíóúñ])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-záéíóúñ]|$)`, 'i').test(t))) return true;
+  if (/https?:\/\/|www\.|\.(com|net|ru|xyz|top)\b/i.test(nombre)) return true;             // enlaces en el nombre
+  if (/(t\.me\/|bit\.ly|tinyurl|wa\.link\/[a-z0-9]{6,}|telegra\.ph)/i.test(t)) return true; // enlaces acortados o de Telegram
+  const dom = String(correo).split('@')[1] || '';
+  if (dom && SPAM_DOMINIOS.some(d => dom.includes(d))) return true;
+  const letras = t.replace(/[\s\d\p{P}\p{S}]/gu, '');
+  if (letras.length > 15) {
+    const raras = (letras.match(/[Ѐ-ӿ؀-ۿ฀-๿぀-ヿ㐀-鿿가-힯]/g) || []).length; // cirílico, árabe, tailandés, chino, japonés, coreano
+    if (raras / letras.length > 0.3) return true;
+  }
+  if (mensaje.length > 40 && !/[aeiouáéíóú]{1}/i.test(mensaje.replace(/[^a-záéíóú]/gi, '').slice(0, 60))) return true; // texto sin vocales = basura
+  if ((mensaje.match(/https?:\/\//g) || []).length >= 2) return true;
+  return false;
+}
+async function superaLimite(request, tipo, max, segundos) {
+  try {
+    const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
+    if (!ip) return false;
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`dgp-limite:${ip}`));
+    const id = [...new Uint8Array(h)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+    const clave = new Request(`https://limites.dgp/${tipo}/${id}`);
+    const cache = caches.default;
+    const prev = await cache.match(clave);
+    const datos = prev ? await prev.json() : { n: 0, desde: Date.now() };
+    if (Date.now() - datos.desde > segundos * 1000) { datos.n = 0; datos.desde = Date.now(); }
+    datos.n++;
+    const restante = Math.max(60, Math.round(segundos - (Date.now() - datos.desde) / 1000));
+    await cache.put(clave, new Response(JSON.stringify(datos), { headers: { 'Cache-Control': `max-age=${restante}` } }));
+    return datos.n > max;
+  } catch (e) { return false; } // si la caché falla, no bloqueamos a nadie
+}
+/* Cuenta lo bloqueado (para el resumen diario), sin avisarte de cada bot */
+async function contarBloqueo(env, motivo) {
+  try {
+    const clave = new Request(`https://limites.dgp/bloqueos/${hoyVE()}`);
+    const prev = await caches.default.match(clave);
+    const d = prev ? await prev.json() : { spam: 0, limite: 0 };
+    d[motivo] = (d[motivo] || 0) + 1;
+    await caches.default.put(clave, new Response(JSON.stringify(d), { headers: { 'Cache-Control': 'max-age=172800' } }));
+  } catch (e) {}
+}
+async function bloqueosDeAyer() {
+  try {
+    const ayer = new Date(Date.now() - 4 * 3600e3 - 864e5).toISOString().slice(0, 10);
+    const r = await caches.default.match(new Request(`https://limites.dgp/bloqueos/${ayer}`));
+    return r ? await r.json() : null;
+  } catch (e) { return null; }
 }
