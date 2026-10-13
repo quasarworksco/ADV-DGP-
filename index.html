@@ -1873,10 +1873,7 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 
     <div id="subtab-cotizaciones" style="display:none;">
       <div class="panel-f panel-f-full">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div class="panel-title-f" style="margin:0;">Cotizaciones</div>
-          <button class="btn-sm" style="background:var(--blue-xlight);color:var(--blue);border-color:rgba(20,56,204,.2);display:inline-flex;align-items:center;gap:6px;" onclick="abrirGeneradorMockup()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Crear mockup de web</button>
-        </div>
+        <div class="panel-title-f">Cotizaciones</div>
         <div class="hist-search-bar">
           <input type="text" id="cot-search" placeholder="Buscar por cliente o N° de cotización..." oninput="renderCotizaciones()">
           <div class="hist-filters">
@@ -4116,7 +4113,6 @@ function renderProyectos() {
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <button class="proy-done-btn${isDone ? ' done' : ''}" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();toggleBriefCompletado('${esc(id)}')">${isDone ? SVG_CHECK : SVG_CIRCLE} ${isDone ? 'Completado' : 'Marcar completado'}</button>
             <button class="proy-prompt-btn" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();generarPromptBrief('${esc(id)}')">${SVG_BOLT} Generar prompt</button>
-            ${tipo === 'web' ? `<button class="proy-prompt-btn" style="display:flex;align-items:center;gap:5px;" onclick="event.stopPropagation();abrirMockupBrief('${esc(id)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Mockup</button>` : ''}
             <button class="proy-link-btn" onclick="event.stopPropagation();openSheet(docsMap['${esc(id)}'])">Ver factura →</button>
           </div>
           <div class="proy-prompt-box" id="proy-prompt-${esc(id)}"></div>
@@ -8329,52 +8325,6 @@ function renderPrecioInteligente() {
     filas.push(`<div class="pi-row pi-${tono}"><b>${esc(it.s)}</b> · ${ps.length ? `vendido ${ps.length} ${ps.length === 1 ? 'vez' : 'veces'} entre ${cbMoney(min)} y ${cbMoney(max)} (prom. ${cbMoney(prom)})` : 'sin ventas pagadas aún'}${aEste.length >= 2 ? ` · cotizaciones a ${cbMoney(it.p)} o menos: <b>${aceptadas.length} de ${aEste.length}</b> aceptadas (${Math.round(aceptadas.length / aEste.length * 100)}%)` : ''}${consejo ? `<div class="pi-tip">${consejo}</div>` : ''}</div>`);
   });
   el.innerHTML = filas.length ? `<div class="pi"><div class="pi-t"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Precio inteligente · según tu historial</div>${filas.join('')}</div>` : '';
-}
-/* ═══════════════════════════════════════════════════════
-   MOCKUP DE SITIO WEB (mockup.html) — gancho para cotizaciones
-═══════════════════════════════════════════════════════ */
-const MOCKUP_URL = 'https://adv.dgp-link.com/mockup.html';
-function compartirMockup(url, nombre, cliente) {
-  const tel = String(clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(cliente || ''))?.telefono || '').replace(/\D/g, '');
-  const wa = `https://wa.me/${tel}?text=${encodeURIComponent(`Hola${cliente ? ' ' + cliente.split(' ')[0] : ''}! Te preparamos una vista previa de cómo podría verse la web de ${nombre}:\n${url}\n\n¿Qué te parece?`)}`;
-  ptModal('Mockup listo', nombre, `
-    <p style="font-size:12.5px;color:var(--text-soft);margin-bottom:12px;line-height:1.5;font-family:'IBM Plex Sans',sans-serif;">Es una vista previa con su nombre, colores${cliente ? '' : ' y servicios'}. Se ve en computadora y en celular.</p>
-    <div class="ff"><label>Enlace</label><input readonly value="${esc(url)}" onclick="this.select()"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-      <a class="btn-edit-cancel" style="margin:0;text-align:center;text-decoration:none;" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a>
-      <button class="btn-edit-cancel" style="margin:0;" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Enlace copiado ✅')">Copiar</button>
-      <a class="btn-edit-save" style="margin:0;text-align:center;text-decoration:none;" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>
-    </div>
-    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
-}
-function abrirMockupBrief(fsId) {
-  const d = docsMap[fsId]; if (!d) return;
-  compartirMockup(`${MOCKUP_URL}?id=${encodeURIComponent(fsId)}`, d.brief?.negocio || d.cli || 'tu negocio', d.cli);
-}
-function abrirGeneradorMockup() {
-  const opts = (arr, sel) => arr.map(([v, t]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${t}</option>`).join('');
-  ptModal('Mockup de página web', 'Muéstrale al cliente cómo podría verse su web antes de pagar', `
-    <div class="ff"><label>Cliente (opcional)</label><input id="mk-cli" list="clientes-list" placeholder="Para enviárselo por WhatsApp"></div>
-    <div class="ff"><label>Nombre del negocio</label><input id="mk-n" maxlength="60" placeholder="Ej. Spa Serena"></div>
-    <div class="ff"><label>Frase principal</label><input id="mk-s" maxlength="90" placeholder="Ej. Relájate como nunca"></div>
-    <div class="ff"><label>Descripción corta</label><input id="mk-d" maxlength="200" placeholder="Ej. Masajes y tratamientos faciales en Doral"></div>
-    <div class="ff"><label>Servicios (uno por línea, con precio opcional)</label><textarea id="mk-srv" rows="3" style="resize:vertical;" placeholder="Masajes — $60&#10;Faciales&#10;Manicure"></textarea></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="ff"><label>Estilo</label><select id="mk-e">${opts([['creativo', 'Creativo'], ['minimalista', 'Minimalista'], ['corporativo', 'Corporativo'], ['elegante', 'Elegante']], 'creativo')}</select></div>
-      <div class="ff"><label>Botón principal</label><select id="mk-cta">${opts([['Escribir por WhatsApp', 'WhatsApp'], ['Llamar', 'Llamar'], ['Reservar una cita', 'Reservar'], ['Comprar online', 'Comprar'], ['Llenar un formulario', 'Cotizar']], 'Escribir por WhatsApp')}</select></div>
-    </div>
-    <div class="ff"><label>Colores</label><div style="display:flex;gap:10px;align-items:center;">
-      <input type="color" id="mk-c1" value="#1438cc" style="width:52px;height:36px;padding:2px;"><input type="color" id="mk-c2" value="#3eaedd" style="width:52px;height:36px;padding:2px;">
-      <span style="font-size:11px;color:var(--text-soft);">Principal · secundario</span></div></div>
-    <button class="btn-edit-save" onclick="generarMockup()">Crear mockup</button>
-    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
-}
-function generarMockup() {
-  const v = id => document.getElementById(id).value.trim();
-  if (!v('mk-n')) { toast('Escribe el nombre del negocio.', 'err'); return; }
-  const q = new URLSearchParams({ n: v('mk-n'), s: v('mk-s'), d: v('mk-d'), srv: v('mk-srv').split('\n').map(x => x.trim()).filter(Boolean).join('|'), e: v('mk-e'), cta: v('mk-cta'), c1: v('mk-c1'), c2: v('mk-c2') });
-  [...q.keys()].forEach(k => { if (!q.get(k)) q.delete(k); });
-  compartirMockup(`${MOCKUP_URL}?${q.toString()}`, v('mk-n'), v('mk-cli'));
 }
 /* ═══════════════════════════════════════════════════════
    FACTURA EN INGLÉS — Sheet language toggle
