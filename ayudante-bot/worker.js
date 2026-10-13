@@ -681,7 +681,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-13d';
+const WORKER_VERSION = '2026-10-13e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -937,8 +937,7 @@ async function tareaDiaria(env) {
   }
   const meta = await lineaMeta(env, token, docs).catch(() => '');
   if (meta) L.push('', meta);
-  const bots = await bloqueosDeAyer();
-  if (bots && (bots.spam || bots.limite)) L.push('', `🛡️ Ayer el escudo bloqueó ${bots.spam + bots.limite} intento${bots.spam + bots.limite !== 1 ? 's' : ''} de spam en tu web${bots.limite ? ` (${bots.limite} por enviar demasiados mensajes)` : ''}.`);
+  await revisarCuarentena(env, token).catch(e => console.warn('Cuarentena', e));
   if (L.length === 1 || (meta && L.length === 3)) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
   L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
   await tgEnviar(env, L.join('\n'));
@@ -1247,7 +1246,8 @@ async function tgCallback(env, cq) {
     wa: () => botResenaWeb(env, token, id, 'aprobada'),
     wr: () => botResenaWeb(env, token, id, 'rechazada'),
     k: () => botCrearDesdeBorrador(env, token, id, true),
-    m: () => botRecordatorioManual(env, token, id)
+    m: () => botRecordatorioManual(env, token, id),
+    sv: () => botRecuperarSospechoso(env, token, id)
   };
   const res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' };
   await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
@@ -1890,7 +1890,7 @@ async function handleContacto(request, env) {
   if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
   const b = await leerFormularioContacto(request);
   // Anti-spam: campo trampa invisible y tiempo mínimo llenando el formulario
-  if (b._hp_dgp || (Number(b.t) && Number(b.t) < 2500)) return resp({ ok: true });
+  const trampa = !!b._hp_dgp || (Number(b.t) && Number(b.t) < 2500);
   const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
   const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase(), telefono = limpiar(b.telefono, 40);
   const servicio = limpiar(b.servicio, 80), negocio = limpiar(b.negocio, 100);
@@ -1898,13 +1898,27 @@ async function handleContacto(request, env) {
   if (nombre.length < 2) return resp({ error: 'Escribe tu nombre.' }, 400);
   if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
   if (!correo && telefono.replace(/\D/g, '').length < 7) return resp({ error: 'Déjanos tu correo o tu WhatsApp para responderte.' }, 400);
-  if (/https?:\/\/\S+.*https?:\/\//i.test(mensaje)) return resp({ ok: true }); // varios enlaces = spam
-  // Escudo antispam: palabras típicas, alfabetos raros y correos desechables. Al bot se le responde "ok" para que no insista
-  if (esSpam({ nombre, correo, mensaje: `${servicio} ${negocio} ${mensaje}` })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
-  // Máximo 3 mensajes por hora desde la misma conexión
-  if (await superaLimite(request, 'contacto', 3, 3600)) { await contarBloqueo(env, 'limite'); return resp({ error: 'Ya recibimos tus mensajes. Te responderemos pronto; si es urgente, escríbenos por WhatsApp.' }, 429); }
+  const datos = { nombre, correo, telefono, servicio, negocio, mensaje };
+  // Escudo antispam: al bot se le responde "ok" para que no insista, pero el mensaje NO se pierde (cuarentena)
+  const an = analizarSpam({ nombre, correo, mensaje: `${servicio} ${negocio} ${mensaje}` });
+  if (trampa || an.nivel === 'spam') { await guardarSospechoso(env, 'contacto', datos, trampa ? ['llenó el campo invisible o envió en menos de 3 segundos', ...an.motivos] : an.motivos); return resp({ ok: true }); }
+  // Más de 5 mensajes por hora desde la misma conexión: también a cuarentena (y se le sugiere WhatsApp)
+  if (await superaLimite(request, 'contacto', 5, 3600)) { await guardarSospechoso(env, 'contacto', datos, ['más de 5 mensajes en una hora']); return resp({ error: 'Ya recibimos tus mensajes. Te responderemos pronto; si es urgente, escríbenos por WhatsApp.' }, 429); }
   try {
     const token = await firebaseLogin(env);
+    await registrarLead(env, token, datos, { dudoso: an.nivel === 'dudoso' ? an.motivos : null });
+    return resp({ ok: true });
+  } catch (e) {
+    console.error('contacto', e);
+    await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
+    return resp({ ok: true });
+  }
+}
+
+/* Registra el contacto en el CRM y avisa (también se usa al recuperar de la cuarentena) */
+async function registrarLead(env, token, d, opciones = {}) {
+  const { nombre, correo = '', telefono = '', servicio = '', negocio = '', mensaje = '' } = d;
+  {
     const clientes = await fsList(env, 'clientes', token);
     const tel = telefono.replace(/\D/g, '');
     const existe = clientes.find(c => (correo && String(c.correo || '').toLowerCase() === correo) || (tel.length >= 7 && String(c.telefono || '').replace(/\D/g, '').endsWith(tel.slice(-9))))
@@ -1922,14 +1936,14 @@ async function handleContacto(request, env) {
       await fsCreate(env, 'clientes', {
         nombre: partes[0], apellido: partes.slice(1).join(' '), correo, telefono, empresa: negocio,
         notas: `Escribió desde la web el ${hoy}${servicio ? ` · Le interesa: ${servicio}` : ''}${mensaje ? `\n"${mensaje.slice(0, 600)}"` : ''}`,
-        tags: ['Prospecto', ...(servicio ? [servicio.slice(0, 24)] : [])], origen: 'web', mensajesWeb: [entrada],
+        tags: ['Prospecto', ...(opciones.dudoso ? ['Revisar'] : []), ...(servicio ? [servicio.slice(0, 24)] : [])], origen: 'web', mensajesWeb: [entrada],
         creadoPor: 'web', createdAt: new Date()
       }, token);
     }
     const primer = nombre.split(' ')[0];
     const auto = await automatizaciones(env, token);
     let acuse = false, borrador = null;
-    if (auto.vendedor && correo) {
+    if (auto.vendedor && correo && !opciones.dudoso) {
       // 1) Acuse inmediato con plantilla fija (sin IA: no puede equivocarse)
       acuse = await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Group USA`,
         correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Group USA · Servicios Digitales Profesionales' }),
@@ -1939,17 +1953,12 @@ async function handleContacto(request, env) {
     }
     const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Group USA por tu mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}. ¿Cuándo podemos conversar?`)}` : null;
     await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
-      text: `📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en Clientes con la etiqueta <b>Prospecto</b>.'}`,
+      text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en Clientes con la etiqueta <b>Prospecto</b>.'}`,
       reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
     }).catch(() => {});
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
       [{ text: '✅ Crear y enviársela', callback_data: `c:${borrador.id}` }],
       [{ text: '📝 Solo crearla', callback_data: `k:${borrador.id}` }, { text: '❌ Descartar', callback_data: `x:${borrador.id}` }]] } }).catch(() => {});
-    return resp({ ok: true });
-  } catch (e) {
-    console.error('contacto', e);
-    await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
-    return resp({ ok: true });
   }
 }
 
@@ -2046,31 +2055,38 @@ async function handleResenasWeb(request, env, ctx) {
 
   if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
   const b = await request.json().catch(() => ({}));
-  if (b._hp_dgp || (Number(b.t) && Number(b.t) < 3000)) return resp({ ok: true });
+  const trampa = !!b._hp_dgp || (Number(b.t) && Number(b.t) < 3000);
   const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
   const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase();
   const comentario = String(b.comentario || '').replace(/[<>]/g, '').trim().slice(0, 1500);
   const valoracion = Math.min(5, Math.max(1, parseInt(b.valoracion) || 0));
   if (nombre.length < 2 || !comentario || !parseInt(b.valoracion)) return resp({ error: 'Completa todos los campos.' }, 400);
   if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return resp({ error: 'El correo no es válido.' }, 400);
-  if (/https?:\/\//i.test(comentario)) return resp({ ok: true }); // las reseñas con enlaces son spam
-  if (esSpam({ nombre, correo, mensaje: comentario })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
-  if (await superaLimite(request, 'resena', 2, 3600)) { await contarBloqueo(env, 'limite'); return resp({ error: 'Ya recibimos tu reseña. ¡Gracias!' }, 429); }
+  const datos = { nombre, correo, valoracion, comentario, idioma: b.idioma === 'en' ? 'en' : 'es' };
+  const an = analizarSpam({ nombre, correo, mensaje: comentario });
+  if (/https?:\/\//i.test(comentario)) { an.puntos += 3; an.motivos.push('enlace en la reseña'); an.nivel = 'spam'; }
+  if (trampa || an.nivel === 'spam') { await guardarSospechoso(env, 'resena', datos, trampa ? ['llenó el campo invisible o envió muy rápido', ...an.motivos] : an.motivos); return resp({ ok: true }); }
+  if (await superaLimite(request, 'resena', 3, 3600)) { await guardarSospechoso(env, 'resena', datos, ['más de 3 reseñas en una hora']); return resp({ error: 'Ya recibimos tu reseña. ¡Gracias!' }, 429); }
   try {
     const token = await firebaseLogin(env);
-    const id = await fsCreate(env, 'resenasWeb', {
-      nombre, correo, valoracion, comentario, estado: 'pendiente', origen: 'web', idioma: b.idioma === 'en' ? 'en' : 'es', fecha: new Date()
-    }, token);
-    await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
-      text: `⭐ <b>Nueva reseña en la web</b> (pendiente)\n\n${'★'.repeat(valoracion)}${'☆'.repeat(5 - valoracion)}\n👤 ${escHtml(nombre)}${correo ? ` · ${escHtml(correo)}` : ''}\n\n💬 “${escHtml(comentario.slice(0, 900))}”\n\nNo se publica hasta que la apruebes (aquí o en el panel → Reseñas web).`,
-      reply_markup: { inline_keyboard: [[{ text: '✅ Publicar', callback_data: `wa:${id}` }, { text: '🗑 Rechazar', callback_data: `wr:${id}` }]] }
-    }).catch(() => {});
+    await guardarResenaWeb(env, token, datos, an.nivel === 'dudoso' ? an.motivos.join(', ') : '');
     return resp({ ok: true });
   } catch (e) {
     console.error('resenas-web POST', e);
     await tgEnviar(env, `⭐ Llegó una reseña de la web pero no se pudo guardar:\n${escHtml(nombre)} (${valoracion}★)\n${escHtml(comentario.slice(0, 500))}`).catch(() => {});
     return resp({ ok: true });
   }
+}
+/* Guarda la reseña como pendiente y avisa con botones (también al recuperar de la cuarentena) */
+async function guardarResenaWeb(env, token, d, dudoso) {
+  const valoracion = Math.min(5, Math.max(1, parseInt(d.valoracion) || 5));
+  const id = await fsCreate(env, 'resenasWeb', {
+    nombre: d.nombre, correo: d.correo || '', valoracion, comentario: d.comentario, estado: 'pendiente', origen: 'web', idioma: d.idioma === 'en' ? 'en' : 'es', fecha: new Date()
+  }, token);
+  await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
+    text: `${dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(dudoso)})\n\n` : ''}⭐ <b>Nueva reseña en la web</b> (pendiente)\n\n${'★'.repeat(valoracion)}${'☆'.repeat(5 - valoracion)}\n👤 ${escHtml(d.nombre)}${d.correo ? ` · ${escHtml(d.correo)}` : ''}\n\n💬 “${escHtml(String(d.comentario).slice(0, 900))}”\n\nNo se publica hasta que la apruebes (aquí o en el panel → Reseñas web).`,
+    reply_markup: { inline_keyboard: [[{ text: '✅ Publicar', callback_data: `wa:${id}` }, { text: '🗑 Rechazar', callback_data: `wr:${id}` }]] }
+  }).catch(() => {});
 }
 async function botResenaWeb(env, token, id, estado) {
   const r = await fsGet(env, `resenasWeb/${id}`, token);
@@ -2228,11 +2244,14 @@ async function handleChatWeb(request, env) {
   const msgs = (Array.isArray(b.mensajes) ? b.mensajes : []).slice(-30)
     .map(m => ({ rol: m.rol === 'user' ? 'user' : 'assistant', texto: String(m.texto || '').slice(0, 1500).trim() })).filter(m => m.texto);
   if (!msgs.some(m => m.rol === 'user')) return resp({ ok: true });
-  if (esSpam({ mensaje: msgs.filter(m => m.rol === 'user').map(m => m.texto).join(' ') })) { await contarBloqueo(env, 'spam'); return resp({ ok: true }); }
-  if (await superaLimite(request, 'chat', 12, 3600)) { await contarBloqueo(env, 'limite'); return resp({ ok: true }); }
+  const textoCliente = msgs.filter(m => m.rol === 'user').map(m => m.texto).join(' ');
+  const transcripcion = msgs.map(m => `${m.rol === 'user' ? 'Cliente' : 'Altair'}: ${m.texto}`).join('\n');
+  const an = analizarSpam({ mensaje: textoCliente });
+  if (an.nivel === 'spam') { await guardarSospechoso(env, 'chat', { nombre: 'Visitante del chat', mensaje: transcripcion.slice(0, 3000) }, an.motivos); return resp({ ok: true }); }
+  if (await superaLimite(request, 'chat', 20, 3600)) { await guardarSospechoso(env, 'chat', { nombre: 'Visitante del chat', mensaje: transcripcion.slice(0, 3000) }, ['más de 20 conversaciones en una hora']); return resp({ ok: true }); }
   const ahora = new Date().toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
   const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
-  await tgEnviar(env, `🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
+  await tgEnviar(env, `${an.nivel === 'dudoso' ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(an.motivos.join(', '))})\n` : ''}🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
   return resp({ ok: true });
 }
 
@@ -2523,35 +2542,42 @@ async function registrarApertura(env, c, id, t, r) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ESCUDO ANTISPAM para los formularios de la web
-   · esSpam: palabras típicas de spam, alfabetos raros, enlaces en el nombre,
-     correos desechables y texto basura
-   · superaLimite: máximo N envíos por hora desde la misma conexión (IP),
-     usando la caché de Cloudflare (sin cuentas ni costos)
+   ESCUDO ANTISPAM para los formularios de la web — NINGÚN MENSAJE SE PIERDE
+   · analizarSpam da puntos. 0 = normal · 1–2 = dudoso (llega igual, marcado
+     "revisar") · 3+ = spam casi seguro → va a CUARENTENA (no se borra) y cada
+     mañana te llega la lista con un botón "Era un cliente" para recuperarlo.
+   · Límite por conexión (IP) alto para no frenar a personas reales; lo que se
+     pasa del límite también va a cuarentena.
 ══════════════════════════════════════════════════════════════ */
-const SPAM_PALABRAS = [
-  'casino', 'slot', 'betting', 'apuestas online', 'crypto', 'cripto', 'bitcoin', 'btc', 'ethereum', 'forex', 'binary option', 'nft',
-  'viagra', 'cialis', 'pharmacy', 'porn', 'xxx', 'sexy', 'dating', 'onlyfans', 'escort', 'loan', 'préstamo rápido', 'payday',
-  'seo service', 'seo services', 'backlink', 'guest post', 'rank your website', 'first page of google', 'web traffic', 'increase your traffic',
-  'link building', 'domain authority', 'dear sir', 'dear madam', 'kindly', 'click here', 'unsubscribe', 'make money', 'earn $', 'work from home',
-  'investment opportunity', 'wire transfer', 'inheritance', 'lottery', 'you have won', 'gana dinero', 'ganaste', 'herencia'
-];
+// Frases que casi solo usa el spam (2 puntos)
+const SPAM_FUERTE = ['casino', 'viagra', 'cialis', 'porn', 'xxx', 'onlyfans', 'escort', 'lottery', 'you have won', 'inheritance fund', 'wire transfer',
+  'investment opportunity', 'binary option', 'payday loan', 'backlink', 'backlinks', 'guest post', 'link building', 'domain authority', 'rank your website',
+  'increase your traffic', 'web traffic', 'unsubscribe', 'click here', 'make money', 'earn $', 'gana dinero', 'ganaste un', 'we are a leading', 'our seo'];
+// Palabras que un cliente real también podría usar (1 punto): solas NO bloquean
+const SPAM_SUAVE = ['crypto', 'cripto', 'bitcoin', 'btc', 'forex', 'nft', 'betting', 'apuestas online', 'pharmacy', 'loan', 'préstamo rápido', 'dating', 'sexy',
+  'seo services', 'first page of google', 'dear sir', 'dear madam', 'kindly', 'work from home'];
 const SPAM_DOMINIOS = ['mailinator.com', 'tempmail', 'temp-mail', '10minutemail', 'guerrillamail', 'yopmail', 'trashmail', 'sharklasers', 'getnada', 'dispostable', 'fakeinbox', 'throwaway'];
-function esSpam({ nombre = '', correo = '', mensaje = '' }) {
+const contiene = (t, p) => new RegExp(`(^|[^a-z0-9áéíóúñ])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9áéíóúñ]|$)`, 'i').test(t);
+function analizarSpam({ nombre = '', correo = '', mensaje = '' }) {
   const t = `${nombre} ${mensaje}`.toLowerCase();
-  if (SPAM_PALABRAS.some(p => new RegExp(`(^|[^a-záéíóúñ])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-záéíóúñ]|$)`, 'i').test(t))) return true;
-  if (/https?:\/\/|www\.|\.(com|net|ru|xyz|top)\b/i.test(nombre)) return true;             // enlaces en el nombre
-  if (/(t\.me\/|bit\.ly|tinyurl|wa\.link\/[a-z0-9]{6,}|telegra\.ph)/i.test(t)) return true; // enlaces acortados o de Telegram
+  const motivos = []; let puntos = 0;
+  const suma = (n, m) => { puntos += n; motivos.push(m); };
+  SPAM_FUERTE.filter(p => contiene(t, p)).forEach(p => suma(2, `"${p}"`));
+  SPAM_SUAVE.filter(p => contiene(t, p)).forEach(p => suma(1, `"${p}"`));
+  if (/https?:\/\/|www\.|\.(com|net|ru|xyz|top)\b/i.test(nombre)) suma(3, 'enlace en el nombre');
+  if (/(t\.me\/|bit\.ly|tinyurl|telegra\.ph)/i.test(t)) suma(2, 'enlace acortado o de Telegram');
   const dom = String(correo).split('@')[1] || '';
-  if (dom && SPAM_DOMINIOS.some(d => dom.includes(d))) return true;
+  if (dom && SPAM_DOMINIOS.some(d => dom.includes(d))) suma(3, 'correo desechable');
   const letras = t.replace(/[\s\d\p{P}\p{S}]/gu, '');
   if (letras.length > 15) {
-    const raras = (letras.match(/[Ѐ-ӿ؀-ۿ฀-๿぀-ヿ㐀-鿿가-힯]/g) || []).length; // cirílico, árabe, tailandés, chino, japonés, coreano
-    if (raras / letras.length > 0.3) return true;
+    const raras = (letras.match(/[Ѐ-ӿ؀-ۿ฀-๿぀-ヿ㐀-鿿가-힯]/g) || []).length;
+    if (raras / letras.length > 0.3) suma(3, 'otro alfabeto (ruso, chino…)');
   }
-  if (mensaje.length > 40 && !/[aeiouáéíóú]{1}/i.test(mensaje.replace(/[^a-záéíóú]/gi, '').slice(0, 60))) return true; // texto sin vocales = basura
-  if ((mensaje.match(/https?:\/\//g) || []).length >= 2) return true;
-  return false;
+  const soloLetras = mensaje.replace(/[^a-záéíóúñ]/gi, '');
+  if (soloLetras.length > 30 && !/[aeiouáéíóú]/i.test(soloLetras)) suma(3, 'texto sin sentido');
+  const enlaces = (mensaje.match(/https?:\/\//g) || []).length;
+  if (enlaces >= 3) suma(3, `${enlaces} enlaces`); else if (enlaces === 2) suma(2, '2 enlaces');
+  return { puntos, motivos, nivel: puntos >= 3 ? 'spam' : puntos > 0 ? 'dudoso' : 'ok' };
 }
 async function superaLimite(request, tipo, max, segundos) {
   try {
@@ -2570,20 +2596,45 @@ async function superaLimite(request, tipo, max, segundos) {
     return datos.n > max;
   } catch (e) { return false; } // si la caché falla, no bloqueamos a nadie
 }
-/* Cuenta lo bloqueado (para el resumen diario), sin avisarte de cada bot */
-async function contarBloqueo(env, motivo) {
+/* Cuarentena: se guarda en la colección "sospechosos" (máx. 80 por día, por si un bot insiste) */
+async function guardarSospechoso(env, tipo, datos, motivos) {
   try {
-    const clave = new Request(`https://limites.dgp/bloqueos/${hoyVE()}`);
+    const clave = new Request(`https://limites.dgp/cuarentena/${hoyVE()}`);
     const prev = await caches.default.match(clave);
-    const d = prev ? await prev.json() : { spam: 0, limite: 0 };
-    d[motivo] = (d[motivo] || 0) + 1;
-    await caches.default.put(clave, new Response(JSON.stringify(d), { headers: { 'Cache-Control': 'max-age=172800' } }));
-  } catch (e) {}
+    const n = prev ? Number(await prev.text()) || 0 : 0;
+    await caches.default.put(clave, new Response(String(n + 1), { headers: { 'Cache-Control': 'max-age=172800' } }));
+    if (n >= 80) return;
+    const token = await firebaseLogin(env);
+    await fsCreate(env, 'sospechosos', { tipo, motivos: motivos.slice(0, 6), datos, fecha: new Date() }, token);
+  } catch (e) { console.warn('Cuarentena', e); }
 }
-async function bloqueosDeAyer() {
-  try {
-    const ayer = new Date(Date.now() - 4 * 3600e3 - 864e5).toISOString().slice(0, 10);
-    const r = await caches.default.match(new Request(`https://limites.dgp/bloqueos/${ayer}`));
-    return r ? await r.json() : null;
-  } catch (e) { return null; }
+/* Resumen de la cuarentena (va en el mensaje de cada mañana), con botón para recuperar */
+async function revisarCuarentena(env, token) {
+  const todos = await fsList(env, 'sospechosos', token).catch(() => []);
+  const hace = d => (Date.now() - new Date(d.fecha).getTime()) / 864e5;
+  // Se borran solos a los 30 días
+  for (const s of todos.filter(s => hace(s) > 30)) await fsBorrar(env, `sospechosos/${s._id}`, token);
+  const nuevos = todos.filter(s => !s.avisado && hace(s) <= 30);
+  if (!nuevos.length) return 0;
+  const etiqueta = { contacto: 'Formulario', resena: 'Reseña', chat: 'Chat' };
+  const lista = nuevos.slice(0, 8);
+  await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
+    text: `🛡️ <b>Escudo antispam</b> · ${nuevos.length} mensaje${nuevos.length !== 1 ? 's' : ''} en cuarentena\n<i>Parecen spam, pero no se borraron. Si alguno era un cliente, recupéralo con su botón.</i>\n\n${lista.map((s, i) => {
+      const d = s.datos || {};
+      return `<b>${i + 1}.</b> ${etiqueta[s.tipo] || s.tipo} · ${escHtml(d.nombre || '—')}${d.correo ? ` · ${escHtml(d.correo)}` : ''}\n   “${escHtml(String(d.mensaje || d.comentario || '').slice(0, 90))}”\n   <i>Motivo: ${escHtml((s.motivos || []).join(', '))}</i>`;
+    }).join('\n\n')}${nuevos.length > 8 ? `\n\n…y ${nuevos.length - 8} más.` : ''}`,
+    reply_markup: { inline_keyboard: lista.map((s, i) => [{ text: `✅ El ${i + 1} era un cliente`, callback_data: `sv:${s._id}` }]) } }).catch(() => {});
+  for (const s of nuevos) await fsUpdate(env, `sospechosos/${s._id}`, { avisado: true }, ['avisado'], token).catch(() => {});
+  return nuevos.length;
+}
+/* Botón "Era un cliente": lo procesa como si hubiera llegado normal */
+async function botRecuperarSospechoso(env, token, id) {
+  const s = await fsGet(env, `sospechosos/${id}`, token);
+  if (!s) return { aviso: 'Ya se había recuperado o borrado' };
+  const d = s.datos || {};
+  if (s.tipo === 'contacto') await registrarLead(env, token, d, { recuperado: true });
+  else if (s.tipo === 'resena') await guardarResenaWeb(env, token, d, '');
+  else if (s.tipo === 'chat') await tgEnviar(env, `🤖 <b>Conversación recuperada de la cuarentena</b>\n\n${escHtml(String(d.mensaje || '').slice(0, 3000))}`);
+  await fsBorrar(env, `sospechosos/${id}`, token);
+  return { aviso: 'Recuperado ✅', html: `✅ Recuperado: <b>${escHtml(d.nombre || 'mensaje')}</b>. ${s.tipo === 'contacto' ? 'Ya está en Clientes como Prospecto.' : s.tipo === 'resena' ? 'Quedó pendiente de aprobación en Reseñas web.' : ''}` };
 }
