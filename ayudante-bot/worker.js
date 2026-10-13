@@ -481,7 +481,8 @@ function textoDeRespuestaAI(out) {
   if (out.response && typeof out.response === 'object') return JSON.stringify(out.response);
   const c = out.choices?.[0]?.message?.content;
   if (typeof c === 'string') return c;
-  return JSON.stringify(out);
+  // Modelos que "piensan" pueden terminar sin respuesta (content null): eso NO es una respuesta
+  return '';
 }
 async function leerConWorkersAI(env, imageUrl) {
   if (!env.AI) throw new Error('Workers AI no está conectado (binding AI)');
@@ -680,7 +681,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-13b';
+const WORKER_VERSION = '2026-10-13c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1172,7 +1173,7 @@ async function recordarResenas(env, token, docs, correoDe) {
    Solo atiende el chat del dueño (TG_CHAT) y exige el token secreto de Telegram.
 ══════════════════════════════════════════════════════════════ */
 const TG_RUTA = '/tg-notif';
-const MODELOS_TEXTO = ['@cf/qwen/qwen3.8-27b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct'];
+const MODELOS_TEXTO = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/qwen/qwen3.8-27b'];
 
 async function tgApi(env, metodo, body) {
   const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/${metodo}`, {
@@ -1494,9 +1495,13 @@ async function aiTexto(env, system, user, maxTokens = 900) {
   let ultimo = null;
   for (const modelo of MODELOS_TEXTO) {
     try {
-      const out = await env.AI.run(modelo, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: maxTokens, temperature: 0.2 });
-      const t = textoDeRespuestaAI(out).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-      if (t) return t;
+      const qwen = /qwen/.test(modelo);
+      const out = await env.AI.run(modelo, { messages: [{ role: 'system', content: system }, { role: 'user', content: qwen ? user + ' /no_think' : user }],
+        max_tokens: qwen ? maxTokens + 1500 : maxTokens, temperature: 0.2, ...(qwen ? { chat_template_kwargs: { enable_thinking: false } } : {}) });
+      const t = textoDeRespuestaAI(out).replace(/<think>[\s\S]*?<\/think>/g, '').replace(/^\s*<think>[\s\S]*$/, '').trim();
+      // Descarta respuestas que son datos técnicos en vez de texto
+      if (t && !/^\{\s*"(id|object|choices)"/.test(t) && !/"chatcmpl-/.test(t)) return t;
+      ultimo = `${modelo}: respuesta vacía`;
     } catch (e) { ultimo = e.message || String(e); }
   }
   throw new Error('IA: ' + (ultimo || 'sin respuesta'));
@@ -2393,12 +2398,40 @@ async function briefingLunes(env) {
   const token = await firebaseLogin(env);
   const datos = await datosNegocio(env, token);
   const hoy = datos.hoy;
-  const semana = datos.prox.filter(x => x.d >= 0 && x.d <= 7);
-  const guion = await aiTexto(env, `${ALTAIR_PERSONA}
-Escribe el "briefing" de inicio de semana del dueño, para escucharse en audio de máximo 1 minuto (unas 120 palabras), en un solo párrafo, sin listas ni emojis.
-Empieza con "Buenos días" y termina con una frase motivadora corta. Menciona: cuánto se cobró la semana pasada si está en los datos, suscripciones que vencen esta semana (con montos), quién debe más, cumpleaños de la semana, clientes en riesgo y UNA recomendación concreta para hoy. Usa SOLO los DATOS.`, datos.texto, 500).catch(() => '');
-  const L = [`☀️ <b>Briefing de la semana</b> · ${escHtml(fechaCorta(hoy))}`, ''];
-  if (semana.length) { L.push(`🔁 <b>Vencen esta semana (${semana.length})</b>`); semana.forEach(x => L.push(`• ${escHtml(x.s.cliente)} — ${escHtml([x.s.servicio, x.s.dominio].filter(Boolean).join(' · '))} · ${dinero(x.s.precio)} · ${escHtml(fechaCorta(x.s.proximoPago))}`)); L.push(''); }
+  const dia = n => { const d = new Date(hoy + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const lunes = dia(-((new Date(hoy + 'T12:00:00Z').getUTCDay() + 6) % 7)), domingo = (() => { const d = new Date(lunes + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 6); return d.toISOString().slice(0, 10); })();
+  const lunesAnt = (() => { const d = new Date(lunes + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })();
+  const domingoAnt = (() => { const d = new Date(lunes + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
+  const cobradoAnt = cobrosDe(datos.docs).filter(x => x.f >= lunesAnt && x.f <= domingoAnt).reduce((a, x) => a + x.m, 0);
+  const semana = datos.prox.filter(x => x.s.proximoPago >= hoy && x.s.proximoPago <= domingo);
+  const atrasadasSus = datos.prox.filter(x => x.d < 0);
+  const siguiente = datos.prox.find(x => x.s.proximoPago > domingo);
+  const deudaTotal = datos.deudas.reduce((a, x) => a + x.total, 0);
+  // Hechos ya calculados: la IA solo los redacta, no tiene que deducir nada
+  const hechos = [
+    `Cobrado la semana pasada: ${dinero(cobradoAnt)}`,
+    semana.length ? `Suscripciones que vencen esta semana: ${semana.map(x => `${x.s.cliente} ${dinero(x.s.precio)} el ${fechaCorta(x.s.proximoPago)}`).join('; ')}` : 'Suscripciones que vencen esta semana: ninguna',
+    atrasadasSus.length ? `Suscripciones atrasadas: ${atrasadasSus.map(x => `${x.s.cliente} ${dinero(x.s.precio)}`).join('; ')}` : '',
+    !semana.length && siguiente ? `Próximo vencimiento: ${siguiente.s.cliente} ${dinero(siguiente.s.precio)} el ${fechaCorta(siguiente.s.proximoPago)}` : '',
+    datos.deudas.length ? `Por cobrar: ${dinero(deudaTotal)}. Quien más debe: ${datos.deudas[0].c} con ${dinero(datos.deudas[0].total)}` : 'Por cobrar: nada, todo está al día',
+    datos.cumple.length ? `Cumpleaños esta semana: ${datos.cumple.map(x => x.n).join(', ')}` : '',
+    datos.riesgo.length ? `Cliente en riesgo: ${datos.riesgo[0].cliente} (${datos.riesgo[0].motivos.join(', ')}); sugerencia: ${datos.riesgo[0].sugerencia}` : ''
+  ].filter(Boolean);
+  let guion = await aiTexto(env, `${ALTAIR_PERSONA}
+Redacta el resumen de inicio de semana para escucharse en audio (máximo 110 palabras), en un solo párrafo, sin listas, sin emojis y sin símbolos.
+Empieza con "Buenos días" y termina con una frase motivadora corta. Usa SOLO estos HECHOS, en ese orden, y agrega UNA recomendación concreta para hoy basada en ellos. No inventes nada.`, `HECHOS:\n${hechos.map(h => '- ' + h).join('\n')}`, 400).catch(() => '');
+  guion = guion.replace(/\s+/g, ' ').trim();
+  // Si la IA no respondió bien, Altair arma el resumen con los datos (sin IA)
+  if (!guion || guion.length > 1400 || !/buen/i.test(guion.slice(0, 40))) {
+    guion = ['Buenos días.', ...hechos.map(h => h.replace(/:\s*/, ': ') + '.'),
+      datos.deudas.length ? `Mi recomendación para hoy: escríbele a ${datos.deudas[0].c} para cobrar.` : 'Hoy es un buen día para buscar clientes nuevos.', '¡Vamos con todo esta semana!'].join(' ');
+  }
+  const L = [`☀️ <b>Briefing de la semana</b> · ${escHtml(fechaCorta(lunes))} – ${escHtml(fechaCorta(domingo))}`, ''];
+  L.push(`💵 Semana pasada: <b>${dinero(cobradoAnt)}</b> cobrados`, '');
+  L.push(`🔁 <b>Vencen esta semana</b>${semana.length ? '' : ': ninguna'}`);
+  semana.forEach(x => L.push(`• ${escHtml(x.s.cliente)} — ${escHtml([x.s.servicio, x.s.dominio].filter(Boolean).join(' · '))} · ${dinero(x.s.precio)} · ${escHtml(fechaCorta(x.s.proximoPago))}`));
+  if (!semana.length && siguiente) L.push(`<i>Próxima: ${escHtml(siguiente.s.cliente)} · ${dinero(siguiente.s.precio)} · ${escHtml(fechaCorta(siguiente.s.proximoPago))}</i>`);
+  L.push('');
   if (datos.deudas.length) { L.push(`⏳ <b>Quién debe más</b>`); datos.deudas.slice(0, 5).forEach(x => L.push(`• ${escHtml(x.c)}: ${dinero(x.total)}`)); L.push(''); }
   if (datos.cumple.length) { L.push(`🎂 <b>Cumpleaños</b>: ${datos.cumple.map(x => `${escHtml(x.n)} (${x.d === 0 ? 'hoy' : `en ${x.d} días`})`).join(', ')}`); L.push(''); }
   if (datos.riesgo.length) {
@@ -2406,9 +2439,9 @@ Empieza con "Buenos días" y termina con una frase motivadora corta. Menciona: c
     datos.riesgo.slice(0, 3).forEach(r => L.push(`• <b>${escHtml(r.cliente)}</b> · ${r.prob}% de riesgo (${escHtml(r.motivos.join(', '))})\n  💡 ${escHtml(r.sugerencia)}`));
     L.push('');
   }
-  if (guion) L.push(`🎙 <i>${escHtml(guion)}</i>`);
+  L.push(`🎙 <i>${escHtml(guion)}</i>`);
   await tgEnviar(env, L.join('\n'));
-  if (guion) await hablar(env, guion).catch(e => console.warn('TTS briefing', e));
+  await hablar(env, guion).catch(e => console.warn('TTS briefing', e));
   return { ok: true };
 }
 
