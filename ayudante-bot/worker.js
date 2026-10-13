@@ -201,6 +201,7 @@ export default {
     const ruta = new URL(request.url).pathname;
     if (ruta === TG_RUTA) return handleTgNotif(request, env, ctx);
     if (ruta === '/contacto') return handleContacto(request, env);
+    if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (ruta === '/tarea') return handleTarea(request, env);
@@ -679,7 +680,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-13a';
+const WORKER_VERSION = '2026-10-13b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -909,7 +910,7 @@ async function tareaDiaria(env) {
   if (atrasadas.length) {
     const total = atrasadas.reduce((a, x) => a + saldoDoc(x.d), 0);
     L.push('', `⏰ <b>Facturas atrasadas (${atrasadas.length} · ${dinero(total)})</b>`);
-    atrasadas.slice(0, 12).forEach(({ d, dias }) => L.push(`• ${dias >= 30 ? '🔴' : dias >= 15 ? '🟠' : '🟡'} ${escHtml(d.cli)} · ${escHtml(d.docId || '')} · ${dinero(saldoDoc(d))} · ${dias} días · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Te recordamos que tienes pendiente la factura ${d.docId || ''} por ${dinero(saldoDoc(d))}:\n${linkFac(d._id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">recordar</a>`));
+    atrasadas.slice(0, 12).forEach(({ d, dias }) => L.push(`• ${dias >= 30 ? '🔴' : dias >= 15 ? '🟠' : '🟡'} ${escHtml(d.cli)} · ${escHtml(d.docId || '')} · ${dinero(saldoDoc(d))} · ${dias} días${d.aperturas ? ` · 👀 abierta ${d.aperturas}×` : ''} · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Te recordamos que tienes pendiente la factura ${d.docId || ''} por ${dinero(saldoDoc(d))}:\n${linkFac(d._id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">recordar</a>`));
     if (atrasadas.length > 12) L.push(`…y ${atrasadas.length - 12} más (ver Dashboard → Cobranza)`);
   }
   if (subsAtrasadas.length || subsPronto.length) {
@@ -1021,7 +1022,7 @@ async function handleEmail(request, env) {
     if (!['documentos', 'cotizaciones', 'campanas'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: String(b.html || ''), texto: String(b.texto || ''), nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: conPixel(String(b.html || ''), b.coleccion, b.id, para), texto: String(b.texto || ''), nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
     });
     const r = await res.json().catch(() => ({ ok: false, error: 'Google respondió algo inesperado (revisa que la URL termine en /exec y que el acceso sea "Cualquier usuario")' }));
     if (!r.ok) return json(request, { error: 'Gmail: ' + (r.error || 'no se pudo enviar') }, 502);
@@ -1414,7 +1415,7 @@ async function datosNegocio(env, token) {
     `Cobrado hoy: ${dinero(suma(x => x.f === hoy))} · esta semana: ${dinero(suma(x => x.f >= lunes))} · este mes: ${dinero(suma(x => x.f.slice(0, 7) === mes))}`,
     meta ? `Meta: ${meta.replace(/\n/g, ' ')}` : 'Meta del mes: no configurada',
     `Por cobrar en total: ${dinero(pendientes.reduce((a, x) => a + x.saldo, 0))} en ${pendientes.length} facturas`,
-    'Deudas por cliente:', ...deudas.slice(0, 40).map(x => `- ${x.c}: debe ${dinero(x.total)} (${x.xs.map(y => `${y.d.docId || ''} ${dinero(y.saldo)} hace ${y.dias} días`).join('; ')})`),
+    'Deudas por cliente:', ...deudas.slice(0, 40).map(x => `- ${x.c}: debe ${dinero(x.total)} (${x.xs.map(y => `${y.d.docId || ''} ${dinero(y.saldo)} hace ${y.dias} días${y.d.aperturas ? `, abrió el correo ${y.d.aperturas} ${y.d.aperturas === 1 ? 'vez' : 'veces'}` : (y.d.correos || []).length ? ', no ha abierto el correo' : ''}`).join('; ')})`),
     'Suscripciones que vencen en los próximos 30 días:', ...(prox.length ? prox.slice(0, 30).map(x => `- ${x.s.cliente}: ${[x.s.servicio, x.s.dominio].filter(Boolean).join(' ')} ${dinero(x.s.precio)} ${x.d < 0 ? `ATRASADA ${-x.d} días` : `vence ${x.s.proximoPago} (en ${x.d} días)`}`) : ['- ninguna']),
     `Suscripciones activas: ${activas.length} (${dinero(activas.reduce((a, s) => a + (Number(s.precio) || 0) / ({ anual: 12, semestral: 6, trimestral: 3 }[s.ciclo] || 1), 0))} al mes recurrente)`,
     `Clientes registrados: ${clientes.length} · prospectos: ${clientes.filter(c => (c.tags || []).includes('Prospecto')).length}`,
@@ -1464,7 +1465,7 @@ async function botRecordatorioManual(env, token, fsId) {
   const datos = { clientes: await fsList(env, 'clientes', token).catch(() => []), portales: await fsList(env, 'portal', token).catch(() => []), docs: [] };
   const correo = doc.clienteCorreo || correoCliente(datos, doc.cli);
   if (!correo) return { aviso: 'No tengo su correo' };
-  const ok = await enviarCorreoBot(env, correo, `Recordatorio: factura ${doc.docId || ''} · DGP Group USA`, correoCobranzaHTML(doc, fsId, 1), textoCobranza(doc, fsId, 1));
+  const ok = await enviarCorreoBot(env, correo, `Recordatorio: factura ${doc.docId || ''} · DGP Group USA`, correoCobranzaHTML(doc, fsId, 1), textoCobranza(doc, fsId, 1), { c: 'documentos', id: fsId });
   if (!ok) return { aviso: 'No se pudo enviar el correo' };
   await fsUpdate(env, `documentos/${fsId}`, { cobranza: { ...(doc.cobranza || {}), manualAt: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
   return { aviso: 'Recordatorio enviado ✉️', html: `✉️ Listo, le envié el recordatorio a <b>${escHtml(doc.cli || '')}</b> (${escHtml(correo)}). ¡Ojalá pague pronto! 💪` };
@@ -1604,7 +1605,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
   if (b.enviarA && !sinEnviar) {
     const ok = await enviarCorreoBot(env, b.enviarA, `${nombre}, aquí está tu cotización · DGP Group USA`,
       correoBotHTML({ icono: 'factura', titulo: `${nombre}, preparamos tu propuesta`, texto: `Gracias por escribirnos. Según lo que nos contaste, armamos esta cotización (${docId}) por ${dinero(b.total)}. Desde el botón puedes revisarla y aceptarla; si quieres ajustar algo, responde este correo o escríbenos por WhatsApp.`, boton: 'Ver mi cotización', link, nota: 'Válida por 15 días.' }),
-      `Hola ${nombre}, aquí está tu cotización ${docId} por ${dinero(b.total)}: ${link}`);
+      `Hola ${nombre}, aquí está tu cotización ${docId} por ${dinero(b.total)}: ${link}`, { c: 'cotizaciones', id: nuevoId });
     if (ok) { enviadoA = b.enviarA; await fsUpdate(env, `cotizaciones/${nuevoId}`, { clienteCorreo: b.enviarA, correos: [{ para: b.enviarA, fecha: new Date().toISOString(), por: 'altair' }] }, ['clienteCorreo', 'correos'], token).catch(() => {}); }
   }
   const textoWa = `Hola ${nombre}! Te comparto tu ${b.tipo === 'cotizacion' ? 'cotización' : 'factura'} ${docId} por ${dinero(b.total)}:\n${link}\n\n${b.tipo === 'cotizacion' ? 'Desde el enlace puedes revisarla y aceptarla.' : 'Desde el enlace puedes pagar y subir tu comprobante.'} ¡Gracias!`;
@@ -1732,8 +1733,9 @@ const OFERTA_ANIVERSARIO = '15% de descuento en tu próximo servicio este mes. R
 const OFERTA_CUMPLE = '20% de descuento en cualquier servicio durante los próximos 15 días. Responde este correo para usarlo.';
 const DIAS_ENCUESTA = 3;
 
-async function enviarCorreoBot(env, para, asunto, html, texto) {
+async function enviarCorreoBot(env, para, asunto, html, texto, rastreo) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE || !para) return false;
+  if (rastreo) html = conPixel(html, rastreo.c, rastreo.id, para);
   const res = await fetch(env.EMAIL_WEBHOOK, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
     body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Group USA', responderA: 'dgpgroup.usa@gmail.com' })
@@ -2341,7 +2343,7 @@ async function cobradorAmable(env, token, docs, correoDe, telDe) {
     const correo = d.clienteCorreo || correoDe(d.cli);
     if (!correo || enviados.length >= 15) continue;
     const ok = await enviarCorreoBot(env, correo, etapa.n === 2 ? `¿Todo bien? Tu factura ${d.docId || ''} sigue pendiente` : `Recordatorio: factura ${d.docId || ''} · DGP Group USA`,
-      correoCobranzaHTML(d, d._id, etapa.n), textoCobranza(d, d._id, etapa.n));
+      correoCobranzaHTML(d, d._id, etapa.n), textoCobranza(d, d._id, etapa.n), { c: 'documentos', id: d._id });
     if (ok) {
       await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, [`e${etapa.n}`]: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
       enviados.push({ d, etapa: etapa.n, correo, dias });
@@ -2426,4 +2428,53 @@ ${lista}`, `Servicio de interés: ${c.servicio || '—'}\nMensaje: ${c.mensaje |
   const total = r2(items.reduce((a, i) => a + i.t, 0));
   const id = await fsCreate(env, 'borradoresBot', { tipo: 'cotizacion', cliente: c.nombre, items, total, nota: '', texto: (c.mensaje || '').slice(0, 600), enviarA: c.correo, origen: 'web', creadoAt: new Date() }, token);
   return { id, html: `🌙 <b>Propuesta lista para ${escHtml(c.nombre)}</b>\n<i>Altair la armó con tu catálogo. No se envía hasta que la apruebes.</i>\n\n${items.map(i => `• ${escHtml(i.s)} — ${dinero(i.t)}`).join('\n')}\n<b>Total: ${dinero(total)}</b>${j.motivo ? `\n💡 ${escHtml(String(j.motivo).slice(0, 200))}` : ''}\n✉️ Se enviaría a: ${escHtml(c.correo)}` };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ¿QUIÉN ABRIÓ TU CORREO? — imagen invisible de 1 píxel (GET /abierto)
+   Cuenta aperturas en el documento y te avisa la primera vez que el
+   cliente abre una factura o cotización pendiente.
+══════════════════════════════════════════════════════════════ */
+const PIXEL_GIF = Uint8Array.from(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), c => c.charCodeAt(0));
+const COLECCIONES_RASTREO = ['documentos', 'cotizaciones', 'campanas'];
+function conPixel(html, coleccion, id, para) {
+  if (!COLECCIONES_RASTREO.includes(coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(id || '') || id === 'prueba') return html;
+  const q = new URLSearchParams({ c: coleccion, id, t: Date.now().toString(36), ...(coleccion === 'campanas' ? { r: String(para || '').slice(0, 120) } : {}) });
+  const img = `<img src="${BOT_URL}/abierto?${q.toString().replace(/&/g, '&amp;')}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;">`;
+  return html.includes('</body>') ? html.replace('</body>', img + '</body>') : html + img;
+}
+async function handleAbierto(request, env, ctx) {
+  const resp = new Response(PIXEL_GIF, { headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0', 'Pragma': 'no-cache' } });
+  const q = new URL(request.url).searchParams;
+  const c = q.get('c'), id = q.get('id') || '', t = (q.get('t') || '').slice(0, 20), r = (q.get('r') || '').toLowerCase().slice(0, 120);
+  if (!COLECCIONES_RASTREO.includes(c) || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) return resp;
+  const tarea = registrarApertura(env, c, id, t, r).catch(e => console.warn('Apertura', e));
+  if (ctx?.waitUntil) ctx.waitUntil(tarea);
+  return resp;
+}
+async function registrarApertura(env, c, id, t, r) {
+  const token = await firebaseLogin(env);
+  const doc = await fsGet(env, `${c}/${id}`, token);
+  if (!doc) return;
+  const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+  const transformaciones = [{ fieldPath: 'aperturas', increment: { integerValue: '1' } }];
+  if (c === 'campanas' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r)) transformaciones.push({ fieldPath: 'abiertos', appendMissingElements: { values: [{ stringValue: r }] } });
+  if (t) transformaciones.push({ fieldPath: 'aperturasEnvios', appendMissingElements: { values: [{ stringValue: t }] } });
+  await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ writes: [
+      { update: { name: `${base}/${c}/${id}`, fields: { ultimaApertura: { timestampValue: new Date().toISOString() } } }, updateMask: { fieldPaths: ['ultimaApertura'] }, currentDocument: { exists: true } },
+      { transform: { document: `${base}/${c}/${id}`, fieldTransforms: transformaciones } }
+    ] })
+  });
+  // Aviso a Telegram: la primera apertura de cada envío de una factura o cotización pendiente
+  if (c === 'campanas' || !t || (doc.aperturasEnvios || []).includes(t)) return;
+  const pendiente = c === 'cotizaciones' ? doc.estado === 'enviada' : saldoDoc(doc) > 0.009;
+  if (!pendiente) return;
+  const enviado = (doc.correos || []).slice(-1)[0]?.fecha;
+  const hace = enviado ? Math.max(0, Math.round((Date.now() - new Date(enviado).getTime()) / 60000)) : null;
+  const cuando = hace === null ? '' : hace < 60 ? ` (enviada hace ${hace} min)` : hace < 2880 ? ` (enviada hace ${Math.round(hace / 60)} h)` : ` (enviada hace ${Math.round(hace / 1440)} días)`;
+  const veces = (Number(doc.aperturas) || 0) + 1;
+  const link = c === 'cotizaciones' ? `${SITIO}/cotizacion.html?id=${id}` : `${SITIO}/factura-publica.html?id=${id}`;
+  await tgEnviar(env, `👀 <b>${escHtml(doc.cli || 'Un cliente')}</b> abrió su ${c === 'cotizaciones' ? 'cotización' : 'factura'} ${escHtml(doc.docId || '')} · ${dinero(c === 'cotizaciones' ? doc.total : saldoDoc(doc))}${cuando}${veces > 1 ? `\nYa la abrió ${veces} veces.` : ''}\n${veces >= 3 ? '💡 La está mirando seguido: buen momento para escribirle.' : ''}\n<a href="${link}">Ver</a>`);
 }

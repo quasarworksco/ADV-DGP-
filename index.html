@@ -4800,7 +4800,7 @@ function renderHistorial() {
     return `<div class="hr-row" onclick="openSheetById('${id}')" title="Abrir ${esc(d.docId || '')}">
       <span class="hr-pill ${pill[1]}">${pill[0]}</span>
       <div class="hr-main">
-        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Enviada</span>` : ''}</div>
+        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Enviada</span>` : ''}${etiquetaApertura(d)}</div>
         <div class="hr-cli">${esc(d.cli || '—')}</div>
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
@@ -6860,7 +6860,7 @@ function renderCotizaciones() {
     return `<div class="doc-item" style="align-items:center;">
       <div class="doc-badge" style="background:${bg};color:${col};border:1px solid ${col}33;">${lbl.toUpperCase()}</div>
       <div class="doc-info">
-        <div class="doc-id">${esc(c.docId || c._id)}${c.emisor ? `<span class="emisor-tag">${esc(c.emisor.split(' ')[0])}</span>` : ''}${c.portalCodigo ? '<span class="emisor-tag">Portal</span>' : ''}</div>
+        <div class="doc-id">${esc(c.docId || c._id)}${c.emisor ? `<span class="emisor-tag">${esc(c.emisor.split(' ')[0])}</span>` : ''}${c.portalCodigo ? '<span class="emisor-tag">Portal</span>' : ''}${etiquetaApertura(c)}</div>
         <div class="doc-name">${esc(c.cli || '—')}</div>
         <div class="doc-date">${esc(c.fecha || '')}${venc && est !== 'facturada' ? ' · vence ' + venc : ''}${c.respuestaNota ? ' · “' + esc(c.respuestaNota) + '”' : ''}</div>
       </div>
@@ -7987,7 +7987,7 @@ function abrirCorreo(coleccion, id) {
   const previos = Array.isArray(d.doc.correos) ? d.doc.correos : [];
   closeModal();
   ptModal('Enviar por correo', `${d.doc.docId || ''} · ${d.doc.cli || ''}`, `
-    ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
+    ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${Number(d.doc.aperturas) ? ` · <b>abierto ${d.doc.aperturas} ${Number(d.doc.aperturas) === 1 ? 'vez' : 'veces'}</b>` : ' · aún no lo abre'}</div>` : ''}
     <div class="ff"><label>Para</label><input type="email" id="co-para" value="${esc(correoDestinatario(d.doc.cli))}" placeholder="correo@cliente.com"></div>
     <div id="co-sin" style="font-size:11px;color:#b45309;margin:-6px 0 10px;display:none;">Este cliente no tiene correo guardado. Escríbelo aquí (se guarda en su ficha al enviar).</div>
     <div class="ff"><label>Asunto</label><input id="co-asunto" maxlength="200" value="${esc(t.asunto)}"></div>
@@ -8168,7 +8168,7 @@ async function campHistorial() {
       const c = d.data(); const f = c.creadoEn?.toDate ? c.creadoEn.toDate() : null;
       return `<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:7px 0;border-bottom:1px solid var(--border);">
         <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><strong>${esc(c.asunto || '')}</strong></span>
-        <span style="color:var(--text-soft);white-space:nowrap;">${c.enviados || 0}/${c.total || 0} · ${f ? f.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : ''}</span></div>`;
+        <span style="color:var(--text-soft);white-space:nowrap;">${c.enviados || 0}/${c.total || 0}${c.enviados ? ` · ${(c.abiertos || []).length} abiertos (${Math.round((c.abiertos || []).length / c.enviados * 100)}%)` : ''} · ${f ? f.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : ''}</span></div>`;
     }).join('');
   } catch (e) {}
 }
@@ -8228,6 +8228,15 @@ async function enviarCampana(prueba) {
   } finally { _camp.enviando = false; btn.disabled = false; }
 }
 
+/* ¿Abrió el correo? Etiqueta con el ojo (aperturas registradas por el bot) */
+const SVG_OJO = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+function etiquetaApertura(d) {
+  if (!(d.correos || []).length) return '';
+  const n = Number(d.aperturas) || 0;
+  const f = d.ultimaApertura?.toDate ? d.ultimaApertura.toDate() : (d.ultimaApertura ? new Date(d.ultimaApertura) : null);
+  if (!n) return `<span class="emisor-tag" style="margin:0;background:#f8fafc;color:#64748b;" title="Aún no ha abierto el correo">${SVG_OJO}Sin abrir</span>`;
+  return `<span class="emisor-tag" style="margin:0;background:#eff6ff;color:#1d4ed8;border-color:rgba(29,78,216,.2);" title="Abrió el correo ${n} ${n === 1 ? 'vez' : 'veces'}${f ? ' · última: ' + f.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}">${SVG_OJO}Abierta${n > 1 ? ' ' + n + '×' : ''}</span>`;
+}
 /* ═══════════════════════════════════════════════════════
    ALTAIR — celebración de pagos, automatizaciones y precio inteligente
 ═══════════════════════════════════════════════════════ */
