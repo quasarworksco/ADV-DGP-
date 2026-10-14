@@ -918,6 +918,19 @@
 .cd-acts { display:flex; gap:6px; margin-top:auto; }
 .cd-acts a, .cd-acts button { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; padding:9px 8px; border-radius:9px; cursor:pointer; text-decoration:none; font-family:inherit; }
 .cd-dl { background:#1438cc; color:#fff; border:none; }
+.al-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; margin-bottom:16px; }
+.al-card { background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:14px 16px; cursor:pointer; transition:border-color .15s; }
+.al-card:hover, .al-card.on { border-color:var(--blue); }
+.al-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 10px; margin-top:12px; }
+.al-kpis div { display:flex; flex-direction:column; }
+.al-kpis b { font-size:14px; color:var(--black); }
+.al-kpis span { font-size:10px; color:var(--text-soft); text-transform:uppercase; letter-spacing:.5px; margin-top:1px; }
+.al-sec { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:6px 16px 10px; margin-bottom:12px; }
+.al-sec-h { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-soft); padding:10px 0 6px; }
+.al-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--border); cursor:pointer; }
+.al-row-t { font-size:13px; font-weight:600; color:var(--black); }
+.al-row-s { font-size:11px; color:var(--text-soft); margin-top:1px; }
+.al-vacio { font-size:12px; color:var(--text-soft); padding:10px 0; border-top:1px solid var(--border); }
 .pr-list { display:flex; flex-direction:column; gap:10px; }
 .pr-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
 .pr-top { display:flex; align-items:center; gap:12px; }
@@ -1951,6 +1964,9 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   <button class="nav-tab" onclick="switchPage('prospectos', this)">
     <i class="fa-solid fa-bullseye"></i> Prospectos
   </button>
+  <button class="nav-tab" onclick="switchPage('aliados', this)">
+    <i class="fa-solid fa-handshake"></i> Aliados
+  </button>
   <button class="nav-tab" onclick="switchPage('suscripciones', this)">
     <i class="fa-solid fa-rotate"></i> Suscripciones<span id="sus-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
@@ -2395,6 +2411,22 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-aliados" class="page">
+  <div class="proy-main" style="max-width:1000px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Aliados</div>
+        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Sus clientes tienen dos paquetes: página web + 1 mes de hosting ($200) o + 1 año de hosting ($250).</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-logout" onclick="renderAliados(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+        <button class="btn-nuevo-cliente" onclick="alNuevo()">+ Nuevo aliado</button>
+      </div>
+    </div>
+    <div id="al-body"></div>
+  </div>
+</div>
+
 <div id="page-prospectos" class="page">
   <div class="proy-main" style="max-width:1000px;">
     <div class="proy-header">
@@ -2855,7 +2887,8 @@ const CATALOGO_BASE = [
   ['Seguidores Instagram y Facebook', 'Instagram/Facebook 1,000 Seguidores', 55, 51], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 3,000 Seguidores', 75, 70], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 5,000 Seguidores', 125, 116], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 10,000 Seguidores', 190, 177],
   ['Seguidores TikTok', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores TikTok', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores TikTok', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores TikTok', 'TikTok 10,000 Seguidores', 219, 204],
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
-  ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135]
+  ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135],
+  ['Aliados', 'Paquete Aliado · Página web + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Página web + 1 año de hosting', 250, 233]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
 let _catSembrado = false;
@@ -2898,7 +2931,7 @@ function initCatalogo() {
       db.collection('catalogo').doc(x._id).update({ categoria: 'Seguidores TikTok', ...(base ? { orden: base.orden } : {}) }).catch(() => {});
     });
     // Servicios nuevos (likes y seguidores de TikTok): se agregan si aún no existen
-    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
@@ -3188,6 +3221,7 @@ function switchPage(page, btn) {
   if (page === 'miweb')      renderMiWeb();
   if (page === 'contenido')  renderContenido();
   if (page === 'prospectos') renderProspectos();
+  if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
 }
 
@@ -3472,6 +3506,205 @@ async function renderMetaAds() {
     <div style="font-size:11px;color:var(--text-soft);margin-top:10px;">Total histórico de la cuenta: ${_maUsd(d.cuenta.gastadoHistorico)}. Para crear o pausar anuncios usa Ads Manager o pídeselo a Claude.</div>`;
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   ALIADOS — empresas con las que nos referimos clientes (Firestore: aliados)
+   Los proyectos son facturas a nombre del aliado (documentos.aliadoId) y los hosting de sus
+   clientes son suscripciones con aliadoId: no se leen colecciones nuevas, salen de lo ya cargado.
+═══════════════════════════════════════════════════════ */
+const AL_PAQUETES = {
+  mes: { nombre: 'Paquete Aliado · Página web + 1 mes de hosting', precio: 200, hostingMeses: 1 },
+  anio: { nombre: 'Paquete Aliado · Página web + 1 año de hosting', precio: 250, hostingMeses: 12 }
+};
+const AL_RENOVACION = 145;   // precio sugerido del hosting anual al renovar (editable en cada proyecto)
+let _al = { lista: null, sel: null };
+
+async function renderAliados(fresco) {
+  const el = document.getElementById('al-body'); if (!el) return;
+  if (!_al.lista || fresco) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-soft);font-size:13px;">Cargando...</div>';
+    try { const s = await db.collection('aliados').orderBy('nombre').get(); _al.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); }
+    catch (e) { el.innerHTML = `<div style="text-align:center;padding:32px;color:#b91c1c;font-size:13px;">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
+  }
+  alPintar();
+}
+function _alDocs(id) { return Object.entries(docsMap || {}).map(([k, d]) => ({ ...d, _fsId: d._fsId || k })).filter(d => d.aliadoId === id && d.type !== 'cotizacion'); }
+function _alSus(id) { return (suscripcionesList || []).filter(s => s.aliadoId === id); }
+function _alSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((d.total || 0) - (d.montoPagado || 0), 0); }
+function _alResumen(id) {
+  const docs = _alDocs(id), sus = _alSus(id);
+  const facturado = docs.reduce((a, d) => a + (d.total || 0), 0), pendiente = docs.reduce((a, d) => a + _alSaldo(d), 0);
+  return { docs, sus, facturado, pendiente, cobrado: facturado - pendiente, hosting: sus.filter(s => s.estado === 'activa').length };
+}
+const _alUsd = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function alPintar() {
+  const el = document.getElementById('al-body'), L = _al.lista || [];
+  if (!L.length) { el.innerHTML = '<div class="pt-empty">Aún no tienes aliados. Crea el primero con <b>+ Nuevo aliado</b>.</div>'; return; }
+  if (_al.sel && !L.find(a => a._id === _al.sel)) _al.sel = null;
+  el.innerHTML = `<div class="al-grid">${L.map(a => {
+    const r = _alResumen(a._id), refs = (a.referidos || []);
+    return `<div class="al-card ${_al.sel === a._id ? 'on' : ''}" onclick="_al.sel='${a._id}';alPintar()">
+      <div class="pr-top"><div class="pr-av" style="background:${clColor(a.nombre || '?')}">${esc(clIniciales(a.nombre || '?'))}</div>
+        <div style="flex:1;min-width:0"><div class="pr-name">${esc(a.nombre)}</div><div class="pr-sub">${esc([a.telefono, a.correo].filter(Boolean).join(' · ') || 'Sin datos de contacto')}</div></div></div>
+      <div class="al-kpis">
+        <div><b>${r.docs.length}</b><span>Proyectos</span></div>
+        <div><b>${_alUsd(r.facturado)}</b><span>Facturado</span></div>
+        <div><b style="color:${r.pendiente > 0 ? '#d97706' : 'var(--green-dark)'}">${_alUsd(r.pendiente)}</b><span>Por cobrar</span></div>
+        <div><b>${r.hosting}</b><span>Hosting activos</span></div>
+        <div><b>${refs.filter(x => x.dir === 'recibido').length} / ${refs.filter(x => x.dir === 'enviado').length}</b><span>Referidos ↓ / ↑</span></div>
+      </div>
+    </div>`;
+  }).join('')}</div>${_al.sel ? alDetalle(L.find(a => a._id === _al.sel)) : ''}`;
+}
+
+function alDetalle(a) {
+  const r = _alResumen(a._id), refs = (a.referidos || []).slice().sort((x, y) => (y.fecha || '').localeCompare(x.fecha || ''));
+  const docsHtml = r.docs.sort((x, y) => (y.createdAt?.toMillis?.() || 0) - (x.createdAt?.toMillis?.() || 0)).map(d => `
+    <div class="al-row" onclick="openSheetById('${d._fsId}')">
+      <div><div class="al-row-t">${esc(d.clienteFinal || '—')}</div><div class="al-row-s">${esc(d.docId || '')} · ${esc(d.fecha || '')} · ${esc((d.items || [])[0]?.s || '')}</div></div>
+      <div style="text-align:right"><div class="al-row-t">${_alUsd(d.total)}</div><div class="al-row-s" style="color:${_alSaldo(d) > 0 ? '#d97706' : 'var(--green-dark)'}">${_alSaldo(d) > 0 ? 'Debe ' + _alUsd(_alSaldo(d)) : 'Pagada'}</div></div>
+    </div>`).join('') || '<div class="al-vacio">Todavía no hay proyectos con este aliado.</div>';
+  const susHtml = r.sus.sort((x, y) => (x.proximoPago || '').localeCompare(y.proximoPago || '')).map(s => `
+    <div class="al-row" style="cursor:default">
+      <div><div class="al-row-t">${esc(s.cliente || '—')}</div><div class="al-row-s">${esc(s.dominio || s.servicio || 'Hosting')} · ${s.estado === 'activa' ? 'Activo' : esc(s.estado || '')}</div></div>
+      <div style="text-align:right"><div class="al-row-t">${s.proximoPago ? 'Renueva ' + esc(s.proximoPago) : '—'}</div><div class="al-row-s">${_alUsd(s.precio)}/${s.ciclo === 'mensual' ? 'mes' : 'año'}</div></div>
+    </div>`).join('') || '<div class="al-vacio">Sin hosting de clientes de este aliado.</div>';
+  const refHtml = refs.map((x, i) => `
+    <div class="al-row" style="cursor:default">
+      <div><div class="al-row-t">${x.dir === 'recibido' ? '↓ Nos refirió a' : '↑ Le referimos a'} ${esc(x.cliente)}</div><div class="al-row-s">${esc([x.fecha, x.servicio, x.nota].filter(Boolean).join(' · '))}</div></div>
+      <button class="hr-btn" onclick="event.stopPropagation();alBorrarRef('${a._id}',${i})" style="background:var(--white);color:var(--text-soft);border-color:var(--border)">✕</button>
+    </div>`).join('') || '<div class="al-vacio">Aún no hay referidos registrados.</div>';
+  return `
+  <div class="al-det">
+    <div class="pt-head" style="margin-bottom:14px">
+      <div class="pt-head-name">${esc(a.nombre)}</div>
+      <div class="pt-head-sub">${esc([a.telefono, a.correo].filter(Boolean).join(' · ') || 'Sin datos de contacto')}</div>
+      <div class="pt-head-actions">
+        <button class="pt-hbtn" onclick="alNuevoProyecto('${a._id}')">+ Nuevo proyecto</button>
+        <button class="pt-hbtn" onclick="alNuevoRef('${a._id}')">⇄ Registrar referido</button>
+        ${a.telefono ? `<button class="pt-hbtn" onclick="alEstadoCuenta('${a._id}')">Enviar estado de cuenta</button>` : ''}
+        <button class="pt-hbtn" onclick="alEditar('${a._id}')">Editar</button>
+      </div>
+    </div>
+    <div class="cb-tiles" style="margin-bottom:14px">
+      <div class="cb-tile"><div class="cb-tile-l">Proyectos en común</div><div class="cb-tile-v">${r.docs.length}</div><div class="cb-tile-n">Páginas hechas para sus clientes</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Facturado</div><div class="cb-tile-v">${_alUsd(r.facturado)}</div><div class="cb-tile-n">Cobrado ${_alUsd(r.cobrado)}</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Por cobrar</div><div class="cb-tile-v" style="color:${r.pendiente > 0 ? '#d97706' : 'var(--green-dark)'}">${_alUsd(r.pendiente)}</div><div class="cb-tile-n">Facturas pendientes</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Hosting activos</div><div class="cb-tile-v">${r.hosting}</div><div class="cb-tile-n">Clientes del aliado</div></div>
+    </div>
+    <div class="al-sec"><div class="al-sec-h">Proyectos (facturas a ${esc(a.nombre)})</div>${docsHtml}</div>
+    <div class="al-sec"><div class="al-sec-h">Hosting de sus clientes</div>${susHtml}</div>
+    <div class="al-sec"><div class="al-sec-h">Referidos entre nosotros</div>${refHtml}</div>
+  </div>`;
+}
+
+function alForm(a) {
+  ptModal(a ? 'Editar aliado' : 'Nuevo aliado', 'Empresa con la que se refieren clientes', `
+    <div class="ff"><label>Nombre o razón social</label><input id="al-nom" value="${esc(a?.nombre || '')}" placeholder="Ej. AVA Multiservices LLC"></div>
+    <div class="ff"><label>Correo</label><input id="al-cor" type="email" value="${esc(a?.correo || '')}"></div>
+    <div class="ff"><label>Teléfono / WhatsApp</label><input id="al-tel" value="${esc(a?.telefono || '')}" placeholder="+1 ..."></div>
+    <button class="btn-edit-save" onclick="alGuardar(${a ? `'${a._id}'` : 'null'})">Guardar</button>
+    ${a ? `<button class="btn-edit-cancel" style="margin-top:8px;color:#b91c1c" onclick="alBorrar('${a._id}')">Eliminar aliado</button>` : ''}`);
+}
+function alNuevo() { alForm(null); }
+function alEditar(id) { alForm(_al.lista.find(a => a._id === id)); }
+async function alGuardar(id) {
+  const data = { nombre: document.getElementById('al-nom').value.trim(), correo: document.getElementById('al-cor').value.trim(), telefono: document.getElementById('al-tel').value.trim(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if (!data.nombre) return toast('Escribe el nombre o razón social', 'err');
+  try {
+    if (id) { await db.collection('aliados').doc(id).update(data); Object.assign(_al.lista.find(a => a._id === id), data); }
+    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); data.referidos = []; const r = await db.collection('aliados').add(data); _al.lista.push({ _id: r.id, ...data }); _al.sel = r.id; }
+    _al.lista.sort((x, y) => x.nombre.localeCompare(y.nombre));
+    closePortalModal(); alPintar(); toast('Aliado guardado', 'ok');
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function alBorrar(id) {
+  const a = _al.lista.find(x => x._id === id);
+  if (!a || !confirm(`¿Eliminar a "${a.nombre}"? Sus facturas y hosting no se borran.`)) return;
+  try { await db.collection('aliados').doc(id).delete(); _al.lista = _al.lista.filter(x => x._id !== id); _al.sel = null; closePortalModal(); alPintar(); }
+  catch (e) { toast('No se pudo eliminar: ' + e.message, 'err'); }
+}
+
+function alNuevoProyecto(id) {
+  const a = _al.lista.find(x => x._id === id); if (!a) return;
+  ptModal('Nuevo proyecto con ' + a.nombre, 'Se crea la factura a nombre del aliado y el hosting del cliente', `
+    <div class="ff"><label>Paquete</label><select id="alp-paq">
+      ${Object.entries(AL_PAQUETES).map(([k, p]) => `<option value="${k}">${esc(p.nombre)} — $${p.precio}</option>`).join('')}
+    </select></div>
+    <div class="ff"><label>Cliente del aliado (para quién es la página)</label><input id="alp-cli" placeholder="Nombre del negocio o persona"></div>
+    <div class="ff"><label>Dominio (opcional)</label><input id="alp-dom" placeholder="negocio.com o negocio.dgp-link.com"></div>
+    <div class="ff"><label>Renovación del hosting anual ($)</label><input id="alp-ren" type="number" step="0.01" value="${AL_RENOVACION}"></div>
+    <div style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 12px">El hosting queda en Suscripciones y en el área de este aliado: renueva al mes (paquete de $200) o al año (paquete de $250), y luego cada año.</div>
+    <button class="btn-edit-save" onclick="alCrearProyecto('${id}')">Crear factura y hosting</button>`);
+}
+async function alCrearProyecto(id) {
+  const a = _al.lista.find(x => x._id === id), paq = AL_PAQUETES[document.getElementById('alp-paq').value];
+  const clienteFinal = document.getElementById('alp-cli').value.trim().replace(/\s+/g, ' '), dominio = document.getElementById('alp-dom').value.trim();
+  const renov = parseFloat(document.getElementById('alp-ren').value);
+  if (!clienteFinal) return toast('Escribe para qué cliente es la página', 'err');
+  if (isNaN(renov) || renov < 0) return toast('Revisa el precio de renovación', 'err');
+  const btn = document.querySelector('#mp-body .btn-edit-save'); if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+  try {
+    const fecha = fmtDate(), item = { s: `${paq.nombre} — ${clienteFinal}`, p: paq.precio, c: 1, t: paq.precio };
+    const docData = {
+      docId: genId('FAC'), type: 'factura', cli: a.nombre, ref: '—', nota: `Proyecto para: ${clienteFinal}${dominio ? ' · ' + dominio : ''}`,
+      fecha, total: paq.precio, moneda: 'usd', emisor: document.getElementById('doc-emisor')?.value || '', metodoPago: null, infoPago: null,
+      contrato: false, items: [item], clienteCorreo: a.correo || null, pagado: false, fechaPago: null,
+      aliadoId: a._id, aliado: a.nombre, clienteFinal,
+      createdBy: currentUser ? currentUser.email : 'desconocido', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const added = await db.collection('documentos').add(docData);
+    const inicio = todayISO(), primera = ptSumarCiclo(inicio, paq.hostingMeses === 1 ? 'mensual' : 'anual');
+    await db.collection('suscripciones').add({
+      cliente: clienteFinal, clienteId: null, portalCodigo: null, tipo: 'hosting', servicio: 'Hosting anual', dominio,
+      precio: renov, moneda: 'usd', ciclo: 'anual', inicio, proximoPago: primera, fechaFin: '', estado: 'activa',
+      emisor: docData.emisor, autoFactura: false, diasAntes: 5, notas: `Cliente del aliado ${a.nombre} · ${paq.nombre}`,
+      aliadoId: a._id, aliado: a.nombre, facturaId: added.id,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    logActividad('Proyecto con aliado', `${a.nombre} · ${clienteFinal} · $${paq.precio}`);
+    closePortalModal(); toast('Factura y hosting creados', 'ok');
+    // la factura llega por el listener de documentos; se abre cuando esté lista
+    let n = 0; const t = setInterval(() => { if (docsMap[added.id] || ++n > 20) { clearInterval(t); alPintar(); if (docsMap[added.id]) openSheetById(added.id); } }, 300);
+  } catch (e) { toast('No se pudo crear: ' + e.message, 'err'); if (btn) { btn.disabled = false; btn.textContent = 'Crear factura y hosting'; } }
+}
+
+function alNuevoRef(id) {
+  const a = _al.lista.find(x => x._id === id); if (!a) return;
+  ptModal('Registrar referido', a.nombre, `
+    <div class="ff"><label>Dirección</label><select id="alr-dir"><option value="recibido">${esc(a.nombre)} nos refirió un cliente</option><option value="enviado">Nosotros le referimos un cliente</option></select></div>
+    <div class="ff"><label>Cliente</label><input id="alr-cli" placeholder="Nombre del cliente"></div>
+    <div class="ff"><label>Servicio (opcional)</label><input id="alr-srv" placeholder="Ej. Página web, Registro de LLC"></div>
+    <div class="ff"><label>Nota (opcional)</label><input id="alr-nota"></div>
+    <button class="btn-edit-save" onclick="alGuardarRef('${id}')">Guardar</button>`);
+}
+async function alGuardarRef(id) {
+  const a = _al.lista.find(x => x._id === id);
+  const r = { dir: document.getElementById('alr-dir').value, cliente: document.getElementById('alr-cli').value.trim(), servicio: document.getElementById('alr-srv').value.trim(), nota: document.getElementById('alr-nota').value.trim(), fecha: todayISO() };
+  if (!r.cliente) return toast('Escribe el nombre del cliente', 'err');
+  const refs = [...(a.referidos || []), r].slice(-300);
+  try { await db.collection('aliados').doc(id).update({ referidos: refs }); a.referidos = refs; closePortalModal(); alPintar(); toast('Referido registrado', 'ok'); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function alBorrarRef(id, i) {
+  const a = _al.lista.find(x => x._id === id); if (!a || !confirm('¿Quitar este referido?')) return;
+  const orden = (a.referidos || []).map((x, k) => ({ x, k })).sort((p, q) => (q.x.fecha || '').localeCompare(p.x.fecha || ''));
+  const real = orden[i]?.k; if (real == null) return;
+  const refs = a.referidos.filter((_, k) => k !== real);
+  try { await db.collection('aliados').doc(id).update({ referidos: refs }); a.referidos = refs; alPintar(); }
+  catch (e) { toast('No se pudo quitar: ' + e.message, 'err'); }
+}
+function alEstadoCuenta(id) {
+  const a = _al.lista.find(x => x._id === id), r = _alResumen(id);
+  const pend = r.docs.filter(d => _alSaldo(d) > 0);
+  const lineas = pend.map(d => `• ${d.clienteFinal || d.docId} — ${_alUsd(_alSaldo(d))}: https://adv.dgp-link.com/factura-publica.html?id=${d._fsId}`);
+  const msg = `Hola ${a.nombre}! Te comparto el resumen de nuestros proyectos:\n\n` +
+    `Proyectos: ${r.docs.length}\nFacturado: ${_alUsd(r.facturado)}\nPagado: ${_alUsd(r.cobrado)}\nPendiente: ${_alUsd(r.pendiente)}\nHosting activos de tus clientes: ${r.hosting}` +
+    (lineas.length ? `\n\nFacturas pendientes:\n${lineas.join('\n')}` : '\n\nTodo al día. ¡Gracias!') + `\n\nDGP Global Group`;
+  const tel = String(a.telefono || '').replace(/\D/g, ''); const t = tel.length === 10 ? '1' + tel : tel;
+  window.open(`https://wa.me/${t}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
 /* ═══════════════════════════════════════════════════════
    PROSPECTOS — negocios que todavía no son clientes (Firestore: prospectos)
