@@ -593,6 +593,18 @@
     if (d.comprobante_url && !vistos.has(d.comprobante_url)) out.unshift({ url: d.comprobante_url });
     return out;
   }
+  /* Estado de cada comprobante: 'pendiente' (falta revisarlo), 'registrado' (ya se registró el pago) o 'rechazado'.
+     Se guarda en comprobantesRevisados al confirmar/abonar/rechazar; para facturas anteriores se deduce de los pagos registrados después de subirlo. */
+  function _fechaIso(f) { f = String(f || ''); const m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : f.slice(0, 10); }
+  function compEstado(d, c) {
+    if (!c || !c.url) return 'registrado';
+    if (d.pagoRechazado && d.pagoRechazado.url === c.url) return 'rechazado';
+    if ((d.comprobantesRevisados || []).includes(c.url) || d.pagado || d.type === 'recibo') return 'registrado';
+    const dia = _fechaIso(c.fecha), pagos = Array.isArray(d.pagos) ? d.pagos : [];
+    if (!dia) return pagos.length ? 'registrado' : 'pendiente';
+    return pagos.some(p => _fechaIso(p.fecha) >= dia) ? 'registrado' : 'pendiente';
+  }
+  function compPendientes(d) { return listaComprobantes(d).filter(c => compEstado(d, c) === 'pendiente'); }
   function iaDe(d, url) {
     return (d.verificaciones || {})[iaKey(url)] || (d.verificacionIA && d.verificacionIA.url === url ? d.verificacionIA : null);
   }
@@ -606,7 +618,9 @@
       <div class="pub-comp-item-body">
         <div class="pub-comp-item-title">Comprobante ${i + 1}</div>
         <div class="pub-comp-item-sub">${c.fecha ? 'Enviado el ' + fechaCorta(c.fecha) : 'Enviado'}</div>
-        ${iaBox(iaDe(d, c.url))}
+        ${compEstado(d, c) === 'registrado'
+          ? `<div style="margin-top:10px;padding:10px 14px;border-radius:12px;background:#f0fdf4;border:1px solid rgba(5,150,105,0.25);color:#059669;font-size:12px;font-weight:700;">✓ Pago confirmado. ¡Gracias!</div>`
+          : compEstado(d, c) === 'rechazado' ? '' : iaBox(iaDe(d, c.url))}
       </div>
     </div>`;
   }

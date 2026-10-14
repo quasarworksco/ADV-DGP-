@@ -2762,10 +2762,14 @@ const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
 const WA_NUM = '584121002090';
 
 const EMPLEADOS = [
+  { nombre: 'Andrés Espina',     ini: 'A', id: 'Andrés' },
   { nombre: 'Kevin Bermudez',    ini: 'K', id: 'Kevin'  },
   { nombre: 'Angel Rosales',     ini: 'A', id: 'Angel'  },
   { nombre: 'Paul Espina',       ini: 'P', id: 'Paul'   },
 ];
+// Desde oct. 2026 todas las facturas, recibos y cotizaciones nuevas salen a nombre de un solo emisor.
+// Las ya emitidas conservan su emisor (Kevin, Angel, Paul) para el historial.
+const EMISOR_FACTURAS = 'Andrés Espina';
 
 /* ═══════════════════════════════════════════════════════
    VENTAS — Fuente unificada desde Facturación
@@ -3188,11 +3192,8 @@ function initPage() {
 /* ─── Selector de emisor + filtros del historial ─── */
 function buildEmployeeUI() {
   const sel = document.getElementById('doc-emisor');
-  sel.innerHTML = EMPLEADOS.map(e =>
-    `<option value="${esc(e.nombre)}">${esc(e.nombre)}</option>`
-  ).join('');
-  const propio = currentUser ? resolveEmpleado(currentUser.email || '') : '';
-  if (EMPLEADOS.some(e => e.nombre === propio)) sel.value = propio;
+  sel.innerHTML = `<option value="${esc(EMISOR_FACTURAS)}">${esc(EMISOR_FACTURAS)}</option>`;
+  sel.value = EMISOR_FACTURAS;
 
   document.getElementById('hist-emisor-filters').innerHTML =
     `<button class="hist-filter-btn active" data-emisorf="todos" onclick="setHistEmisorFilter('todos',this)">Todos los emisores</button>` +
@@ -3568,7 +3569,8 @@ function alDetalle(a) {
   const docsHtml = r.docs.sort((x, y) => (y.createdAt?.toMillis?.() || 0) - (x.createdAt?.toMillis?.() || 0)).map(d => `
     <div class="al-row" onclick="openSheetById('${d._fsId}')">
       <div><div class="al-row-t">${esc(d.clienteFinal || '—')}</div><div class="al-row-s">${esc(d.docId || '')} · ${esc(d.fecha || '')} · ${esc((d.items || [])[0]?.s || '')}</div></div>
-      <div style="text-align:right"><div class="al-row-t">${_alUsd(d.total)}</div><div class="al-row-s" style="color:${_alSaldo(d) > 0 ? '#d97706' : 'var(--green-dark)'}">${_alSaldo(d) > 0 ? 'Debe ' + _alUsd(_alSaldo(d)) : 'Pagada'}</div></div>
+      <div style="text-align:right"><div class="al-row-t">${_alUsd(d.total)}</div><div class="al-row-s" style="color:${_alSaldo(d) > 0 ? '#d97706' : 'var(--green-dark)'}">${_alSaldo(d) > 0 ? 'Debe ' + _alUsd(_alSaldo(d)) : 'Pagada'}</div>
+        ${d.clienteId ? '' : `<button class="hr-btn" style="margin-top:5px;background:var(--white);color:var(--blue);border-color:var(--border)" onclick="event.stopPropagation();alRegistrarCliente('${d._fsId}')">Registrar como cliente</button>`}</div>
     </div>`).join('') || '<div class="al-vacio">Todavía no hay proyectos con este aliado.</div>';
   const susHtml = r.sus.sort((x, y) => (x.proximoPago || '').localeCompare(y.proximoPago || '')).map(s => `
     <div class="al-row" style="cursor:default">
@@ -3637,12 +3639,32 @@ function alNuevoProyecto(id) {
     <div class="ff"><label>Paquete (pago de contado)</label><select id="alp-paq" onchange="alPaqCambio()">
       ${Object.entries(AL_PAQUETES).map(([k, p]) => `<option value="${k}">${esc(p.nombre)} — $${p.precio}</option>`).join('')}
     </select></div>
-    <div class="ff"><label>Cliente del aliado (para quién es la página)</label><input id="alp-cli" placeholder="Nombre del negocio o persona"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-soft);margin:4px 0 8px">Cliente (queda registrado también en Clientes)</div>
+    <div class="ff"><label>Nombre</label><input id="alp-nom" list="alp-cli-list" placeholder="Escribe o elige un cliente existente" oninput="alClienteExistente()"></div>
+    <datalist id="alp-cli-list">${(clientesList || []).map(c => `<option value="${esc(clNombre(c))}">${esc(c.empresa || '')}</option>`).join('')}</datalist>
+    <div id="alp-cli-aviso" style="display:none;font-size:11.5px;color:var(--green-dark);margin:-4px 0 10px">Ya es cliente: se usará su ficha.</div>
+    <div class="ff"><label>Apellido</label><input id="alp-ape"></div>
+    <div class="ff"><label>Negocio / empresa</label><input id="alp-emp" placeholder="Ej. Casanova Car Care"></div>
+    <div class="ff"><label>Teléfono / WhatsApp</label><input id="alp-tel" placeholder="+1 ..."></div>
+    <div class="ff"><label>Correo</label><input id="alp-cor" type="email"></div>
     <div class="ff"><label>Dominio (opcional)</label><input id="alp-dom" placeholder="negocio.com o negocio.dgp-link.com"></div>
     <div class="ff"><label id="alp-ren-l">Hosting mensual después del primer mes ($)</label><input id="alp-ren" type="number" step="0.01" value="25"></div>
     <div id="alp-ren-t" style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 8px">Incluye 1 mes de hosting. Después el cliente paga el hosting mensual: queda en Suscripciones y en el área de este aliado.</div>
     <div style="font-size:11.5px;color:var(--text-soft);margin:0 0 12px">La factura se emite a nombre del aliado, con pago de contado (100%).</div>
     <button class="btn-edit-save" onclick="alCrearProyecto('${id}')">Crear factura y hosting</button>`);
+}
+function _alClienteMatch() {
+  const n = ptNorm(document.getElementById('alp-nom')?.value || '');
+  return n ? (clientesList || []).find(c => ptNorm(clNombre(c)) === n) : null;
+}
+function alClienteExistente() {
+  const c = _alClienteMatch();
+  document.getElementById('alp-cli-aviso').style.display = c ? '' : 'none';
+  if (c) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el && !el.value) el.value = v || ''; };
+    document.getElementById('alp-nom').value = c.nombre || document.getElementById('alp-nom').value;
+    set('alp-ape', c.apellido); set('alp-emp', c.empresa); set('alp-tel', c.telefono); set('alp-cor', c.correo);
+  }
 }
 function alPaqCambio() {
   const p = AL_PAQUETES[document.getElementById('alp-paq').value];
@@ -3654,24 +3676,42 @@ function alPaqCambio() {
 }
 async function alCrearProyecto(id) {
   const a = _al.lista.find(x => x._id === id), paq = AL_PAQUETES[document.getElementById('alp-paq').value];
-  const clienteFinal = document.getElementById('alp-cli').value.trim().replace(/\s+/g, ' '), dominio = document.getElementById('alp-dom').value.trim();
-  const renov = parseFloat(document.getElementById('alp-ren').value);
-  if (!clienteFinal) return toast('Escribe para qué cliente es la página', 'err');
+  const v = id => document.getElementById(id).value.trim().replace(/\s+/g, ' ');
+  const cli = { nombre: v('alp-nom'), apellido: v('alp-ape'), empresa: v('alp-emp'), telefono: v('alp-tel'), correo: v('alp-cor') };
+  const dominio = v('alp-dom'), renov = parseFloat(document.getElementById('alp-ren').value);
+  if (!cli.nombre) return toast('Escribe el nombre del cliente', 'err');
+  const nombreCompleto = [cli.nombre, cli.apellido].filter(Boolean).join(' ');
+  const clienteFinal = cli.empresa || nombreCompleto;
   if (isNaN(renov) || renov < 0) return toast('Revisa el precio del hosting', 'err');
   const btn = document.querySelector('#mp-body .btn-edit-save'); if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
   try {
+    // El cliente del aliado también es cliente nuestro: se usa su ficha o se crea con los mismos datos que en Clientes
+    let existente = (clientesList || []).find(c => ptNorm(clNombre(c)) === ptNorm(nombreCompleto)) || _alClienteMatch();
+    let clienteId;
+    if (existente) {
+      clienteId = existente._id;
+      const upd = { aliadoId: a._id, aliado: a.nombre, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      ['apellido', 'empresa', 'telefono', 'correo'].forEach(k => { if (cli[k] && !existente[k]) upd[k] = cli[k]; });
+      await db.collection('clientes').doc(clienteId).set(upd, { merge: true });
+    } else {
+      clienteId = nombreCompleto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString(36);
+      await db.collection('clientes').doc(clienteId).set({
+        ...cli, notas: `Cliente del aliado ${a.nombre}`, tags: ['aliado'], cumpleanos: '', origen: 'aliado', aliadoId: a._id, aliado: a.nombre,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || ''
+      });
+    }
     const fecha = fmtDate(), item = { s: `${paq.nombre} — ${clienteFinal}`, p: paq.precio, c: 1, t: paq.precio };
     const docData = {
       docId: genId('FAC'), type: 'factura', cli: a.nombre, ref: '—', nota: `Proyecto para: ${clienteFinal}${dominio ? ' · ' + dominio : ''} · Pago de contado (100%)`,
-      fecha, total: paq.precio, moneda: 'usd', emisor: document.getElementById('doc-emisor')?.value || '', metodoPago: null, infoPago: null,
+      fecha, total: paq.precio, moneda: 'usd', emisor: EMISOR_FACTURAS, metodoPago: null, infoPago: null,
       contrato: false, items: [item], clienteCorreo: a.correo || null, pagado: false, fechaPago: null,
-      aliadoId: a._id, aliado: a.nombre, clienteFinal,
+      aliadoId: a._id, aliado: a.nombre, clienteFinal, clienteId,
       createdBy: currentUser ? currentUser.email : 'desconocido', createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const added = await db.collection('documentos').add(docData);
     const inicio = todayISO(), primera = ptSumarCiclo(inicio, paq.ciclo);
     await db.collection('suscripciones').add({
-      cliente: clienteFinal, clienteId: null, portalCodigo: null, tipo: 'hosting', servicio: paq.servicio, dominio,
+      cliente: nombreCompleto, clienteId, portalCodigo: null, tipo: 'hosting', servicio: paq.servicio, dominio,
       precio: renov, moneda: 'usd', ciclo: paq.ciclo, inicio, proximoPago: primera, fechaFin: '', estado: 'activa',
       emisor: docData.emisor, autoFactura: false, diasAntes: 5, notas: `Cliente del aliado ${a.nombre} · ${paq.nombre}`,
       aliadoId: a._id, aliado: a.nombre, facturaId: added.id,
@@ -3682,6 +3722,36 @@ async function alCrearProyecto(id) {
     // la factura llega por el listener de documentos; se abre cuando esté lista
     let n = 0; const t = setInterval(() => { if (docsMap[added.id] || ++n > 20) { clearInterval(t); alPintar(); if (docsMap[added.id]) openSheetById(added.id); } }, 300);
   } catch (e) { toast('No se pudo crear: ' + e.message, 'err'); if (btn) { btn.disabled = false; btn.textContent = 'Crear factura y hosting'; } }
+}
+
+// Proyectos creados antes de registrar al cliente: se crea su ficha en Clientes y se vincula a la factura y al hosting
+function alRegistrarCliente(fsId) {
+  const d = docsMap[fsId]; if (!d) return;
+  ptModal('Registrar cliente', `Proyecto ${d.docId || ''} · aliado ${d.aliado || ''}`, `
+    <div class="ff"><label>Nombre</label><input id="arc-nom" value="${esc(d.clienteFinal || '')}"></div>
+    <div class="ff"><label>Apellido</label><input id="arc-ape"></div>
+    <div class="ff"><label>Negocio / empresa</label><input id="arc-emp" value="${esc(d.clienteFinal || '')}"></div>
+    <div class="ff"><label>Teléfono / WhatsApp</label><input id="arc-tel"></div>
+    <div class="ff"><label>Correo</label><input id="arc-cor" type="email"></div>
+    <button class="btn-edit-save" onclick="alGuardarClienteDe('${fsId}')">Guardar en Clientes</button>`);
+}
+async function alGuardarClienteDe(fsId) {
+  const d = docsMap[fsId]; if (!d) return;
+  const v = id => document.getElementById(id).value.trim().replace(/\s+/g, ' ');
+  const cli = { nombre: v('arc-nom'), apellido: v('arc-ape'), empresa: v('arc-emp'), telefono: v('arc-tel'), correo: v('arc-cor') };
+  if (!cli.nombre) return toast('Escribe el nombre del cliente', 'err');
+  const completo = [cli.nombre, cli.apellido].filter(Boolean).join(' ');
+  try {
+    const ex = (clientesList || []).find(c => ptNorm(clNombre(c)) === ptNorm(completo));
+    const clienteId = ex ? ex._id : completo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString(36);
+    if (ex) await db.collection('clientes').doc(clienteId).set({ aliadoId: d.aliadoId || null, aliado: d.aliado || '', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    else await db.collection('clientes').doc(clienteId).set({ ...cli, notas: `Cliente del aliado ${d.aliado || ''}`, tags: ['aliado'], cumpleanos: '', origen: 'aliado', aliadoId: d.aliadoId || null, aliado: d.aliado || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' });
+    await db.collection('documentos').doc(fsId).update({ clienteId });
+    const sus = (suscripcionesList || []).find(x => x.facturaId === fsId);
+    if (sus) await db.collection('suscripciones').doc(sus._id).update({ clienteId, cliente: completo });
+    closePortalModal(); toast('Cliente registrado', 'ok'); setTimeout(alPintar, 600);
+  } catch (e) { toast('No se pudo registrar: ' + e.message, 'err'); }
 }
 
 function alNuevoRef(id) {
@@ -5391,7 +5461,9 @@ async function marcarPagado(fsId) {
   const fechaPago = fmtDate();
 
   try {
+    const _revisados = listaComprobantes(doc).map(c => c.url);
     await db.collection('documentos').doc(fsId).update({
+      ...(_revisados.length ? { comprobantesRevisados: firebase.firestore.FieldValue.arrayUnion(..._revisados) } : {}),
       type:          'recibo',
       pagado:        true,
       pagadoParcial: false,
@@ -5465,6 +5537,7 @@ async function confirmarPagoParcial() {
         docId:         newDocId,
         ref:           ref || (doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado'),
         pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() }),
+        ...(listaComprobantes(doc).length ? { comprobantesRevisados: firebase.firestore.FieldValue.arrayUnion(...listaComprobantes(doc).map(c => c.url)) } : {}),
         estadoAnterior: estadoAntesDePago(doc)
       });
       toastAccion('Pago completo registrado ✅', 'Deshacer', () => deshacerPago(fsId, true));
@@ -5523,7 +5596,7 @@ function renderHistorial() {
   // Resumen (siempre sobre todas las facturas)
   const pend = todos.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
   const parc = todos.filter(d => d.type === 'factura' && !!d.pagadoParcial && !d.pagado);
-  const porRevisar = [...pend, ...parc].filter(d => listaComprobantes(d).length);
+  const porRevisar = [...pend, ...parc].filter(d => compPendientes(d).length);
   const hoy = new Date();
   const cobradoMes = cbCobros().filter(x => x.f.getMonth() === hoy.getMonth() && x.f.getFullYear() === hoy.getFullYear()).reduce((a, x) => a + x.m, 0);
   const sum = arr => arr.reduce((a, d) => a + cbSaldo(d), 0);
@@ -5551,7 +5624,7 @@ function renderHistorial() {
 
   const fila = (d, grupo) => {
     const id = esc(d._fsId || '');
-    const comps = listaComprobantes(d).length;
+    const comps = compPendientes(d).length;
     const saldo = cbSaldo(d);
     const pill = { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
     const servicios = (d.items || []).map(i => i.s).join(', ');
@@ -6041,6 +6114,18 @@ function listaComprobantes(d) {
   if (d.comprobante_url && !vistos.has(d.comprobante_url)) out.unshift({ url: d.comprobante_url });
   return out;
 }
+/* Estado de cada comprobante: 'pendiente' (falta revisarlo), 'registrado' (ya se registró el pago) o 'rechazado'.
+   Se guarda en comprobantesRevisados al confirmar/abonar/rechazar; para facturas anteriores se deduce de los pagos registrados después de subirlo. */
+function _fechaIso(f) { f = String(f || ''); const m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : f.slice(0, 10); }
+function compEstado(d, c) {
+  if (!c || !c.url) return 'registrado';
+  if (d.pagoRechazado && d.pagoRechazado.url === c.url) return 'rechazado';
+  if ((d.comprobantesRevisados || []).includes(c.url) || d.pagado || d.type === 'recibo') return 'registrado';
+  const dia = _fechaIso(c.fecha), pagos = Array.isArray(d.pagos) ? d.pagos : [];
+  if (!dia) return pagos.length ? 'registrado' : 'pendiente';
+  return pagos.some(p => _fechaIso(p.fecha) >= dia) ? 'registrado' : 'pendiente';
+}
+function compPendientes(d) { return listaComprobantes(d).filter(c => compEstado(d, c) === 'pendiente'); }
 function iaDe(d, url) {
   return (d.verificaciones || {})[iaKey(url)] || (d.verificacionIA && d.verificacionIA.url === url ? d.verificacionIA : null);
 }
@@ -6054,6 +6139,9 @@ function verImagen(src) {
   document.body.appendChild(lb);
 }
 function iaAdminBox(doc, url) {
+  const est = compEstado(doc, listaComprobantes(doc).find(c => c.url === url) || { url });
+  if (est === 'registrado') return `<div style="background:#f0fdf4;border:1px solid rgba(5,150,105,.25);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:11px;font-weight:700;color:#059669;font-family:'Plus Jakarta Sans',sans-serif;">✓ Pago registrado · comprobante ya revisado</div>`;
+  if (est === 'rechazado') return `<div style="background:#fef2f2;border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:11px;font-weight:700;color:#b91c1c;font-family:'Plus Jakarta Sans',sans-serif;">Comprobante rechazado</div>`;
   const v = iaDe(doc, url || doc.comprobante_url || '');
   if (!v) return '';
   const [c, bg, titulo] = IA_ADMIN[v.estado] || IA_ADMIN.ilegible;
@@ -6094,7 +6182,7 @@ function duplicarFactura(fsId) {
   const notaEl = document.getElementById('doc-nota');
   if (notaEl) notaEl.value = doc.nota || '';
 
-  if (doc.emisor) document.getElementById('doc-emisor').value = doc.emisor;
+  document.getElementById('doc-emisor').value = EMISOR_FACTURAS;   // la copia es una factura nueva
 
   const metEl = document.getElementById('metodo-pago');
   if (metEl && doc.metodoPago) { metEl.value = doc.metodoPago; onMetodoPagoChange(true); cpRellenar(doc.metodoPago, doc.infoPago || {}); }
@@ -7718,7 +7806,7 @@ async function convertirCotizacion(id) {
   try {
     const docData = {
       docId: genId('FAC'), type: 'factura', cli: c.cli, ref: c.ref || '—', nota: c.nota || '',
-      fecha: fmtDate(), total: c.total || 0, moneda: c.moneda || 'usd', emisor: c.emisor || '',
+      fecha: fmtDate(), total: c.total || 0, moneda: c.moneda || 'usd', emisor: EMISOR_FACTURAS,
       metodoPago: c.metodoPago || null, infoPago: c.infoPago || {}, contrato: false,
       items: c.items || [], pagado: false, fechaPago: null, cotizacionId: id,
       clienteCorreo: c.clienteCorreo || correoDestinatario(c.cli) || null,
@@ -8357,7 +8445,7 @@ function openSuscripcionForm(id, preset) {
       <div id="sf-ayuda" style="font-size:11px;color:var(--text-soft);margin-top:6px;font-family:'Plus Jakarta Sans',sans-serif;"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="ff"><label>Estado</label><select id="sf-estado">${opts(PT_SUSC, s.estado || 'activa')}</select></div>
-      <div class="ff"><label>Emisor</label><select id="sf-emisor"><option value="">—</option>${EMPLEADOS.map(e => `<option ${e.nombre === s.emisor ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}</select></div>
+      <div class="ff"><label>Emisor</label><select id="sf-emisor"><option selected>${esc(EMISOR_FACTURAS)}</option></select></div>
     </div>
     <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--off);margin-bottom:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">
       <input type="checkbox" id="sf-auto" ${s.autoFactura !== false ? 'checked' : ''} style="margin-top:2px;">
@@ -8486,7 +8574,7 @@ async function facturarSuscripcion(id) {
     const docData = {
       docId: genId('FAC'), type: 'factura', cli: s.cliente, ref: '—',
       nota: `Suscripción ${(PT_CICLOS[s.ciclo] || '').toLowerCase()} · período ${susPeriodoTexto(s)}`,
-      fecha: fmtDate(), total: precio, moneda: s.moneda || 'usd', emisor: s.emisor || '',
+      fecha: fmtDate(), total: precio, moneda: s.moneda || 'usd', emisor: EMISOR_FACTURAS,
       metodoPago: null, infoPago: {}, contrato: false,
       items: [{ s: `${susNombre(s)} (${susPeriodoTexto(s)})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: id, periodo: s.proximoPago || todayISO(),

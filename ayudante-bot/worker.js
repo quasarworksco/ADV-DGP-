@@ -567,6 +567,18 @@ function listaComprobantes(doc) {
   return out;
 }
 
+/* Estado de cada comprobante: 'pendiente' (falta revisarlo), 'registrado' (ya se registró el pago) o 'rechazado'.
+   Se guarda en comprobantesRevisados al confirmar/abonar/rechazar; para facturas anteriores se deduce de los pagos registrados después de subirlo. */
+function _fechaIso(f) { f = String(f || ''); const m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : f.slice(0, 10); }
+function compEstado(d, c) {
+  if (!c || !c.url) return 'registrado';
+  if (d.pagoRechazado && d.pagoRechazado.url === c.url) return 'rechazado';
+  if ((d.comprobantesRevisados || []).includes(c.url) || d.pagado || d.type === 'recibo') return 'registrado';
+  const dia = _fechaIso(c.fecha), pagos = Array.isArray(d.pagos) ? d.pagos : [];
+  if (!dia) return pagos.length ? 'registrado' : 'pendiente';
+  return pagos.some(p => _fechaIso(p.fecha) >= dia) ? 'registrado' : 'pendiente';
+}
+function compPendientes(d) { return listaComprobantes(d).filter(c => compEstado(d, c) === 'pendiente'); }
 /* ── Comparación con la factura (suma todos los comprobantes leídos) ── */
 const r2 = n => Math.round(n * 100) / 100;
 function evaluar(doc, lectura, url) {
@@ -761,6 +773,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
 // ══════════════════════════════════════════════════════════════
 const TG_NOTIF_DEFAULT = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
 const SITIO = 'https://adv.dgp-link.com';
+const EMISOR_FACTURAS = 'Andrés Espina';   // emisor de todas las facturas nuevas (las anteriores conservan el suyo)
 const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
 const CICLO_TXT = { semanal: 'semanal', mensual: 'mensual', trimestral: 'trimestral', semestral: 'semestral', anual: 'anual' };
 const RESPALDO_COLS = ['documentos', 'clientes', 'suscripciones', 'cotizaciones', 'portal', 'encuestas', 'plantillas', 'cuentasPago', 'catalogo', 'config', 'accesos', 'actividadLog', 'ventas'];
@@ -870,7 +883,7 @@ async function tareaDiaria(env) {
       docId: 'FAC-' + (Date.now().toString(36) + Math.random().toString(36).slice(2, 4)).toUpperCase().slice(-7),
       type: 'factura', cli: s.cliente || '', ref: '—',
       nota: `Suscripción ${CICLO_TXT[s.ciclo] || ''} · período ${periodoTxt}`,
-      fecha: isoADmy(hoy), total: precio, moneda: s.moneda || 'usd', emisor: s.emisor || '',
+      fecha: isoADmy(hoy), total: precio, moneda: s.moneda || 'usd', emisor: EMISOR_FACTURAS,
       metodoPago: null, infoPago: {}, contrato: false,
       items: [{ s: `${nombre} (${periodoTxt})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: s._id, periodo: s.proximoPago,
@@ -893,7 +906,7 @@ async function tareaDiaria(env) {
   // 3) Resumen de cobros
   const pendientes = docs.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
   const atrasadas = pendientes.filter(x => x.dias >= 7).sort((a, b) => b.dias - a.dias);
-  const porRevisar = pendientes.filter(x => (Array.isArray(x.d.comprobantes) && x.d.comprobantes.length) || x.d.comprobante_url);
+  const porRevisar = pendientes.filter(x => compPendientes(x.d).length);
   const activas = subs.filter(s => s.estado === 'activa' && s.proximoPago);
   const subsAtrasadas = activas.filter(s => diasEntre(hoy, s.proximoPago) < 0);
   const subsPronto = activas.filter(s => { const d = diasEntre(hoy, s.proximoPago); return d >= 0 && d <= 7; });
@@ -1272,7 +1285,8 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo) {
   };
   const nuevoId = 'REC-' + String(doc.docId || '').replace(/^FAC-/, '');
   const campos = { type: 'recibo', pagado: true, pagadoParcial: false, fechaPago: isoADmy(hoy), docId: nuevoId,
-    ref: doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado', estadoAnterior, pagoRechazado: null };
+    ref: doc.ref && doc.ref !== '—' ? doc.ref : 'Pago confirmado', estadoAnterior, pagoRechazado: null,
+    comprobantesRevisados: [...new Set([...(doc.comprobantesRevisados || []), ...listaComprobantes(doc).map(c => c.url)])] };
   if (pagoNuevo) { campos.pagos = [...(doc.pagos || []), pagoNuevo]; campos.montoPagado = r2((Number(doc.montoPagado) || 0) + pagoNuevo.monto); }
   await fsUpdate(env, `documentos/${fsId}`, campos, Object.keys(campos), token);
   let extra = '';
@@ -1293,8 +1307,9 @@ async function botAbono(env, token, fsId, monto) {
   const pago = { monto: r2(monto), ref: 'Confirmado por Telegram', fecha: isoADmy(hoyVE()) };
   const nuevo = r2((Number(doc.montoPagado) || 0) + pago.monto);
   if (nuevo >= (Number(doc.total) || 0) - 0.009) return botMarcarPagado(env, token, fsId, pago);
-  await fsUpdate(env, `documentos/${fsId}`, { pagos: [...(doc.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true, pagoRechazado: null },
-    ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado'], token);
+  const revisados = [...new Set([...(doc.comprobantesRevisados || []), ...listaComprobantes(doc).map(c => c.url)])];
+  await fsUpdate(env, `documentos/${fsId}`, { pagos: [...(doc.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true, pagoRechazado: null, comprobantesRevisados: revisados },
+    ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado', 'comprobantesRevisados'], token);
   return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>` };
 }
 async function botRechazar(env, token, fsId) {
@@ -1302,7 +1317,8 @@ async function botRechazar(env, token, fsId) {
   if (!doc) return { aviso: 'Esa factura ya no existe' };
   const comps = listaComprobantes(doc);
   const ult = comps[comps.length - 1];
-  await fsUpdate(env, `documentos/${fsId}`, { pagoRechazado: { url: ult?.url || '', fecha: new Date().toISOString() } }, ['pagoRechazado'], token);
+  await fsUpdate(env, `documentos/${fsId}`, { pagoRechazado: { url: ult?.url || '', fecha: new Date().toISOString() },
+    comprobantesRevisados: [...new Set([...(doc.comprobantesRevisados || []), ...comps.map(c => c.url)])] }, ['pagoRechazado', 'comprobantesRevisados'], token);
   return { aviso: 'Comprobante rechazado', html: `❌ <b>Comprobante rechazado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nEn su factura el cliente verá que no pudimos confirmar el pago y que puede subir otro comprobante o escribirte.\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver factura</a>` };
 }
 
@@ -1579,7 +1595,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
   const hoy = hoyVE();
   const comun = {
     cli: b.cliente, ref: '—', nota: b.nota || '', fecha: isoADmy(hoy), total: b.total, moneda: conPago?.moneda || 'usd',
-    emisor: conPago?.emisor || '', metodoPago: conPago?.metodoPago || null, infoPago: conPago?.infoPago || {},
+    emisor: EMISOR_FACTURAS, metodoPago: conPago?.metodoPago || null, infoPago: conPago?.infoPago || {},
     items: b.items, clienteCorreo: correo, portalCodigo: portal?._id || null, createdBy: 'telegram', createdAt: new Date()
   };
   const sufijo = Date.now().toString(36).toUpperCase().slice(-6);
