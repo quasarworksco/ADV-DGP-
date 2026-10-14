@@ -2416,7 +2416,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Aliados</div>
-        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Sus clientes tienen dos paquetes, con pago de contado: sitio web completo + 1 mes de hosting ($200) o + 1 año de hosting ($250).</div>
+        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Sus clientes tienen dos paquetes, con pago de contado: sitio web completo + 1 mes de hosting ($200, luego $25/mes) o + 1 año de hosting ($250).</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-logout" onclick="renderAliados(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
@@ -3519,10 +3519,9 @@ async function renderMetaAds() {
    clientes son suscripciones con aliadoId: no se leen colecciones nuevas, salen de lo ya cargado.
 ═══════════════════════════════════════════════════════ */
 const AL_PAQUETES = {
-  mes: { nombre: 'Paquete Aliado · Sitio web completo + 1 mes de hosting', precio: 200, hostingMeses: 0 },   // sin renovación
-  anio: { nombre: 'Paquete Aliado · Sitio web completo + 1 año de hosting', precio: 250, hostingMeses: 12 }
+  mes: { nombre: 'Paquete Aliado · Sitio web completo + 1 mes de hosting', precio: 200, hostingMeses: 1, ciclo: 'mensual', servicio: 'Hosting mensual', renov: 25 },
+  anio: { nombre: 'Paquete Aliado · Sitio web completo + 1 año de hosting', precio: 250, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145 }
 };
-const AL_RENOVACION = 145;   // precio sugerido del hosting anual al renovar (editable en cada proyecto)
 let _al = { lista: null, sel: null };
 
 async function renderAliados(fresco) {
@@ -3634,23 +3633,31 @@ async function alBorrar(id) {
 
 function alNuevoProyecto(id) {
   const a = _al.lista.find(x => x._id === id); if (!a) return;
-  ptModal('Nuevo proyecto con ' + a.nombre, 'Se crea la factura a nombre del aliado', `
-    <div class="ff"><label>Paquete (pago de contado)</label><select id="alp-paq" onchange="document.getElementById('alp-ren-w').style.display=AL_PAQUETES[this.value].hostingMeses?'':'none'">
+  ptModal('Nuevo proyecto con ' + a.nombre, 'Se crea la factura a nombre del aliado y el hosting del cliente', `
+    <div class="ff"><label>Paquete (pago de contado)</label><select id="alp-paq" onchange="alPaqCambio()">
       ${Object.entries(AL_PAQUETES).map(([k, p]) => `<option value="${k}">${esc(p.nombre)} — $${p.precio}</option>`).join('')}
     </select></div>
     <div class="ff"><label>Cliente del aliado (para quién es la página)</label><input id="alp-cli" placeholder="Nombre del negocio o persona"></div>
     <div class="ff"><label>Dominio (opcional)</label><input id="alp-dom" placeholder="negocio.com o negocio.dgp-link.com"></div>
-    <div id="alp-ren-w" style="display:none"><div class="ff"><label>Renovación del hosting anual ($)</label><input id="alp-ren" type="number" step="0.01" value="${AL_RENOVACION}"></div>
-    <div style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 12px">El hosting anual queda en Suscripciones y en el área de este aliado, y se renueva cada año.</div></div>
+    <div class="ff"><label id="alp-ren-l">Hosting mensual después del primer mes ($)</label><input id="alp-ren" type="number" step="0.01" value="25"></div>
+    <div id="alp-ren-t" style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 8px">Incluye 1 mes de hosting. Después el cliente paga el hosting mensual: queda en Suscripciones y en el área de este aliado.</div>
     <div style="font-size:11.5px;color:var(--text-soft);margin:0 0 12px">La factura se emite a nombre del aliado, con pago de contado (100%).</div>
-    <button class="btn-edit-save" onclick="alCrearProyecto('${id}')">Crear factura</button>`);
+    <button class="btn-edit-save" onclick="alCrearProyecto('${id}')">Crear factura y hosting</button>`);
+}
+function alPaqCambio() {
+  const p = AL_PAQUETES[document.getElementById('alp-paq').value];
+  document.getElementById('alp-ren').value = p.renov;
+  document.getElementById('alp-ren-l').textContent = p.ciclo === 'mensual' ? 'Hosting mensual después del primer mes ($)' : 'Renovación del hosting anual ($)';
+  document.getElementById('alp-ren-t').textContent = p.ciclo === 'mensual'
+    ? 'Incluye 1 mes de hosting. Después el cliente paga el hosting mensual: queda en Suscripciones y en el área de este aliado.'
+    : 'Incluye 1 año de hosting. Después se renueva cada año: queda en Suscripciones y en el área de este aliado.';
 }
 async function alCrearProyecto(id) {
   const a = _al.lista.find(x => x._id === id), paq = AL_PAQUETES[document.getElementById('alp-paq').value];
   const clienteFinal = document.getElementById('alp-cli').value.trim().replace(/\s+/g, ' '), dominio = document.getElementById('alp-dom').value.trim();
   const renov = parseFloat(document.getElementById('alp-ren').value);
   if (!clienteFinal) return toast('Escribe para qué cliente es la página', 'err');
-  if (paq.hostingMeses && (isNaN(renov) || renov < 0)) return toast('Revisa el precio de renovación', 'err');
+  if (isNaN(renov) || renov < 0) return toast('Revisa el precio del hosting', 'err');
   const btn = document.querySelector('#mp-body .btn-edit-save'); if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
   try {
     const fecha = fmtDate(), item = { s: `${paq.nombre} — ${clienteFinal}`, p: paq.precio, c: 1, t: paq.precio };
@@ -3662,19 +3669,19 @@ async function alCrearProyecto(id) {
       createdBy: currentUser ? currentUser.email : 'desconocido', createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const added = await db.collection('documentos').add(docData);
-    const inicio = todayISO(), primera = ptSumarCiclo(inicio, 'anual');
-    if (paq.hostingMeses) await db.collection('suscripciones').add({
-      cliente: clienteFinal, clienteId: null, portalCodigo: null, tipo: 'hosting', servicio: 'Hosting anual', dominio,
-      precio: renov, moneda: 'usd', ciclo: 'anual', inicio, proximoPago: primera, fechaFin: '', estado: 'activa',
+    const inicio = todayISO(), primera = ptSumarCiclo(inicio, paq.ciclo);
+    await db.collection('suscripciones').add({
+      cliente: clienteFinal, clienteId: null, portalCodigo: null, tipo: 'hosting', servicio: paq.servicio, dominio,
+      precio: renov, moneda: 'usd', ciclo: paq.ciclo, inicio, proximoPago: primera, fechaFin: '', estado: 'activa',
       emisor: docData.emisor, autoFactura: false, diasAntes: 5, notas: `Cliente del aliado ${a.nombre} · ${paq.nombre}`,
       aliadoId: a._id, aliado: a.nombre, facturaId: added.id,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     logActividad('Proyecto con aliado', `${a.nombre} · ${clienteFinal} · $${paq.precio}`);
-    closePortalModal(); toast(paq.hostingMeses ? 'Factura y hosting creados' : 'Factura creada', 'ok');
+    closePortalModal(); toast('Factura y hosting creados', 'ok');
     // la factura llega por el listener de documentos; se abre cuando esté lista
     let n = 0; const t = setInterval(() => { if (docsMap[added.id] || ++n > 20) { clearInterval(t); alPintar(); if (docsMap[added.id]) openSheetById(added.id); } }, 300);
-  } catch (e) { toast('No se pudo crear: ' + e.message, 'err'); if (btn) { btn.disabled = false; btn.textContent = 'Crear factura'; } }
+  } catch (e) { toast('No se pudo crear: ' + e.message, 'err'); if (btn) { btn.disabled = false; btn.textContent = 'Crear factura y hosting'; } }
 }
 
 function alNuevoRef(id) {
