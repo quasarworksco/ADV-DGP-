@@ -2416,7 +2416,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Aliados</div>
-        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Sus clientes tienen dos paquetes, con pago de contado: sitio web completo + 1 mes de hosting ($200, luego $25/mes) o + 1 año de hosting ($250).</div>
+        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Paquetes para sus clientes (pago de contado): sitio web + 1 mes de hosting ($200, luego $25/mes), + 1 año de hosting ($250) o Despegue Total ($550 al cliente, tu parte $300).</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-logout" onclick="renderAliados(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
@@ -2892,7 +2892,7 @@ const CATALOGO_BASE = [
   ['Seguidores TikTok', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores TikTok', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores TikTok', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores TikTok', 'TikTok 10,000 Seguidores', 219, 204],
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135],
-  ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233]
+  ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233], ['Aliados', 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', 300, 279]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
 let _catSembrado = false;
@@ -2941,7 +2941,7 @@ function initCatalogo() {
       x.nombre = nombre;
       db.collection('catalogo').doc(x._id).update({ nombre, ...(/1 año/.test(nombre) ? { precio: 250, precioEur: 233 } : {}) }).catch(() => {});
     });
-    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|despegue/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
@@ -3521,7 +3521,10 @@ async function renderMetaAds() {
 ═══════════════════════════════════════════════════════ */
 const AL_PAQUETES = {
   mes: { nombre: 'Paquete Aliado · Sitio web completo + 1 mes de hosting', precio: 200, hostingMeses: 1, ciclo: 'mensual', servicio: 'Hosting mensual', renov: 25 },
-  anio: { nombre: 'Paquete Aliado · Sitio web completo + 1 año de hosting', precio: 250, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145 }
+  anio: { nombre: 'Paquete Aliado · Sitio web completo + 1 año de hosting', precio: 250, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145 },
+  // Combo con el aliado: el cliente le paga $550 al aliado; $250 son del aliado (LLC + EIN) y solo $300 son de DGP (lo único que se factura aquí)
+  despegue: { nombre: 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', precio: 300, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145,
+    combo: { nombre: 'Despegue Total', total: 550, aliado: 250, aliadoIncluye: 'registro de LLC y EIN' }, dominioCom: true, renovDominio: 20 }
 };
 let _al = { lista: null, sel: null };
 
@@ -3540,7 +3543,7 @@ function _alSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((
 function _alResumen(id) {
   const docs = _alDocs(id), sus = _alSus(id);
   const facturado = docs.reduce((a, d) => a + (d.total || 0), 0), pendiente = docs.reduce((a, d) => a + _alSaldo(d), 0);
-  return { docs, sus, facturado, pendiente, cobrado: facturado - pendiente, hosting: sus.filter(s => s.estado === 'activa').length };
+  return { docs, sus, facturado, pendiente, cobrado: facturado - pendiente, hosting: sus.filter(s => s.estado === 'activa' && s.tipo !== 'dominio').length };
 }
 const _alUsd = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -3574,7 +3577,7 @@ function alDetalle(a) {
     </div>`).join('') || '<div class="al-vacio">Todavía no hay proyectos con este aliado.</div>';
   const susHtml = r.sus.sort((x, y) => (x.proximoPago || '').localeCompare(y.proximoPago || '')).map(s => `
     <div class="al-row" style="cursor:default">
-      <div><div class="al-row-t">${esc(s.cliente || '—')}</div><div class="al-row-s">${esc(s.dominio || s.servicio || 'Hosting')} · ${s.estado === 'activa' ? 'Activo' : esc(s.estado || '')}</div></div>
+      <div><div class="al-row-t">${esc(s.cliente || '—')}</div><div class="al-row-s">${esc(s.tipo === 'dominio' ? 'Dominio · ' + (s.dominio || '') : (s.dominio || s.servicio || 'Hosting'))} · ${s.estado === 'activa' ? 'Activo' : esc(s.estado || '')}</div></div>
       <div style="text-align:right"><div class="al-row-t">${s.proximoPago ? 'Renueva ' + esc(s.proximoPago) : '—'}</div><div class="al-row-s">${_alUsd(s.precio)}/${s.ciclo === 'mensual' ? 'mes' : 'año'}</div></div>
     </div>`).join('') || '<div class="al-vacio">Sin hosting de clientes de este aliado.</div>';
   const refHtml = refs.map((x, i) => `
@@ -3601,7 +3604,7 @@ function alDetalle(a) {
       <div class="cb-tile"><div class="cb-tile-l">Hosting activos</div><div class="cb-tile-v">${r.hosting}</div><div class="cb-tile-n">Clientes del aliado</div></div>
     </div>
     <div class="al-sec"><div class="al-sec-h">Proyectos (facturas a ${esc(a.nombre)})</div>${docsHtml}</div>
-    <div class="al-sec"><div class="al-sec-h">Hosting de sus clientes</div>${susHtml}</div>
+    <div class="al-sec"><div class="al-sec-h">Hosting y dominios de sus clientes</div>${susHtml}</div>
     <div class="al-sec"><div class="al-sec-h">Referidos entre nosotros</div>${refHtml}</div>
   </div>`;
 }
@@ -3647,7 +3650,9 @@ function alNuevoProyecto(id) {
     <div class="ff"><label>Negocio / empresa</label><input id="alp-emp" placeholder="Ej. Casanova Car Care"></div>
     <div class="ff"><label>Teléfono / WhatsApp</label><input id="alp-tel" placeholder="+1 ..."></div>
     <div class="ff"><label>Correo</label><input id="alp-cor" type="email"></div>
-    <div class="ff"><label>Dominio (opcional)</label><input id="alp-dom" placeholder="negocio.com o negocio.dgp-link.com"></div>
+    <div class="ff"><label id="alp-dom-l">Dominio (opcional)</label><input id="alp-dom" placeholder="negocio.com o negocio.dgp-link.com"></div>
+    <div id="alp-combo" style="display:none;background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;line-height:1.5;color:var(--text-mid)"></div>
+    <div class="ff" id="alp-domren-w" style="display:none"><label>Renovación del dominio .com al año ($)</label><input id="alp-domren" type="number" step="0.01" value="20"></div>
     <div class="ff"><label id="alp-ren-l">Hosting mensual después del primer mes ($)</label><input id="alp-ren" type="number" step="0.01" value="25"></div>
     <div id="alp-ren-t" style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 8px">Incluye 1 mes de hosting. Después el cliente paga el hosting mensual: queda en Suscripciones y en el área de este aliado.</div>
     <div style="font-size:11.5px;color:var(--text-soft);margin:0 0 12px">La factura se emite a nombre del aliado, con pago de contado (100%).</div>
@@ -3668,6 +3673,12 @@ function alClienteExistente() {
 }
 function alPaqCambio() {
   const p = AL_PAQUETES[document.getElementById('alp-paq').value];
+  const combo = document.getElementById('alp-combo');
+  combo.style.display = p.combo ? '' : 'none';
+  if (p.combo) combo.innerHTML = `<b>${esc(p.combo.nombre)} · $${p.combo.total} al cliente.</b> El aliado cobra los $${p.combo.total}: <b>$${p.combo.aliado}</b> son del aliado (${esc(p.combo.aliadoIncluye)}) y <b>$${p.precio}</b> son de DGP.<br>Aquí solo se factura tu parte ($${p.precio}) al aliado: es lo único que cuenta como ingreso.`;
+  document.getElementById('alp-domren-w').style.display = p.dominioCom ? '' : 'none';
+  document.getElementById('alp-dom-l').textContent = p.dominioCom ? 'Dominio .com (incluido el primer año)' : 'Dominio (opcional)';
+  document.getElementById('alp-dom').placeholder = p.dominioCom ? 'negocio.com' : 'negocio.com o negocio.dgp-link.com';
   document.getElementById('alp-ren').value = p.renov;
   document.getElementById('alp-ren-l').textContent = p.ciclo === 'mensual' ? 'Hosting mensual después del primer mes ($)' : 'Renovación del hosting anual ($)';
   document.getElementById('alp-ren-t').textContent = p.ciclo === 'mensual'
@@ -3679,7 +3690,10 @@ async function alCrearProyecto(id) {
   const v = id => document.getElementById(id).value.trim().replace(/\s+/g, ' ');
   const cli = { nombre: v('alp-nom'), apellido: v('alp-ape'), empresa: v('alp-emp'), telefono: v('alp-tel'), correo: v('alp-cor') };
   const dominio = v('alp-dom'), renov = parseFloat(document.getElementById('alp-ren').value);
+  const renovDom = parseFloat(document.getElementById('alp-domren')?.value);
   if (!cli.nombre) return toast('Escribe el nombre del cliente', 'err');
+  if (paq.dominioCom && !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(dominio)) return toast('Escribe el dominio .com del cliente (ej. negocio.com)', 'err');
+  if (paq.dominioCom && (isNaN(renovDom) || renovDom < 0)) return toast('Revisa el precio de renovación del dominio', 'err');
   const nombreCompleto = [cli.nombre, cli.apellido].filter(Boolean).join(' ');
   const clienteFinal = cli.empresa || nombreCompleto;
   if (isNaN(renov) || renov < 0) return toast('Revisa el precio del hosting', 'err');
@@ -3702,10 +3716,11 @@ async function alCrearProyecto(id) {
     }
     const fecha = fmtDate(), item = { s: `${paq.nombre} — ${clienteFinal}`, p: paq.precio, c: 1, t: paq.precio };
     const docData = {
-      docId: genId('FAC'), type: 'factura', cli: a.nombre, ref: '—', nota: `Proyecto para: ${clienteFinal}${dominio ? ' · ' + dominio : ''} · Pago de contado (100%)`,
+      docId: genId('FAC'), type: 'factura', cli: a.nombre, ref: '—', nota: `Proyecto para: ${clienteFinal}${dominio ? ' · ' + dominio : ''}${paq.combo ? ` · ${paq.combo.nombre}: el cliente paga $${paq.combo.total} al aliado; parte DGP $${paq.precio}` : ''} · Pago de contado (100%)`,
       fecha, total: paq.precio, moneda: 'usd', emisor: EMISOR_FACTURAS, metodoPago: null, infoPago: null,
       contrato: false, items: [item], clienteCorreo: a.correo || null, pagado: false, fechaPago: null,
       aliadoId: a._id, aliado: a.nombre, clienteFinal, clienteId,
+      ...(paq.combo ? { combo: paq.combo.nombre, comboTotal: paq.combo.total, comboParteAliado: paq.combo.aliado } : {}),
       createdBy: currentUser ? currentUser.email : 'desconocido', createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const added = await db.collection('documentos').add(docData);
@@ -3714,6 +3729,13 @@ async function alCrearProyecto(id) {
       cliente: nombreCompleto, clienteId, portalCodigo: null, tipo: 'hosting', servicio: paq.servicio, dominio,
       precio: renov, moneda: 'usd', ciclo: paq.ciclo, inicio, proximoPago: primera, fechaFin: '', estado: 'activa',
       emisor: docData.emisor, autoFactura: false, diasAntes: 5, notas: `Cliente del aliado ${a.nombre} · ${paq.nombre}`,
+      aliadoId: a._id, aliado: a.nombre, facturaId: added.id,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    if (paq.dominioCom) await db.collection('suscripciones').add({
+      cliente: nombreCompleto, clienteId, portalCodigo: null, tipo: 'dominio', servicio: 'Dominio .com', dominio,
+      precio: renovDom, moneda: 'usd', ciclo: 'anual', inicio, proximoPago: ptSumarCiclo(inicio, 'anual'), fechaFin: '', estado: 'activa',
+      emisor: docData.emisor, autoFactura: false, diasAntes: 15, notas: `Cliente del aliado ${a.nombre} · ${paq.nombre}`,
       aliadoId: a._id, aliado: a.nombre, facturaId: added.id,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
