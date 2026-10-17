@@ -4114,10 +4114,14 @@ function renderContenido() {
         </div>
       </div>
     </div>`; };
-  // Agrupado por tipo (carpeta) y, dentro, por mes — lo más nuevo primero
+  // Arriba, lo más reciente (última fecha publicada); el resto, agrupado por tipo (carpeta) y mes
   const grupos = [];
+  const ultima = lista.reduce((m, c) => c.fecha > m ? c.fecha : m, '');
+  const recientes = _cdFiltro === 'todo' && ultima ? lista.filter(c => c.fecha === ultima) : [];
+  if (recientes.length) grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Recientes</span><span class="cd-mes">${fmtDate(ultima + "T12:00")} · ${recientes.length}</span></div>
+        <div class="cd-grid">${recientes.map(card).join('')}</div></div>`);
   Object.keys(CD_TIPOS).forEach(t => {
-    const deTipo = lista.filter(c => c.tipo === t);
+    const deTipo = lista.filter(c => c.tipo === t && !recientes.includes(c));
     [...new Set(deTipo.map(c => c.fecha.slice(0, 7)))].sort().reverse().forEach(mes => {
       const items = deTipo.filter(c => c.fecha.startsWith(mes)).sort((a, b) => b.fecha.localeCompare(a.fecha));
       grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${CD_TIPOS[t].nombre}</span><span class="cd-mes">${_cdMes(mes)} · ${items.length}</span></div>
