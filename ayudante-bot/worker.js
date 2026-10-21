@@ -212,6 +212,7 @@ export default {
     if (ruta === '/meta-ads') return handleMetaAds(request, env);
     if (ruta === '/web-stats') return handleWebStats(request, env);
     if (ruta === '/chat-web') return handleChatWeb(request, env);
+    if (ruta === '/chat-ia') return handleChatIA(request, env);
     if (ruta === '/smm') return handleSmm(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
@@ -693,7 +694,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-13e';
+const WORKER_VERSION = '2026-10-21a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1906,7 +1907,11 @@ async function handleContacto(request, env) {
   if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
   const b = await leerFormularioContacto(request);
   // Anti-spam: campo trampa invisible y tiempo mínimo llenando el formulario
-  const trampa = !!b._hp_dgp || (Number(b.t) && Number(b.t) < 2500);
+  const origen = request.headers.get('Origin') || '';
+  const desdeWeb = ORIGENES_CONTACTO.includes(origen);
+  // Desde nuestra web siempre llega el tiempo que tardó en llenarlo; si falta o es muy rápido, es un bot
+  const rapido = desdeWeb ? !(Number(b.t) >= 3000) : (Number(b.t) > 0 && Number(b.t) < 2500);
+  const trampa = !!b._hp_dgp || rapido;
   const limpiar = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
   const nombre = limpiar(b.nombre, 80), correo = limpiar(b.correo, 120).toLowerCase(), telefono = limpiar(b.telefono, 40);
   const servicio = limpiar(b.servicio, 80), negocio = limpiar(b.negocio, 100);
@@ -1917,6 +1922,8 @@ async function handleContacto(request, env) {
   const datos = { nombre, correo, telefono, servicio, negocio, mensaje };
   // Escudo antispam: al bot se le responde "ok" para que no insista, pero el mensaje NO se pierde (cuarentena)
   const an = analizarSpam({ nombre, correo, mensaje: `${servicio} ${negocio} ${mensaje}` });
+  // Sin "Origin" no viene de un navegador: es un programa enviando directo al formulario
+  if (!origen) { await guardarSospechoso(env, 'contacto', datos, ['envío directo, no desde un navegador', ...an.motivos]); return resp({ ok: true }); }
   if (trampa || an.nivel === 'spam') { await guardarSospechoso(env, 'contacto', datos, trampa ? ['llenó el campo invisible o envió en menos de 3 segundos', ...an.motivos] : an.motivos); return resp({ ok: true }); }
   // Más de 5 mensajes por hora desde la misma conexión: también a cuarentena (y se le sugiere WhatsApp)
   if (await superaLimite(request, 'contacto', 5, 3600)) { await guardarSospechoso(env, 'contacto', datos, ['más de 5 mensajes en una hora']); return resp({ error: 'Ya recibimos tus mensajes. Te responderemos pronto; si es urgente, escríbenos por WhatsApp.' }, 429); }
@@ -1929,6 +1936,28 @@ async function handleContacto(request, env) {
     await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
     return resp({ ok: true });
   }
+}
+
+/* ¿El dominio del correo puede recibir? (registro MX). Evita mandar correos a direcciones inventadas por bots */
+async function correoRecibe(correo) {
+  const dom = String(correo).split('@')[1] || '';
+  if (!dom) return false;
+  if (/^(gmail|hotmail|outlook|live|yahoo|icloud|me|aol|msn|proton|protonmail)\.[a-z.]+$/i.test(dom)) return true;
+  try {
+    const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(dom)}&type=MX`, { headers: { accept: 'application/dns-json' } });
+    const d = await r.json();
+    return Array.isArray(d.Answer) && d.Answer.some(a => a.type === 15);
+  } catch (e) { return true; } // si el DNS falla, no castigamos al cliente
+}
+/* Un solo acuse por correo cada 24 horas (aunque llene el formulario varias veces) */
+async function acuseReciente(correo) {
+  try {
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`dgp-acuse:${String(correo).toLowerCase()}`));
+    const clave = new Request(`https://limites.dgp/acuse/${[...new Uint8Array(h)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+    if (await caches.default.match(clave)) return true;
+    await caches.default.put(clave, new Response('1', { headers: { 'Cache-Control': 'max-age=86400' } }));
+    return false;
+  } catch (e) { return false; }
 }
 
 /* Registra el contacto en el CRM y avisa (también se usa al recuperar de la cuarentena) */
@@ -1959,7 +1988,7 @@ async function registrarLead(env, token, d, opciones = {}) {
     const primer = nombre.split(' ')[0];
     const auto = await automatizaciones(env, token);
     let acuse = false, borrador = null;
-    if (auto.vendedor && correo && !opciones.dudoso) {
+    if (auto.vendedor && correo && !opciones.dudoso && await correoRecibe(correo) && !(await acuseReciente(correo))) {
       // 1) Acuse inmediato con plantilla fija (sin IA: no puede equivocarse)
       acuse = await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Group USA`,
         correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Group USA · Servicios Digitales Profesionales' }),
@@ -2247,6 +2276,91 @@ async function handleWebStats(request, env) {
 }
 
 // ══════════════════════════════════════════════════════════════
+//  ALTAIR EN LA WEB: POST /chat-ia {mensajes:[{rol, texto}]} → {respuesta}
+//  La llave de Groq vive solo aquí (antes estaba en el código público de la web).
+//  Límites: 40 mensajes por hora por conexión, 15 preguntas por conversación.
+// ══════════════════════════════════════════════════════════════
+const ALTAIR_WEB_SYSTEM = `You are Altair, a professional digital marketing and web design advisor for DGP Global Group, a bilingual digital marketing agency based in Florida, USA.
+
+PERSONALITY: Formal yet warm and approachable. Knowledgeable and confident. Customer-oriented. Keep responses concise (3-5 sentences max). Never use bullet points or markdown — write in natural paragraphs.
+
+LANGUAGE RULE: Always respond in the EXACT same language the user writes in. If they write in Spanish → respond in Spanish. If in English → respond in English. Never mix.
+
+SCOPE — You ONLY discuss topics related to:
+- Digital marketing strategies and advertising
+- Web design and development
+- Graphic design and branding
+- Social media management and growth
+- Websites and online stores (built by DGP)
+- Entrepreneurship and business growth
+- DGP Global Group services and pricing
+
+If asked anything outside this scope, politely say you specialize in digital marketing and business topics, and redirect to how you can help.
+
+DGP GLOBAL GROUP SERVICES & PRICING:
+WEB DESIGN: Landing Page from $280 one-time (24-48h delivery) | Standard Site up to 5 pages from $455 one-time (hosting billed separately, from $25/month) | Premium Site with catalog or bookings from $950 one-time (includes 12 months of hosting). Every plan includes a free subdomain like yourbusiness.dgp-link.com.
+GRAPHIC DESIGN: Visual Identity (logo + brand guidelines) from $185 | Business Card from $26 | Social Media Posts/Flyers from $15 each.
+PACKAGES (one-time): Basic $320 (logo, brand guidelines, social media review, 1,000 followers, business card; 48h) | Intermediate $480 (adds 3,000 followers and 10 Instagram posts; 72h) | Advanced $840 (5,000 followers, 10 posts, invoice and business card design, One Page website, admin panel with CRM; 72h).
+CUSTOM SYSTEMS: CRM, admin panels, inventory, custom software — custom quote.
+CONTACT: WhatsApp +1 (239) 823-1738 | Email dgpgroup.usa@gmail.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
+
+GUIDELINES:
+1. Always end with a question or call to action that moves toward a consultation or quote.
+2. When mentioning prices, ALWAYS say "starting from $X" or "desde $X" — never use "for only" or "por solo". Prices are starting points, not fixed amounts.
+3. Give real, valuable advice — educate first, then guide toward the service.
+4. Never invent services or prices not listed above.
+5. If someone seems interested, suggest contacting via WhatsApp or the contact form on the site.
+6. DGP no longer offers marketplace management (Amazon, Walmart, TikTok Shop, eBay). If asked, explain that we focus on websites, custom systems and branding packages, and offer a website with an online store instead.`;
+const CHAT_MAX_TURNOS = 15;
+async function marcaChat(request, poner) {
+  try {
+    const ip = request.headers.get('CF-Connecting-IP') || '';
+    if (!ip) return false;
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`dgp-chat:${ip}`));
+    const clave = new Request(`https://limites.dgp/chat-real/${[...new Uint8Array(h)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+    if (poner) { await caches.default.put(clave, new Response('1', { headers: { 'Cache-Control': 'max-age=7200' } })); return true; }
+    return !!(await caches.default.match(clave));
+  } catch (e) { return true; }
+}
+async function handleChatIA(request, env) {
+  const h = corsContacto(request);
+  const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
+  if (!ORIGENES_CONTACTO.includes(request.headers.get('Origin') || '')) return resp({ error: 'No permitido' }, 403);
+  const b = await request.json().catch(() => ({}));
+  const msgs = (Array.isArray(b.mensajes) ? b.mensajes : []).slice(-24)
+    .map(m => ({ role: m.rol === 'user' ? 'user' : 'assistant', content: String(m.texto || '').slice(0, 800).trim() })).filter(m => m.content);
+  const ultimo = msgs[msgs.length - 1];
+  if (!ultimo || ultimo.role !== 'user') return resp({ error: 'Mensaje vacío' }, 400);
+  const en = /^en/i.test(String(b.idioma || ''));
+  const WA = en ? 'please message us on WhatsApp at +1 (239) 823-1738' : 'escríbenos por WhatsApp al +1 (239) 823-1738';
+  if (msgs.filter(m => m.role === 'user').length > CHAT_MAX_TURNOS)
+    return resp({ respuesta: en ? `To keep helping you personally, ${WA} and our team will reply right away.` : `Para seguir ayudándote de forma personal, ${WA} y el equipo te responde enseguida.` });
+  if (await superaLimite(request, 'chat-ia', 40, 3600))
+    return resp({ respuesta: en ? `We have received many messages from your connection. ${WA[0].toUpperCase() + WA.slice(1)}.` : `Recibimos muchos mensajes desde tu conexión. Por favor, ${WA}.` });
+  // Spam evidente (enlaces, SEO, cripto, otro alfabeto…): no gasta IA
+  if (analizarSpam({ mensaje: ultimo.content }).nivel === 'spam')
+    return resp({ respuesta: en ? 'I can only help with websites, branding and digital marketing for your business. What do you need?' : 'Solo puedo ayudarte con páginas web, branding y marketing digital para tu negocio. ¿Qué necesitas?' });
+  await marcaChat(request, true);
+  let respuesta = '';
+  if (env.GROQ_API_KEY) {
+    try {
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
+        headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: ALTAIR_WEB_SYSTEM }, ...msgs], max_tokens: 350, temperature: 0.72 }) });
+      const d = await r.json().catch(() => ({}));
+      respuesta = String(d.choices?.[0]?.message?.content || '').trim();
+    } catch (e) { console.warn('chat-ia groq', e); }
+  }
+  if (!respuesta) {
+    const conv = msgs.map(m => `${m.role === 'user' ? 'Cliente' : 'Altair'}: ${m.content}`).join('\n');
+    respuesta = await aiTexto(env, ALTAIR_WEB_SYSTEM, `${conv}\n\nResponde el último mensaje del Cliente como Altair.`, 350).catch(() => '');
+  }
+  return resp({ respuesta: respuesta.slice(0, 2000) || (en ? 'Sorry, I had a technical issue. Please try again.' : 'Disculpa, tuve un problema técnico. Por favor intenta de nuevo.') });
+}
+
+// ══════════════════════════════════════════════════════════════
 //  CHAT DE LA WEB (Altair): POST /chat-web {mensajes:[{rol:'user'|'assistant', texto}], cerrado}
 //  Manda la conversación a Telegram desde aquí (la web ya no guarda la llave de Telegram)
 // ══════════════════════════════════════════════════════════════
@@ -2260,6 +2374,8 @@ async function handleChatWeb(request, env) {
   const msgs = (Array.isArray(b.mensajes) ? b.mensajes : []).slice(-30)
     .map(m => ({ rol: m.rol === 'user' ? 'user' : 'assistant', texto: String(m.texto || '').slice(0, 1500).trim() })).filter(m => m.texto);
   if (!msgs.some(m => m.rol === 'user')) return resp({ ok: true });
+  // Un bot que manda directo aquí (sin haber conversado con Altair) no te llega a Telegram
+  if (!(await marcaChat(request, false))) return resp({ ok: true });
   const textoCliente = msgs.filter(m => m.rol === 'user').map(m => m.texto).join(' ');
   const transcripcion = msgs.map(m => `${m.rol === 'user' ? 'Cliente' : 'Altair'}: ${m.texto}`).join('\n');
   const an = analizarSpam({ mensaje: textoCliente });
@@ -2581,6 +2697,10 @@ function analizarSpam({ nombre = '', correo = '', mensaje = '' }) {
   SPAM_FUERTE.filter(p => contiene(t, p)).forEach(p => suma(2, `"${p}"`));
   SPAM_SUAVE.filter(p => contiene(t, p)).forEach(p => suma(1, `"${p}"`));
   if (/https?:\/\/|www\.|\.(com|net|ru|xyz|top)\b/i.test(nombre)) suma(3, 'enlace en el nombre');
+  // Nombres típicos de bots: "RobertTic", "jhgsdKLm", "Mike123"
+  if (/\d/.test(nombre)) suma(2, 'números en el nombre');
+  if (/[a-záéíóúñ]{2,}[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(nombre.replace(/\b(Mc|Mac|De|Di|La|Le|O')/g, ''))) suma(2, 'nombre con mayúsculas raras');
+  if (nombre.split(/\s+/).some(w => w.length >= 6 && !/[aeiouáéíóúy]/i.test(w))) suma(2, 'nombre sin vocales');
   if (/(t\.me\/|bit\.ly|tinyurl|telegra\.ph)/i.test(t)) suma(2, 'enlace acortado o de Telegram');
   const dom = String(correo).split('@')[1] || '';
   if (dom && SPAM_DOMINIOS.some(d => dom.includes(d))) suma(3, 'correo desechable');
