@@ -694,7 +694,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-21a';
+const WORKER_VERSION = '2026-10-21b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2310,7 +2310,13 @@ GUIDELINES:
 3. Give real, valuable advice — educate first, then guide toward the service.
 4. Never invent services or prices not listed above.
 5. If someone seems interested, suggest contacting via WhatsApp or the contact form on the site.
-6. DGP no longer offers marketplace management (Amazon, Walmart, TikTok Shop, eBay). If asked, explain that we focus on websites, custom systems and branding packages, and offer a website with an online store instead.`;
+6. DGP no longer offers marketplace management (Amazon, Walmart, TikTok Shop, eBay). If asked, explain that we focus on websites, custom systems and branding packages, and offer a website with an online store instead.
+
+CONTACT CAPTURE (very important): our team needs the visitor's NAME and PHONE/WHATSAPP to follow up.
+- In your FIRST reply, answer the question briefly and then ask for their name and WhatsApp number so a specialist can send them a quote.
+- If they still haven't shared it, ask again kindly every two replies. Never refuse to answer and never be pushy.
+- Once they share it, thank them by name and confirm a specialist will contact them on WhatsApp very soon.
+- Never ask for sensitive data (Social Security number, card numbers, passwords).`;
 const CHAT_MAX_TURNOS = 15;
 async function marcaChat(request, poner) {
   try {
@@ -2321,6 +2327,39 @@ async function marcaChat(request, poner) {
     if (poner) { await caches.default.put(clave, new Response('1', { headers: { 'Cache-Control': 'max-age=7200' } })); return true; }
     return !!(await caches.default.match(clave));
   } catch (e) { return true; }
+}
+/* Busca nombre y teléfono/correo en lo que escribió el visitante (o en la tarjeta de contacto del chat) */
+function datosContactoChat(msgs, tarjeta) {
+  const txt = msgs.filter(m => m.role === 'user').map(m => m.content).join('\n');
+  const t = tarjeta && typeof tarjeta === 'object' ? tarjeta : {};
+  const tel = String(t.telefono || '').trim() || ((txt.match(/\+?\d[\d\s().-]{6,}\d/g) || []).find(x => x.replace(/\D/g, '').length >= 7 && x.replace(/\D/g, '').length <= 15) || '').trim();
+  const correo = ((txt.match(/[^@\s,;]+@[^@\s,;]+\.[a-z]{2,}/i) || [])[0] || '').toLowerCase();
+  if (!tel && !correo) return null;
+  let nombre = String(t.nombre || '').trim();
+  if (!nombre) {
+    const m = txt.match(/(?:me llamo|mi nombre es|my name is|soy|i am|i'm|this is)\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})/i);
+    nombre = m ? m[1] : '';
+  }
+  return { nombre: nombre.replace(/[<>]/g, '').slice(0, 80), telefono: tel.slice(0, 40), correo: correo.slice(0, 120) };
+}
+async function contactoDelChat(request, env, msgs, tarjeta) {
+  const c = datosContactoChat(msgs, tarjeta);
+  if (!c) return null;
+  try {
+    const ip = request.headers.get('CF-Connecting-IP') || '';
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`dgp-chatlead:${ip}:${c.telefono.replace(/\D/g, '')}:${c.correo}`));
+    const clave = new Request(`https://limites.dgp/chat-lead/${[...new Uint8Array(h)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+    if (await caches.default.match(clave)) return c;
+    await caches.default.put(clave, new Response('1', { headers: { 'Cache-Control': 'max-age=86400' } }));
+    // La tarjeta del chat ya pasa por /contacto; aquí solo se registra lo que escribió en la conversación
+    if (tarjeta && tarjeta.enviado) return c;
+    const preguntas = msgs.filter(m => m.role === 'user').map(m => m.content).join(' | ').slice(0, 1200);
+    const an = analizarSpam({ nombre: c.nombre, correo: c.correo, mensaje: preguntas });
+    if (an.nivel === 'spam') return c;
+    const token = await firebaseLogin(env);
+    await registrarLead(env, token, { nombre: c.nombre || 'Visitante del chat', correo: c.correo, telefono: c.telefono, servicio: 'Chat con Altair', mensaje: preguntas }, { dudoso: an.nivel === 'dudoso' ? an.motivos : null });
+  } catch (e) { console.warn('chat lead', e); }
+  return c;
 }
 async function handleChatIA(request, env) {
   const h = corsContacto(request);
@@ -2343,19 +2382,22 @@ async function handleChatIA(request, env) {
   if (analizarSpam({ mensaje: ultimo.content }).nivel === 'spam')
     return resp({ respuesta: en ? 'I can only help with websites, branding and digital marketing for your business. What do you need?' : 'Solo puedo ayudarte con páginas web, branding y marketing digital para tu negocio. ¿Qué necesitas?' });
   await marcaChat(request, true);
+  // Si el visitante dejó su teléfono o correo en el chat, queda como prospecto en Clientes (una vez por conversación)
+  const contacto = await contactoDelChat(request, env, msgs, b.contacto);
+  const sistema = ALTAIR_WEB_SYSTEM + (contacto ? `\n\nCONTACT ALREADY RECEIVED: ${contacto.nombre ? 'name ' + contacto.nombre + ', ' : ''}${contacto.telefono ? 'phone ' + contacto.telefono : 'email ' + contacto.correo}. Do NOT ask for it again; a specialist will contact them.` : '');
   let respuesta = '';
   if (env.GROQ_API_KEY) {
     try {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
         headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: ALTAIR_WEB_SYSTEM }, ...msgs], max_tokens: 350, temperature: 0.72 }) });
+        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: sistema }, ...msgs], max_tokens: 350, temperature: 0.72 }) });
       const d = await r.json().catch(() => ({}));
       respuesta = String(d.choices?.[0]?.message?.content || '').trim();
     } catch (e) { console.warn('chat-ia groq', e); }
   }
   if (!respuesta) {
     const conv = msgs.map(m => `${m.role === 'user' ? 'Cliente' : 'Altair'}: ${m.content}`).join('\n');
-    respuesta = await aiTexto(env, ALTAIR_WEB_SYSTEM, `${conv}\n\nResponde el último mensaje del Cliente como Altair.`, 350).catch(() => '');
+    respuesta = await aiTexto(env, sistema, `${conv}\n\nResponde el último mensaje del Cliente como Altair.`, 350).catch(() => '');
   }
   return resp({ respuesta: respuesta.slice(0, 2000) || (en ? 'Sorry, I had a technical issue. Please try again.' : 'Disculpa, tuve un problema técnico. Por favor intenta de nuevo.') });
 }
@@ -2383,7 +2425,9 @@ async function handleChatWeb(request, env) {
   if (await superaLimite(request, 'chat', 20, 3600)) { await guardarSospechoso(env, 'chat', { nombre: 'Visitante del chat', mensaje: transcripcion.slice(0, 3000) }, ['más de 20 conversaciones en una hora']); return resp({ ok: true }); }
   const ahora = new Date().toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
   const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
-  await tgEnviar(env, `${an.nivel === 'dudoso' ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(an.motivos.join(', '))})\n` : ''}🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
+  const dc = datosContactoChat(msgs.map(m => ({ role: m.rol, content: m.texto })), b.contacto);
+  const lineaContacto = dc ? `📇 <b>Contacto:</b> ${escHtml(dc.nombre || 'sin nombre')}${dc.telefono ? ` · 📱 ${escHtml(dc.telefono)}` : ''}${dc.correo ? ` · ✉️ ${escHtml(dc.correo)}` : ''}\n<i>Quedó en Clientes como Prospecto.</i>\n\n` : `⚠️ <i>Todavía no dejó nombre ni teléfono.</i>\n\n`;
+  await tgEnviar(env, `${an.nivel === 'dudoso' ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(an.motivos.join(', '))})\n` : ''}🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${lineaContacto}${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
   return resp({ ok: true });
 }
 
