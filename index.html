@@ -2432,10 +2432,9 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Prospectos</div>
-        <div style="font-size:11px;color:var(--text-soft);">Negocios que todavía no son clientes. Escríbeles por WhatsApp uno por uno y lleva aquí su seguimiento. Cuando compren, pásalos a Clientes.</div>
+        <div style="font-size:11px;color:var(--text-soft);">Personas que nos escribieron por la web o por el chat de Altair y todavía no son clientes. Respóndeles por WhatsApp y lleva aquí su seguimiento. Cuando compren, pásalos a Clientes.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <label class="btn-logout" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg> Importar lista<input type="file" accept=".json,.csv,application/json,text/csv" style="display:none" onchange="prLeerArchivo(this)"></label>
         <button class="btn-logout" onclick="prExportar()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg> Exportar</button>
         <button class="btn-logout" onclick="renderProspectos(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
         <button class="btn-nuevo-cliente" onclick="prNuevo()">+ Agregar prospecto</button>
@@ -2443,7 +2442,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     </div>
     <div id="pr-stats" class="cb-tiles" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
-      <input type="search" placeholder="Buscar por nombre, ciudad, teléfono..." oninput="_pr.q=this.value;prPintar()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font:13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);">
+      <input type="search" placeholder="Buscar por nombre, teléfono, correo o mensaje..." oninput="_pr.q=this.value;prPintar()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font:13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);">
     </div>
     <div class="db-pills" id="pr-filtros" style="margin-bottom:14px;flex-wrap:wrap;display:flex;gap:6px;align-items:center;"></div>
     <div id="pr-body"></div>
@@ -3813,8 +3812,9 @@ function alEstadoCuenta(id) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   PROSPECTOS — negocios que todavía no son clientes (Firestore: prospectos)
-   Se leen solo al abrir la sección (y al pulsar Actualizar). El contacto es uno a uno por WhatsApp.
+   PROSPECTOS — personas que nos contactaron y todavía no son clientes (Firestore: prospectos)
+   Los crea el bot cuando alguien escribe en la web o deja su contacto en el chat de Altair.
+   Se leen solo al abrir la sección (y al pulsar Actualizar). Se responde uno a uno por WhatsApp.
 ═══════════════════════════════════════════════════════ */
 const PR_ESTADOS = {
   nuevo:      ['Nuevo', '#64748b'],
@@ -3824,8 +3824,8 @@ const PR_ESTADOS = {
   cliente:    ['Ganado', '#059669'],
   descartado: ['Descartado', '#94a3b8']
 };
-const PR_OPOR = { alta: ['Alta', '#059669'], media: ['Media', '#d97706'], baja: ['Baja', '#64748b'] };
-let _pr = { lista: null, filtro: 'activos', rubro: '', q: '', t: 0 };
+const PR_ORIGEN = { web: ['Formulario web', '#1438cc'], chat: ['Chat de Altair', '#7c3aed'], manual: ['Agregado a mano', '#64748b'] };
+let _pr = { lista: null, filtro: 'activos', origen: '', q: '', t: 0 };
 
 async function renderProspectos(fresco) {
   const body = document.getElementById('pr-body');
@@ -3835,6 +3835,12 @@ async function renderProspectos(fresco) {
     try {
       const snap = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get();
       _pr.lista = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // La lista de negocios investigados (sin origen) ya no se usa: se borra
+      const viejos = _pr.lista.filter(p => !p.origen);
+      if (viejos.length) {
+        for (let i = 0; i < viejos.length; i += 400) { const lote = db.batch(); viejos.slice(i, i + 400).forEach(p => lote.delete(db.collection('prospectos').doc(p._id))); await lote.commit(); }
+        _pr.lista = _pr.lista.filter(p => p.origen);
+      }
     } catch (e) {
       body.innerHTML = `<div style="text-align:center;padding:32px;color:#b91c1c;font-size:13px;">No se pudieron cargar: ${esc(e.message)}</div>`;
       return;
@@ -3845,20 +3851,13 @@ async function renderProspectos(fresco) {
 
 function _prDias(ts) { const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null); return d ? Math.floor((Date.now() - d.getTime()) / 864e5) : null; }
 function _prTel(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
-function _prEstrellas(p) { const m = String(p.rating || '').match(/\d(?:[.,]\d)?/); return m ? m[0].replace(',', '.') : ''; }
 function _prFirma() { const n = (currentUser?.displayName || '').trim().split(/\s+/)[0]; return n || 'el equipo'; }
 
 function prMensaje(p, lang) {
-  const rub = String(p.rubro || '').toLowerCase();
-  const tieneWeb = !!p.web;
-  if (lang === 'en') {
-    return tieneWeb
-      ? `Hi! This is ${_prFirma()} from DGP Global Group. I came across ${p.nombre} and took a look at your website. I noticed a few things that may be costing you customers (mobile, speed and Google). I'd be happy to send you a free audit with concrete improvements, no strings attached. Would that be helpful?`
-      : `Hi! This is ${_prFirma()} from DGP Global Group. I came across ${p.nombre}${_prEstrellas(p) ? ` and your great reviews (★ ${_prEstrellas(p)})` : ''}, and noticed you don't have a website yet. We build professional websites for ${rub === 'limpieza' ? 'cleaning' : rub === 'construcción' ? 'construction' : 'local'} businesses in Florida, in English and Spanish, ready in 48 hours, so customers find you on Google and contact you directly. Would you like to see an example of how yours could look? No commitment.`;
-  }
-  return tieneWeb
-    ? `Hola, ¿cómo están? Les escribe ${_prFirma()} de DGP Global Group. Vi ${p.nombre} y revisé su página web; noté algunas cosas que podrían estar haciéndoles perder clientes (celular, velocidad y Google). Con gusto les envío una auditoría gratis con mejoras concretas, sin compromiso. ¿Les interesa?`
-    : `Hola, ¿cómo están? Les escribe ${_prFirma()} de DGP Global Group. Vi ${p.nombre}${_prEstrellas(p) ? ` y sus buenas reseñas (★ ${_prEstrellas(p)})` : ''}, y noté que todavía no tienen página web. Hacemos páginas profesionales para empresas de ${rub || 'servicios'} en Florida, en español e inglés, listas en 48 horas, para que los clientes los encuentren en Google y les escriban directo. ¿Les gustaría ver un ejemplo de cómo quedaría la suya? Sin compromiso.`;
+  const primer = String(p.nombre || '').trim().split(/\s+/)[0];
+  const sobre = p.servicio && !/chat/i.test(p.servicio) ? p.servicio.charAt(0).toLowerCase() + p.servicio.slice(1) : '';
+  if (lang === 'en') return `Hi${primer ? ' ' + primer : ''}! This is ${_prFirma()} from DGP Global Group. Thank you for contacting us${p.origen === 'chat' ? ' through our website chat' : ' through our website'}${sobre ? ` about ${sobre}` : ''}. I'd be happy to help you. Tell me a little about your business so I can send you the best option. When is a good time to talk?`;
+  return `¡Hola${primer ? ' ' + primer : ''}! Te escribe ${_prFirma()} de DGP Global Group. Gracias por escribirnos${p.origen === 'chat' ? ' por el chat de nuestra web' : ' desde nuestra web'}${sobre ? ` sobre ${sobre}` : ''}. Con gusto te ayudo. Cuéntame un poco de tu negocio para enviarte la mejor opción. ¿A qué hora te queda bien que hablemos?`;
 }
 
 function prPintar() {
@@ -3867,36 +3866,34 @@ function prPintar() {
   const cuenta = e => L.filter(p => (p.estado || 'nuevo') === e).length;
   const pend = L.filter(p => p.estado === 'contactado' && (_prDias(p.contactadoAt) ?? 0) >= 3).length;
   document.getElementById('pr-stats').innerHTML = `
-    <div class="cb-tile"><div class="cb-tile-l">Por contactar</div><div class="cb-tile-v">${cuenta('nuevo')}</div><div class="cb-tile-n">Prospectos nuevos</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Por responder</div><div class="cb-tile-v">${cuenta('nuevo')}</div><div class="cb-tile-n">Te escribieron y esperan respuesta</div></div>
     <div class="cb-tile"><div class="cb-tile-l">Contactados</div><div class="cb-tile-v">${cuenta('contactado')}</div><div class="cb-tile-n">${pend ? `<b style="color:#d97706">${pend}</b> para dar seguimiento` : 'Esperando respuesta'}</div></div>
     <div class="cb-tile"><div class="cb-tile-l">En conversación</div><div class="cb-tile-v">${cuenta('respondio') + cuenta('cotizado')}</div><div class="cb-tile-n">${cuenta('cotizado')} cotizado${cuenta('cotizado') === 1 ? '' : 's'}</div></div>
     <div class="cb-tile"><div class="cb-tile-l">Ganados</div><div class="cb-tile-v" style="color:var(--green-dark)">${cuenta('cliente')}</div><div class="cb-tile-n">${L.length ? Math.round(cuenta('cliente') / L.length * 100) : 0}% de ${L.length}</div></div>`;
-  const rubros = [...new Set(L.map(p => p.rubro).filter(Boolean))].sort();
-  const filtros = [['activos', 'Activos'], ['nuevo', 'Por contactar'], ['seguimiento', 'Seguimiento'], ['contactado', 'Contactados'], ['respondio', 'Respondieron'], ['cotizado', 'Cotizados'], ['cliente', 'Ganados'], ['descartado', 'Descartados'], ['todos', 'Todos']];
+  const filtros = [['activos', 'Activos'], ['nuevo', 'Por responder'], ['seguimiento', 'Seguimiento'], ['contactado', 'Contactados'], ['respondio', 'Respondieron'], ['cotizado', 'Cotizados'], ['cliente', 'Ganados'], ['descartado', 'Descartados'], ['todos', 'Todos']];
   document.getElementById('pr-filtros').innerHTML =
     filtros.map(([k, v]) => `<button class="dash-period-btn ${_pr.filtro === k ? 'active' : ''}" onclick="_pr.filtro='${k}';prPintar()">${v}</button>`).join('') +
-    `<select onchange="_pr.rubro=this.value;prPintar()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:100px;font:600 11px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--text-mid);"><option value="">Todos los rubros</option>${rubros.map(r => `<option ${_pr.rubro === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>`;
+    `<select onchange="_pr.origen=this.value;prPintar()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:100px;font:600 11px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--text-mid);"><option value="">Todos los orígenes</option>${Object.entries(PR_ORIGEN).map(([k, v]) => `<option value="${k}" ${_pr.origen === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>`;
   const q = ptNorm(_pr.q);
   let vis = L.filter(p => {
     const e = p.estado || 'nuevo';
     if (_pr.filtro === 'activos' && ['cliente', 'descartado'].includes(e)) return false;
     if (_pr.filtro === 'seguimiento' && !(e === 'contactado' && (_prDias(p.contactadoAt) ?? 0) >= 3)) return false;
     if (!['activos', 'todos', 'seguimiento'].includes(_pr.filtro) && e !== _pr.filtro) return false;
-    if (_pr.rubro && p.rubro !== _pr.rubro) return false;
-    if (q && !ptNorm([p.nombre, p.ciudad, p.rubro, p.telefono, p.notas].join(' ')).includes(q)) return false;
+    if (_pr.origen && p.origen !== _pr.origen) return false;
+    if (q && !ptNorm([p.nombre, p.negocio, p.telefono, p.correo, p.servicio, p.mensaje, p.notas].join(' ')).includes(q)) return false;
     return true;
   });
-  const orden = { alta: 0, media: 1, baja: 2 };
-  vis.sort((a, b) => (orden[a.oportunidad] ?? 3) - (orden[b.oportunidad] ?? 3));
   if (!L.length) {
-    body.innerHTML = `<div class="pt-empty">Aún no hay prospectos. Usa <b>Importar lista</b> con el archivo que te preparé, o <b>Agregar prospecto</b> para uno a mano.</div>`;
+    body.innerHTML = `<div class="pt-empty">Aún no hay prospectos. Aquí aparecerá cada persona que te escriba por el formulario de la web o deje su contacto en el chat de Altair.</div>`;
     return;
   }
   body.innerHTML = vis.length ? `<div class="pr-list">${vis.map(prCard).join('')}</div>` : '<div class="pt-empty">No hay prospectos con este filtro.</div>';
 }
 
 function prCard(p) {
-  const e = p.estado || 'nuevo', [eL, eC] = PR_ESTADOS[e] || PR_ESTADOS.nuevo, [oL, oC] = PR_OPOR[p.oportunidad] || ['—', '#94a3b8'];
+  const e = p.estado || 'nuevo', [eL, eC] = PR_ESTADOS[e] || PR_ESTADOS.nuevo, [oL, oC] = PR_ORIGEN[p.origen] || PR_ORIGEN.manual;
+  const cuando = _prDias(p.ultimoContactoWeb || p.createdAt);
   const tel = _prTel(p.telefono), dias = _prDias(p.contactadoAt);
   const link = (u, t) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener" class="pr-link">${t}</a>` : '';
   const ico = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg>';
@@ -3906,12 +3903,13 @@ function prCard(p) {
       <div class="pr-av" style="background:${clColor(p.nombre || '?')}">${esc(clIniciales(p.nombre || '?'))}</div>
       <div style="flex:1;min-width:0">
         <div class="pr-name">${esc(p.nombre || '—')}</div>
-        <div class="pr-sub">${esc([p.rubro, p.ciudad].filter(Boolean).join(' · '))}${p.rating ? ` · ★ ${esc(p.rating)}` : ''}</div>
+        <div class="pr-sub">${esc([p.negocio, p.servicio && !/chat/i.test(p.servicio) ? 'Le interesa: ' + p.servicio : '', cuando === null ? '' : cuando === 0 ? 'Escribió hoy' : `Escribió hace ${cuando} día${cuando === 1 ? '' : 's'}`].filter(Boolean).join(' · '))}</div>
       </div>
-      <span class="pr-pill" style="color:${oC};border-color:${oC}55">Oportunidad ${oL}</span>
+      <span class="pr-pill" style="color:${oC};border-color:${oC}55">${oL}</span>
     </div>
-    ${p.motivo ? `<div class="pr-motivo">${esc(p.motivo)}</div>` : ''}
-    <div class="pr-links">${tel ? `<span>${esc(p.telefono)}</span>` : '<span style="color:#b91c1c">Sin teléfono</span>'}${link(p.web, 'Su web')}${link(p.redes, 'Redes')}${link(p.fuente, 'Fuente')}</div>
+    ${p.revisar ? `<div class="pr-motivo" style="color:#b45309">Revisa: podría ser spam (${esc(p.revisar)})</div>` : ''}
+    ${p.mensaje ? `<div class="pr-motivo">“${esc(p.mensaje)}”</div>` : ''}
+    <div class="pr-links">${tel ? `<span>${esc(p.telefono)}</span>` : '<span style="color:#b91c1c">Sin teléfono</span>'}${p.correo ? `<a href="mailto:${esc(p.correo)}" class="pr-link">${esc(p.correo)}</a>` : ''}${link(p.web, 'Su web')}</div>
     ${p.notas ? `<div class="pr-notas">${esc(p.notas)}</div>` : ''}
     <div class="pr-acts">
       ${tel ? `<button class="pr-wa" onclick="prWhatsApp('${p._id}','es')">${ico} WhatsApp</button><button class="pr-wa en" onclick="prWhatsApp('${p._id}','en')" title="Mensaje en inglés">EN</button>` : ''}
@@ -3959,8 +3957,8 @@ async function prAClientes(id) {
   try {
     const cid = String(p.nombre || 'cliente').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString(36);
     await db.collection('clientes').doc(cid).set({
-      nombre: p.nombre || '', apellido: '', telefono: p.telefono || '', correo: '', empresa: p.nombre || '',
-      notas: [p.rubro, p.ciudad, p.notas].filter(Boolean).join(' · '), tags: ['prospecto'], cumpleanos: '', origen: 'prospecto',
+      nombre: String(p.nombre || '').split(' ')[0], apellido: String(p.nombre || '').split(' ').slice(1).join(' '), telefono: p.telefono || '', correo: p.correo || '', empresa: p.negocio || '',
+      notas: [p.servicio && !/chat/i.test(p.servicio) ? 'Le interesaba: ' + p.servicio : '', p.mensaje ? `"${p.mensaje}"` : '', p.notas].filter(Boolean).join(' · '), tags: [], cumpleanos: '', origen: p.origen || 'prospecto',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || ''
     });
     await prGuardar(id, { estado: 'cliente', clienteId: cid });
@@ -3969,34 +3967,32 @@ async function prAClientes(id) {
 }
 
 function prNuevo() {
-  const nombre = prompt('Nombre del negocio:'); if (!nombre) return;
+  const nombre = prompt('Nombre de la persona o negocio:'); if (!nombre) return;
   const telefono = prompt('Teléfono / WhatsApp (con código de área):') || '';
-  const rubro = prompt('Rubro (ej. Limpieza, Construcción):', 'Limpieza') || '';
-  const ciudad = prompt('Ciudad (ej. Orlando, FL):', '') || '';
-  prImportar([{ nombre: nombre.trim(), telefono: telefono.trim(), rubro: rubro.trim(), ciudad: ciudad.trim(), oportunidad: 'media' }]);
+  const servicio = prompt('¿Qué le interesa? (ej. Página web, Logo):', '') || '';
+  prImportar([{ nombre: nombre.trim(), telefono: telefono.trim(), servicio: servicio.trim() }]);
 }
 
-// Importa una lista (JSON del investigador o CSV con encabezados). Evita duplicados por teléfono o nombre+ciudad.
+// Agrega prospectos a mano. Evita duplicados por teléfono o nombre.
 async function prImportar(items) {
   if (!_pr.lista) { try { const s = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get(); _pr.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) { _pr.lista = []; } }
-  const clave = p => _prTel(p.telefono) || ptNorm((p.nombre || '') + '|' + (p.ciudad || ''));
+  const clave = p => _prTel(p.telefono) || ptNorm(p.nombre || '');
   const existentes = new Set(_pr.lista.map(clave));
-  const campos = ['nombre', 'rubro', 'ciudad', 'telefono', 'web', 'redes', 'rating', 'oportunidad', 'motivo', 'fuente', 'notas'];
+  const campos = ['nombre', 'negocio', 'telefono', 'correo', 'servicio', 'mensaje', 'notas'];
   const nuevos = [];
   for (const it of items) {
     if (!it || !it.nombre) continue;
     const p = {}; campos.forEach(c => { if (it[c] != null) p[c] = String(it[c]).trim().slice(0, 500); });
-    if (!['alta', 'media', 'baja'].includes(p.oportunidad)) p.oportunidad = 'media';
     const k = clave(p); if (existentes.has(k)) continue; existentes.add(k);
     nuevos.push(p);
   }
-  if (!nuevos.length) return toast('No hay prospectos nuevos para agregar (ya estaban o el archivo está vacío)', 'err');
+  if (!nuevos.length) return toast('Ese prospecto ya está en la lista', 'err');
   try {
     for (let i = 0; i < nuevos.length; i += 400) {
       const lote = db.batch();
       nuevos.slice(i, i + 400).forEach(p => {
         const ref = db.collection('prospectos').doc();
-        const doc = { ...p, estado: 'nuevo', intentos: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' };
+        const doc = { ...p, origen: 'manual', estado: 'nuevo', intentos: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' };
         lote.set(ref, doc);
         _pr.lista.unshift({ _id: ref.id, ...doc, createdAt: firebase.firestore.Timestamp.now() });
       });
@@ -4006,28 +4002,9 @@ async function prImportar(items) {
     prPintar();
   } catch (e) { toast('No se pudo importar: ' + e.message, 'err'); }
 }
-function prLeerArchivo(input) {
-  const f = input.files && input.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const txt = String(r.result || '').trim();
-    let items = [];
-    try {
-      if (txt.startsWith('[') || txt.startsWith('{')) { const j = JSON.parse(txt); items = Array.isArray(j) ? j : (j.prospectos || []); }
-      else {
-        const filas = txt.split(/\r?\n/).filter(Boolean).map(l => l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map(c => c.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"').trim()));
-        const head = filas.shift().map(h => h.toLowerCase());
-        items = filas.map(f => Object.fromEntries(head.map((h, i) => [h, f[i] || ''])));
-      }
-    } catch (e) { return toast('El archivo no tiene un formato válido (JSON o CSV)', 'err'); }
-    prImportar(items);
-    input.value = '';
-  };
-  r.readAsText(f);
-}
 function prExportar() {
   const L = _pr.lista || []; if (!L.length) return toast('No hay prospectos para exportar', 'err');
-  const cols = ['nombre', 'rubro', 'ciudad', 'telefono', 'web', 'redes', 'rating', 'oportunidad', 'estado', 'motivo', 'notas'];
+  const cols = ['nombre', 'negocio', 'telefono', 'correo', 'servicio', 'origen', 'estado', 'mensaje', 'notas'];
   const csv = [cols.join(',')].concat(L.map(p => cols.map(c => `"${String(p[c] ?? '').replace(/"/g, '""')}"`).join(','))).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));

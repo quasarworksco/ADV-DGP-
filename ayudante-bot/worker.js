@@ -694,7 +694,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-21b';
+const WORKER_VERSION = '2026-10-21c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1977,13 +1977,19 @@ async function registrarLead(env, token, d, opciones = {}) {
       if (!existe.telefono && telefono) { upd.telefono = telefono; mask.push('telefono'); }
       await fsUpdate(env, `clientes/${existe._id}`, upd, mask, token);
     } else {
-      const partes = nombre.split(' ');
-      await fsCreate(env, 'clientes', {
-        nombre: partes[0], apellido: partes.slice(1).join(' '), correo, telefono, empresa: negocio,
-        notas: `Escribió desde la web el ${hoy}${servicio ? ` · Le interesa: ${servicio}` : ''}${mensaje ? `\n"${mensaje.slice(0, 600)}"` : ''}`,
-        tags: ['Prospecto', ...(opciones.dudoso ? ['Revisar'] : []), ...(servicio ? [servicio.slice(0, 24)] : [])], origen: 'web', mensajesWeb: [entrada],
-        creadoPor: 'web', createdAt: new Date()
-      }, token);
+      // Quien no es cliente todavía va a Prospectos (si ya escribió antes, se le suma el mensaje)
+      const origen = /chat/i.test(servicio) ? 'chat' : 'web';
+      const prospectos = await fsList(env, 'prospectos', token).catch(() => []);
+      const previo = prospectos.find(x => (correo && String(x.correo || '').toLowerCase() === correo) || (tel.length >= 7 && String(x.telefono || '').replace(/\D/g, '').endsWith(tel.slice(-9))));
+      if (previo) {
+        await fsUpdate(env, `prospectos/${previo._id}`, { mensajesWeb: [...(Array.isArray(previo.mensajesWeb) ? previo.mensajesWeb : []), entrada].slice(-20), mensaje: mensaje.slice(0, 600), ultimoContactoWeb: new Date(), ...(previo.estado === 'descartado' ? { estado: 'nuevo' } : {}) },
+          ['mensajesWeb', 'mensaje', 'ultimoContactoWeb', ...(previo.estado === 'descartado' ? ['estado'] : [])], token);
+      } else {
+        await fsCreate(env, 'prospectos', {
+          nombre, correo, telefono, negocio, servicio, mensaje: mensaje.slice(0, 600), origen, estado: 'nuevo', intentos: 0,
+          ...(opciones.dudoso ? { revisar: opciones.dudoso.join(', ') } : {}), mensajesWeb: [entrada], creadoPor: origen, createdAt: new Date()
+        }, token);
+      }
     }
     const primer = nombre.split(' ')[0];
     const auto = await automatizaciones(env, token);
@@ -1998,7 +2004,7 @@ async function registrarLead(env, token, d, opciones = {}) {
     }
     const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Group USA por tu mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}. ¿Cuándo podemos conversar?`)}` : null;
     await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
-      text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en Clientes con la etiqueta <b>Prospecto</b>.'}`,
+      text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en el panel, sección <b>Prospectos</b>.'}`,
       reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
     }).catch(() => {});
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
@@ -2426,7 +2432,7 @@ async function handleChatWeb(request, env) {
   const ahora = new Date().toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
   const cuerpo = msgs.map(m => m.rol === 'user' ? `👤 <b>Cliente:</b> ${escHtml(m.texto)}` : `🔵 <b>Altair:</b> ${escHtml(m.texto)}`).join('\n\n');
   const dc = datosContactoChat(msgs.map(m => ({ role: m.rol, content: m.texto })), b.contacto);
-  const lineaContacto = dc ? `📇 <b>Contacto:</b> ${escHtml(dc.nombre || 'sin nombre')}${dc.telefono ? ` · 📱 ${escHtml(dc.telefono)}` : ''}${dc.correo ? ` · ✉️ ${escHtml(dc.correo)}` : ''}\n<i>Quedó en Clientes como Prospecto.</i>\n\n` : `⚠️ <i>Todavía no dejó nombre ni teléfono.</i>\n\n`;
+  const lineaContacto = dc ? `📇 <b>Contacto:</b> ${escHtml(dc.nombre || 'sin nombre')}${dc.telefono ? ` · 📱 ${escHtml(dc.telefono)}` : ''}${dc.correo ? ` · ✉️ ${escHtml(dc.correo)}` : ''}\n<i>Quedó en el panel, sección Prospectos.</i>\n\n` : `⚠️ <i>Todavía no dejó nombre ni teléfono.</i>\n\n`;
   await tgEnviar(env, `${an.nivel === 'dudoso' ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(an.motivos.join(', '))})\n` : ''}🤖 <b>Altair — Conversación en la web</b>\n📅 ${ahora}\n\n${lineaContacto}${cuerpo}\n\n${b.cerrado ? '🔚 <i>Conversación cerrada</i>\n' : ''}🌐 dgpglobalgroup.com`).catch(() => {});
   return resp({ ok: true });
 }
