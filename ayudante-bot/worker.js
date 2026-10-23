@@ -695,7 +695,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-23b';
+const WORKER_VERSION = '2026-10-23c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2912,7 +2912,7 @@ async function handleLlamadas(request, env, ctx) {
     const cfg = await fsGet(env, 'config/llamadas', quien.token).catch(() => null) || {};
     if (paso === 'token') {
       if (!cfg.appSid) return json(request, { configurado: true, conectado: false, numero: env.TWILIO_NUMERO });
-      return json(request, { configurado: true, conectado: true, numero: env.TWILIO_NUMERO, token: await twToken(env, cfg.appSid) });
+      return json(request, { configurado: true, conectado: true, sms: !!cfg.smsActivo, numero: env.TWILIO_NUMERO, token: await twToken(env, cfg.appSid) });
     }
     if (paso === 'configurar') {
       try {
@@ -2928,9 +2928,9 @@ async function handleLlamadas(request, env, ctx) {
         let appSid = cfg.appSid;
         if (appSid) await twRest(env, `/Applications/${appSid}.json`, appDatos).catch(() => { appSid = null; });
         if (!appSid) appSid = (await twRest(env, '/Applications.json', appDatos)).sid;
-        await twRest(env, `/IncomingPhoneNumbers/${num.sid}.json`, { VoiceUrl: voz, VoiceMethod: 'POST', StatusCallback: estado, StatusCallbackMethod: 'POST', VoiceApplicationSid: '' });
+        await twRest(env, `/IncomingPhoneNumbers/${num.sid}.json`, { VoiceUrl: voz, VoiceMethod: 'POST', StatusCallback: estado, StatusCallbackMethod: 'POST', VoiceApplicationSid: '', SmsUrl: `${BOT_URL}/llamadas/sms`, SmsMethod: 'POST', SmsApplicationSid: '' });
         await fetch(docUrl(env, 'config/llamadas'), { method: 'PATCH', headers: { Authorization: `Bearer ${quien.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: toValue({ appSid, numeroSid: num.sid, numero: env.TWILIO_NUMERO, conectadoPor: quien.email, conectadoAt: new Date() }).mapValue.fields }) });
+          body: JSON.stringify({ fields: toValue({ appSid, numeroSid: num.sid, numero: env.TWILIO_NUMERO, smsActivo: true, conectadoPor: quien.email, conectadoAt: new Date() }).mapValue.fields }) });
         return json(request, { ok: true, numero: env.TWILIO_NUMERO });
       } catch (e) { return json(request, { error: e.message }, 502); }
     }
@@ -2962,6 +2962,17 @@ async function handleLlamadas(request, env, ctx) {
     const contacto = await nombrePorNumero(env, token, p.From);
     ctx.waitUntil(llamadaGuardar(env, token, p.CallSid, { direccion: 'entrante', numero: p.From || '', contacto, estado: 'sonando', fecha: ahora }));
     return twiml(`<Say ${TW_VOZ}>Bienvenido a atención al cliente de D G P Global Group. Un momento, por favor.</Say><Dial timeout="20" answerOnBridge="true" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=e"><Client><Identity>${TW_IDENTIDAD}</Identity><Parameter name="numero" value="${xmlEsc(p.From || '')}"/><Parameter name="contacto" value="${xmlEsc(contacto)}"/></Client></Dial>`);
+  }
+  if (paso === 'sms') {
+    // SMS recibido: se guarda en "sms" y avisa por Telegram (no se responde nada automático)
+    ctx.waitUntil((async () => {
+      const contacto = await nombrePorNumero(env, token, p.From);
+      const media = Array.from({ length: Math.min(Number(p.NumMedia) || 0, 5) }, (_, i) => p[`MediaUrl${i}`]).filter(Boolean);
+      const texto = String(p.Body || '').slice(0, 1600);
+      await fsCreate(env, 'sms', { de: p.From || '', para: p.To || '', texto, media, contacto, fecha: new Date(), sid: p.MessageSid || '', vista: false }, token);
+      await tgEnviar(env, `💬 <b>SMS de ${escHtml(contacto || p.From || 'número privado')}</b>${contacto ? ` (${escHtml(p.From)})` : ''}\n\n${escHtml(texto) || '<i>(sin texto)</i>'}${media.length ? `\n📎 ${media.length} archivo${media.length === 1 ? '' : 's'} adjunto${media.length === 1 ? '' : 's'}` : ''}\n\nVelo en el panel → Llamadas.`).catch(() => {});
+    })().catch(e => console.warn('sms', e)));
+    return twiml('');
   }
   if (paso === 'aviso') return twiml(`<Say ${TW_VOZ}>Esta llamada puede ser grabada.</Say>`);
   if (paso === 'fin') {
