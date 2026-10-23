@@ -695,7 +695,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-23a';
+const WORKER_VERSION = '2026-10-23b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2956,12 +2956,12 @@ async function handleLlamadas(request, env, ctx) {
       const destino = twE164(p.To || p.numero);
       if (!/^\+\d{8,15}$/.test(destino)) return twiml(`<Say ${TW_VOZ}>El número no es válido.</Say><Hangup/>`);
       ctx.waitUntil((async () => llamadaGuardar(env, token, p.CallSid, { direccion: 'saliente', numero: destino, contacto: await nombrePorNumero(env, token, destino), estado: 'llamando', fecha: ahora, por: String(p.por || '').slice(0, 80) }))());
-      return twiml(`<Dial callerId="${xmlEsc(env.TWILIO_NUMERO)}" answerOnBridge="true" timeout="40" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=s"><Number url="${BOT_URL}/llamadas/aviso">${xmlEsc(destino)}</Number></Dial>`);
+      return twiml(`<Dial callerId="${xmlEsc(env.TWILIO_NUMERO)}" answerOnBridge="true" timeout="40" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=s"><Number>${xmlEsc(destino)}</Number></Dial>`);
     }
     // Entrante: suena en el panel 20 segundos; si nadie contesta, buzón de voz
     const contacto = await nombrePorNumero(env, token, p.From);
     ctx.waitUntil(llamadaGuardar(env, token, p.CallSid, { direccion: 'entrante', numero: p.From || '', contacto, estado: 'sonando', fecha: ahora }));
-    return twiml(`<Say ${TW_VOZ}>Gracias por llamar a D G P Global Group. Esta llamada puede ser grabada.</Say><Dial timeout="20" answerOnBridge="true" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=e"><Client><Identity>${TW_IDENTIDAD}</Identity><Parameter name="numero" value="${xmlEsc(p.From || '')}"/><Parameter name="contacto" value="${xmlEsc(contacto)}"/></Client></Dial>`);
+    return twiml(`<Say ${TW_VOZ}>Bienvenido a atención al cliente de D G P Global Group. Un momento, por favor.</Say><Dial timeout="20" answerOnBridge="true" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=e"><Client><Identity>${TW_IDENTIDAD}</Identity><Parameter name="numero" value="${xmlEsc(p.From || '')}"/><Parameter name="contacto" value="${xmlEsc(contacto)}"/></Client></Dial>`);
   }
   if (paso === 'aviso') return twiml(`<Say ${TW_VOZ}>Esta llamada puede ser grabada.</Say>`);
   if (paso === 'fin') {
