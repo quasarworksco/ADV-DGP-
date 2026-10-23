@@ -978,6 +978,9 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .ll-quien { font:700 13px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
 .ll-sub { font-size:11.5px; color:var(--text-soft); }
 .ll-mini { border:1px solid var(--border); background:var(--white); color:var(--text-mid); border-radius:8px; padding:5px 9px; font:600 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.ll-acts { display:flex; gap:6px; flex-shrink:0; }
+@media (max-width:520px) { .ll-row { flex-wrap:wrap; } .ll-acts { width:100%; padding-left:42px; } }
+.ll-del:hover { color:#dc2626; border-color:rgba(220,38,38,.4); }
 .ll-resumen { margin-top:8px; background:var(--off); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.6; color:var(--text-mid); white-space:pre-line; }
 .ll-resumen b { color:var(--black); }
 .ll-trans { margin-top:6px; font-size:12px; line-height:1.6; color:var(--text-soft); white-space:pre-line; }
@@ -989,6 +992,8 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .ll-barra.entrante { animation:llPulso 1.2s ease-in-out infinite; }
 @keyframes llPulso { 50% { box-shadow:0 0 0 8px rgba(34,197,94,.35), 0 18px 40px rgba(0,0,0,.35); } }
 .cd-sec { margin-bottom:26px; }
+.md-atajo { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:var(--blue); color:#fff; border:none; border-radius:14px; padding:14px 16px; margin-bottom:20px; cursor:pointer; box-shadow:0 8px 20px rgba(20,56,204,.25); font-family:'Plus Jakarta Sans',sans-serif; }
+.md-atajo span { display:flex; flex-direction:column; gap:2px; } .md-atajo b { font-size:14px; } .md-atajo small { font-size:12px; opacity:.85; }
 .cd-sec-intro { font-size:12.5px; color:var(--text-mid); margin:0 0 12px; line-height:1.6; }
 .md-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:start; }
 .md-card { background:var(--white,#fff); border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px; }
@@ -4347,9 +4352,10 @@ function llPintar() {
       <div class="ll-row">
         <div class="ll-ico ${t}">${_llIco[t]}</div>
         <div style="flex:1;min-width:0"><div class="ll-quien">${esc(quien)}${nueva ? ' <span style="color:#dc2626;font-size:10px;font-weight:700">NUEVO</span>' : ''}</div><div class="ll-sub">${esc(quien !== l.numero && l.numero ? l.numero + ' · ' : '')}${esc(detalle)}</div></div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
+        <div class="ll-acts">
           ${l.numero ? `<button class="ll-mini" onclick="llLlamar('${esc(l.numero)}','${esc(quien).replace(/'/g, '&#39;')}')" title="Llamar">${_llIco.tel} Llamar</button>` : ''}
           ${l.grabacionSid || l.resumen || nueva ? `<button class="ll-mini" onclick="llVer('${l._id}')">${abierto ? 'Ocultar' : 'Ver'}</button>` : ''}
+          <button class="ll-mini ll-del" onclick="llBorrar('${l._id}')" title="Eliminar llamada" aria-label="Eliminar llamada"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
         </div>
       </div>
       ${abierto ? `
@@ -4381,9 +4387,26 @@ function llPintarSms() {
         ${m.de ? `<button class="ll-mini" onclick="llLlamar('${esc(m.de)}','${esc(quien).replace(/'/g, '&#39;')}')">${_llIco.tel} Llamar</button>` : ''}
         ${tel.length >= 10 ? `<a class="ll-mini" style="text-decoration:none" href="https://wa.me/${tel}" target="_blank" rel="noopener">${waIco} WhatsApp</a>` : ''}
         ${!m.vista ? `<button class="ll-mini" onclick="llSmsVisto('${m._id}')">Marcar como leído</button>` : ''}
+        <button class="ll-mini ll-del" onclick="llBorrarSms('${m._id}')" title="Eliminar mensaje"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Eliminar</button>
       </div>
     </div>`;
   }).join('');
+}
+async function llBorrar(id) {
+  const l = (_ll.lista || []).find(x => x._id === id); if (!l) return;
+  const quien = _llQuien(l.numero, l.contacto) || l.numero || 'número privado';
+  if (!confirm(`¿Eliminar la llamada de ${quien}?${l.grabacionSid ? '\nTambién se borrará la grabación y su resumen.' : ''}`)) return;
+  try {
+    await db.collection('llamadas').doc(id).delete();
+    if (l.grabacionSid) llApi('borrar-grabacion', { sid: l.grabacionSid }).catch(() => {});
+    _ll.lista = _ll.lista.filter(x => x._id !== id); llPintar(); toast('Llamada eliminada', 'ok');
+  } catch (e) { toast('No se pudo eliminar: ' + e.message, 'err'); }
+}
+async function llBorrarSms(id) {
+  const m = (_ll.sms || []).find(x => x._id === id); if (!m) return;
+  if (!confirm(`¿Eliminar el mensaje de ${_llQuien(m.de, m.contacto) || m.de || 'número privado'}?`)) return;
+  try { await db.collection('sms').doc(id).delete(); _ll.sms = _ll.sms.filter(x => x._id !== id); llPintar(); toast('Mensaje eliminado', 'ok'); }
+  catch (e) { toast('No se pudo eliminar: ' + e.message, 'err'); }
 }
 function llSmsVisto(id) {
   const m = (_ll.sms || []).find(x => x._id === id); if (!m) return;
@@ -4495,19 +4518,6 @@ ${_W}/diseno-web/
 
 📲 WhatsApp: +1 (239) 823-1738` },
   { s: 'web', c: 'corto', lang: 'es', t: `¿Tu negocio aún no tiene página web? 🌐 Te la hacemos profesional, bilingüe y con WhatsApp, desde $280 pago único. Mira los planes: ${_W}/diseno-web/` },
-  { s: 'web', c: 'largo', lang: 'en', t: `🌐 Does your business have a website yet?
-
-At DGP Global Group we build professional websites in English and Spanish, mobile-ready and with a WhatsApp button so customers can reach you instantly.
-
-✅ Basic Plan (landing page + QR code): from $280
-✅ Standard Plan (up to 5 pages, WhatsApp and contact form): from $455
-✅ Premium Plan (catalog or bookings, SEO and 12 months of hosting): from $950
-
-One-time payment, free domain included. See the plans 👇
-${_W}/en/web-design/
-
-📲 WhatsApp: +1 (239) 823-1738` },
-  { s: 'web', c: 'corto', lang: 'en', t: `No website for your business yet? 🌐 We build professional, bilingual websites with WhatsApp, from $280 one-time. See the plans: ${_W}/en/web-design/` },
 
   // ── Página en 48 horas ──
   { s: 'landing', c: 'largo', lang: 'es', t: `⚡ Tu página web lista en 48 horas
@@ -4520,7 +4530,6 @@ Una página profesional para tu negocio, con tus servicios, fotos, botón de Wha
 
 Pídela aquí 👉 ${_W}/web-48h/` },
   { s: 'landing', c: 'corto', lang: 'es', t: `⚡ Tu página web lista en 48 horas, desde $280 pago único. Pídela aquí: ${_W}/web-48h/` },
-  { s: 'landing', c: 'corto', lang: 'en', t: `⚡ Your website live in 48 hours, from $280 one-time. Get yours: ${_W}/en/website-48h/` },
 
   // ── Limpieza ──
   { s: 'limpieza', c: 'largo', lang: 'es', t: `🧽 ¿Tienes una compañía de limpieza?
@@ -4535,7 +4544,6 @@ Los clientes buscan "limpieza cerca de mí" en Google. Con una página web profe
 Desde $280, pago único. Mira cómo quedaría la tuya 👇
 ${_W}/diseno-web/limpieza/` },
   { s: 'limpieza', c: 'corto', lang: 'es', t: `🧽 ¿Compañía de limpieza sin página web? Haz que te encuentren en Google y te pidan cotización por WhatsApp. Desde $280: ${_W}/diseno-web/limpieza/` },
-  { s: 'limpieza', c: 'corto', lang: 'en', t: `🧽 Cleaning company without a website? Get found on Google and receive quote requests on WhatsApp. From $280: ${_W}/en/web-design/cleaning-companies/` },
 
   // ── Construcción ──
   { s: 'construccion', c: 'largo', lang: 'es', t: `🏗️ ¿Eres contratista o tienes una empresa de construcción?
@@ -4550,7 +4558,6 @@ Tus clientes quieren ver tu trabajo antes de llamarte. Con una página web profe
 Desde $280, pago único 👇
 ${_W}/diseno-web/construccion/` },
   { s: 'construccion', c: 'corto', lang: 'es', t: `🏗️ Contratista: muestra tus proyectos y recibe presupuestos por WhatsApp con tu propia página web. Desde $280: ${_W}/diseno-web/construccion/` },
-  { s: 'construccion', c: 'corto', lang: 'en', t: `🏗️ Contractors: show your projects and get estimate requests on WhatsApp with your own website. From $280: ${_W}/en/web-design/contractors/` },
 
   // ── Tienda online ──
   { s: 'tienda', c: 'largo', lang: 'es', t: `🛍️ Vende tus productos las 24 horas
@@ -4565,7 +4572,6 @@ Te creamos tu tienda online con catálogo, fotos, precios y pedidos por WhatsApp
 Plan Premium desde $950, pago único 👇
 ${_W}/diseno-web/tiendas-online/` },
   { s: 'tienda', c: 'corto', lang: 'es', t: `🛍️ Tu tienda online con catálogo y pedidos por WhatsApp, desde $950 con 12 meses de hosting incluidos: ${_W}/diseno-web/tiendas-online/` },
-  { s: 'tienda', c: 'corto', lang: 'en', t: `🛍️ Your online store with a catalog and orders through WhatsApp, from $950 with 12 months of hosting included: ${_W}/en/web-design/online-stores/` },
 
   // ── Branding ──
   { s: 'branding', c: 'largo', lang: 'es', t: `🎨 Dale a tu negocio una imagen profesional
@@ -4579,7 +4585,6 @@ Paquetes completos para lanzar o renovar tu marca:
 Pago único. Elige el tuyo 👇
 ${_W}/paquetes/` },
   { s: 'branding', c: 'corto', lang: 'es', t: `🎨 Logo, redes y página web en un solo paquete, desde $320 pago único. Míralos aquí: ${_W}/paquetes/` },
-  { s: 'branding', c: 'corto', lang: 'en', t: `🎨 Logo, social media and website in one package, from $320 one-time. See them here: ${_W}/en/packages/` },
 
   // ── Logo ──
   { s: 'logo', c: 'largo', lang: 'es', t: `✏️ ¿Tu negocio necesita un logo profesional?
@@ -4592,7 +4597,6 @@ Diseñamos tu identidad visual: logo original, sus versiones (horizontal, vertic
 Empieza aquí 👇
 ${_W}/paquetes/` },
   { s: 'logo', c: 'corto', lang: 'es', t: `✏️ Logo profesional + manual de marca, desde $185 pago único. Todos los archivos son tuyos: ${_W}/paquetes/` },
-  { s: 'logo', c: 'corto', lang: 'en', t: `✏️ Professional logo + brand guidelines, from $185 one-time. You own all the files: ${_W}/en/packages/` },
 
   // ── CRM ──
   { s: 'crm', c: 'largo', lang: 'es', t: `📊 ¿Llevas tu negocio en Excel, libretas o en el WhatsApp?
@@ -4609,20 +4613,6 @@ Te creamos tu propio CRM: todo tu negocio en un solo panel, desde la computadora
 $997 pago único, sin mensualidades de programas. Incluye migración de tu Excel, capacitación y 30 días de ajustes 👇
 ${_W}/sistemas/crm/` },
   { s: 'crm', c: 'corto', lang: 'es', t: `📊 Tu propio CRM a medida: clientes, ventas, cobros y tareas en un solo panel. $997 pago único, sin mensualidades: ${_W}/sistemas/crm/` },
-  { s: 'crm', c: 'largo', lang: 'en', t: `📊 Still running your business on spreadsheets, notebooks or WhatsApp?
-
-We build your own CRM: your whole business in one dashboard, on desktop or mobile.
-
-✔️ Customers and leads
-✔️ Sales pipeline and follow-ups
-✔️ Calendar and tasks with reminders
-✔️ Payments with PDF receipts
-✔️ Reports and users with permissions
-✔️ Your website forms connected
-
-$997 one-time, no software subscriptions. Includes importing your spreadsheet, training and 30 days of adjustments 👇
-${_W}/en/custom-systems/crm/` },
-  { s: 'crm', c: 'corto', lang: 'en', t: `📊 Your own custom CRM: customers, sales, payments and tasks in one dashboard. $997 one-time, no monthly fees: ${_W}/en/custom-systems/crm/` },
 
   // ── Sistemas a medida ──
   { s: 'sistemas', c: 'largo', lang: 'es', t: `💻 Si lo puedes imaginar, lo construimos
@@ -4636,7 +4626,6 @@ Desarrollamos sistemas a la medida de tu negocio: paneles de administración, fa
 Cuéntanos tu idea y te enviamos una propuesta con precio y tiempo de entrega 👇
 ${_W}/sistemas/` },
   { s: 'sistemas', c: 'corto', lang: 'es', t: `💻 Sistemas a medida para tu negocio: reservas, inventario, facturación, paneles y más. Cuéntanos tu idea: ${_W}/sistemas/` },
-  { s: 'sistemas', c: 'corto', lang: 'en', t: `💻 Custom software for your business: bookings, inventory, billing, dashboards and more. Tell us your idea: ${_W}/en/custom-systems/` },
 
   // ── Registro de empresas ──
   { s: 'llc', c: 'largo', lang: 'es', t: `🏢 ¿Quieres abrir tu empresa en EE. UU.?
@@ -4651,7 +4640,6 @@ Con nuestros aliados especializados registramos tu LLC y tramitamos tu EIN, y no
 Son nuestros honorarios; los costos del estado se cotizan aparte según dónde la registres 👇
 ${_W}/registro-de-empresas/` },
   { s: 'llc', c: 'corto', lang: 'es', t: `🏢 Abre tu LLC y sal a vender con página web y Google Business. Paquete Despegue Total $550: ${_W}/registro-de-empresas/` },
-  { s: 'llc', c: 'corto', lang: 'en', t: `🏢 Open your LLC and start selling with a website and Google Business. Despegue Total package $550: ${_W}/en/business-registration/` },
 
   // ── Auditoría gratis ──
   { s: 'auditoria', c: 'largo', lang: 'es', t: `🔍 ¿Ya tienes página web pero no te llegan clientes?
@@ -4660,8 +4648,7 @@ Te hacemos una auditoría GRATIS: revisamos cómo se ve en el celular, qué tan 
 
 Pídela aquí 👇
 ${_W}/auditoria-gratis/` },
-  { s: 'auditoria', c: 'corto', lang: 'es', t: `🔍 ¿Tu página web no te trae clientes? Te la revisamos gratis y te decimos qué mejorar: ${_W}/auditoria-gratis/` },
-  { s: 'auditoria', c: 'corto', lang: 'en', t: `🔍 Is your website not bringing in customers? We'll review it for free and tell you what to improve: ${_W}/en/free-audit/` }
+  { s: 'auditoria', c: 'corto', lang: 'es', t: `🔍 ¿Tu página web no te trae clientes? Te la revisamos gratis y te decimos qué mejorar: ${_W}/auditoria-gratis/` }
 ].map((m, i) => ({ ...m, i }));
 let _mdServ = '';
 function renderMensajes(lang) {
@@ -4683,7 +4670,7 @@ function renderMensajes(lang) {
         </div>
       </div>`).join('')}</div></div>`;
   }).join('');
-  return `<div class="cd-sec-intro">Textos listos para copiar y pegar en WhatsApp, grupos, estados, Facebook, Instagram o mensajes directos. Cada uno lleva el enlace a la página de ese servicio.</div>${pills}${grupos || '<div style="color:var(--text-soft);font-size:13px;">No hay mensajes en este idioma.</div>'}`;
+  return `<button class="ll-mini" style="margin-bottom:12px" onclick="_cdFiltro='todo';renderContenido()">← Volver a videos e imágenes</button><div class="cd-sec-intro">Textos listos para copiar y pegar en WhatsApp, grupos, estados, Facebook, Instagram o mensajes directos. Cada uno lleva el enlace a la página de ese servicio.</div>${pills}${grupos || '<div style="color:var(--text-soft);font-size:13px;">No hay mensajes en este idioma.</div>'}`;
 }
 function mdCopiar(i) {
   const t = MENSAJES[i].t;
@@ -4695,10 +4682,10 @@ function renderContenido() {
   const pill = (sel, k, v, fn) => `<button class="dash-period-btn ${sel === k ? 'active' : ''}" onclick="${fn}='${k}';renderContenido()">${v}</button>`;
   document.getElementById('cd-filtros').innerHTML =
     [['todo', 'Todo'], ...Object.entries(CD_TIPOS).map(([k, v]) => [k, v.nombre])].map(([k, v]) => pill(_cdFiltro, k, `${v} <span style="opacity:.6">${cnt(k)}</span>`, '_cdFiltro')).join('') +
-    pill(_cdFiltro, 'mensajes', `Mensajes para difundir <span style="opacity:.6">${MENSAJES.filter(m => _cdLang === 'todos' || m.lang === _cdLang).length}</span>`, '_cdFiltro') +
+    pill(_cdFiltro, 'mensajes', `Mensajes para difundir <span style="opacity:.6">${MENSAJES.length}</span>`, '_cdFiltro') +
     '<span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch"></span>' +
     [['todos', 'ES + EN'], ['es', 'Español'], ['en', 'English']].map(([k, v]) => pill(_cdLang, k, v, '_cdLang')).join('');
-  if (_cdFiltro === 'mensajes') { document.getElementById('cd-grid').innerHTML = renderMensajes(_cdLang); return; }
+  if (_cdFiltro === 'mensajes') { document.getElementById('cd-grid').innerHTML = renderMensajes('todos'); return; }
   const lista = CONTENIDO.filter(c => (_cdFiltro === 'todo' || c.tipo === _cdFiltro) && (_cdLang === 'todos' || c.lang === _cdLang));
   const icDl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>';
   const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -4730,9 +4717,8 @@ function renderContenido() {
         <div class="cd-grid">${items.map(card).join('')}</div></div>`);
     });
   });
-  if (_cdFiltro === 'todo') grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Mensajes para difundir</span><span class="cd-mes">${MENSAJES.filter(m => _cdLang === 'todos' || m.lang === _cdLang).length} textos</span></div>
-        <div class="md-card" style="max-width:520px"><div class="md-texto" style="max-height:none">Textos listos para WhatsApp, grupos, estados y redes, con el enlace de cada servicio: páginas web, tiendas online, branding, logo, CRM, sistemas a medida, registro de empresas y auditoría gratis.</div><div class="cd-acts"><button class="cd-dl" onclick="_cdFiltro='mensajes';renderContenido()">Ver mensajes</button></div></div></div>`);
-  document.getElementById('cd-grid').innerHTML = grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>';
+  const atajo = `<button class="md-atajo" onclick="_cdFiltro='mensajes';renderContenido()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span><b>Mensajes para difundir</b><small>${MENSAJES.length} textos listos para WhatsApp, grupos y redes</small></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto"><path d="m9 18 6-6-6-6"/></svg></button>`;
+  document.getElementById('cd-grid').innerHTML = (_cdFiltro === 'todo' ? atajo : '') + (grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>');
 }
 function cdCopiar(i) {
   const t = CONTENIDO[i].texto;

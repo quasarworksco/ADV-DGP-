@@ -695,7 +695,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24a';
+const WORKER_VERSION = '2026-10-24b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2906,7 +2906,7 @@ async function handleLlamadas(request, env, ctx) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
 
   /* ── Desde el panel (equipo) ── */
-  if (['token', 'configurar', 'audio', 'ajustes'].includes(paso)) {
+  if (['token', 'configurar', 'audio', 'ajustes', 'borrar-grabacion'].includes(paso)) {
     if (!twConfigurado(env)) return json(request, { configurado: false });
     const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
     if (quien.error) return json(request, { error: quien.error }, quien.status);
@@ -2934,6 +2934,13 @@ async function handleLlamadas(request, env, ctx) {
           body: JSON.stringify({ fields: toValue({ appSid, numeroSid: num.sid, numero: env.TWILIO_NUMERO, smsActivo: true, conectadoPor: quien.email, conectadoAt: new Date() }).mapValue.fields }) });
         return json(request, { ok: true, numero: env.TWILIO_NUMERO });
       } catch (e) { return json(request, { error: e.message }, 502); }
+    }
+    if (paso === 'borrar-grabacion') {
+      // Borra el audio en Twilio cuando se elimina la llamada en el panel
+      const b = await request.json().catch(() => ({}));
+      if (!/^RE[0-9a-f]{32}$/i.test(b.sid || '')) return json(request, { error: 'Grabación no válida' }, 400);
+      const r = await fetch(`${TW_API}/Accounts/${env.TWILIO_ACCOUNT_SID}/Recordings/${b.sid}.json`, { method: 'DELETE', headers: { Authorization: twAuth(env) } });
+      return json(request, { ok: r.ok || r.status === 404 });
     }
     if (paso === 'ajustes') {
       // Celular que suena junto con el panel en las llamadas entrantes ('' = solo el panel)
