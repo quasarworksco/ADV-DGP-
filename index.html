@@ -954,6 +954,7 @@ html.dark .pr-card { box-shadow:0 1px 2px rgba(0,0,0,.35); }
 
 /* ── Llamadas ── */
 .ll-grid { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
+.ll-grid > * { min-width:0; }
 @media (max-width:860px) { .ll-grid { grid-template-columns:1fr; } }
 .ll-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px; }
 .ll-num { width:100%; box-sizing:border-box; font:600 22px 'Plus Jakarta Sans',sans-serif; text-align:center; letter-spacing:.5px; padding:12px; border:1.5px solid var(--border); border-radius:12px; background:var(--off); color:var(--black); }
@@ -964,6 +965,7 @@ html.dark .pr-card { box-shadow:0 1px 2px rgba(0,0,0,.35); }
 .ll-tecla:active { background:var(--off); }
 .ll-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border:none; border-radius:12px; font:700 14px 'Plus Jakarta Sans',sans-serif; cursor:pointer; color:#fff; background:#16a34a; }
 .ll-btn:disabled { opacity:.5; cursor:default; }
+.ll-cel { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
 .ll-estado { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-soft); margin-bottom:12px; }
 .ll-dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; flex-shrink:0; }
 .ll-dot.ok { background:#22c55e; } .ll-dot.err { background:#ef4444; }
@@ -1568,6 +1570,30 @@ body::before { opacity:.10; }
   .header-right { gap:6px !important; }
 }
 @media (max-width: 430px) { .header .logo-text { display:none; } }
+/* Celular: encabezado compacto (Probar sistema, color y salir también están en el menú) */
+.solo-movil { display:none; }
+@media (max-width: 899px) {
+  .solo-movil { display:block; padding-bottom:18px; }
+  .nav-colores { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; color:rgba(255,255,255,.75); font-size:14px; }
+  .nav-colores > span { white-space:nowrap; }
+  .nav-colores > div { display:flex; gap:5px; }
+  .nav-colores button { width:18px; height:18px; border-radius:50%; border:2px solid rgba(255,255,255,.35); cursor:pointer; padding:0; }
+}
+@media (max-width: 600px) {
+  .header-right .hdr-opt { display:none !important; }
+  .header-right { gap:6px !important; }
+  .header-right .btn-logout { width:36px; height:36px; padding:0 !important; justify-content:center; letter-spacing:0; }
+  .header-right .btn-salir span { display:none; }
+  .header-right .user-avatar { width:34px; height:34px; font-size:14px; flex-shrink:0; }
+  .header { padding:10px 12px !important; }
+  .menu-movil { width:38px !important; height:38px !important; }
+  .brand-mark { width:30px; height:30px; }
+  /* Filtros en una sola fila que se desliza, en vez de muchas filas */
+  div:has(> .dash-period-btn) { flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  div:has(> .dash-period-btn)::-webkit-scrollbar { display:none; }
+  .dash-period-btn { flex-shrink:0; white-space:nowrap; }
+}
+
 
 /* ── Tipografía: Plus Jakarta Sans para todo el panel; números en negrita moderna ── */
 body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smoothing:antialiased; }
@@ -1963,9 +1989,9 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   </div>
   <div class="header-right">
     <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente y automatizaciones" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg><span class="hide-m">Altair</span></button>
-    <button class="btn-logout" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
+    <button class="btn-logout hdr-opt" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
     <button class="btn-logout theme-toggle" onclick="toggleTema()" title="Modo noche / día" aria-label="Cambiar entre modo noche y modo día" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg class="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
-    <div style="position:relative;">
+    <div style="position:relative;" class="hdr-opt">
       <button class="btn-logout" onclick="document.getElementById('color-menu').classList.toggle('open')" title="Color del sistema" aria-label="Color del sistema" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"/></svg></button>
       <div id="color-menu" class="color-menu">
         <div class="color-menu-t">Color del sistema</div>
@@ -1981,7 +2007,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     </div>
     <div class="live-dot">EN VIVO</div>
     <div class="user-avatar" id="user-avatar-init">?</div>
-    <button class="btn-logout" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+    <button class="btn-logout btn-salir" onclick="logoutUser()" title="Salir" aria-label="Salir"><i class="fa-solid fa-right-from-bracket"></i><span> Salir</span></button>
   </div>
 </header>
 
@@ -2039,6 +2065,12 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   <button class="nav-tab" onclick="switchPage('contenido', this)">
     <i class="fa-solid fa-photo-film"></i> Contenido digital
   </button>
+  <div class="solo-movil">
+    <div class="nav-group">Herramientas</div>
+    <button class="nav-tab" onclick="cerrarMenuMovil();abrirDiagnostico()"><i class="fa-solid fa-heart-pulse"></i> Probar sistema</button>
+    <div class="nav-colores"><span>Color del sistema</span><div><button onclick="setColor('#1438cc')" style="background:#1438cc" title="Azul"></button><button onclick="setColor('#7c3aed')" style="background:#7c3aed" title="Violeta"></button><button onclick="setColor('#059669')" style="background:#059669" title="Verde"></button><button onclick="setColor('#dc2626')" style="background:#dc2626" title="Rojo"></button><button onclick="setColor('#d97706')" style="background:#d97706" title="Ámbar"></button><button onclick="setColor('#0891b2')" style="background:#0891b2" title="Cyan"></button></div></div>
+    <button class="nav-tab" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+  </div>
 </nav>
 <div class="nav-overlay" onclick="cerrarMenuMovil()"></div>
 
@@ -2473,6 +2505,12 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
         <div class="ll-teclado"><button class="ll-tecla" onclick="llTecla('1')">1<small>&nbsp;</small></button><button class="ll-tecla" onclick="llTecla('2')">2<small>ABC</small></button><button class="ll-tecla" onclick="llTecla('3')">3<small>DEF</small></button><button class="ll-tecla" onclick="llTecla('4')">4<small>GHI</small></button><button class="ll-tecla" onclick="llTecla('5')">5<small>JKL</small></button><button class="ll-tecla" onclick="llTecla('6')">6<small>MNO</small></button><button class="ll-tecla" onclick="llTecla('7')">7<small>PQRS</small></button><button class="ll-tecla" onclick="llTecla('8')">8<small>TUV</small></button><button class="ll-tecla" onclick="llTecla('9')">9<small>WXYZ</small></button><button class="ll-tecla" onclick="llTecla('*')">*<small>&nbsp;</small></button><button class="ll-tecla" onclick="llTecla('0')">0<small>+</small></button><button class="ll-tecla" onclick="llTecla('#')">#<small>&nbsp;</small></button></div>
         <button class="ll-btn" id="ll-llamar" onclick="llLlamarInput()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg> Llamar</button>
         <div style="font-size:11px;color:var(--text-soft);margin-top:10px;line-height:1.5;">Llamas con el número <b id="ll-mi-num">—</b>.</div>
+        <div class="ll-cel">
+          <div style="font:700 12px 'Plus Jakarta Sans',sans-serif;color:var(--black)">Sonar también en mi celular</div>
+          <div style="font-size:11px;color:var(--text-soft);line-height:1.5;margin:3px 0 8px">Las llamadas entrantes suenan a la vez aquí y en tu celular. Al contestar en el celular, marca 1 para tomar la llamada.</div>
+          <div style="display:flex;gap:6px"><input id="ll-cel" type="tel" placeholder="Tu celular, ej. 239 555 0123" autocomplete="tel" style="flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--off);color:var(--black);font:13px 'Plus Jakarta Sans',sans-serif"><button class="ll-mini" onclick="llGuardarCel()">Guardar</button></div>
+          <div id="ll-cel-estado" class="ll-sub" style="margin-top:6px"></div>
+        </div>
       </div>
       <div>
       <div class="ll-card">
@@ -4135,6 +4173,7 @@ async function llIniciar() {
   const d = await llApi('token').catch(e => ({ error: e.message }));
   _ll.cfg = d;
   if (d.numero) { const n = document.getElementById('ll-mi-num'); if (n) n.textContent = d.numero; }
+  _llPintarCel();
   if (d.error) return _llEstado('Sin conexión con el servidor', 'err');
   if (!d.configurado) return _llEstado('Faltan las claves de Twilio', 'err');
   if (!d.conectado) return _llEstado('Falta conectar tu número', 'err');
@@ -4148,6 +4187,20 @@ async function llIniciar() {
   dev.on('incoming', call => _llEntrante(call));
   _ll.device = dev;
   await dev.register();
+}
+function _llPintarCel() {
+  const c = (_ll.cfg || {}).celular || '', i = document.getElementById('ll-cel'), e = document.getElementById('ll-cel-estado');
+  if (i && document.activeElement !== i) i.value = c;
+  if (e) e.innerHTML = c ? `Activo: también suena en <b>${esc(c)}</b>. Para desactivarlo, borra el número y guarda.` : 'Desactivado: las llamadas solo suenan en el panel.';
+}
+async function llGuardarCel() {
+  const v = document.getElementById('ll-cel').value.trim();
+  try {
+    const d = await llApi('ajustes', { celular: v });
+    _ll.cfg = { ...(_ll.cfg || {}), celular: d.celular };
+    _llPintarCel();
+    toast(d.celular ? 'Listo: las llamadas también sonarán en tu celular' : 'Las llamadas solo sonarán en el panel', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
 }
 function _llQuien(numero, contacto) {
   if (contacto) return contacto;

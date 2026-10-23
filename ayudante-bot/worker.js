@@ -695,7 +695,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-23c';
+const WORKER_VERSION = '2026-10-24a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2835,6 +2835,7 @@ async function botRecuperarSospechoso(env, token, id) {
 const TW_API = 'https://api.twilio.com/2010-04-01';
 const TW_IDENTIDAD = 'panel';
 const TW_VOZ = 'voice="Polly.Mia" language="es-MX"';
+const TW_VOZ_EN = 'voice="Polly.Joanna" language="en-US"';
 const twConfigurado = env => !!(env.TWILIO_ACCOUNT_SID && env.TWILIO_API_KEY && env.TWILIO_API_SECRET && env.TWILIO_AUTH_TOKEN && env.TWILIO_NUMERO);
 const twAuth = env => 'Basic ' + btoa(`${env.TWILIO_API_KEY}:${env.TWILIO_API_SECRET}`);
 const xmlEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2905,14 +2906,14 @@ async function handleLlamadas(request, env, ctx) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
 
   /* ── Desde el panel (equipo) ── */
-  if (['token', 'configurar', 'audio'].includes(paso)) {
+  if (['token', 'configurar', 'audio', 'ajustes'].includes(paso)) {
     if (!twConfigurado(env)) return json(request, { configurado: false });
     const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
     if (quien.error) return json(request, { error: quien.error }, quien.status);
     const cfg = await fsGet(env, 'config/llamadas', quien.token).catch(() => null) || {};
     if (paso === 'token') {
       if (!cfg.appSid) return json(request, { configurado: true, conectado: false, numero: env.TWILIO_NUMERO });
-      return json(request, { configurado: true, conectado: true, sms: !!cfg.smsActivo, numero: env.TWILIO_NUMERO, token: await twToken(env, cfg.appSid) });
+      return json(request, { configurado: true, conectado: true, sms: !!cfg.smsActivo, celular: cfg.celular || '', numero: env.TWILIO_NUMERO, token: await twToken(env, cfg.appSid) });
     }
     if (paso === 'configurar') {
       try {
@@ -2933,6 +2934,17 @@ async function handleLlamadas(request, env, ctx) {
           body: JSON.stringify({ fields: toValue({ appSid, numeroSid: num.sid, numero: env.TWILIO_NUMERO, smsActivo: true, conectadoPor: quien.email, conectadoAt: new Date() }).mapValue.fields }) });
         return json(request, { ok: true, numero: env.TWILIO_NUMERO });
       } catch (e) { return json(request, { error: e.message }, 502); }
+    }
+    if (paso === 'ajustes') {
+      // Celular que suena junto con el panel en las llamadas entrantes ('' = solo el panel)
+      const b = await request.json().catch(() => ({}));
+      const cel = b.celular ? twE164(b.celular) : '';
+      if (cel && !/^\+\d{10,15}$/.test(cel)) return json(request, { error: 'El número del celular no es válido' }, 400);
+      if (cel && cel === twE164(env.TWILIO_NUMERO)) return json(request, { error: 'Pon tu celular personal, no el número de Twilio' }, 400);
+      const r = await fetch(`${docUrl(env, 'config/llamadas')}?updateMask.fieldPaths=celular`, { method: 'PATCH', headers: { Authorization: `Bearer ${quien.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { celular: { stringValue: cel } } }) });
+      if (!r.ok) return json(request, { error: 'No se pudo guardar' }, 502);
+      return json(request, { ok: true, celular: cel });
     }
     if (paso === 'audio') {
       const sid = url.searchParams.get('sid') || '';
@@ -2959,9 +2971,13 @@ async function handleLlamadas(request, env, ctx) {
       return twiml(`<Dial callerId="${xmlEsc(env.TWILIO_NUMERO)}" answerOnBridge="true" timeout="40" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=s"><Number>${xmlEsc(destino)}</Number></Dial>`);
     }
     // Entrante: suena en el panel 20 segundos; si nadie contesta, buzón de voz
-    const contacto = await nombrePorNumero(env, token, p.From);
+    const [contacto, cfgLl] = await Promise.all([nombrePorNumero(env, token, p.From), fsGet(env, 'config/llamadas', token).catch(() => null)]);
     ctx.waitUntil(llamadaGuardar(env, token, p.CallSid, { direccion: 'entrante', numero: p.From || '', contacto, estado: 'sonando', fecha: ahora }));
-    return twiml(`<Say ${TW_VOZ}>Bienvenido a atención al cliente de D G P Global Group. Un momento, por favor.</Say><Dial timeout="20" answerOnBridge="true" record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=e"><Client><Identity>${TW_IDENTIDAD}</Identity><Parameter name="numero" value="${xmlEsc(p.From || '')}"/><Parameter name="contacto" value="${xmlEsc(contacto)}"/></Client></Dial>`);
+    // Si hay celular configurado, suena a la vez en el panel y en el celular (pide marcar 1 para que no conteste su buzón)
+    const cel = cfgLl && /^\+\d{10,15}$/.test(cfgLl.celular || '') ? cfgLl.celular : '';
+    const idLlamada = /^\+\d{8,15}$/.test(p.From || '') ? p.From : env.TWILIO_NUMERO;
+    const celular = cel ? `<Number url="${BOT_URL}/llamadas/filtro">${xmlEsc(cel)}</Number>` : '';
+    return twiml(`<Say ${TW_VOZ}>Bienvenido a atención al cliente de D G P Global Group. Un momento, por favor.</Say><Say ${TW_VOZ_EN}>Welcome to D G P Global Group customer service. One moment, please.</Say><Dial timeout="${cel ? 25 : 20}" answerOnBridge="true"${cel ? ` callerId="${xmlEsc(idLlamada)}"` : ''} record="record-from-answer-dual" recordingStatusCallback="${BOT_URL}/llamadas/grabacion" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/fin?d=e">${celular}<Client><Identity>${TW_IDENTIDAD}</Identity><Parameter name="numero" value="${xmlEsc(p.From || '')}"/><Parameter name="contacto" value="${xmlEsc(contacto)}"/></Client></Dial>`);
   }
   if (paso === 'sms') {
     // SMS recibido: se guarda en "sms" y avisa por Telegram (no se responde nada automático)
@@ -2974,6 +2990,11 @@ async function handleLlamadas(request, env, ctx) {
     })().catch(e => console.warn('sms', e)));
     return twiml('');
   }
+  if (paso === 'filtro') {
+    // Al contestar en el celular: marca 1 para tomar la llamada (si contesta el buzón del celular, se corta y sigue sonando el panel)
+    if (url.searchParams.has('ok')) return p.Digits === '1' ? twiml('') : twiml('<Hangup/>');
+    return twiml(`<Gather numDigits="1" timeout="8" action="${BOT_URL}/llamadas/filtro?ok=1"><Say ${TW_VOZ}>Llamada de un cliente para D G P Global Group. Marca 1 para contestar.</Say></Gather><Hangup/>`);
+  }
   if (paso === 'aviso') return twiml(`<Say ${TW_VOZ}>Esta llamada puede ser grabada.</Say>`);
   if (paso === 'fin') {
     const contesto = p.DialCallStatus === 'completed';
@@ -2981,9 +3002,9 @@ async function handleLlamadas(request, env, ctx) {
     if (contesto) { await llamadaGuardar(env, token, p.CallSid, { estado: 'completada', duracion: Number(p.DialCallDuration) || 0 }); return twiml('<Hangup/>'); }
     if (saliente) { await llamadaGuardar(env, token, p.CallSid, { estado: { busy: 'ocupado', 'no-answer': 'no contestó', failed: 'falló', canceled: 'cancelada' }[p.DialCallStatus] || 'no contestó', duracion: 0 }); return twiml('<Hangup/>'); }
     await llamadaGuardar(env, token, p.CallSid, { estado: 'buzon' });
-    return twiml(`<Say ${TW_VOZ}>En este momento no podemos atenderte. Deja tu nombre y tu mensaje después del tono, y te llamamos muy pronto.</Say><Record maxLength="120" playBeep="true" trim="trim-silence" timeout="6" recordingStatusCallback="${BOT_URL}/llamadas/grabacion?buzon=1" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/colgar"/>`);
+    return twiml(`<Say ${TW_VOZ}>En este momento no podemos atenderte. Deja tu nombre y tu mensaje después del tono, y te llamamos muy pronto.</Say><Say ${TW_VOZ_EN}>We can't take your call right now. Please leave your name and message after the tone, and we'll call you back soon.</Say><Record maxLength="120" playBeep="true" trim="trim-silence" timeout="6" recordingStatusCallback="${BOT_URL}/llamadas/grabacion?buzon=1" recordingStatusCallbackEvent="completed" action="${BOT_URL}/llamadas/colgar"/>`);
   }
-  if (paso === 'colgar') return twiml(`<Say ${TW_VOZ}>Gracias. Hasta pronto.</Say><Hangup/>`);
+  if (paso === 'colgar') return twiml(`<Say ${TW_VOZ}>Gracias. Hasta pronto.</Say><Say ${TW_VOZ_EN}>Thank you. Goodbye.</Say><Hangup/>`);
   if (paso === 'estado') {
     // Fin de la llamada: si sonó y nadie contestó ni dejó mensaje, queda como perdida
     ctx.waitUntil((async () => {
