@@ -987,6 +987,11 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .ll-barra.entrante { animation:llPulso 1.2s ease-in-out infinite; }
 @keyframes llPulso { 50% { box-shadow:0 0 0 8px rgba(34,197,94,.35), 0 18px 40px rgba(0,0,0,.35); } }
 .cd-sec { margin-bottom:26px; }
+.cd-sec-intro { font-size:12.5px; color:var(--text-mid); margin:0 0 12px; line-height:1.6; }
+.md-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:start; }
+.md-card { background:var(--white,#fff); border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+.md-texto { flex:1; font-size:12.5px; line-height:1.6; color:var(--black); white-space:pre-line; word-break:break-word; max-height:340px; overflow:auto; background:var(--off); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+@media (max-width:600px){ .md-grid { grid-template-columns:1fr; } }
 .cd-sec-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
 .cd-folder { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text); }
 .cd-folder svg { color:#f59e0b; }
@@ -2535,7 +2540,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Contenido digital</div>
-        <div style="font-size:11px;color:var(--text-soft);">Videos e imágenes de DGP listos para historias, publicaciones y anuncios. Descárgalos y copia el texto sugerido para publicarlos.</div>
+        <div style="font-size:11px;color:var(--text-soft);">Videos, imágenes y mensajes de DGP listos para historias, publicaciones, anuncios y WhatsApp. Descárgalos o copia el texto para publicarlos.</div>
       </div>
     </div>
     <div class="db-pills" id="cd-filtros" style="margin-bottom:16px;flex-wrap:wrap;"></div>
@@ -4406,13 +4411,241 @@ const CONTENIDO = [
 });
 let _cdFiltro = 'todo', _cdLang = 'todos';
 const _cdMes = f => { const [y, m] = f.split('-'); return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][+m - 1] + ' ' + y; };
+/* Mensajes para difundir (WhatsApp, estados, grupos, redes y mensajes directos). Para agregar uno, súmalo a la lista. */
+const MD_SERVICIOS = {
+  web:       { nombre: 'Páginas web',            color: '#1438cc' },
+  landing:   { nombre: 'Página en 48 horas',     color: '#0ea5e9' },
+  limpieza:  { nombre: 'Web para limpieza',      color: '#059669' },
+  construccion: { nombre: 'Web para construcción', color: '#d97706' },
+  tienda:    { nombre: 'Tienda online',          color: '#db2777' },
+  branding:  { nombre: 'Paquetes de branding',   color: '#7c3aed' },
+  logo:      { nombre: 'Logo e identidad',       color: '#9333ea' },
+  crm:       { nombre: 'CRM a medida',           color: '#0f766e' },
+  sistemas:  { nombre: 'Sistemas a medida',      color: '#334155' },
+  llc:       { nombre: 'Registro de empresas',   color: '#b45309' },
+  auditoria: { nombre: 'Auditoría gratis',       color: '#16a34a' }
+};
+const MD_CANALES = { largo: 'WhatsApp, grupos y publicaciones', corto: 'Mensaje corto (DM, estados, SMS)' };
+const _W = 'https://dgpglobalgroup.com';
+const MENSAJES = [
+  // ── Páginas web ──
+  { s: 'web', c: 'largo', lang: 'es', t: `🌐 ¿Tu negocio todavía no tiene página web?
+
+En DGP Global Group creamos páginas web profesionales, en español e inglés, adaptadas al celular y con botón de WhatsApp para que tus clientes te escriban directo.
+
+✅ Plan Básico (landing page + código QR): desde $280
+✅ Plan Estándar (hasta 5 páginas, WhatsApp y formulario): desde $455
+✅ Plan Premium (catálogo o reservas, SEO y 12 meses de hosting): desde $950
+
+Pago único y dominio gratis incluido. Mira los planes aquí 👇
+${_W}/diseno-web/
+
+📲 WhatsApp: +1 (239) 823-1738` },
+  { s: 'web', c: 'corto', lang: 'es', t: `¿Tu negocio aún no tiene página web? 🌐 Te la hacemos profesional, bilingüe y con WhatsApp, desde $280 pago único. Mira los planes: ${_W}/diseno-web/` },
+  { s: 'web', c: 'largo', lang: 'en', t: `🌐 Does your business have a website yet?
+
+At DGP Global Group we build professional websites in English and Spanish, mobile-ready and with a WhatsApp button so customers can reach you instantly.
+
+✅ Basic Plan (landing page + QR code): from $280
+✅ Standard Plan (up to 5 pages, WhatsApp and contact form): from $455
+✅ Premium Plan (catalog or bookings, SEO and 12 months of hosting): from $950
+
+One-time payment, free domain included. See the plans 👇
+${_W}/en/web-design/
+
+📲 WhatsApp: +1 (239) 823-1738` },
+  { s: 'web', c: 'corto', lang: 'en', t: `No website for your business yet? 🌐 We build professional, bilingual websites with WhatsApp, from $280 one-time. See the plans: ${_W}/en/web-design/` },
+
+  // ── Página en 48 horas ──
+  { s: 'landing', c: 'largo', lang: 'es', t: `⚡ Tu página web lista en 48 horas
+
+Una página profesional para tu negocio, con tus servicios, fotos, botón de WhatsApp y lista para aparecer en Google. Tú solo nos mandas tu información y nosotros hacemos el resto.
+
+💲 Desde $280, pago único
+🗓️ Entrega en 24 a 48 horas
+📱 Se ve perfecta en el celular
+
+Pídela aquí 👉 ${_W}/web-48h/` },
+  { s: 'landing', c: 'corto', lang: 'es', t: `⚡ Tu página web lista en 48 horas, desde $280 pago único. Pídela aquí: ${_W}/web-48h/` },
+  { s: 'landing', c: 'corto', lang: 'en', t: `⚡ Your website live in 48 hours, from $280 one-time. Get yours: ${_W}/en/website-48h/` },
+
+  // ── Limpieza ──
+  { s: 'limpieza', c: 'largo', lang: 'es', t: `🧽 ¿Tienes una compañía de limpieza?
+
+Los clientes buscan "limpieza cerca de mí" en Google. Con una página web profesional te encuentran, ven tus servicios y te piden cotización por WhatsApp en un clic.
+
+✔️ Tus servicios y zonas de trabajo
+✔️ Fotos de antes y después
+✔️ Botón de WhatsApp y formulario de cotización
+✔️ En español e inglés
+
+Desde $280, pago único. Mira cómo quedaría la tuya 👇
+${_W}/diseno-web/limpieza/` },
+  { s: 'limpieza', c: 'corto', lang: 'es', t: `🧽 ¿Compañía de limpieza sin página web? Haz que te encuentren en Google y te pidan cotización por WhatsApp. Desde $280: ${_W}/diseno-web/limpieza/` },
+  { s: 'limpieza', c: 'corto', lang: 'en', t: `🧽 Cleaning company without a website? Get found on Google and receive quote requests on WhatsApp. From $280: ${_W}/en/web-design/cleaning-companies/` },
+
+  // ── Construcción ──
+  { s: 'construccion', c: 'largo', lang: 'es', t: `🏗️ ¿Eres contratista o tienes una empresa de construcción?
+
+Tus clientes quieren ver tu trabajo antes de llamarte. Con una página web profesional muestras tus proyectos, tus licencias y tus reseñas, y recibes pedidos de presupuesto directo a tu WhatsApp.
+
+✔️ Galería de proyectos
+✔️ Servicios y áreas donde trabajas
+✔️ Formulario de presupuesto
+✔️ En español e inglés
+
+Desde $280, pago único 👇
+${_W}/diseno-web/construccion/` },
+  { s: 'construccion', c: 'corto', lang: 'es', t: `🏗️ Contratista: muestra tus proyectos y recibe presupuestos por WhatsApp con tu propia página web. Desde $280: ${_W}/diseno-web/construccion/` },
+  { s: 'construccion', c: 'corto', lang: 'en', t: `🏗️ Contractors: show your projects and get estimate requests on WhatsApp with your own website. From $280: ${_W}/en/web-design/contractors/` },
+
+  // ── Tienda online ──
+  { s: 'tienda', c: 'largo', lang: 'es', t: `🛍️ Vende tus productos las 24 horas
+
+Te creamos tu tienda online con catálogo, fotos, precios y pedidos por WhatsApp, para que vendas aunque estés ocupado o durmiendo.
+
+✔️ Catálogo de productos con categorías
+✔️ Pedidos directo a tu WhatsApp
+✔️ Se ve perfecta en el celular
+✔️ SEO y 12 meses de hosting incluidos
+
+Plan Premium desde $950, pago único 👇
+${_W}/diseno-web/tiendas-online/` },
+  { s: 'tienda', c: 'corto', lang: 'es', t: `🛍️ Tu tienda online con catálogo y pedidos por WhatsApp, desde $950 con 12 meses de hosting incluidos: ${_W}/diseno-web/tiendas-online/` },
+  { s: 'tienda', c: 'corto', lang: 'en', t: `🛍️ Your online store with a catalog and orders through WhatsApp, from $950 with 12 months of hosting included: ${_W}/en/web-design/online-stores/` },
+
+  // ── Branding ──
+  { s: 'branding', c: 'largo', lang: 'es', t: `🎨 Dale a tu negocio una imagen profesional
+
+Paquetes completos para lanzar o renovar tu marca:
+
+⭐ Básico desde $320: logo, manual de marca, revisión de redes, 1,000 seguidores y tarjeta de presentación (48 h)
+⭐ Intermedio desde $480: todo lo anterior + 3,000 seguidores y 10 publicaciones para Instagram (72 h)
+⭐ Avanzado desde $840: 5,000 seguidores, 10 publicaciones, diseño de factura y tarjeta, página web One Page y panel con CRM (72 h)
+
+Pago único. Elige el tuyo 👇
+${_W}/paquetes/` },
+  { s: 'branding', c: 'corto', lang: 'es', t: `🎨 Logo, redes y página web en un solo paquete, desde $320 pago único. Míralos aquí: ${_W}/paquetes/` },
+  { s: 'branding', c: 'corto', lang: 'en', t: `🎨 Logo, social media and website in one package, from $320 one-time. See them here: ${_W}/en/packages/` },
+
+  // ── Logo ──
+  { s: 'logo', c: 'largo', lang: 'es', t: `✏️ ¿Tu negocio necesita un logo profesional?
+
+Diseñamos tu identidad visual: logo original, sus versiones (horizontal, vertical, ícono, blanco y negro), archivos para web e imprenta y un manual de marca con tus colores y tipografías.
+
+💲 Desde $185, pago único
+📁 Todos los archivos son tuyos
+
+Empieza aquí 👇
+${_W}/paquetes/` },
+  { s: 'logo', c: 'corto', lang: 'es', t: `✏️ Logo profesional + manual de marca, desde $185 pago único. Todos los archivos son tuyos: ${_W}/paquetes/` },
+  { s: 'logo', c: 'corto', lang: 'en', t: `✏️ Professional logo + brand guidelines, from $185 one-time. You own all the files: ${_W}/en/packages/` },
+
+  // ── CRM ──
+  { s: 'crm', c: 'largo', lang: 'es', t: `📊 ¿Llevas tu negocio en Excel, libretas o en el WhatsApp?
+
+Te creamos tu propio CRM: todo tu negocio en un solo panel, desde la computadora o el celular.
+
+✔️ Clientes y prospectos
+✔️ Embudo de ventas y seguimiento
+✔️ Agenda y tareas con avisos
+✔️ Cobros con recibos en PDF
+✔️ Reportes y usuarios con permisos
+✔️ Los formularios de tu web conectados
+
+$997 pago único, sin mensualidades de programas. Incluye migración de tu Excel, capacitación y 30 días de ajustes 👇
+${_W}/sistemas/crm/` },
+  { s: 'crm', c: 'corto', lang: 'es', t: `📊 Tu propio CRM a medida: clientes, ventas, cobros y tareas en un solo panel. $997 pago único, sin mensualidades: ${_W}/sistemas/crm/` },
+  { s: 'crm', c: 'largo', lang: 'en', t: `📊 Still running your business on spreadsheets, notebooks or WhatsApp?
+
+We build your own CRM: your whole business in one dashboard, on desktop or mobile.
+
+✔️ Customers and leads
+✔️ Sales pipeline and follow-ups
+✔️ Calendar and tasks with reminders
+✔️ Payments with PDF receipts
+✔️ Reports and users with permissions
+✔️ Your website forms connected
+
+$997 one-time, no software subscriptions. Includes importing your spreadsheet, training and 30 days of adjustments 👇
+${_W}/en/custom-systems/crm/` },
+  { s: 'crm', c: 'corto', lang: 'en', t: `📊 Your own custom CRM: customers, sales, payments and tasks in one dashboard. $997 one-time, no monthly fees: ${_W}/en/custom-systems/crm/` },
+
+  // ── Sistemas a medida ──
+  { s: 'sistemas', c: 'largo', lang: 'es', t: `💻 Si lo puedes imaginar, lo construimos
+
+Desarrollamos sistemas a la medida de tu negocio: paneles de administración, facturación y cobros, portales de reservas, inventario, turnos, membresías, automatizaciones e integraciones.
+
+✔️ Hechos desde cero, sin plantillas
+✔️ Funcionan en computadora y celular
+✔️ Soporte después de la entrega
+
+Cuéntanos tu idea y te enviamos una propuesta con precio y tiempo de entrega 👇
+${_W}/sistemas/` },
+  { s: 'sistemas', c: 'corto', lang: 'es', t: `💻 Sistemas a medida para tu negocio: reservas, inventario, facturación, paneles y más. Cuéntanos tu idea: ${_W}/sistemas/` },
+  { s: 'sistemas', c: 'corto', lang: 'en', t: `💻 Custom software for your business: bookings, inventory, billing, dashboards and more. Tell us your idea: ${_W}/en/custom-systems/` },
+
+  // ── Registro de empresas ──
+  { s: 'llc', c: 'largo', lang: 'es', t: `🏢 ¿Quieres abrir tu empresa en EE. UU.?
+
+Con nuestros aliados especializados registramos tu LLC y tramitamos tu EIN, y nosotros te dejamos lista tu presencia digital para empezar a vender.
+
+📄 LLC + EIN: $300
+🚀 Despegue Total: $550 (LLC + EIN, página web, dominio .com y hosting por 1 año, y Google Business)
+📈 Perfil Empresarial: $650 (si ya tienes LLC: web, correo profesional, DUNS y crédito empresarial)
+🏆 LLC + Perfil Completo: $850 (todo incluido desde cero)
+
+Son nuestros honorarios; los costos del estado se cotizan aparte según dónde la registres 👇
+${_W}/registro-de-empresas/` },
+  { s: 'llc', c: 'corto', lang: 'es', t: `🏢 Abre tu LLC y sal a vender con página web y Google Business. Paquete Despegue Total $550: ${_W}/registro-de-empresas/` },
+  { s: 'llc', c: 'corto', lang: 'en', t: `🏢 Open your LLC and start selling with a website and Google Business. Despegue Total package $550: ${_W}/en/business-registration/` },
+
+  // ── Auditoría gratis ──
+  { s: 'auditoria', c: 'largo', lang: 'es', t: `🔍 ¿Ya tienes página web pero no te llegan clientes?
+
+Te hacemos una auditoría GRATIS: revisamos cómo se ve en el celular, qué tan rápido carga, si aparece en Google y qué le falta para generar más mensajes. Te enviamos las mejoras concretas, sin compromiso.
+
+Pídela aquí 👇
+${_W}/auditoria-gratis/` },
+  { s: 'auditoria', c: 'corto', lang: 'es', t: `🔍 ¿Tu página web no te trae clientes? Te la revisamos gratis y te decimos qué mejorar: ${_W}/auditoria-gratis/` },
+  { s: 'auditoria', c: 'corto', lang: 'en', t: `🔍 Is your website not bringing in customers? We'll review it for free and tell you what to improve: ${_W}/en/free-audit/` }
+].map((m, i) => ({ ...m, i }));
+let _mdServ = '';
+function renderMensajes(lang) {
+  const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  const icWa = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg>';
+  const lista = MENSAJES.filter(m => (lang === 'todos' || m.lang === lang) && (!_mdServ || m.s === _mdServ));
+  const serv = Object.entries(MD_SERVICIOS).filter(([k]) => MENSAJES.some(m => m.s === k && (lang === 'todos' || m.lang === lang)));
+  const pills = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${[['', 'Todos los servicios'], ...serv.map(([k, v]) => [k, v.nombre])].map(([k, v]) => `<button class="dash-period-btn ${_mdServ === k ? 'active' : ''}" onclick="_mdServ='${k}';renderContenido()">${v}</button>`).join('')}</div>`;
+  const grupos = serv.filter(([k]) => !_mdServ || k === _mdServ).map(([k, v]) => {
+    const items = lista.filter(m => m.s === k);
+    if (!items.length) return '';
+    return `<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder" style="color:${v.color}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${v.nombre}</span><span class="cd-mes">${items.length} mensaje${items.length === 1 ? '' : 's'}</span></div>
+      <div class="md-grid">${items.map(m => `<div class="md-card">
+        <div class="cd-tags"><span class="cd-tag">${MD_CANALES[m.c]}</span><span class="cd-tag">${m.lang === 'es' ? 'Español' : 'English'}</span></div>
+        <div class="md-texto">${esc(m.t)}</div>
+        <div class="cd-acts">
+          <button class="cd-dl" onclick="mdCopiar(${m.i})">${icCp} Copiar</button>
+          <a class="cd-cp" href="https://wa.me/?text=${encodeURIComponent(m.t)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px">${icWa} Enviar por WhatsApp</a>
+        </div>
+      </div>`).join('')}</div></div>`;
+  }).join('');
+  return `<div class="cd-sec-intro">Textos listos para copiar y pegar en WhatsApp, grupos, estados, Facebook, Instagram o mensajes directos. Cada uno lleva el enlace a la página de ese servicio.</div>${pills}${grupos || '<div style="color:var(--text-soft);font-size:13px;">No hay mensajes en este idioma.</div>'}`;
+}
+function mdCopiar(i) {
+  const t = MENSAJES[i].t;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Mensaje copiado', 'ok')).catch(() => { prompt('Copia el mensaje:', t); });
+}
+
 function renderContenido() {
   const cnt = t => CONTENIDO.filter(c => (t === 'todo' || c.tipo === t) && (_cdLang === 'todos' || c.lang === _cdLang)).length;
   const pill = (sel, k, v, fn) => `<button class="dash-period-btn ${sel === k ? 'active' : ''}" onclick="${fn}='${k}';renderContenido()">${v}</button>`;
   document.getElementById('cd-filtros').innerHTML =
     [['todo', 'Todo'], ...Object.entries(CD_TIPOS).map(([k, v]) => [k, v.nombre])].map(([k, v]) => pill(_cdFiltro, k, `${v} <span style="opacity:.6">${cnt(k)}</span>`, '_cdFiltro')).join('') +
+    pill(_cdFiltro, 'mensajes', `Mensajes para difundir <span style="opacity:.6">${MENSAJES.filter(m => _cdLang === 'todos' || m.lang === _cdLang).length}</span>`, '_cdFiltro') +
     '<span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch"></span>' +
     [['todos', 'ES + EN'], ['es', 'Español'], ['en', 'English']].map(([k, v]) => pill(_cdLang, k, v, '_cdLang')).join('');
+  if (_cdFiltro === 'mensajes') { document.getElementById('cd-grid').innerHTML = renderMensajes(_cdLang); return; }
   const lista = CONTENIDO.filter(c => (_cdFiltro === 'todo' || c.tipo === _cdFiltro) && (_cdLang === 'todos' || c.lang === _cdLang));
   const icDl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>';
   const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -4444,6 +4677,8 @@ function renderContenido() {
         <div class="cd-grid">${items.map(card).join('')}</div></div>`);
     });
   });
+  if (_cdFiltro === 'todo') grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Mensajes para difundir</span><span class="cd-mes">${MENSAJES.filter(m => _cdLang === 'todos' || m.lang === _cdLang).length} textos</span></div>
+        <div class="md-card" style="max-width:520px"><div class="md-texto" style="max-height:none">Textos listos para WhatsApp, grupos, estados y redes, con el enlace de cada servicio: páginas web, tiendas online, branding, logo, CRM, sistemas a medida, registro de empresas y auditoría gratis.</div><div class="cd-acts"><button class="cd-dl" onclick="_cdFiltro='mensajes';renderContenido()">Ver mensajes</button></div></div></div>`);
   document.getElementById('cd-grid').innerHTML = grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>';
 }
 function cdCopiar(i) {
