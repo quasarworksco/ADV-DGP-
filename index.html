@@ -951,6 +951,41 @@
 .pr-meta:empty { display:none; }
 html.dark .pr-link { color:color-mix(in srgb,var(--blue) 45%,#fff); }
 html.dark .pr-card { box-shadow:0 1px 2px rgba(0,0,0,.35); }
+
+/* ── Llamadas ── */
+.ll-grid { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
+@media (max-width:860px) { .ll-grid { grid-template-columns:1fr; } }
+.ll-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.ll-num { width:100%; box-sizing:border-box; font:600 22px 'Plus Jakarta Sans',sans-serif; text-align:center; letter-spacing:.5px; padding:12px; border:1.5px solid var(--border); border-radius:12px; background:var(--off); color:var(--black); }
+.ll-num:focus { outline:none; border-color:var(--blue); }
+.ll-teclado { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+.ll-tecla { padding:12px 0; border:1px solid var(--border); border-radius:12px; background:var(--white); color:var(--black); font:600 18px 'Plus Jakarta Sans',sans-serif; cursor:pointer; line-height:1.1; }
+.ll-tecla small { display:block; font-size:9px; font-weight:600; letter-spacing:1.5px; color:var(--text-soft); }
+.ll-tecla:active { background:var(--off); }
+.ll-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border:none; border-radius:12px; font:700 14px 'Plus Jakarta Sans',sans-serif; cursor:pointer; color:#fff; background:#16a34a; }
+.ll-btn:disabled { opacity:.5; cursor:default; }
+.ll-estado { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-soft); margin-bottom:12px; }
+.ll-dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; flex-shrink:0; }
+.ll-dot.ok { background:#22c55e; } .ll-dot.err { background:#ef4444; }
+.ll-item { border-bottom:1px solid var(--border); padding:12px 2px; }
+.ll-item:last-child { border-bottom:none; }
+.ll-row { display:flex; align-items:center; gap:10px; }
+.ll-ico { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ll-ico.ent { background:rgba(20,56,204,.1); color:#1438cc; } .ll-ico.sal { background:rgba(5,150,105,.12); color:#059669; } .ll-ico.per { background:rgba(220,38,38,.1); color:#dc2626; } .ll-ico.buz { background:rgba(124,58,237,.12); color:#7c3aed; }
+html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; } html.dark .ll-ico.per { color:#f87171; } html.dark .ll-ico.buz { color:#c4b5fd; }
+.ll-quien { font:700 13px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
+.ll-sub { font-size:11.5px; color:var(--text-soft); }
+.ll-mini { border:1px solid var(--border); background:var(--white); color:var(--text-mid); border-radius:8px; padding:5px 9px; font:600 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.ll-resumen { margin-top:8px; background:var(--off); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.6; color:var(--text-mid); white-space:pre-line; }
+.ll-resumen b { color:var(--black); }
+.ll-trans { margin-top:6px; font-size:12px; line-height:1.6; color:var(--text-soft); white-space:pre-line; }
+.ll-barra { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9000; background:#0b1640; color:#fff; border-radius:16px; padding:12px 14px; display:none; align-items:center; gap:12px; box-shadow:0 18px 40px rgba(0,0,0,.35); min-width:300px; max-width:calc(100vw - 24px); box-sizing:border-box; }
+.ll-barra.on { display:flex; }
+.ll-barra .t { flex:1; min-width:0; } .ll-barra .t b { display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ll-barra .t span { font-size:11px; opacity:.75; }
+.ll-barra button { border:none; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; flex-shrink:0; }
+.ll-barra .contestar { background:#16a34a; } .ll-barra .colgar { background:#dc2626; } .ll-barra .mute { background:rgba(255,255,255,.15); } .ll-barra .mute.on { background:#f59e0b; }
+.ll-barra.entrante { animation:llPulso 1.2s ease-in-out infinite; }
+@keyframes llPulso { 50% { box-shadow:0 0 0 8px rgba(34,197,94,.35), 0 18px 40px rgba(0,0,0,.35); } }
 .cd-sec { margin-bottom:26px; }
 .cd-sec-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
 .cd-folder { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text); }
@@ -1964,6 +1999,9 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   <button class="nav-tab" onclick="switchPage('prospectos', this)">
     <i class="fa-solid fa-bullseye"></i> Prospectos
   </button>
+  <button class="nav-tab" onclick="switchPage('llamadas', this)">
+    <i class="fa-solid fa-phone"></i> Llamadas<span id="ll-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
   <button class="nav-tab" onclick="switchPage('aliados', this)">
     <i class="fa-solid fa-handshake"></i> Aliados
   </button>
@@ -2411,6 +2449,42 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-llamadas" class="page">
+  <div class="proy-main" style="max-width:1000px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Llamadas</div>
+        <div style="font-size:11px;color:var(--text-soft);">Llama y recibe llamadas con tu número de Twilio. Si nadie contesta, el cliente deja un mensaje de voz. Las llamadas se graban y la IA te deja un resumen.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-logout" onclick="renderLlamadas(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+      </div>
+    </div>
+    <div id="ll-aviso"></div>
+    <div class="ll-grid">
+      <div class="ll-card">
+        <div class="ll-estado"><span class="ll-dot" id="ll-dot"></span><span id="ll-estado-txt">Conectando…</span></div>
+        <input class="ll-num" id="ll-num" type="tel" placeholder="+1 (239) 000-0000" autocomplete="off" onkeydown="if(event.key==='Enter')llLlamarInput()">
+        <div class="ll-teclado"><button class="ll-tecla" onclick="llTecla('1')">1<small>&nbsp;</small></button><button class="ll-tecla" onclick="llTecla('2')">2<small>ABC</small></button><button class="ll-tecla" onclick="llTecla('3')">3<small>DEF</small></button><button class="ll-tecla" onclick="llTecla('4')">4<small>GHI</small></button><button class="ll-tecla" onclick="llTecla('5')">5<small>JKL</small></button><button class="ll-tecla" onclick="llTecla('6')">6<small>MNO</small></button><button class="ll-tecla" onclick="llTecla('7')">7<small>PQRS</small></button><button class="ll-tecla" onclick="llTecla('8')">8<small>TUV</small></button><button class="ll-tecla" onclick="llTecla('9')">9<small>WXYZ</small></button><button class="ll-tecla" onclick="llTecla('*')">*<small>&nbsp;</small></button><button class="ll-tecla" onclick="llTecla('0')">0<small>+</small></button><button class="ll-tecla" onclick="llTecla('#')">#<small>&nbsp;</small></button></div>
+        <button class="ll-btn" id="ll-llamar" onclick="llLlamarInput()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg> Llamar</button>
+        <div style="font-size:11px;color:var(--text-soft);margin-top:10px;line-height:1.5;">Llamas con el número <b id="ll-mi-num">—</b>. Al contestar se avisa que la llamada puede ser grabada.</div>
+      </div>
+      <div class="ll-card">
+        <div class="db-pills" id="ll-filtros" style="margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+        <div id="ll-lista"><div style="text-align:center;padding:28px;color:var(--text-soft);font-size:13px;">Cargando…</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ll-barra" id="ll-barra">
+  <div class="ll-ico" style="background:rgba(255,255,255,.12);color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></div>
+  <div class="t"><b id="ll-barra-quien">—</b><span id="ll-barra-txt">—</span></div>
+  <button class="mute" id="ll-btn-mute" onclick="llMute()" title="Silenciar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
+  <button class="contestar" id="ll-btn-contestar" onclick="llContestar()" title="Contestar"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+  <button class="colgar" onclick="llColgar()" title="Colgar"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="transform:rotate(135deg)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+</div>
+
 <div id="page-aliados" class="page">
   <div class="proy-main" style="max-width:1000px;">
     <div class="proy-header">
@@ -3126,6 +3200,7 @@ function showApp(user) {
   document.getElementById('user-avatar-init').textContent = ini;
   initPage();
   cargarBadgeResenasWeb();
+  setTimeout(() => llIniciar().catch(e => console.warn('Llamadas', e)), 2500);
 }
 
 function loginEmail() {
@@ -3227,6 +3302,7 @@ function switchPage(page, btn) {
   if (page === 'miweb')      renderMiWeb();
   if (page === 'contenido')  renderContenido();
   if (page === 'prospectos') renderProspectos();
+  if (page === 'llamadas')   renderLlamadas();
   if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
 }
@@ -3912,7 +3988,7 @@ function prCard(p) {
     <div class="pr-links">${tel ? `<span>${esc(p.telefono)}</span>` : '<span style="color:#b91c1c">Sin teléfono</span>'}${p.correo ? `<a href="mailto:${esc(p.correo)}" class="pr-link">${esc(p.correo)}</a>` : ''}${link(p.web, 'Su web')}</div>
     ${p.notas ? `<div class="pr-notas">${esc(p.notas)}</div>` : ''}
     <div class="pr-acts">
-      ${tel ? `<button class="pr-wa" onclick="prWhatsApp('${p._id}','es')">${ico} WhatsApp</button><button class="pr-wa en" onclick="prWhatsApp('${p._id}','en')" title="Mensaje en inglés">EN</button>` : ''}
+      ${tel ? `<button class="pr-wa" onclick="prWhatsApp('${p._id}','es')">${ico} WhatsApp</button><button class="pr-wa en" onclick="prWhatsApp('${p._id}','en')" title="Mensaje en inglés">EN</button><button class="hr-btn" onclick="llLlamar('${esc(p.telefono)}','${esc(p.nombre || '').replace(/'/g, '&#39;')}')">Llamar</button>` : ''}
       <select class="pr-estado" style="color:${eC}" onchange="prEstado('${p._id}', this.value)">${Object.entries(PR_ESTADOS).map(([k, v]) => `<option value="${k}" ${k === e ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>
       <button class="hr-btn" onclick="prNota('${p._id}')">Nota</button>
       ${e !== 'cliente' ? `<button class="hr-btn ok" onclick="prAClientes('${p._id}')" style="color:var(--green-dark);border-color:rgba(5,150,105,.3)">Pasar a clientes</button>` : ''}
@@ -4009,6 +4085,228 @@ function prExportar() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = `prospectos-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+}
+
+/* ═══════════════════════════════════════════════════════
+   LLAMADAS — Twilio Voice en el navegador (la llave vive en el Worker)
+   Firestore: llamadas/{CallSid} (las escribe el bot). Se leen solo al abrir la sección.
+═══════════════════════════════════════════════════════ */
+const LL_SDK = 'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.12.4/dist/twilio.min.js';
+let _ll = { device: null, call: null, entrante: null, lista: null, filtro: 'todas', abierto: {}, cfg: null, t0: 0, reloj: null, mute: false };
+const _llIco = {
+  ent: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M7 8v9h9"/></svg>',
+  sal: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>',
+  per: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  buz: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="4"/><circle cx="18" cy="12" r="4"/><path d="M6 16h12"/></svg>',
+  play: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  tel: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>'
+};
+async function llApi(paso, datos) {
+  const tok = await currentUser.getIdToken();
+  const r = await fetch(`${DIAG_WORKER}/llamadas/${paso}`, { method: datos ? 'POST' : 'GET', headers: { Authorization: `Bearer ${tok}`, ...(datos ? { 'Content-Type': 'application/json' } : {}) }, body: datos ? JSON.stringify(datos) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || d.error) throw new Error(d.error || ('Error ' + r.status));
+  return d;
+}
+function _llEstado(txt, tipo) {
+  const dot = document.getElementById('ll-dot'), t = document.getElementById('ll-estado-txt');
+  if (dot) dot.className = 'll-dot' + (tipo ? ' ' + tipo : '');
+  if (t) t.textContent = txt;
+}
+function _llCargarSdk() {
+  if (window.Twilio && Twilio.Device) return Promise.resolve();
+  return new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = LL_SDK; sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar el teléfono')); document.head.appendChild(sc); });
+}
+// Se conecta al entrar al panel para poder recibir llamadas mientras esté abierto
+async function llIniciar() {
+  if (!currentUser) return;
+  const d = await llApi('token').catch(e => ({ error: e.message }));
+  _ll.cfg = d;
+  if (d.numero) { const n = document.getElementById('ll-mi-num'); if (n) n.textContent = d.numero; }
+  if (d.error) return _llEstado('Sin conexión con el servidor', 'err');
+  if (!d.configurado) return _llEstado('Faltan las claves de Twilio', 'err');
+  if (!d.conectado) return _llEstado('Falta conectar tu número', 'err');
+  await _llCargarSdk();
+  if (_ll.device) { _ll.device.updateToken(d.token); return; }
+  const dev = new Twilio.Device(d.token, { codecPreferences: ['opus', 'pcmu'], closeProtection: 'Hay una llamada en curso. ¿Seguro que quieres salir?' });
+  dev.on('registered', () => _llEstado('Listo para llamar y recibir llamadas', 'ok'));
+  dev.on('unregistered', () => _llEstado('Desconectado', 'err'));
+  dev.on('error', e => { console.warn('Twilio', e); _llEstado('Error del teléfono: ' + (e.message || e.code), 'err'); });
+  dev.on('tokenWillExpire', async () => { const t = await llApi('token').catch(() => null); if (t && t.token) dev.updateToken(t.token); });
+  dev.on('incoming', call => _llEntrante(call));
+  _ll.device = dev;
+  await dev.register();
+}
+function _llQuien(numero, contacto) {
+  if (contacto) return contacto;
+  const d = String(numero || '').replace(/\D/g, '').slice(-10);
+  if (d.length >= 7) {
+    const c = (clientesList || []).find(x => String(x.telefono || '').replace(/\D/g, '').slice(-10) === d);
+    if (c) return clNombre(c);
+    const p = (_pr.lista || []).find(x => String(x.telefono || '').replace(/\D/g, '').slice(-10) === d);
+    if (p) return p.nombre;
+  }
+  return '';
+}
+function _llBarra(modo, quien, txt) {
+  const b = document.getElementById('ll-barra');
+  b.classList.toggle('on', modo !== 'off');
+  b.classList.toggle('entrante', modo === 'entrante');
+  document.getElementById('ll-btn-contestar').style.display = modo === 'entrante' ? '' : 'none';
+  document.getElementById('ll-btn-mute').style.display = modo === 'activa' ? '' : 'none';
+  if (quien !== undefined) document.getElementById('ll-barra-quien').textContent = quien;
+  if (txt !== undefined) document.getElementById('ll-barra-txt').textContent = txt;
+  const btn = document.getElementById('ll-llamar');
+  if (btn) btn.disabled = modo !== 'off';
+}
+function _llReloj(on) {
+  clearInterval(_ll.reloj);
+  if (!on) return;
+  _ll.t0 = Date.now();
+  _ll.reloj = setInterval(() => { const s = Math.floor((Date.now() - _ll.t0) / 1000); document.getElementById('ll-barra-txt').textContent = `En llamada · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }, 1000);
+}
+function _llEventos(call, quien) {
+  call.on('accept', () => { _llBarra('activa', quien, 'En llamada · 0:00'); _llReloj(true); });
+  const fin = txt => {
+    _llReloj(false); _ll.call = null; _ll.entrante = null; _ll.mute = false;
+    document.getElementById('ll-btn-mute').classList.remove('on'); _llBarra('off');
+    if (txt) toast(txt, 'ok');
+    setTimeout(() => { if (document.getElementById('page-llamadas').classList.contains('active')) renderLlamadas(true); }, 5000);
+  };
+  call.on('disconnect', () => fin('Llamada terminada'));
+  call.on('cancel', () => fin('La llamada pasó al buzón de voz'));
+  call.on('reject', () => fin());
+  call.on('error', e => { toast('Error en la llamada: ' + (e.message || e.code), 'err'); fin(); });
+}
+function _llEntrante(call) {
+  if (_ll.call || _ll.entrante) { call.reject(); return; }
+  const numero = call.customParameters.get('numero') || call.parameters.From || '';
+  const quien = _llQuien(numero, call.customParameters.get('contacto')) || numero || 'Número privado';
+  _ll.entrante = call;
+  _llBarra('entrante', quien, `Llamada entrante${quien !== numero && numero ? ' · ' + numero : ''}`);
+  _llEventos(call, quien);
+  try { if (document.hidden && window.Notification && Notification.permission === 'granted') new Notification('Llamada entrante', { body: quien, icon: 'icon-192.png' }); } catch (e) {}
+}
+function llContestar() {
+  const c = _ll.entrante; if (!c) return;
+  _ll.call = c; _ll.entrante = null;
+  c.accept();
+}
+function llColgar() {
+  if (_ll.entrante) { _ll.entrante.reject(); return; }
+  if (_ll.call) _ll.call.disconnect();
+}
+function llMute() {
+  if (!_ll.call) return;
+  _ll.mute = !_ll.mute; _ll.call.mute(_ll.mute);
+  document.getElementById('ll-btn-mute').classList.toggle('on', _ll.mute);
+}
+function llTecla(k) {
+  if (_ll.call) { _ll.call.sendDigits(k); return; }
+  const i = document.getElementById('ll-num'); i.value += k; i.focus();
+}
+function _llE164(v) { const s = String(v || '').trim(); if (s.startsWith('+')) return '+' + s.replace(/\D/g, ''); const d = s.replace(/\D/g, ''); return d.length === 10 ? '+1' + d : d.length === 11 && d[0] === '1' ? '+' + d : d ? '+' + d : ''; }
+function llLlamarInput() { llLlamar(document.getElementById('ll-num').value); }
+async function llLlamar(numero, nombre) {
+  const destino = _llE164(numero);
+  if (!/^\+\d{8,15}$/.test(destino)) return toast('Escribe un número válido (con código de área)', 'err');
+  if (!_ll.device) { await llIniciar().catch(() => {}); if (!_ll.device) return toast('El teléfono no está conectado. Abre la sección Llamadas para ver qué falta.', 'err'); }
+  if (_ll.call || _ll.entrante) return toast('Ya hay una llamada en curso', 'err');
+  const quien = nombre || _llQuien(destino) || destino;
+  _llBarra('saliente', quien, 'Llamando…');
+  try {
+    const call = await _ll.device.connect({ params: { To: destino, por: currentUser?.email || '' } });
+    _ll.call = call;
+    _llEventos(call, quien);
+    call.on('ringing', () => { document.getElementById('ll-barra-txt').textContent = 'Sonando…'; });
+  } catch (e) { _llBarra('off'); toast('No se pudo llamar: ' + e.message, 'err'); }
+}
+async function llConectar(confirmar) {
+  const btn = document.getElementById('ll-conectar'); if (btn) btn.disabled = true;
+  try {
+    const d = await llApi('configurar', { confirmar: !!confirmar });
+    if (d.confirmar) {
+      if (btn) btn.disabled = false;
+      if (confirm(`Tu número ya está conectado a: ${d.previo}\n\n¿Quieres que ahora lo atienda el panel de DGP? (Solo cambia este número; el otro CRM no se toca.)`)) return llConectar(true);
+      return;
+    }
+    toast('Número conectado al panel', 'ok');
+    await llIniciar();
+    renderLlamadas();
+  } catch (e) { toast('No se pudo conectar: ' + e.message, 'err'); if (btn) btn.disabled = false; }
+}
+async function renderLlamadas(fresco) {
+  if (!_ll.cfg || (fresco && !_ll.device)) await llIniciar().catch(() => {});
+  const cfg = _ll.cfg || {};
+  const caja = (titulo, txt, extra = '') => `<div class="ll-card" style="margin-bottom:14px;border-left:3px solid #d97706"><div style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:var(--black);margin-bottom:4px">${titulo}</div><div style="font-size:12.5px;color:var(--text-mid);line-height:1.6">${txt}</div>${extra}</div>`;
+  document.getElementById('ll-aviso').innerHTML = cfg.error ? caja('No se pudo conectar con el servidor', esc(cfg.error))
+    : cfg.configurado === false ? caja('Faltan las claves de Twilio', 'En Cloudflare → <b>ayudante-dgp-bot</b> → Settings → Variables and Secrets, agrega como <b>Secret</b>: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_API_KEY, TWILIO_API_SECRET y TWILIO_NUMERO. Luego vuelve aquí y pulsa Actualizar.')
+    : cfg.conectado === false ? caja('Conecta tu número de Twilio', `Las claves ya están. Este paso configura solo el número <b>${esc(cfg.numero || '')}</b> para que sus llamadas lleguen a este panel. El otro número de la cuenta (el CRM de tu cliente) no se toca.`, '<button class="btn-nuevo-cliente" id="ll-conectar" style="margin-top:10px" onclick="llConectar()">Conectar número</button>')
+    : (window.Notification && Notification.permission === 'default') ? '<div class="ll-card" style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;font-size:12.5px;color:var(--text-mid)">Activa los avisos para enterarte de las llamadas aunque estés en otra pestaña.</div><button class="ll-mini" onclick="Notification.requestPermission().then(()=>renderLlamadas())">Activar avisos</button></div>' : '';
+  if (!_ll.lista || fresco) {
+    try {
+      const snap = await db.collection('llamadas').orderBy('fecha', 'desc').limit(60).get();
+      _ll.lista = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    } catch (e) { document.getElementById('ll-lista').innerHTML = `<div style="text-align:center;padding:28px;color:#b91c1c;font-size:13px;">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
+  }
+  llPintar();
+}
+function _llTipo(l) {
+  if (l.buzon) return 'buz';
+  if (/perdida/.test(l.estado || '')) return 'per';
+  return l.direccion === 'saliente' ? 'sal' : 'ent';
+}
+function llPintar() {
+  const L = _ll.lista || [];
+  const nuevas = L.filter(l => ['per', 'buz'].includes(_llTipo(l)) && !l.vista).length;
+  const badge = document.getElementById('ll-badge'); if (badge) { badge.textContent = nuevas; badge.style.display = nuevas ? '' : 'none'; }
+  const filtros = [['todas', 'Todas'], ['buz', 'Mensajes de voz'], ['per', 'Perdidas'], ['ent', 'Entrantes'], ['sal', 'Salientes']];
+  document.getElementById('ll-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_ll.filtro === k ? 'active' : ''}" onclick="_ll.filtro='${k}';llPintar()">${v}</button>`).join('');
+  const vis = L.filter(l => _ll.filtro === 'todas' || _llTipo(l) === _ll.filtro);
+  const caja = document.getElementById('ll-lista');
+  if (!L.length) { caja.innerHTML = '<div class="pt-empty">Aún no hay llamadas. Aquí verás cada llamada, los mensajes de voz y el resumen de la IA.</div>'; return; }
+  if (!vis.length) { caja.innerHTML = '<div class="pt-empty">No hay llamadas con este filtro.</div>'; return; }
+  const dur = s => s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '';
+  const etiqueta = { ent: 'Entrante', sal: 'Saliente', per: 'Perdida', buz: 'Mensaje de voz' };
+  caja.innerHTML = vis.map(l => {
+    const t = _llTipo(l), f = l.fecha?.toDate ? l.fecha.toDate() : (l.fecha ? new Date(l.fecha) : null);
+    const quien = _llQuien(l.numero, l.contacto) || l.numero || 'Número privado';
+    const cuando = f ? f.toLocaleString('es-US', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    const abierto = _ll.abierto[l._id];
+    const nueva = ['per', 'buz'].includes(t) && !l.vista;
+    const detalle = [etiqueta[t], cuando, t === 'sal' && l.estado && !/complet|llamando/.test(l.estado) ? l.estado : '', dur(l.duracion || (l.buzon ? l.duracionGrabacion : 0))].filter(Boolean).join(' · ');
+    return `<div class="ll-item">
+      <div class="ll-row">
+        <div class="ll-ico ${t}">${_llIco[t]}</div>
+        <div style="flex:1;min-width:0"><div class="ll-quien">${esc(quien)}${nueva ? ' <span style="color:#dc2626;font-size:10px;font-weight:700">NUEVO</span>' : ''}</div><div class="ll-sub">${esc(quien !== l.numero && l.numero ? l.numero + ' · ' : '')}${esc(detalle)}</div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${l.numero ? `<button class="ll-mini" onclick="llLlamar('${esc(l.numero)}','${esc(quien).replace(/'/g, '&#39;')}')" title="Llamar">${_llIco.tel} Llamar</button>` : ''}
+          ${l.grabacionSid || l.resumen || nueva ? `<button class="ll-mini" onclick="llVer('${l._id}')">${abierto ? 'Ocultar' : 'Ver'}</button>` : ''}
+        </div>
+      </div>
+      ${abierto ? `
+        ${l.resumen ? `<div class="ll-resumen"><b>Resumen de la IA</b>\n${esc(l.resumen)}</div>` : l.grabacionSid && !l.procesadoAt ? '<div class="ll-trans">La IA está escuchando la grabación… pulsa Actualizar en un minuto.</div>' : ''}
+        ${l.grabacionSid ? `<div style="margin-top:8px" id="ll-audio-${l._id}"><button class="ll-mini" onclick="llAudio('${l._id}','${esc(l.grabacionSid)}')">${_llIco.play} Escuchar grabación</button></div>` : ''}
+        ${l.transcripcion ? `<details style="margin-top:6px"><summary class="ll-sub" style="cursor:pointer">Transcripción completa</summary><div class="ll-trans">${esc(l.transcripcion)}</div></details>` : ''}` : ''}
+    </div>`;
+  }).join('');
+}
+function llVer(id) {
+  _ll.abierto[id] = !_ll.abierto[id];
+  const l = (_ll.lista || []).find(x => x._id === id);
+  if (l && _ll.abierto[id] && ['per', 'buz'].includes(_llTipo(l)) && !l.vista) { l.vista = true; db.collection('llamadas').doc(id).update({ vista: true }).catch(() => {}); }
+  llPintar();
+}
+async function llAudio(id, sid) {
+  const caja = document.getElementById('ll-audio-' + id); if (!caja) return;
+  caja.innerHTML = '<span class="ll-sub">Cargando audio…</span>';
+  try {
+    const tok = await currentUser.getIdToken();
+    const r = await fetch(`${DIAG_WORKER}/llamadas/audio?sid=${encodeURIComponent(sid)}`, { headers: { Authorization: `Bearer ${tok}` } });
+    if (!r.ok) throw new Error('No se encontró la grabación');
+    const url = URL.createObjectURL(await r.blob());
+    caja.innerHTML = `<audio controls autoplay src="${url}" style="width:100%;height:36px"></audio>`;
+  } catch (e) { caja.innerHTML = `<span class="ll-sub" style="color:#b91c1c">${esc(e.message)}</span>`; }
 }
 
 /* ═══════════════════════════════════════════════════════
