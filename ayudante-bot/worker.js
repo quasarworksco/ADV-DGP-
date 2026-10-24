@@ -696,7 +696,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24c';
+const WORKER_VERSION = '2026-10-24d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3076,7 +3076,7 @@ Formato: 2 a 5 líneas cortas, sin markdown, cada una empezando con "• ". Incl
 ══════════════════════════════════════════════════════════════ */
 const RD_VER = 'v23.0';
 const RD_PAGINA_PREFERIDA = '823496920849508';
-const RD_PERMISOS = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish,business_management';
+const RD_PERMISOS = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
 const RD_MEDIA = 'https://adv.dgp-link.com/contenido/';
 const rdListo = env => !!(env.META_APP_ID && env.META_APP_SECRET);
 const rdB64 = u8 => btoa(String.fromCharCode(...u8));
@@ -3159,7 +3159,8 @@ async function handleRedes(request, env, ctx) {
   if (paso === 'conectar') {
     const datos = btoa(`${quien.email}|${Date.now() + 15 * 60e3}`);
     const state = `${datos}~${await rdFirma(env, datos)}`;
-    const q = new URLSearchParams({ client_id: env.META_APP_ID, redirect_uri: `${BOT_URL}/redes/callback`, state, scope: RD_PERMISOS, response_type: 'code' });
+    // Apps de tipo Empresa usan una "configuración" de Inicio de sesión (META_CONFIG_ID); las demás, la lista de permisos
+    const q = new URLSearchParams({ client_id: env.META_APP_ID, redirect_uri: `${BOT_URL}/redes/callback`, state, response_type: 'code', ...(env.META_CONFIG_ID ? { config_id: env.META_CONFIG_ID, override_default_response_type: 'true' } : { scope: RD_PERMISOS }) });
     return json(request, { url: `https://www.facebook.com/${RD_VER}/dialog/oauth?${q}` });
   }
   if (paso === 'desconectar') {
