@@ -129,8 +129,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
-  const TG_CHAT_ID = '8446165096';
+  const AVISO_URL  = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/aviso';   // avisos a Telegram (la clave del bot vive en el servidor)
   const WA = '12398231738';
 
   const id = new URLSearchParams(location.search).get('id');
@@ -195,8 +194,8 @@
       try {
         await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
         doc.clienteCorreo = correo; doc.clienteTelefono = tel;
-        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: TG_CHAT_ID, text: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
+        fetch(AVISO_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
         alListo();
       } catch (e) {
         btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
@@ -289,9 +288,9 @@
         respondidoAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       Object.assign(cot, { estado, respondidoPor: nombre, respuestaNota: nota });
-      fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      fetch(AVISO_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TG_CHAT_ID, disable_web_page_preview: true, text:
+        body: JSON.stringify({ texto:
           `${estado === 'aceptada' ? '✅ COTIZACIÓN ACEPTADA' : '❌ Cotización rechazada'}\n\n` +
           `🧾 ${cot.docId || id} · ${money(cot.total)}\n👤 ${cot.cli || '—'}${nombre && nombre !== cot.cli ? ' (' + nombre + ')' : ''}` +
           `${nota ? '\n💬 "' + nota + '"' : ''}\n\n${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotizaciones:\nhttps://adv.dgp-link.com/' : ''}` })

@@ -380,8 +380,7 @@
 
   const CLOUDINARY_CLOUD_NAME    = 'dgden7fws';
   const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
-  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
-  const TG_CHAT_ID = '8446165096';
+  const AVISO_URL  = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/aviso';   // avisos a Telegram (la clave del bot vive en el servidor)
   const ADMIN_URL  = 'https://adv.dgp-link.com/';
   const VERIFY_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/verificar';
   const CONTACTO = {
@@ -492,9 +491,9 @@
   function linkFactura(id) { return `/factura-publica.html?id=${encodeURIComponent(id)}`; }
   async function tg(text) {
     try {
-      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      await fetch(AVISO_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TG_CHAT_ID, text, disable_web_page_preview: true })
+        body: JSON.stringify({ texto: text })
       });
     } catch (e) { /* silencioso: el cliente nunca debe ver un error por esto */ }
   }
@@ -1089,10 +1088,10 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
         comprobantes: firebase.firestore.FieldValue.arrayUnion(...previos.map(c => ({ url: c.url, fecha: c.fecha || null, origen: 'anterior' })), nuevo)
       });
       try {
-        await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+        await fetch(AVISO_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: TG_CHAT_ID, photo: url,
-            caption: `💳 Nuevo comprobante (desde el portal)\n\n👤 ${portal.nombre}\n🧾 ${d.docId || fsId}\n💰 ${money(saldoFactura(d))}\n\n${location.origin}${linkFactura(fsId)}` })
+          body: JSON.stringify({ foto: url,
+            texto: `💳 Nuevo comprobante (desde el portal)\n\n👤 ${portal.nombre}\n🧾 ${d.docId || fsId}\n💰 ${money(saldoFactura(d))}\n\n${location.origin}${linkFactura(fsId)}` })
         });
       } catch (e) {}
       const m = document.querySelector('.modal');
