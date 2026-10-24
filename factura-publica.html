@@ -306,7 +306,8 @@
   const CLOUDINARY_CLOUD_NAME    = 'dgden7fws';
   const CLOUDINARY_UPLOAD_PRESET = 'm87e1jog';
 
-  const AVISO_URL  = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/aviso';   // avisos a Telegram (la clave del bot vive en el servidor)
+  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_CHAT_ID = '8446165096';
 
   let _currentDoc = null;
 
@@ -774,10 +775,10 @@
       const total     = doc.total    ? `$${Number(doc.total).toFixed(2)}` : '';
       const factUrl   = `https://adv.dgp-link.com/factura-publica.html?id=${fsId}`;
       const caption   = `💳 *Nuevo comprobante de pago*\n\n👤 *Cliente:* ${cliente}\n🧾 *Factura:* #${numero}${total ? `\n💰 *Monto:* ${total}` : ''}\n\n🔗 [Ver factura](${factUrl})`;
-      await fetch(AVISO_URL, {
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ foto: imageUrl, texto: caption, markdown: true })
+        body: JSON.stringify({ chat_id: TG_CHAT_ID, photo: imageUrl, caption, parse_mode: 'Markdown' })
       });
     } catch(_) { /* notificación silenciosa — no interrumpe al cliente */ }
   }
@@ -826,8 +827,8 @@
       try {
         await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
         doc.clienteCorreo = correo; doc.clienteTelefono = tel;
-        fetch(AVISO_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
+        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: TG_CHAT_ID, text: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
         alListo();
       } catch (e) {
         btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
