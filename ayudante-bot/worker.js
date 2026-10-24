@@ -697,7 +697,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24f';
+const WORKER_VERSION = '2026-10-24g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -738,6 +738,17 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   } catch (e) { out.checks.groq = { ok: false, error: e.message }; }
 
   // IA: leer el comprobante de prueba ($123.45)
+  // Publicación automática (solo el estado: activo, frecuencia, avance)
+  if (q.has('auto')) {
+    try {
+      const t = await firebaseLogin(env);
+      const ap = await fsGet(env, 'config/autopublicar', t) || {};
+      const cola = Array.isArray(ap.cola) ? ap.cola : [];
+      const i = Number(ap.indice) || 0;
+      out.checks.autopublicar = { ok: !!ap.activo && cola.length > 0, activo: !!ap.activo, cadaDias: ap.cadaDias, hora: ap.hora, redes: ap.redes, total: cola.length, publicados: Math.min(i, cola.length), ultimaFecha: ap.ultimaFecha || null,
+        carruseles: cola.filter(x => x.formato === 'carrusel' && Array.isArray(x.urls) && x.urls.length === 2).length, siguiente: cola[i]?.titulo || null, conectado: !!(await fsGet(env, 'config/redes', t).catch(() => null))?.tokenCifrado };
+    } catch (e) { out.checks.autopublicar = { ok: false, error: e.message }; }
+  }
   out.checks.correo = (env.EMAIL_WEBHOOK && env.EMAIL_CLAVE) ? { ok: true } : { ok: false, error: 'Faltan EMAIL_WEBHOOK y EMAIL_CLAVE (ver correo/enviar-correo.gs)' };
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
   if (q.get('ia')) {
