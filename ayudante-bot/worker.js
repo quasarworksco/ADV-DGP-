@@ -194,6 +194,7 @@ export default {
       ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
       ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
     }
+    else if (event.cron === '30 * * * *') ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
     else ctx.waitUntil(enviarResumenMensual(env));
   },
 
@@ -696,7 +697,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24d';
+const WORKER_VERSION = '2026-10-24e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3119,6 +3120,82 @@ function rdHtml(titulo, texto, ok) {
 <body><div><h1>${titulo}</h1><p>${texto}</p></div><script>try{window.opener&&window.opener.postMessage({dgpRedes:${ok ? 'true' : 'false'}},'https://adv.dgp-link.com')}catch(e){}${ok ? 'setTimeout(function(){window.close()},2500)' : ''}</script></body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
+/* Publica una imagen o video en la página y/o Instagram. Devuelve { facebook, instagram } con ok / pendiente / error */
+async function rdPublicarMedia(cfg, { media, formato, texto, prog = 0, facebook, instagram }) {
+  const video = /\.mp4$/i.test(media);
+    const out = {};
+    if (facebook) {
+      try {
+        const T = cfg.pageToken, P = cfg.pageId;
+        if (formato === 'historia' && !video) {
+          const foto = await rdGraph(`${P}/photos`, { url: media, published: 'false', access_token: T }, 'POST');
+          const st = await rdGraph(`${P}/photo_stories`, { photo_id: foto.id, access_token: T }, 'POST');
+          out.facebook = { ok: true, id: st.post_id || foto.id };
+        } else if (video) {
+          const v = await rdGraph(`${P}/videos`, { file_url: media, description: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
+          out.facebook = { ok: true, id: v.id, programado: !!prog };
+        } else {
+          const f = await rdGraph(`${P}/photos`, { url: media, message: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
+          out.facebook = { ok: true, id: f.post_id || f.id, programado: !!prog };
+        }
+      } catch (e) { out.facebook = { error: e.message }; }
+    }
+    if (instagram) {
+      try {
+        if (!cfg.igId) throw new Error('La página no tiene un Instagram profesional vinculado');
+        const T = cfg.pageToken, I = cfg.igId;
+        const datos = video
+          ? { media_type: formato === 'historia' ? 'STORIES' : 'REELS', video_url: media, ...(formato === 'historia' ? {} : { caption: texto, share_to_feed: 'true' }) }
+          : { image_url: media, ...(formato === 'historia' ? { media_type: 'STORIES' } : { caption: texto }) };
+        const cont = await rdGraph(`${I}/media`, { ...datos, access_token: T }, 'POST');
+        if (video) out.instagram = { pendiente: true, contenedor: cont.id };
+        else {
+          let pub = null, err = null;
+          for (let i = 0; i < 6 && !pub; i++) { try { pub = await rdGraph(`${I}/media_publish`, { creation_id: cont.id, access_token: T }, 'POST'); } catch (e) { err = e; await rdEspera(2500); } }
+          if (!pub) throw err;
+          out.instagram = { ok: true, id: pub.id };
+        }
+      } catch (e) { out.instagram = { error: e.message }; }
+    }
+  return out;
+}
+/* Espera a que Instagram procese un video y lo publica (máx. ~4 minutos) */
+async function rdTerminarIg(cfg, contenedor) {
+  for (let n = 0; n < 24; n++) {
+    await rdEspera(10000);
+    const st = await rdGraph(contenedor, { fields: 'status_code', access_token: cfg.pageToken }).catch(() => ({}));
+    if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') return { error: 'Instagram no pudo procesar el video' };
+    if (st.status_code === 'FINISHED') { const pub = await rdGraph(`${cfg.igId}/media_publish`, { creation_id: contenedor, access_token: cfg.pageToken }, 'POST'); return { ok: true, id: pub.id }; }
+  }
+  return { error: 'Instagram tardó demasiado en procesar el video' };
+}
+
+/* ── Publicación automática (config/autopublicar), revisada cada hora por el cron ── */
+const horaNY = () => { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()); const g = t => p.find(x => x.type === t).value; return { hora: Number(g('hour')), fecha: `${g('year')}-${g('month')}-${g('day')}` }; };
+async function autoPublicar(env) {
+  if (!rdListo(env)) return;
+  const token = await firebaseLogin(env);
+  const a = await fsGet(env, 'config/autopublicar', token).catch(() => null);
+  if (!a || !a.activo || !Array.isArray(a.cola) || !a.cola.length) return;
+  const { hora, fecha } = horaNY();
+  if (hora !== Number(a.hora ?? 10)) return;
+  const cada = Math.max(1, Number(a.cadaDias) || 2);
+  if (a.ultimaFecha && (fecha <= a.ultimaFecha || diasEntre(a.ultimaFecha, fecha) < cada)) return;
+  const cfg = await rdConfig(env, token).catch(() => null);
+  if (!cfg) { await tgEnviar(env, '⚠️ <b>Publicación automática</b>: Facebook e Instagram están desconectados del panel. Vuelve a conectarlos en Contenido digital.').catch(() => {}); return; }
+  const idx = (Number(a.indice) || 0) % a.cola.length, item = a.cola[idx];
+  if (!String(item.url || '').startsWith(RD_MEDIA)) return;
+  // Se marca antes de publicar para que nunca se publique dos veces el mismo día
+  await fsUpdate(env, 'config/autopublicar', { ultimaFecha: fecha, indice: idx + 1 }, ['ultimaFecha', 'indice'], token);
+  const redes = a.redes || { facebook: true, instagram: true };
+  const out = await rdPublicarMedia(cfg, { media: item.url, formato: item.formato || 'feed', texto: String(item.texto || '').slice(0, 2200), facebook: redes.facebook !== false, instagram: redes.instagram !== false });
+  if (out.instagram && out.instagram.pendiente) out.instagram = await rdTerminarIg(cfg, out.instagram.contenedor).catch(e => ({ error: e.message }));
+  await fsCreate(env, 'publicaciones', { archivo: String(item.url).slice(RD_MEDIA.length), formato: item.formato || 'feed', facebook: out.facebook?.ok ? 'publicado' : out.facebook?.error ? 'error' : '', instagram: out.instagram?.ok ? 'publicado' : out.instagram?.error ? 'error' : '', por: 'automático', fecha: new Date() }, token).catch(() => {});
+  const linea = (n, r) => r ? `${n}: ${r.ok ? '✅ publicado' : '❌ ' + escHtml(r.error || 'error')}` : '';
+  const sig = a.cola[(idx + 1) % a.cola.length];
+  await tgEnviar(env, `📣 <b>Publicación automática</b>\n${escHtml(item.titulo || 'Diseño')}\n\n${[linea('Facebook', out.facebook), linea('Instagram', out.instagram)].filter(Boolean).join('\n')}\n\nPróxima en ${cada} día${cada === 1 ? '' : 's'}: ${escHtml(sig?.titulo || '')}`).catch(() => {});
+}
+
 async function handleRedes(request, env, ctx) {
   const url = new URL(request.url);
   const paso = url.pathname.replace(/^\/redes\/?/, '');
@@ -3175,44 +3252,10 @@ async function handleRedes(request, env, ctx) {
   if (paso === 'publicar') {
     const media = String(b.url || '');
     if (!media.startsWith(RD_MEDIA) || /\.\./.test(media)) return json(request, { error: 'Archivo no permitido' }, 400);
-    const video = /\.mp4$/i.test(media), formato = ['feed', 'historia', 'reel'].includes(b.formato) ? b.formato : 'feed';
-    const texto = String(b.texto || '').slice(0, 2200);
     const prog = b.programar ? Math.floor(new Date(b.programar).getTime() / 1000) : 0;
     if (prog && (prog < Date.now() / 1000 + 600 || prog > Date.now() / 1000 + 29 * 86400)) return json(request, { error: 'Programa la publicación entre 10 minutos y 29 días desde ahora' }, 400);
-    const out = {};
-    if (b.facebook) {
-      try {
-        const T = cfg.pageToken, P = cfg.pageId;
-        if (formato === 'historia' && !video) {
-          const foto = await rdGraph(`${P}/photos`, { url: media, published: 'false', access_token: T }, 'POST');
-          const st = await rdGraph(`${P}/photo_stories`, { photo_id: foto.id, access_token: T }, 'POST');
-          out.facebook = { ok: true, id: st.post_id || foto.id };
-        } else if (video) {
-          const v = await rdGraph(`${P}/videos`, { file_url: media, description: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
-          out.facebook = { ok: true, id: v.id, programado: !!prog };
-        } else {
-          const f = await rdGraph(`${P}/photos`, { url: media, message: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
-          out.facebook = { ok: true, id: f.post_id || f.id, programado: !!prog };
-        }
-      } catch (e) { out.facebook = { error: e.message }; }
-    }
-    if (b.instagram) {
-      try {
-        if (!cfg.igId) throw new Error('La página no tiene un Instagram profesional vinculado');
-        const T = cfg.pageToken, I = cfg.igId;
-        const datos = video
-          ? { media_type: formato === 'historia' ? 'STORIES' : 'REELS', video_url: media, ...(formato === 'historia' ? {} : { caption: texto, share_to_feed: 'true' }) }
-          : { image_url: media, ...(formato === 'historia' ? { media_type: 'STORIES' } : { caption: texto }) };
-        const cont = await rdGraph(`${I}/media`, { ...datos, access_token: T }, 'POST');
-        if (video) out.instagram = { pendiente: true, contenedor: cont.id };
-        else {
-          let pub = null, err = null;
-          for (let i = 0; i < 6 && !pub; i++) { try { pub = await rdGraph(`${I}/media_publish`, { creation_id: cont.id, access_token: T }, 'POST'); } catch (e) { err = e; await rdEspera(2500); } }
-          if (!pub) throw err;
-          out.instagram = { ok: true, id: pub.id };
-        }
-      } catch (e) { out.instagram = { error: e.message }; }
-    }
+    const formato = ['feed', 'historia', 'reel'].includes(b.formato) ? b.formato : 'feed';
+    const out = await rdPublicarMedia(cfg, { media, formato, texto: String(b.texto || '').slice(0, 2200), prog, facebook: !!b.facebook, instagram: !!b.instagram });
     ctx.waitUntil(fsCreate(env, 'publicaciones', { archivo: media.slice(RD_MEDIA.length), formato, facebook: out.facebook?.ok ? (out.facebook.programado ? 'programado' : 'publicado') : out.facebook?.error ? 'error' : '',
       instagram: out.instagram?.ok ? 'publicado' : out.instagram?.pendiente ? 'procesando' : out.instagram?.error ? 'error' : '', programado: prog ? new Date(prog * 1000) : null, por: quien.email, fecha: new Date() }, quien.token).catch(() => {}));
     return json(request, out);

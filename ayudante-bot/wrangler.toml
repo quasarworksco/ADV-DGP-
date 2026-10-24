@@ -12,8 +12,8 @@ region = "gcp:us-central1"
 binding = "AI"
 
 [triggers]
-# UTC: resumen mensual (día 1) · resumen diario 11:00 (7:00 VE) · respaldo domingo 12:00 · briefing lunes 12:00 (8:00 VE)
-crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN", "0 12 * * MON"]
+# UTC: publicación automática (revisa cada hora, a los :30) · resumen mensual (día 1) · resumen diario 11:00 (7:00 VE) · respaldo domingo 12:00 · briefing lunes 12:00 (8:00 VE)
+crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN", "0 12 * * MON", "30 * * * *"]
 
 # Las variables secretas (TG_TOKEN y GROQ_API_KEY) se agregan
 # desde el dashboard de Cloudflare — NO van aquí en texto plano.

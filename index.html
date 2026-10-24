@@ -1012,6 +1012,12 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .rd-chk { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--black); cursor:pointer; }
 .rd-lbl { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-top:4px; }
 .rd-form textarea, .rd-form input[type=datetime-local] { width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:10px; padding:10px; font:13px/1.5 'Plus Jakarta Sans',sans-serif; background:var(--off); color:var(--black); resize:vertical; }
+.rd-auto { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--white); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:-6px 0 14px; font-size:12.5px; color:var(--text-mid); line-height:1.5; } .rd-auto b { color:var(--black); }
+.ap-sel { width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:10px; background:#f8fafc; color:#0f172a; font:13px 'Plus Jakarta Sans',sans-serif; color-scheme:light; }
+.ap-lista { max-height:280px; overflow:auto; border:1px solid #e2e8f0; border-radius:12px; padding:4px; }
+.ap-item { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; cursor:pointer; color:#0f172a; } .ap-item:hover { background:#f1f5f9; }
+.ap-item img { width:38px; height:38px; object-fit:cover; border-radius:6px; flex-shrink:0; border:1px solid #e2e8f0; }
+.ap-item span { display:flex; flex-direction:column; min-width:0; font-size:12.5px; } .ap-item small { color:#64748b; font-size:11px; }
 .rd-linea { font-size:13px; margin:6px 0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 /* La ventana de publicar es clara también en modo noche: colores fijos para que todo se lea */
 .rd-form, .rd-form .rd-chk, .rd-form .rd-linea { color:#0f172a; }
@@ -4532,7 +4538,7 @@ function rdBarra() {
   if (e.error) return `<div class="rd-bar"><span class="ll-dot err"></span><div style="flex:1">No se pudo revisar la conexión con Facebook: ${esc(e.error)}</div><button class="ll-mini" onclick="rdCargar(true)">Reintentar</button></div>`;
   if (!e.configurado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Publicar en Facebook e Instagram desde aquí</b><br><span class="ll-sub">Falta un paso único: crear la app de Meta y agregar sus claves en Cloudflare.</span></div><button class="ll-mini" onclick="rdAyuda()">Ver cómo</button></div>`;
   if (!e.conectado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Conecta tus redes</b><br><span class="ll-sub">Inicia sesión con Facebook una vez y podrás publicar cada diseño con un botón.</span></div><button class="btn-nuevo-cliente" onclick="rdConectar()">Conectar Facebook e Instagram</button></div>`;
-  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>`;
+  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>${apLinea()}`;
 }
 function rdAyuda() {
   ptModal('Conectar Facebook e Instagram', 'Se hace una sola vez', `<div class="rd-pasos">
@@ -4557,6 +4563,75 @@ async function rdDesconectar() {
   if (!confirm('¿Desconectar Facebook e Instagram del panel? Lo publicado no se borra.')) return;
   try { await rdApi('desconectar', {}); toast('Redes desconectadas', 'ok'); rdCargar(true); } catch (e) { toast(e.message, 'err'); }
 }
+/* Publicación automática: el bot publica un diseño de la lista cada X días a la hora elegida (config/autopublicar) */
+let _ap = null;
+async function apCargar() {
+  if (_ap || !(_rd.estado && _rd.estado.conectado)) return;
+  _ap = 'cargando';
+  try { const d = await db.collection('config').doc('autopublicar').get(); _ap = d.exists ? d.data() : {}; } catch (e) { _ap = {}; }
+  const rb = document.getElementById('cd-redes'); if (rb) rb.innerHTML = rdBarra();
+}
+const _apHora = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'a. m.' : 'p. m.'}`;
+const _apCada = n => ({ 1: 'todos los días', 2: 'interdiario (cada 2 días)', 3: 'cada 3 días' }[n] || `cada ${n} días`);
+function _apProxima(a) {
+  if (!a || !a.activo || !(a.cola || []).length) return '';
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  let f = a.ultimaFecha ? new Date(a.ultimaFecha + 'T12:00:00') : new Date(hoy);
+  if (a.ultimaFecha) f.setDate(f.getDate() + (Number(a.cadaDias) || 2));
+  if (!a.ultimaFecha && hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
+  while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
+  const item = a.cola[(Number(a.indice) || 0) % a.cola.length];
+  return `${f.toLocaleDateString('es-US', { weekday: 'long', day: 'numeric', month: 'short' })}, ${_apHora(Number(a.hora ?? 10))} · ${item.titulo || ''}`;
+}
+function apLinea() {
+  if (!(_rd.estado && _rd.estado.conectado)) return '';
+  if (!_ap || _ap === 'cargando') { setTimeout(apCargar, 0); return ''; }
+  const a = _ap;
+  return `<div class="rd-auto"><span class="ll-dot ${a.activo ? 'ok' : ''}"></span><div style="flex:1"><b>Publicación automática:</b> ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))} · ${(a.cola || []).length} diseño${(a.cola || []).length === 1 ? '' : 's'} en rotación<br><span class="ll-sub">Próxima: ${esc(_apProxima(a))}</span>` : 'desactivada'}</div><button class="ll-mini" onclick="apAbrir()">${a.activo ? 'Ajustar' : 'Activar'}</button></div>`;
+}
+function apAbrir() {
+  const a = (_ap && _ap !== 'cargando') ? _ap : {};
+  const elegibles = CONTENIDO.filter(c => ['post', 'anuncio', 'historia', 'video'].includes(c.tipo));
+  const enCola = new Set((a.cola || []).map(x => x.archivo));
+  // Por defecto: publicaciones y anuncios en español, sin la promo de Venezuela
+  const marcado = c => a.cola ? enCola.has(c.archivo) : (['post', 'anuncio'].includes(c.tipo) && c.lang === 'es' && !/venezuela|185/i.test(c.archivo + c.titulo));
+  const tipoN = { post: 'Post 1:1', anuncio: 'Anuncio 4:5', historia: 'Historia', video: 'Video / reel' };
+  ptModal('Publicación automática', 'El bot publica por ti en Facebook e Instagram', `<div class="rd-form">
+    <label class="rd-chk"><input type="checkbox" id="ap-activo" ${a.activo !== false ? 'checked' : ''}> Activar publicación automática</label>
+    <label class="rd-lbl">Cada cuánto</label>
+    <select id="ap-cada" class="ap-sel">${[1, 2, 3].map(n => `<option value="${n}" ${Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
+    <label class="rd-lbl">A qué hora (hora de Florida)</label>
+    <select id="ap-hora" class="ap-sel">${Array.from({ length: 15 }, (_, i) => i + 7).map(h => `<option value="${h}" ${Number(a.hora ?? 10) === h ? 'selected' : ''}>${_apHora(h)}</option>`).join('')}</select>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">
+      <label class="rd-chk"><input type="checkbox" id="ap-fb" ${a.redes?.facebook !== false ? 'checked' : ''}> ${_rdIco.fb} Facebook</label>
+      <label class="rd-chk"><input type="checkbox" id="ap-ig" ${a.redes?.instagram !== false && _rd.estado.ig ? 'checked' : ''} ${_rd.estado.ig ? '' : 'disabled'}> ${_rdIco.ig} Instagram</label>
+    </div>
+    <label class="rd-lbl">Diseños que van rotando (en este orden)</label>
+    <div class="ap-lista">${elegibles.map(c => `<label class="ap-item"><input type="checkbox" value="${c.i}" ${marcado(c) ? 'checked' : ''}><img src="${c.tipo === 'video' ? c.posterUrl : c.url}" alt="" loading="lazy"><span><b>${esc(c.titulo)}</b><small>${tipoN[c.tipo]} · ${c.lang === 'es' ? 'Español' : 'English'}</small></span></label>`).join('')}</div>
+    <div class="ll-sub">Usa el texto sugerido de cada diseño. Cuando termina la lista, vuelve a empezar. Te llega un aviso a Telegram cada vez que publica.</div>
+    <button class="ll-btn" style="background:var(--blue)" onclick="apGuardar()">Guardar</button>
+  </div>`);
+}
+async function apGuardar() {
+  const sel = [...document.querySelectorAll('.ap-lista input:checked')].map(i => CONTENIDO[Number(i.value)]);
+  const activo = document.getElementById('ap-activo').checked;
+  if (activo && !sel.length) return toast('Elige al menos un diseño', 'err');
+  const fb = document.getElementById('ap-fb').checked, ig = document.getElementById('ap-ig').checked;
+  if (activo && !fb && !ig) return toast('Elige Facebook, Instagram o ambos', 'err');
+  const forma = c => c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed';
+  const cola = sel.map(c => ({ archivo: c.archivo, titulo: c.titulo, url: new URL(c.url, location.href).href, texto: c.texto || '', formato: forma(c) }));
+  const previo = (_ap && _ap !== 'cargando') ? _ap : {};
+  const misma = JSON.stringify((previo.cola || []).map(x => x.archivo)) === JSON.stringify(cola.map(x => x.archivo));
+  const datos = { activo, cadaDias: Number(document.getElementById('ap-cada').value), hora: Number(document.getElementById('ap-hora').value), redes: { facebook: fb, instagram: ig }, cola,
+    indice: misma ? (previo.indice || 0) : 0, actualizadoPor: currentUser?.email || '', actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    await db.collection('config').doc('autopublicar').set(datos, { merge: true });
+    _ap = { ...previo, ...datos };
+    closePortalModal(); renderContenido();
+    toast(activo ? 'Publicación automática activada' : 'Publicación automática desactivada', 'ok');
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+
 function rdBoton(c) {
   return _rd.estado && _rd.estado.conectado ? `<button class="cd-pub" onclick="rdAbrir(${c.i})">${_rdIco.pub} Publicar en redes</button>` : '';
 }
