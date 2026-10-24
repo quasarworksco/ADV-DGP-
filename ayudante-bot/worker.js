@@ -698,7 +698,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24h';
+const WORKER_VERSION = '2026-10-24i';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3223,15 +3223,16 @@ async function publicarCola(env, token, ruta, a, cfg, nombre) {
   const { hora, fecha } = horaNY();
   if (hora !== Number(a.hora ?? 10)) return;
   const cada = Math.max(1, Number(a.cadaDias) || 2);
-  if (a.ultimaFecha && (fecha <= a.ultimaFecha || diasEntre(a.ultimaFecha, fecha) < cada)) return;
+  const dias = Array.isArray(a.dias) && a.dias.length ? a.dias.map(Number) : null;
+  if (dias) { if (!dias.includes(new Date(fecha + 'T12:00:00Z').getUTCDay()) || (a.ultimaFecha && fecha <= a.ultimaFecha)) return; }
+  else if (a.ultimaFecha && (fecha <= a.ultimaFecha || diasEntre(a.ultimaFecha, fecha) < cada)) return;
   const quien = nombre ? ` · ${escHtml(nombre)}` : '';
   if (!cfg) { await tgEnviar(env, `⚠️ <b>Publicación automática${quien}</b>: la página no está conectada. Revisa el acceso en Facebook y vuelve a pulsar Conectar en el panel.`).catch(() => {}); return; }
   const idx = Number(a.indice) || 0;
-  // La lista no se repite: cuando se acaba, avisa una sola vez para preparar contenido nuevo
+  // La lista no se repite (el aviso de fin sale al publicar el último)
   if (idx >= a.cola.length) {
     if (!a.finAvisado) {
       await fsUpdate(env, ruta, { finAvisado: true }, ['finAvisado'], token).catch(() => {});
-      await tgEnviar(env, `📣 <b>Publicación automática${quien}</b>: ya se publicaron los ${a.cola.length} diseños del plan. No se repetirán.\nPrepara el contenido del próximo mes y cárgalo en el panel.`).catch(() => {});
     }
     return;
   }
@@ -3246,11 +3247,12 @@ async function publicarCola(env, token, ruta, a, cfg, nombre) {
   const est = r => r ? (r.ok ? 'publicado' : 'error') : '';
   await fsAgregarALista(env, ruta, 'historial', { archivo: item.archivo || '', titulo: item.titulo || '', fecha, facebook: est(out.facebook), instagram: est(out.instagram) }, token).catch(() => {});
   await fsCreate(env, 'publicaciones', { archivo: String(urls[0]).slice(RD_MEDIA.length), formato: item.formato || 'feed', cuenta: nombre || 'DGP', facebook: est(out.facebook), instagram: est(out.instagram), por: 'automático', fecha: new Date() }, token).catch(() => {});
-  const linea = (n, r) => r ? `${n}: ${r.ok ? '✅ publicado' : '❌ ' + escHtml(r.error || 'error')}` : '';
-  const quedan = a.cola.length - idx - 1;
+  // Telegram solo cuando hace falta: si una red falló o si este era el último post del plan
+  const fallo = [['Facebook', out.facebook], ['Instagram', out.instagram]].filter(([, r]) => r && !r.ok);
   const sig = a.cola[idx + 1];
   if (!sig) await fsUpdate(env, ruta, { finAvisado: true }, ['finAvisado'], token).catch(() => {});
-  await tgEnviar(env, `📣 <b>Publicación automática${quien}</b> (${idx + 1} de ${a.cola.length})\n${escHtml(item.titulo || 'Diseño')}\n\n${[linea('Facebook', out.facebook), linea('Instagram', out.instagram)].filter(Boolean).join('\n')}\n\n${sig ? `Próxima en ${cada} día${cada === 1 ? '' : 's'}: ${escHtml(sig.titulo || '')} · quedan ${quedan}` : '⚠️ Era la última del plan. Prepara el contenido del próximo mes.'}`).catch(() => {});
+  if (fallo.length) await tgEnviar(env, `⚠️ <b>Publicación automática${quien}</b>: no se pudo publicar "${escHtml(item.titulo || 'Diseño')}"\n${fallo.map(([n, r]) => `${n}: ${escHtml(r.error || 'error')}`).join('\n')}\n\nPuedes publicarlo a mano desde el panel.`).catch(() => {});
+  if (!sig) await tgEnviar(env, `📣 <b>Publicación automática${quien}</b>: se publicó el último post del plan (${a.cola.length} de ${a.cola.length}). Prepara el contenido del próximo mes.`).catch(() => {});
 }
 async function autoPublicar(env) {
   if (!rdListo(env)) return;
@@ -3286,7 +3288,7 @@ async function handleAutopilot(request, env) {
     return r({ ok: true, activo: !!b.activo });
   }
   const cola = (a.cola || []).map(x => ({ titulo: x.titulo, imagen: (x.urls || [x.url])[0], imagenes: x.urls || [x.url], texto: x.texto, formato: x.formato }));
-  return r({ nombre: a.nombre, pagina: a.pageName || '', ig: a.igUser || '', activo: !!a.activo, cadaDias: Number(a.cadaDias) || 2, hora: Number(a.hora ?? 10), indice: Number(a.indice) || 0, ultimaFecha: a.ultimaFecha || null, cola, historial: a.historial || [] });
+  return r({ nombre: a.nombre, pagina: a.pageName || '', ig: a.igUser || '', activo: !!a.activo, cadaDias: Number(a.cadaDias) || 2, dias: Array.isArray(a.dias) ? a.dias.map(Number) : [], hora: Number(a.hora ?? 10), indice: Number(a.indice) || 0, ultimaFecha: a.ultimaFecha || null, cola, historial: a.historial || [] });
 }
 
 async function handleRedes(request, env, ctx) {

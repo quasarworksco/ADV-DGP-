@@ -47,13 +47,20 @@
   function hoyNY() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })); }
   // Fechas estimadas de los posts pendientes (misma regla que el bot: última publicación + frecuencia, a la hora elegida)
   function fechas(d) {
-    var out = [], cada = d.cadaDias || 2, hoy = hoyNY(), f;
-    if (d.ultimaFecha) { f = new Date(d.ultimaFecha + 'T12:00:00'); f.setDate(f.getDate() + cada); }
+    var out = [], cada = d.cadaDias || 2, dias = d.dias && d.dias.length ? d.dias : null, hoy = hoyNY(), f;
+    // Avanza a la siguiente fecha válida: cada X días o solo ciertos días de la semana
+    function sig(x, primera) { if (dias) { if (!primera) x.setDate(x.getDate() + 1); while (dias.indexOf(x.getDay()) < 0) x.setDate(x.getDate() + 1); } else if (!primera) x.setDate(x.getDate() + cada); }
+    if (d.ultimaFecha) { f = new Date(d.ultimaFecha + 'T12:00:00'); sig(f, false); }
     else { f = new Date(hoy); if (hoy.getHours() >= d.hora) f.setDate(f.getDate() + 1); }
     var hoy0 = new Date(hoy.toDateString());
     while (f < hoy0) f.setDate(f.getDate() + 1);
-    for (var k = d.indice; k < d.cola.length; k++) { out[k] = new Date(f); f.setDate(f.getDate() + cada); }
+    sig(f, true);
+    for (var k = d.indice; k < d.cola.length; k++) { out[k] = new Date(f); sig(f, false); }
     return out;
+  }
+  function frecuencia(d, t, L) {
+    if (d.dias && d.dias.length) { var n = L === 'es' ? ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return d.dias.map(function (x) { return n[x]; }).join(', '); }
+    return t.cada[d.cadaDias] || t.cada[2];
   }
   function hora(h, L) { var x = ((h + 11) % 12) + 1; return L === 'es' ? x + ':00 ' + (h < 12 ? 'a. m.' : 'p. m.') : x + ':00 ' + (h < 12 ? 'AM' : 'PM'); }
 
@@ -72,7 +79,7 @@
       if (!total) { root.innerHTML = h + '<div class="vac">' + t.vacio + '</div></div>'; return; }
       var sig = d.cola[d.indice];
       h += '<div class="res"><div><div class="num">' + hechos + ' <small>' + t.de + ' ' + total + ' ' + t.publicados + '</small></div><div class="bar"><i style="width:' + Math.round(hechos / total * 100) + '%"></i></div></div>' +
-        '<div class="prox">' + (sig ? '<b>' + t.proxima + '</b>' + esc(fd(fs[d.indice], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hora(d.hora, L) + ' · ' + esc(sig.titulo) + '<br><span style="color:var(--soft)">' + (t.cada[d.cadaDias] || t.cada[2]) + ' ' + t.a + ' ' + hora(d.hora, L) + '</span>' : t.fin) + '</div></div>';
+        '<div class="prox">' + (sig ? '<b>' + t.proxima + '</b>' + esc(fd(fs[d.indice], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hora(d.hora, L) + ' · ' + esc(sig.titulo) + '<br><span style="color:var(--soft)">' + frecuencia(d, t, L) + ' ' + t.a + ' ' + hora(d.hora, L) + '</span>' : t.fin) + '</div></div>';
       var fila = function (it, f, idx, hecho) {
         var ab = estado.abiertos[idx];
         return '<div class="fila' + (hecho ? ' hecho' : '') + '"><div class="dia"><b>' + f.getDate() + '</b><span>' + esc(fd(f, { month: 'short' })) + '</span></div>' +

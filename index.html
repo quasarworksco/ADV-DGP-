@@ -2659,7 +2659,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Social Media Autopilot</div>
-        <div style="font-size:11px;color:var(--text-soft);">Publicaciones automáticas en el Facebook e Instagram de tus clientes con web. 15 posts al mes con su marca por $155 mensuales.</div>
+        <div style="font-size:11px;color:var(--text-soft);">Publicaciones automáticas en el Facebook e Instagram de tus clientes con web. 20 posts al mes con su marca por $155 mensuales.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-logout" onclick="_sa.paginas=null;renderAutopilot(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
@@ -3100,7 +3100,7 @@ const CATALOGO_BASE = [
   ['Seguidores TikTok', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores TikTok', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores TikTok', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores TikTok', 'TikTok 10,000 Seguidores', 219, 204],
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135],
-  ['Redes sociales', 'Social Media Autopilot · 15 posts al mes en Facebook e Instagram', 155, 144],
+  ['Redes sociales', 'Social Media Autopilot · 20 posts al mes en Facebook e Instagram', 155, 144],
   ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233], ['Aliados', 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', 300, 279]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
@@ -3150,6 +3150,7 @@ function initCatalogo() {
       x.nombre = nombre;
       db.collection('catalogo').doc(x._id).update({ nombre, ...(/1 año/.test(nombre) ? { precio: 250, precioEur: 233 } : {}) }).catch(() => {});
     });
+    catalogoList.filter(x => /^Social Media Autopilot · 15 posts/.test(x.nombre || '')).forEach(x => { x.nombre = x.nombre.replace('15 posts', '20 posts'); db.collection('catalogo').doc(x._id).update({ nombre: x.nombre }).catch(() => {}); });
     const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|despegue|autopilot/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
@@ -4664,26 +4665,31 @@ async function apCargar() {
   if (document.getElementById('page-contenido').classList.contains('active')) renderContenido();
 }
 const _apHora = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'a. m.' : 'p. m.'}`;
-const _apCada = n => ({ 1: 'todos los días', 2: 'interdiario (cada 2 días)', 3: 'cada 3 días' }[n] || `cada ${n} días`);
+const AP_DIAS5 = [1, 2, 4, 5, 6];   // lun, mar, jue, vie, sáb ≈ 20-22 posts al mes
+const _apCada = (n, dias) => (Array.isArray(dias) && dias.length) ? `${dias.length} días por semana (${dias.map(d => ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d]).join(', ')})` : ({ 1: 'todos los días', 2: 'interdiario (cada 2 días)', 3: 'cada 3 días' }[n] || `cada ${n} días`);
+// Siguiente fecha de publicación a partir de f (incluida), según "cada X días" o los días de la semana
+function _apAvanzar(f, a, primera) {
+  const dias = Array.isArray(a.dias) && a.dias.length ? a.dias.map(Number) : null;
+  if (dias) { if (!primera) f.setDate(f.getDate() + 1); while (!dias.includes(f.getDay())) f.setDate(f.getDate() + 1); }
+  else if (!primera) f.setDate(f.getDate() + (Number(a.cadaDias) || 2));
+  return f;
+}
 function _apProxima(a) {
   if (!a || !a.activo || !(a.cola || []).length) return '';
-  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  let f = a.ultimaFecha ? new Date(a.ultimaFecha + 'T12:00:00') : new Date(hoy);
-  if (a.ultimaFecha) f.setDate(f.getDate() + (Number(a.cadaDias) || 2));
-  if (!a.ultimaFecha && hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
-  while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
   const item = a.cola[Number(a.indice) || 0];
   if (!item) return '';
+  const f = _apFechas(a)[item.archivo];
   return `${f.toLocaleDateString('es-US', { weekday: 'long', day: 'numeric', month: 'short' })}, ${_apHora(Number(a.hora ?? 10))} · ${item.titulo || ''}`;
 }
 function _apFechas(a) {
   // Fecha estimada de cada diseño pendiente según la última publicación, la frecuencia y la hora
-  const out = {}, cola = a.cola || [], cada = Number(a.cadaDias) || 2, idx = Number(a.indice) || 0;
+  const out = {}, cola = a.cola || [], idx = Number(a.indice) || 0;
   const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   let f = a.ultimaFecha ? new Date(a.ultimaFecha + 'T12:00:00') : new Date(hoy);
-  if (a.ultimaFecha) f.setDate(f.getDate() + cada); else if (hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
+  if (a.ultimaFecha) _apAvanzar(f, a, false); else if (hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
   while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
-  for (let k = idx; k < cola.length; k++) { out[cola[k].archivo] = new Date(f); f.setDate(f.getDate() + cada); }
+  _apAvanzar(f, a, true);
+  for (let k = idx; k < cola.length; k++) { out[cola[k].archivo] = new Date(f); _apAvanzar(f, a, false); }
   return out;
 }
 function apEstado(c) {
@@ -4699,7 +4705,7 @@ function apLinea() {
   if (!(_rd.estado && _rd.estado.conectado)) return '';
   if (!_ap || _ap === 'cargando') { setTimeout(apCargar, 0); return ''; }
   const a = _ap;
-  return `<div class="rd-auto"><span class="ll-dot ${a.activo ? 'ok' : ''}"></span><div style="flex:1"><b>Publicación automática:</b> ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))} · ${Math.min(Number(a.indice) || 0, (a.cola || []).length)} de ${(a.cola || []).length} publicados<br><span class="ll-sub">${(Number(a.indice) || 0) >= (a.cola || []).length ? '<b style="color:#b45309">Plan terminado.</b> Carga el contenido del próximo mes para seguir publicando.' : 'Próxima: ' + esc(_apProxima(a))}</span>` : 'desactivada'}</div><button class="ll-mini" onclick="apAbrir()">${a.activo ? 'Ajustar' : 'Activar'}</button></div>`;
+  return `<div class="rd-auto"><span class="ll-dot ${a.activo ? 'ok' : ''}"></span><div style="flex:1"><b>Publicación automática:</b> ${a.activo ? `${_apCada(Number(a.cadaDias) || 2, a.dias)} a las ${_apHora(Number(a.hora ?? 10))} · ${Math.min(Number(a.indice) || 0, (a.cola || []).length)} de ${(a.cola || []).length} publicados<br><span class="ll-sub">${(Number(a.indice) || 0) >= (a.cola || []).length ? '<b style="color:#b45309">Plan terminado.</b> Carga el contenido del próximo mes para seguir publicando.' : 'Próxima: ' + esc(_apProxima(a))}</span>` : 'desactivada'}</div><button class="ll-mini" onclick="apAbrir()">${a.activo ? 'Ajustar' : 'Activar'}</button></div>`;
 }
 function apAbrir() {
   const a = (_ap && _ap !== 'cargando') ? _ap : {};
@@ -4715,7 +4721,7 @@ function apAbrir() {
   ptModal('Publicación automática', 'El bot publica por ti en Facebook e Instagram', `<div class="rd-form">
     <label class="rd-chk"><input type="checkbox" id="ap-activo" ${a.activo !== false ? 'checked' : ''}> Activar publicación automática</label>
     <label class="rd-lbl">Cada cuánto</label>
-    <select id="ap-cada" class="ap-sel">${[1, 2, 3].map(n => `<option value="${n}" ${Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
+    <select id="ap-cada" class="ap-sel"><option value="s5" ${(a.dias || []).length ? 'selected' : ''}>5 días por semana · lun, mar, jue, vie, sáb (unos 20 al mes)</option>${[1, 2, 3].map(n => `<option value="${n}" ${!(a.dias || []).length && Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
     <label class="rd-lbl">A qué hora (hora de Florida)</label>
     <select id="ap-hora" class="ap-sel">${Array.from({ length: 15 }, (_, i) => i + 7).map(h => `<option value="${h}" ${Number(a.hora ?? 10) === h ? 'selected' : ''}>${_apHora(h)}</option>`).join('')}</select>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">
@@ -4740,7 +4746,8 @@ async function apGuardar() {
   const cola = sel.map(c => ({ archivo: c.archivo, titulo: c.titulo, url: abs(c.url), ...(c.urlEn ? { urls: [abs(c.url), abs(c.urlEn)] } : {}), texto: c.texto || '', formato: forma(c) }));
   const previo = (_ap && _ap !== 'cargando') ? _ap : {};
   const misma = JSON.stringify((previo.cola || []).map(x => x.archivo)) === JSON.stringify(cola.map(x => x.archivo));
-  const datos = { activo, cadaDias: Number(document.getElementById('ap-cada').value), hora: Number(document.getElementById('ap-hora').value), redes: { facebook: fb, instagram: ig }, cola,
+  const vc = document.getElementById('ap-cada').value;
+  const datos = { activo, cadaDias: vc === 's5' ? 1 : Number(vc), dias: vc === 's5' ? AP_DIAS5 : [], hora: Number(document.getElementById('ap-hora').value), redes: { facebook: fb, instagram: ig }, cola,
     indice: misma ? (previo.indice || 0) : 0, ...(misma ? {} : { finAvisado: false }), actualizadoPor: currentUser?.email || '', actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     await db.collection('config').doc('autopublicar').set(datos, { merge: true });
@@ -4829,7 +4836,7 @@ async function renderAutopilot(fresco) {
       <ol><li>El cliente debe tener su página web con DGP.</li>
       <li>En su Meta Business Suite, el cliente te da acceso a su página de Facebook (con su Instagram vinculado) con permiso de <b>Contenido</b>.</li>
       <li>Aquí pulsas <b>Agregar cliente</b> y eliges su página.</li>
-      <li>Pides a Claude sus 15 posts del mes y los cargas con <b>Cargar plan</b>.</li>
+      <li>Pides a Claude sus 20 posts del mes y los cargas con <b>Cargar plan</b>.</li>
       <li>Copias el <b>código para su panel</b> y se pega en el panel de su web.</li>
       <li>Creas su suscripción de $${SA_PRECIO}/mes en Suscripciones.</li></ol></div>`;
     return;
@@ -4845,7 +4852,7 @@ function saCard(a) {
     <div class="sa-top"><div class="pr-av" style="background:${clColor(a.nombre || '?')}">${esc(clIniciales(a.nombre || '?'))}</div>
       <div style="flex:1;min-width:0"><div class="pr-name">${esc(a.nombre || a._id)}</div><div class="pr-sub">${esc([a.pageName, a.igUser ? '@' + a.igUser : ''].filter(Boolean).join(' · ') || 'Sin página conectada')}</div></div>
       <span class="cal-pill ${estado[1]}">${estado[0]}</span></div>
-    <div class="sa-mid"><div><b>${i}</b> de ${total || 0} publicados</div><div class="ll-sub">${sig ? `Próximo: ${esc(sig.titulo)}${f ? ' · ' + esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : ''}` : total ? 'Prepara el plan del próximo mes' : 'Carga el primer plan'} · ${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))}</div></div>
+    <div class="sa-mid"><div><b>${i}</b> de ${total || 0} publicados</div><div class="ll-sub">${sig ? `Próximo: ${esc(sig.titulo)}${f ? ' · ' + esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : ''}` : total ? 'Prepara el plan del próximo mes' : 'Carga el primer plan'} · ${_apCada(Number(a.cadaDias) || 2, a.dias)} a las ${_apHora(Number(a.hora ?? 10))}</div></div>
     <div class="sa-acts">
       <button class="ll-mini" onclick="saPlan('${a._id}')">Cargar plan</button>
       <button class="ll-mini" onclick="saCalendario('${a._id}')">Calendario</button>
@@ -4873,7 +4880,7 @@ async function saEditar(id) {
     <label class="rd-lbl">Su página web</label>
     <input id="sa-web" class="ap-sel" value="${esc(a.web || '')}" placeholder="https://…">
     <label class="rd-lbl">Cada cuánto</label>
-    <select id="sa-cada" class="ap-sel">${[1, 2, 3].map(n => `<option value="${n}" ${Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
+    <select id="sa-cada" class="ap-sel"><option value="s5" ${!id || (a.dias || []).length ? 'selected' : ''}>5 días por semana · lun, mar, jue, vie, sáb (20 posts al mes)</option>${[1, 2, 3].map(n => `<option value="${n}" ${id && !(a.dias || []).length && Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
     <label class="rd-lbl">A qué hora (hora de Florida)</label>
     <select id="sa-hora" class="ap-sel">${Array.from({ length: 15 }, (_, i) => i + 7).map(h => `<option value="${h}" ${Number(a.hora ?? 11) === h ? 'selected' : ''}>${_apHora(h)}</option>`).join('')}</select>
     <div style="display:flex;gap:16px;flex-wrap:wrap"><label class="rd-chk"><input type="checkbox" id="sa-fb" ${a.redes?.facebook !== false ? 'checked' : ''}> ${_rdIco.fb} Facebook</label><label class="rd-chk"><input type="checkbox" id="sa-ig" ${a.redes?.instagram !== false ? 'checked' : ''}> ${_rdIco.ig} Instagram</label></div>
@@ -4886,7 +4893,7 @@ async function saGuardar(id) {
   if (!pageId) return toast('Elige la página de Facebook del cliente', 'err');
   const p = (_sa.paginas || []).find(x => x.id === pageId) || {};
   const datos = { nombre, pageId, pageName: p.nombre || '', igUser: p.ig || '', web: document.getElementById('sa-web').value.trim(),
-    cadaDias: Number(document.getElementById('sa-cada').value), hora: Number(document.getElementById('sa-hora').value),
+    cadaDias: document.getElementById('sa-cada').value === 's5' ? 1 : Number(document.getElementById('sa-cada').value), dias: document.getElementById('sa-cada').value === 's5' ? AP_DIAS5 : [], hora: Number(document.getElementById('sa-hora').value),
     redes: { facebook: document.getElementById('sa-fb').checked, instagram: document.getElementById('sa-ig').checked }, actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     if (id) await db.collection('autopilot').doc(id).update(datos);
@@ -4906,7 +4913,7 @@ async function saPlan(id) {
   ptModal('Cargar plan', a.nombre, planes.length ? `<div class="rd-form">
       <div class="ll-sub">Elige el plan. Reemplaza la lista pendiente y empieza desde el primer post (lo ya publicado queda en el historial).</div>
       ${planes.map(p => `<button class="ll-mini" style="justify-content:flex-start;padding:12px" onclick="saCargarPlan('${id}','${esc(p.archivo)}')"><b>${esc(p.titulo || p.mes)}</b>&nbsp;· ${esc(p.mes || '')}</button>`).join('')}
-    </div>` : `<div class="rd-form"><div class="ll-sub">Este cliente aún no tiene planes preparados. Pídele a Claude: <b>"Crea los 15 posts de ${esc(a.nombre)} para este mes"</b>, con su logo, colores, servicios y su Instagram. Aparecerán aquí listos para cargar.</div></div>`);
+    </div>` : `<div class="rd-form"><div class="ll-sub">Este cliente aún no tiene planes preparados. Pídele a Claude: <b>"Crea los 20 posts de ${esc(a.nombre)} para este mes"</b>, con su logo, colores, servicios y su Instagram. Aparecerán aquí listos para cargar.</div></div>`);
 }
 async function saCargarPlan(id, archivo) {
   try {
@@ -5166,7 +5173,7 @@ function cdCalendario() {
       <div class="cal-acts">${conectado && !x.h ? `<button class="ll-mini" onclick="rdAbrir(${x.c.i})">Ver y publicar</button>` : `<button class="ll-mini" onclick="${conectado ? `rdAbrir(${x.c.i})` : `window.open('${x.c.url}','_blank')`}">Ver</button>`}<button class="ll-mini" onclick="cdCopiar(${x.c.i})">${icCp} Texto</button></div>
     </div>`;
   }).join('');
-  return `<div class="cal-head"><div><div class="cal-h">${esc(CONTENIDO.find(c => c.plan)?.plan || 'Calendario')}</div><div class="ll-sub">${hechosN} de ${filas.length} publicados · ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))}` : 'fechas sugeridas'} · no se repiten</div></div>${conectado ? `<button class="ll-mini" onclick="apAbrir()">Ajustar</button>` : ''}</div>${intro}<div class="cal-lista">${cuerpo}</div>
+  return `<div class="cal-head"><div><div class="cal-h">${esc(CONTENIDO.find(c => c.plan)?.plan || 'Calendario')}</div><div class="ll-sub">${hechosN} de ${filas.length} publicados · ${a.activo ? `${_apCada(Number(a.cadaDias) || 2, a.dias)} a las ${_apHora(Number(a.hora ?? 10))}` : 'fechas sugeridas'} · no se repiten</div></div>${conectado ? `<button class="ll-mini" onclick="apAbrir()">Ajustar</button>` : ''}</div>${intro}<div class="cal-lista">${cuerpo}</div>
   <div class="ll-sub" style="margin-top:12px">Cuando se publique el último, te llega un aviso a Telegram para preparar el contenido del mes siguiente.</div>`;
 }
 function renderContenido() {
