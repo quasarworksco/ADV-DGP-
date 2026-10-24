@@ -5926,7 +5926,7 @@ Si aún no existe, crea en la raíz del repositorio de este negocio un archivo C
 
 ## Identidad del negocio
 ${linea('Nombre', b.negocio)}${linea('Eslogan', b.slogan)}${linea('A qué se dedica', b.descripcion)}${linea('Qué lo hace diferente', b.diferencia)}${linea('Público', b.publico)}${linea('Ubicación', b.ubicacion)}- Colores: ${colores}
-- Fuentes: por definir (elige una pareja de Google Fonts acorde al estilo, una para títulos y otra para textos, y anótala aquí)
+- Fuentes: las elige Claude automáticamente según la página y el estilo del negocio (una de Google Fonts para títulos y otra para textos); anótalas aquí la primera vez y usa siempre las mismas
 - Logo: ${logo}
 - Tono de los textos: ${b.tono || 'por definir'}
 ${linea('Estilo visual', b.estilo)}${linea('Evitar', b.noGusta)}${linea('Idioma', b.idioma)}${linea('Redes', redes)}${linea('Contacto', [b.tel, b.correo].filter(Boolean).join(' · '))}\`\`\``;
