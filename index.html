@@ -1013,6 +1013,11 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .rd-lbl { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-top:4px; }
 .rd-form textarea, .rd-form input[type=datetime-local] { width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:10px; padding:10px; font:13px/1.5 'Plus Jakarta Sans',sans-serif; background:var(--off); color:var(--black); resize:vertical; }
 .rd-linea { font-size:13px; margin:6px 0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+/* La ventana de publicar es clara también en modo noche: colores fijos para que todo se lea */
+.rd-form, .rd-form .rd-chk, .rd-form .rd-linea { color:#0f172a; }
+.rd-form .ll-sub, .rd-form .rd-lbl { color:#64748b; }
+.rd-form textarea, .rd-form input[type=datetime-local] { background:#f8fafc !important; color:#0f172a !important; border-color:#e2e8f0 !important; color-scheme:light; }
+.rd-form .rd-prev { border-color:#e2e8f0; }
 .cd-cp { background:transparent; color:var(--text); border:1.5px solid var(--border); }
 @media (max-width:600px){ .cd-grid { grid-template-columns:1fr 1fr; gap:10px; } .cd-info { padding:10px; } .cd-acts { flex-direction:column; } }
 .proy-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
