@@ -202,7 +202,6 @@ export default {
     const ruta = new URL(request.url).pathname;
     if (ruta === TG_RUTA) return handleTgNotif(request, env, ctx);
     if (ruta === '/contacto') return handleContacto(request, env);
-    if (ruta === '/aviso') return handleAviso(request, env);
     if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
@@ -301,7 +300,7 @@ async function sendMsg(token, chatId, text) {
 }
 
 async function enviarResumenMensual(env) {
-  const TG_TOKEN = tgToken(env);
+  const TG_TOKEN = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
   const TG_CHAT  = '8446165096';
   const PROJECT  = env.FIREBASE_PROJECT || 'dgp-group';
 
@@ -674,8 +673,8 @@ async function handleVerificar(request, env, firebaseLogin) {
       ['verificacionIA', `verificaciones.${key}`], token);
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
-    const tgTok = tgToken(env);
-    await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
+    const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+    await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
         `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
@@ -769,8 +768,8 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   // Telegram: mensaje de prueba al chat de notificaciones
   if (q.get('telegram')) {
     try {
-      const tgTok = tgToken(env);
-      const res = await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
+      const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+      const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: TG_CHAT, text: '✅ Prueba del sistema DGP Group: las notificaciones llegan correctamente.' })
       });
@@ -1952,28 +1951,6 @@ async function handleContacto(request, env) {
     await tgEnviar(env, `📩 Alguien escribió en la web pero no se pudo guardar:\n${escHtml(nombre)} · ${escHtml(correo || telefono)}\n${escHtml(mensaje.slice(0, 500))}`).catch(() => {});
     return resp({ ok: true });
   }
-}
-
-/* Avisos a Telegram desde las páginas públicas del panel (cotización, factura, portal).
-   Así la clave del bot vive solo aquí y no en el código de esas páginas.
-   POST /aviso {texto, foto?, markdown?} · solo desde nuestras webs · máximo 30 por hora por conexión */
-async function handleAviso(request, env) {
-  const h = corsContacto(request);
-  const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
-  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
-  if (!ORIGENES_CONTACTO.includes(request.headers.get('Origin') || '')) return resp({ error: 'No permitido' }, 403);
-  if (await superaLimite(request, 'aviso', 30, 3600)) return resp({ error: 'Demasiados avisos' }, 429);
-  const b = await request.json().catch(() => ({}));
-  const texto = String(b.texto || '').trim().slice(0, 3500);
-  if (!texto) return resp({ error: 'Falta el texto' }, 400);
-  const foto = String(b.foto || '');
-  const conFoto = /^https:\/\/res\.cloudinary\.com\//.test(foto);
-  const extra = b.markdown ? { parse_mode: 'Markdown' } : {};
-  const r = conFoto
-    ? await tgApi(env, 'sendPhoto', { chat_id: TG_CHAT, photo: foto, caption: texto.slice(0, 1000), ...extra })
-    : await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: texto, disable_web_page_preview: true, ...extra });
-  return resp({ ok: !!(r && r.ok) });
 }
 
 /* ¿El dominio del correo puede recibir? (registro MX). Evita mandar correos a direcciones inventadas por bots */
