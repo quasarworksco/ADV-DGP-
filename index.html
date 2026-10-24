@@ -1003,6 +1003,16 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .cd-folder { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text); }
 .cd-folder svg { color:#f59e0b; }
 .cd-mes { font-size:11px; font-weight:600; color:var(--text-soft); letter-spacing:.5px; text-transform:uppercase; }
+.cd-pub { margin-top:6px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; font-family:inherit; padding:9px 8px; border-radius:9px; cursor:pointer; border:1.5px solid rgba(214,41,118,.35); background:linear-gradient(90deg,rgba(24,119,242,.08),rgba(214,41,118,.08)); color:var(--black); }
+.rd-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--white); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:12.5px; color:var(--text-mid); line-height:1.5; }
+.rd-bar b { color:var(--black); } .rd-bar svg { vertical-align:-2px; }
+.rd-pasos p { font-size:13px; line-height:1.6; color:var(--text-mid); margin:0 0 10px; } .rd-pasos code { background:var(--off); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:12px; word-break:break-all; } .rd-pasos a { color:var(--blue); }
+.rd-form { display:flex; flex-direction:column; gap:10px; }
+.rd-prev { width:96px; flex-shrink:0; border-radius:10px; overflow:hidden; border:1px solid var(--border); } .rd-prev img { width:100%; display:block; }
+.rd-chk { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--black); cursor:pointer; }
+.rd-lbl { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-top:4px; }
+.rd-form textarea, .rd-form input[type=datetime-local] { width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:10px; padding:10px; font:13px/1.5 'Plus Jakarta Sans',sans-serif; background:var(--off); color:var(--black); resize:vertical; }
+.rd-linea { font-size:13px; margin:6px 0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .cd-cp { background:transparent; color:var(--text); border:1.5px solid var(--border); }
 @media (max-width:600px){ .cd-grid { grid-template-columns:1fr 1fr; gap:10px; } .cd-info { padding:10px; } .cd-acts { flex-direction:column; } }
 .proy-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
@@ -2586,6 +2596,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
         <div style="font-size:11px;color:var(--text-soft);">Videos, imágenes y mensajes de DGP listos para historias, publicaciones, anuncios y WhatsApp. Descárgalos o copia el texto para publicarlos.</div>
       </div>
     </div>
+    <div id="cd-redes"></div>
     <div class="db-pills" id="cd-filtros" style="margin-bottom:16px;flex-wrap:wrap;"></div>
     <div id="cd-grid"></div>
   </div>
@@ -4487,6 +4498,112 @@ const CONTENIDO = [
 });
 let _cdFiltro = 'todo', _cdLang = 'todos';
 const _cdMes = f => { const [y, m] = f.split('-'); return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][+m - 1] + ' ' + y; };
+/* ═══════════════════════════════════════════════════════
+   REDES — publicar en Facebook e Instagram desde Contenido digital (la clave vive en el Worker)
+═══════════════════════════════════════════════════════ */
+let _rd = { estado: null, cargando: false };
+const _rdIco = {
+  fb: '<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"/></svg>',
+  ig: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d62976" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="#d62976"/></svg>',
+  pub: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>'
+};
+async function rdApi(paso, datos) {
+  const tok = await currentUser.getIdToken();
+  const r = await fetch(`${DIAG_WORKER}/redes/${paso}`, { method: datos ? 'POST' : 'GET', headers: { Authorization: `Bearer ${tok}`, ...(datos ? { 'Content-Type': 'application/json' } : {}) }, body: datos ? JSON.stringify(datos) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || (d.error && !datos)) throw new Error(d.error || ('Error ' + r.status));
+  return d;
+}
+async function rdCargar(forzar) {
+  if (_rd.cargando || (_rd.estado && !forzar) || !currentUser) return;
+  _rd.cargando = true;
+  try { _rd.estado = await rdApi('estado'); } catch (e) { _rd.estado = { error: e.message }; }
+  _rd.cargando = false;
+  if (document.getElementById('page-contenido').classList.contains('active')) renderContenido();
+}
+function rdBarra() {
+  const e = _rd.estado;
+  if (!e) return '';
+  if (e.error) return `<div class="rd-bar"><span class="ll-dot err"></span><div style="flex:1">No se pudo revisar la conexión con Facebook: ${esc(e.error)}</div><button class="ll-mini" onclick="rdCargar(true)">Reintentar</button></div>`;
+  if (!e.configurado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Publicar en Facebook e Instagram desde aquí</b><br><span class="ll-sub">Falta un paso único: crear la app de Meta y agregar sus claves en Cloudflare.</span></div><button class="ll-mini" onclick="rdAyuda()">Ver cómo</button></div>`;
+  if (!e.conectado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Conecta tus redes</b><br><span class="ll-sub">Inicia sesión con Facebook una vez y podrás publicar cada diseño con un botón.</span></div><button class="btn-nuevo-cliente" onclick="rdConectar()">Conectar Facebook e Instagram</button></div>`;
+  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>`;
+}
+function rdAyuda() {
+  ptModal('Conectar Facebook e Instagram', 'Se hace una sola vez', `<div class="rd-pasos">
+    <p><b>1.</b> Entra a <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener">developers.facebook.com/apps</a> → <b>Crear app</b>. Tipo: <b>Empresa (Business)</b>. Nombre: <b>DGP Panel</b>. Elige tu portafolio de negocio de DGP.</p>
+    <p><b>2.</b> En la app, agrega el producto <b>Inicio de sesión con Facebook para empresas</b> (Facebook Login for Business).</p>
+    <p><b>3.</b> En su <b>Configuración</b>, en <b>URI de redireccionamiento de OAuth válidos</b>, pega:<br><code>${DIAG_WORKER}/redes/callback</code></p>
+    <p><b>4.</b> En <b>Configuración de la app → Básica</b> copia el <b>Identificador de la app</b> y la <b>Clave secreta de la app</b>.</p>
+    <p><b>5.</b> En Cloudflare → <b>ayudante-dgp-bot</b> → Settings → Variables and Secrets, agrégalas como <b>Secret</b>: <code>META_APP_ID</code> y <code>META_APP_SECRET</code>.</p>
+    <p><b>6.</b> Vuelve aquí, recarga y pulsa <b>Conectar Facebook e Instagram</b>. No hace falta enviar la app a revisión: funciona con tu cuenta porque eres administrador de la app y de la página.</p>
+  </div>`);
+}
+async function rdConectar() {
+  const w = window.open('about:blank', 'dgpRedes', 'width=620,height=720');
+  try {
+    const d = await rdApi('conectar', {});
+    if (d.error) throw new Error(d.error);
+    if (w) w.location = d.url; else location.href = d.url;
+  } catch (e) { if (w) w.close(); toast('No se pudo iniciar la conexión: ' + e.message, 'err'); }
+}
+window.addEventListener('message', ev => { if (ev.origin === new URL(DIAG_WORKER).origin && ev.data && 'dgpRedes' in ev.data) { rdCargar(true); if (ev.data.dgpRedes) toast('Facebook e Instagram conectados', 'ok'); } });
+async function rdDesconectar() {
+  if (!confirm('¿Desconectar Facebook e Instagram del panel? Lo publicado no se borra.')) return;
+  try { await rdApi('desconectar', {}); toast('Redes desconectadas', 'ok'); rdCargar(true); } catch (e) { toast(e.message, 'err'); }
+}
+function rdBoton(c) {
+  return _rd.estado && _rd.estado.conectado ? `<button class="cd-pub" onclick="rdAbrir(${c.i})">${_rdIco.pub} Publicar en redes</button>` : '';
+}
+function _rdFormato(c) { return c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed'; }
+function rdAbrir(i) {
+  const c = CONTENIDO[i], e = _rd.estado || {}, f = _rdFormato(c);
+  const nombre = { feed: 'Publicación', historia: 'Historia', reel: 'Reel (video)' }[f];
+  ptModal('Publicar en redes', `${c.titulo} · ${nombre}`, `
+    <div class="rd-form">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="rd-prev">${c.tipo === 'video' ? `<img src="${c.posterUrl}" alt="">` : `<img src="${c.url}" alt="">`}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+          <label class="rd-chk"><input type="checkbox" id="rd-fb" checked> ${_rdIco.fb} Facebook · ${esc(e.pagina || '')}</label>
+          <label class="rd-chk"><input type="checkbox" id="rd-ig" ${e.ig ? 'checked' : 'disabled'}> ${_rdIco.ig} Instagram${e.ig ? ' · @' + esc(e.ig) : ' (no vinculado)'}</label>
+          ${f === 'historia' ? '<div class="ll-sub">Se publica como historia (dura 24 horas).</div>' : ''}
+        </div>
+      </div>
+      ${f !== 'historia' ? `<label class="rd-lbl">Texto de la publicación</label><textarea id="rd-texto" rows="6">${esc(c.texto || '')}</textarea>` : ''}
+      ${f !== 'historia' ? `<label class="rd-lbl">Programar (opcional, solo Facebook)</label><input type="datetime-local" id="rd-prog">
+      <div class="ll-sub">Si eliges fecha, Facebook la publica a esa hora. Instagram se publica al momento.</div>` : ''}
+      <div id="rd-res"></div>
+      <button class="ll-btn" id="rd-btn" onclick="rdPublicar(${i})" style="background:var(--blue)">${_rdIco.pub} Publicar ahora</button>
+    </div>`);
+  const p = document.getElementById('rd-prog');
+  if (p) p.addEventListener('change', () => { document.getElementById('rd-btn').lastChild.textContent = p.value ? ' Publicar y programar' : ' Publicar ahora'; });
+}
+async function rdPublicar(i) {
+  const c = CONTENIDO[i], f = _rdFormato(c);
+  const fb = document.getElementById('rd-fb').checked, ig = document.getElementById('rd-ig').checked;
+  if (!fb && !ig) return toast('Elige Facebook, Instagram o ambos', 'err');
+  const prog = document.getElementById('rd-prog')?.value || '';
+  const btn = document.getElementById('rd-btn'), res = document.getElementById('rd-res');
+  btn.disabled = true; res.innerHTML = '<div class="ll-sub" style="margin:8px 0">Publicando… no cierres esta ventana.</div>';
+  const linea = (ico, red, r) => `<div class="rd-linea">${ico} <b>${red}:</b> ${r.error ? `<span style="color:#dc2626">${esc(r.error)}</span>` : r.pendiente ? 'procesando el video…' : r.programado ? '<span style="color:#059669">programado</span>' : '<span style="color:#059669">publicado</span>'}</div>`;
+  try {
+    const d = await rdApi('publicar', { url: new URL(c.url, location.href).href, formato: f, texto: document.getElementById('rd-texto')?.value || '', facebook: fb, instagram: ig, programar: prog ? new Date(prog).toISOString() : '' });
+    if (d.error) throw new Error(d.error);
+    const pintar = () => { res.innerHTML = (d.facebook ? linea(_rdIco.fb, 'Facebook', d.facebook) : '') + (d.instagram ? linea(_rdIco.ig, 'Instagram', d.instagram) : ''); };
+    pintar();
+    // Los videos de Instagram tardan en procesarse: se revisa cada 8 segundos hasta publicarlo
+    for (let n = 0; d.instagram && d.instagram.pendiente && n < 40; n++) {
+      await new Promise(r => setTimeout(r, 8000));
+      const s = await rdApi('ig-terminar', { contenedor: d.instagram.contenedor }).catch(e => ({ error: e.message }));
+      if (!s.pendiente) { d.instagram = s.error ? { error: s.error } : { ok: true }; }
+      pintar();
+    }
+    const fallo = [d.facebook, d.instagram].some(r => r && r.error);
+    toast(fallo ? 'Revisa: alguna red no se pudo publicar' : '¡Publicado!', fallo ? 'err' : 'ok');
+    btn.textContent = 'Listo'; btn.onclick = closePortalModal; btn.disabled = false;
+  } catch (e) { res.innerHTML = `<div style="color:#dc2626;font-size:12.5px;margin:8px 0">${esc(e.message)}</div>`; btn.disabled = false; }
+}
+
 /* Mensajes para difundir (WhatsApp, estados, grupos, redes y mensajes directos). Para agregar uno, súmalo a la lista. */
 const MD_SERVICIOS = {
   web:       { nombre: 'Páginas web',            color: '#1438cc' },
@@ -4678,6 +4795,8 @@ function mdCopiar(i) {
 }
 
 function renderContenido() {
+  rdCargar();
+  const rb = document.getElementById('cd-redes'); if (rb) rb.innerHTML = rdBarra();
   const cnt = t => CONTENIDO.filter(c => (t === 'todo' || c.tipo === t) && (_cdLang === 'todos' || c.lang === _cdLang)).length;
   const pill = (sel, k, v, fn) => `<button class="dash-period-btn ${sel === k ? 'active' : ''}" onclick="${fn}='${k}';renderContenido()">${v}</button>`;
   document.getElementById('cd-filtros').innerHTML =
@@ -4701,6 +4820,7 @@ function renderContenido() {
           <a class="cd-dl" href="${c.url}" download="${c.archivo}">${icDl} Descargar</a>
           <button class="cd-cp" onclick="cdCopiar(${c.i})">${icCp} Copiar texto</button>
         </div>
+        ${rdBoton(c)}
       </div>
     </div>`; };
   // Arriba, lo más reciente (última fecha publicada); el resto, agrupado por tipo (carpeta) y mes

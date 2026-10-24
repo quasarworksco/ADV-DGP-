@@ -215,6 +215,7 @@ export default {
     if (ruta === '/chat-ia') return handleChatIA(request, env);
     if (ruta === '/smm') return handleSmm(request, env);
     if (ruta.startsWith('/llamadas')) return handleLlamadas(request, env, ctx);
+    if (ruta.startsWith('/redes')) return handleRedes(request, env, ctx);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -695,7 +696,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24b';
+const WORKER_VERSION = '2026-10-24c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3066,4 +3067,166 @@ Formato: 2 a 5 líneas cortas, sin markdown, cada una empezando con "• ". Incl
   await llamadaGuardar(env, token, sid, { transcripcion: transcripcion.slice(0, 15000), resumen: resumen.slice(0, 2000), procesadoAt: new Date() });
   const min = `${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')}`;
   await tgEnviar(env, `${buzon ? '📩 <b>Mensaje de voz</b>' : `📞 <b>Resumen de llamada ${doc.direccion === 'saliente' ? 'saliente' : 'entrante'}</b>`} · ${escHtml(quien)}${doc.contacto ? ` (${escHtml(doc.numero)})` : ''} · ${min}\n\n${resumen ? escHtml(resumen) : transcripcion ? `<i>${escHtml(transcripcion.slice(0, 1500))}</i>` : '<i>No se pudo transcribir el audio.</i>'}\n\nEscúchala en el panel → Llamadas.`).catch(() => {});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REDES — publicar en la página de Facebook e Instagram desde el panel
+   Secretos: META_APP_ID, META_APP_SECRET (app propia en Meta for Developers)
+   La clave de la página se guarda cifrada en config/redes; nunca sale del Worker.
+══════════════════════════════════════════════════════════════ */
+const RD_VER = 'v23.0';
+const RD_PAGINA_PREFERIDA = '823496920849508';
+const RD_PERMISOS = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish,business_management';
+const RD_MEDIA = 'https://adv.dgp-link.com/contenido/';
+const rdListo = env => !!(env.META_APP_ID && env.META_APP_SECRET);
+const rdB64 = u8 => btoa(String.fromCharCode(...u8));
+const rdDeB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function rdClave(env) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${env.META_APP_SECRET}:dgp-redes`));
+  return crypto.subtle.importKey('raw', h, 'AES-GCM', false, ['encrypt', 'decrypt']);
+}
+async function rdCifrar(env, texto) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const c = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await rdClave(env), new TextEncoder().encode(texto)));
+  return `${rdB64(iv)}.${rdB64(c)}`;
+}
+async function rdDescifrar(env, s) {
+  const [iv, c] = String(s || '').split('.');
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: rdDeB64(iv) }, await rdClave(env), rdDeB64(c)));
+}
+async function rdFirma(env, txt) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.META_APP_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return rdB64(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(txt)))).replace(/[+/=]/g, c => ({ '+': '-', '/': '_', '=': '' }[c]));
+}
+async function rdGraph(ruta, params = {}, metodo = 'GET') {
+  const url = `https://graph.facebook.com/${RD_VER}/${ruta}`;
+  const res = metodo === 'GET'
+    ? await fetch(`${url}?${new URLSearchParams(params)}`)
+    : await fetch(url, { method: metodo, body: new URLSearchParams(params) });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok || d.error) throw new Error(d.error?.error_user_msg || d.error?.message || `Meta respondió ${res.status}`);
+  return d;
+}
+const rdEspera = ms => new Promise(r => setTimeout(r, ms));
+async function rdConfig(env, token) {
+  const c = await fsGet(env, 'config/redes', token).catch(() => null);
+  if (!c || !c.tokenCifrado) return null;
+  return { ...c, pageToken: await rdDescifrar(env, c.tokenCifrado) };
+}
+function rdHtml(titulo, texto, ok) {
+  return new Response(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title>
+<style>body{font-family:system-ui,sans-serif;background:#f1f5f9;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px}div{background:#fff;border-radius:16px;padding:28px;max-width:420px;text-align:center;box-shadow:0 10px 30px rgba(15,23,42,.1)}h1{font-size:20px;margin:0 0 8px;color:${ok ? '#059669' : '#b91c1c'}}p{color:#475569;line-height:1.5;margin:0}</style></head>
+<body><div><h1>${titulo}</h1><p>${texto}</p></div><script>try{window.opener&&window.opener.postMessage({dgpRedes:${ok ? 'true' : 'false'}},'https://adv.dgp-link.com')}catch(e){}${ok ? 'setTimeout(function(){window.close()},2500)' : ''}</script></body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+async function handleRedes(request, env, ctx) {
+  const url = new URL(request.url);
+  const paso = url.pathname.replace(/^\/redes\/?/, '');
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+
+  // Regreso desde Facebook después de autorizar
+  if (paso === 'callback') {
+    if (!rdListo(env)) return rdHtml('Falta configurar', 'Agrega META_APP_ID y META_APP_SECRET en Cloudflare.', false);
+    if (url.searchParams.get('error')) return rdHtml('No se conectó', 'Cancelaste el permiso en Facebook. Puedes intentarlo de nuevo desde el panel.', false);
+    const [datos, firma] = String(url.searchParams.get('state') || '').split('~');
+    if (!datos || firma !== await rdFirma(env, datos)) return rdHtml('Enlace no válido', 'Vuelve a pulsar "Conectar" en el panel.', false);
+    const [email, vence] = atob(datos).split('|');
+    if (Date.now() > Number(vence)) return rdHtml('El enlace venció', 'Vuelve a pulsar "Conectar" en el panel.', false);
+    try {
+      const volver = `${BOT_URL}/redes/callback`;
+      const corto = await rdGraph('oauth/access_token', { client_id: env.META_APP_ID, client_secret: env.META_APP_SECRET, redirect_uri: volver, code: url.searchParams.get('code') || '' });
+      const largo = await rdGraph('oauth/access_token', { grant_type: 'fb_exchange_token', client_id: env.META_APP_ID, client_secret: env.META_APP_SECRET, fb_exchange_token: corto.access_token });
+      const cuentas = await rdGraph('me/accounts', { fields: 'id,name,access_token,instagram_business_account{id,username}', limit: '50', access_token: largo.access_token });
+      const pags = cuentas.data || [];
+      const pag = pags.find(p => p.id === RD_PAGINA_PREFERIDA) || pags.find(p => p.instagram_business_account) || pags[0];
+      if (!pag) return rdHtml('No encontré tu página', 'En la ventana de Facebook asegúrate de elegir la página de DGP y su cuenta de Instagram.', false);
+      const token = await firebaseLogin(env);
+      const ig = pag.instagram_business_account || {};
+      await fetch(docUrl(env, 'config/redes'), { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: toValue({ pageId: pag.id, pageName: pag.name, igId: ig.id || '', igUser: ig.username || '', tokenCifrado: await rdCifrar(env, pag.access_token), conectadoPor: email, conectadoAt: new Date() }).mapValue.fields }) });
+      return rdHtml('¡Listo, conectado!', `Página: <b>${escHtml(pag.name)}</b>${ig.username ? `<br>Instagram: <b>@${escHtml(ig.username)}</b>` : '<br><b>Ojo:</b> no encontré un Instagram profesional vinculado a esta página.'}<br><br>Ya puedes cerrar esta ventana.`, true);
+    } catch (e) { return rdHtml('No se pudo conectar', escHtml(e.message), false); }
+  }
+
+  if (!rdListo(env)) return json(request, { configurado: false });
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+
+  if (paso === 'estado') {
+    const c = await fsGet(env, 'config/redes', quien.token).catch(() => null);
+    return json(request, { configurado: true, conectado: !!(c && c.tokenCifrado), pagina: c?.pageName || '', ig: c?.igUser || '', conectadoPor: c?.conectadoPor || '' });
+  }
+  if (paso === 'conectar') {
+    const datos = btoa(`${quien.email}|${Date.now() + 15 * 60e3}`);
+    const state = `${datos}~${await rdFirma(env, datos)}`;
+    const q = new URLSearchParams({ client_id: env.META_APP_ID, redirect_uri: `${BOT_URL}/redes/callback`, state, scope: RD_PERMISOS, response_type: 'code' });
+    return json(request, { url: `https://www.facebook.com/${RD_VER}/dialog/oauth?${q}` });
+  }
+  if (paso === 'desconectar') {
+    await fetch(docUrl(env, 'config/redes'), { method: 'DELETE', headers: { Authorization: `Bearer ${quien.token}` } });
+    return json(request, { ok: true });
+  }
+
+  const cfg = await rdConfig(env, quien.token).catch(() => null);
+  if (!cfg) return json(request, { error: 'Primero conecta Facebook e Instagram' }, 400);
+  const b = await request.json().catch(() => ({}));
+
+  if (paso === 'publicar') {
+    const media = String(b.url || '');
+    if (!media.startsWith(RD_MEDIA) || /\.\./.test(media)) return json(request, { error: 'Archivo no permitido' }, 400);
+    const video = /\.mp4$/i.test(media), formato = ['feed', 'historia', 'reel'].includes(b.formato) ? b.formato : 'feed';
+    const texto = String(b.texto || '').slice(0, 2200);
+    const prog = b.programar ? Math.floor(new Date(b.programar).getTime() / 1000) : 0;
+    if (prog && (prog < Date.now() / 1000 + 600 || prog > Date.now() / 1000 + 29 * 86400)) return json(request, { error: 'Programa la publicación entre 10 minutos y 29 días desde ahora' }, 400);
+    const out = {};
+    if (b.facebook) {
+      try {
+        const T = cfg.pageToken, P = cfg.pageId;
+        if (formato === 'historia' && !video) {
+          const foto = await rdGraph(`${P}/photos`, { url: media, published: 'false', access_token: T }, 'POST');
+          const st = await rdGraph(`${P}/photo_stories`, { photo_id: foto.id, access_token: T }, 'POST');
+          out.facebook = { ok: true, id: st.post_id || foto.id };
+        } else if (video) {
+          const v = await rdGraph(`${P}/videos`, { file_url: media, description: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
+          out.facebook = { ok: true, id: v.id, programado: !!prog };
+        } else {
+          const f = await rdGraph(`${P}/photos`, { url: media, message: texto, ...(prog ? { published: 'false', scheduled_publish_time: String(prog) } : {}), access_token: T }, 'POST');
+          out.facebook = { ok: true, id: f.post_id || f.id, programado: !!prog };
+        }
+      } catch (e) { out.facebook = { error: e.message }; }
+    }
+    if (b.instagram) {
+      try {
+        if (!cfg.igId) throw new Error('La página no tiene un Instagram profesional vinculado');
+        const T = cfg.pageToken, I = cfg.igId;
+        const datos = video
+          ? { media_type: formato === 'historia' ? 'STORIES' : 'REELS', video_url: media, ...(formato === 'historia' ? {} : { caption: texto, share_to_feed: 'true' }) }
+          : { image_url: media, ...(formato === 'historia' ? { media_type: 'STORIES' } : { caption: texto }) };
+        const cont = await rdGraph(`${I}/media`, { ...datos, access_token: T }, 'POST');
+        if (video) out.instagram = { pendiente: true, contenedor: cont.id };
+        else {
+          let pub = null, err = null;
+          for (let i = 0; i < 6 && !pub; i++) { try { pub = await rdGraph(`${I}/media_publish`, { creation_id: cont.id, access_token: T }, 'POST'); } catch (e) { err = e; await rdEspera(2500); } }
+          if (!pub) throw err;
+          out.instagram = { ok: true, id: pub.id };
+        }
+      } catch (e) { out.instagram = { error: e.message }; }
+    }
+    ctx.waitUntil(fsCreate(env, 'publicaciones', { archivo: media.slice(RD_MEDIA.length), formato, facebook: out.facebook?.ok ? (out.facebook.programado ? 'programado' : 'publicado') : out.facebook?.error ? 'error' : '',
+      instagram: out.instagram?.ok ? 'publicado' : out.instagram?.pendiente ? 'procesando' : out.instagram?.error ? 'error' : '', programado: prog ? new Date(prog * 1000) : null, por: quien.email, fecha: new Date() }, quien.token).catch(() => {}));
+    return json(request, out);
+  }
+  if (paso === 'ig-terminar') {
+    // Los videos tardan en procesarse: el panel pregunta hasta que esté listo y entonces se publica
+    const id = String(b.contenedor || '');
+    if (!/^\d+$/.test(id)) return json(request, { error: 'Contenedor no válido' }, 400);
+    try {
+      const st = await rdGraph(id, { fields: 'status_code,status', access_token: cfg.pageToken });
+      if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') return json(request, { error: 'Instagram no pudo procesar el video' + (st.status ? `: ${st.status}` : '') });
+      if (st.status_code !== 'FINISHED') return json(request, { pendiente: true });
+      const pub = await rdGraph(`${cfg.igId}/media_publish`, { creation_id: id, access_token: cfg.pageToken }, 'POST');
+      return json(request, { ok: true, id: pub.id });
+    } catch (e) { return json(request, { error: e.message }); }
+  }
+  return json(request, { error: 'No encontrado' }, 404);
 }
