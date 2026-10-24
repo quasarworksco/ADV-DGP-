@@ -217,6 +217,7 @@ export default {
     if (ruta === '/smm') return handleSmm(request, env);
     if (ruta.startsWith('/llamadas')) return handleLlamadas(request, env, ctx);
     if (ruta.startsWith('/redes')) return handleRedes(request, env, ctx);
+    if (ruta.startsWith('/autopilot')) return handleAutopilot(request, env);
     if (request.method !== 'POST') return new Response('Bot activo ✓');
 
     try {
@@ -697,7 +698,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24g';
+const WORKER_VERSION = '2026-10-24h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3211,23 +3212,26 @@ async function rdTerminarIg(cfg, contenedor) {
 
 /* ── Publicación automática (config/autopublicar), revisada cada hora por el cron ── */
 const horaNY = () => { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()); const g = t => p.find(x => x.type === t).value; return { hora: Number(g('hour')), fecha: `${g('year')}-${g('month')}-${g('day')}` }; };
-async function autoPublicar(env) {
-  if (!rdListo(env)) return;
-  const token = await firebaseLogin(env);
-  const a = await fsGet(env, 'config/autopublicar', token).catch(() => null);
+async function cfgPagina(env, token, pageId) {
+  const p = await fsGet(env, `redes_paginas/${pageId}`, token).catch(() => null);
+  if (!p || !p.tokenCifrado) return null;
+  return { pageId, pageName: p.nombre, igId: p.igId || '', igUser: p.igUser || '', pageToken: await rdDescifrar(env, p.tokenCifrado) };
+}
+/* Publica el siguiente diseño de una cola si toca (hora y frecuencia). Sirve para DGP y para cada cliente */
+async function publicarCola(env, token, ruta, a, cfg, nombre) {
   if (!a || !a.activo || !Array.isArray(a.cola) || !a.cola.length) return;
   const { hora, fecha } = horaNY();
   if (hora !== Number(a.hora ?? 10)) return;
   const cada = Math.max(1, Number(a.cadaDias) || 2);
   if (a.ultimaFecha && (fecha <= a.ultimaFecha || diasEntre(a.ultimaFecha, fecha) < cada)) return;
-  const cfg = await rdConfig(env, token).catch(() => null);
-  if (!cfg) { await tgEnviar(env, '⚠️ <b>Publicación automática</b>: Facebook e Instagram están desconectados del panel. Vuelve a conectarlos en Contenido digital.').catch(() => {}); return; }
+  const quien = nombre ? ` · ${escHtml(nombre)}` : '';
+  if (!cfg) { await tgEnviar(env, `⚠️ <b>Publicación automática${quien}</b>: la página no está conectada. Revisa el acceso en Facebook y vuelve a pulsar Conectar en el panel.`).catch(() => {}); return; }
   const idx = Number(a.indice) || 0;
   // La lista no se repite: cuando se acaba, avisa una sola vez para preparar contenido nuevo
   if (idx >= a.cola.length) {
     if (!a.finAvisado) {
-      await fsUpdate(env, 'config/autopublicar', { finAvisado: true }, ['finAvisado'], token).catch(() => {});
-      await tgEnviar(env, `📣 <b>Publicación automática</b>: ya se publicaron los ${a.cola.length} diseños del plan. No se repetirán.\nPrepara el contenido del próximo mes y cárgalo en el panel → Contenido digital → Publicación automática.`).catch(() => {});
+      await fsUpdate(env, ruta, { finAvisado: true }, ['finAvisado'], token).catch(() => {});
+      await tgEnviar(env, `📣 <b>Publicación automática${quien}</b>: ya se publicaron los ${a.cola.length} diseños del plan. No se repetirán.\nPrepara el contenido del próximo mes y cárgalo en el panel.`).catch(() => {});
     }
     return;
   }
@@ -3235,18 +3239,54 @@ async function autoPublicar(env) {
   const urls = Array.isArray(item.urls) && item.urls.length ? item.urls : [item.url];
   if (urls.some(u => !String(u || '').startsWith(RD_MEDIA))) return;
   // Se marca antes de publicar para que nunca se publique dos veces el mismo día
-  await fsUpdate(env, 'config/autopublicar', { ultimaFecha: fecha, indice: idx + 1 }, ['ultimaFecha', 'indice'], token);
+  await fsUpdate(env, ruta, { ultimaFecha: fecha, indice: idx + 1 }, ['ultimaFecha', 'indice'], token);
   const redes = a.redes || { facebook: true, instagram: true };
   const out = await rdPublicarMedia(cfg, { media: urls[0], medias: urls, formato: item.formato || 'feed', texto: String(item.texto || '').slice(0, 2200), facebook: redes.facebook !== false, instagram: redes.instagram !== false });
   if (out.instagram && out.instagram.pendiente) out.instagram = await rdTerminarIg(cfg, out.instagram.contenedor).catch(e => ({ error: e.message }));
   const est = r => r ? (r.ok ? 'publicado' : 'error') : '';
-  await fsAgregarALista(env, 'config/autopublicar', 'historial', { archivo: item.archivo || '', titulo: item.titulo || '', fecha, facebook: est(out.facebook), instagram: est(out.instagram) }, token).catch(() => {});
-  await fsCreate(env, 'publicaciones', { archivo: String(urls[0]).slice(RD_MEDIA.length), formato: item.formato || 'feed', facebook: est(out.facebook), instagram: est(out.instagram), por: 'automático', fecha: new Date() }, token).catch(() => {});
+  await fsAgregarALista(env, ruta, 'historial', { archivo: item.archivo || '', titulo: item.titulo || '', fecha, facebook: est(out.facebook), instagram: est(out.instagram) }, token).catch(() => {});
+  await fsCreate(env, 'publicaciones', { archivo: String(urls[0]).slice(RD_MEDIA.length), formato: item.formato || 'feed', cuenta: nombre || 'DGP', facebook: est(out.facebook), instagram: est(out.instagram), por: 'automático', fecha: new Date() }, token).catch(() => {});
   const linea = (n, r) => r ? `${n}: ${r.ok ? '✅ publicado' : '❌ ' + escHtml(r.error || 'error')}` : '';
   const quedan = a.cola.length - idx - 1;
   const sig = a.cola[idx + 1];
-  if (!sig) await fsUpdate(env, 'config/autopublicar', { finAvisado: true }, ['finAvisado'], token).catch(() => {});
-  await tgEnviar(env, `📣 <b>Publicación automática</b> (${idx + 1} de ${a.cola.length})\n${escHtml(item.titulo || 'Diseño')}\n\n${[linea('Facebook', out.facebook), linea('Instagram', out.instagram)].filter(Boolean).join('\n')}\n\n${sig ? `Próxima en ${cada} día${cada === 1 ? '' : 's'}: ${escHtml(sig.titulo || '')} · quedan ${quedan}` : '⚠️ Era la última del plan. Prepara el contenido del próximo mes.'}`).catch(() => {});
+  if (!sig) await fsUpdate(env, ruta, { finAvisado: true }, ['finAvisado'], token).catch(() => {});
+  await tgEnviar(env, `📣 <b>Publicación automática${quien}</b> (${idx + 1} de ${a.cola.length})\n${escHtml(item.titulo || 'Diseño')}\n\n${[linea('Facebook', out.facebook), linea('Instagram', out.instagram)].filter(Boolean).join('\n')}\n\n${sig ? `Próxima en ${cada} día${cada === 1 ? '' : 's'}: ${escHtml(sig.titulo || '')} · quedan ${quedan}` : '⚠️ Era la última del plan. Prepara el contenido del próximo mes.'}`).catch(() => {});
+}
+async function autoPublicar(env) {
+  if (!rdListo(env)) return;
+  const token = await firebaseLogin(env);
+  // DGP
+  const a = await fsGet(env, 'config/autopublicar', token).catch(() => null);
+  if (a && a.activo) await publicarCola(env, token, 'config/autopublicar', a, await rdConfig(env, token).catch(() => null), '').catch(e => avisoError(env, 'Publicación automática', e));
+  // Clientes con Social Media Autopilot
+  const clientes = await fsList(env, 'autopilot', token).catch(() => []);
+  for (const c of clientes.filter(x => x.activo && x.pageId)) {
+    await publicarCola(env, token, `autopilot/${c._id}`, c, await cfgPagina(env, token, c.pageId).catch(() => null), c.nombre || c._id).catch(e => avisoError(env, `Autopilot ${c.nombre || c._id}`, e));
+  }
+}
+
+/* ── Social Media Autopilot: lo que ve el cliente en el panel de su web (autopilot.js) ──
+   GET  /autopilot/estado?c=ID&k=CLAVE  → su calendario y lo publicado
+   POST /autopilot/pausa {c, k, activo} → pausar o reanudar */
+async function handleAutopilot(request, env) {
+  const h = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
+  const r = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...h } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  const url = new URL(request.url);
+  const b = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+  const id = String(b.c || url.searchParams.get('c') || ''), clave = String(b.k || url.searchParams.get('k') || '');
+  if (!/^[a-z0-9_-]{2,60}$/i.test(id) || clave.length < 16) return r({ error: 'Enlace no válido' }, 400);
+  const token = await firebaseLogin(env);
+  const a = await fsGet(env, `autopilot/${id}`, token).catch(() => null);
+  if (!a || a.clave !== clave) return r({ error: 'Enlace no válido' }, 403);
+  if (url.pathname.endsWith('/pausa')) {
+    if (request.method !== 'POST') return r({ error: 'Método no permitido' }, 405);
+    await fsUpdate(env, `autopilot/${id}`, { activo: !!b.activo }, ['activo'], token);
+    await tgEnviar(env, `📣 <b>Social Media Autopilot</b> · ${escHtml(a.nombre || id)}: el cliente ${b.activo ? 'reanudó' : 'pausó'} las publicaciones desde su panel.`).catch(() => {});
+    return r({ ok: true, activo: !!b.activo });
+  }
+  const cola = (a.cola || []).map(x => ({ titulo: x.titulo, imagen: (x.urls || [x.url])[0], imagenes: x.urls || [x.url], texto: x.texto, formato: x.formato }));
+  return r({ nombre: a.nombre, pagina: a.pageName || '', ig: a.igUser || '', activo: !!a.activo, cadaDias: Number(a.cadaDias) || 2, hora: Number(a.hora ?? 10), indice: Number(a.indice) || 0, ultimaFecha: a.ultimaFecha || null, cola, historial: a.historial || [] });
 }
 
 async function handleRedes(request, env, ctx) {
@@ -3271,10 +3311,15 @@ async function handleRedes(request, env, ctx) {
       const pag = pags.find(p => p.id === RD_PAGINA_PREFERIDA) || pags.find(p => p.instagram_business_account) || pags[0];
       if (!pag) return rdHtml('No encontré tu página', 'En la ventana de Facebook asegúrate de elegir la página de DGP y su cuenta de Instagram.', false);
       const token = await firebaseLogin(env);
+      for (const pg of pags) {
+        const igp = pg.instagram_business_account || {};
+        await fetch(docUrl(env, `redes_paginas/${pg.id}`), { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: toValue({ nombre: pg.name, igId: igp.id || '', igUser: igp.username || '', tokenCifrado: await rdCifrar(env, pg.access_token), actualizado: new Date() }).mapValue.fields }) }).catch(() => {});
+      }
       const ig = pag.instagram_business_account || {};
       await fetch(docUrl(env, 'config/redes'), { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: toValue({ pageId: pag.id, pageName: pag.name, igId: ig.id || '', igUser: ig.username || '', tokenCifrado: await rdCifrar(env, pag.access_token), conectadoPor: email, conectadoAt: new Date() }).mapValue.fields }) });
-      return rdHtml('¡Listo, conectado!', `Página: <b>${escHtml(pag.name)}</b>${ig.username ? `<br>Instagram: <b>@${escHtml(ig.username)}</b>` : '<br><b>Ojo:</b> no encontré un Instagram profesional vinculado a esta página.'}<br><br>Ya puedes cerrar esta ventana.`, true);
+      return rdHtml('¡Listo, conectado!', `Página: <b>${escHtml(pag.name)}</b>${ig.username ? `<br>Instagram: <b>@${escHtml(ig.username)}</b>` : '<br><b>Ojo:</b> no encontré un Instagram profesional vinculado a esta página.'}<br><br>${pags.length > 1 ? `<br><br>Además quedaron disponibles <b>${pags.length - 1}</b> página${pags.length - 1 === 1 ? '' : 's'} más para Social Media Autopilot.` : ''}<br><br>Ya puedes cerrar esta ventana.`, true);
     } catch (e) { return rdHtml('No se pudo conectar', escHtml(e.message), false); }
   }
 
@@ -3292,6 +3337,10 @@ async function handleRedes(request, env, ctx) {
     // Apps de tipo Empresa usan una "configuración" de Inicio de sesión (META_CONFIG_ID); las demás, la lista de permisos
     const q = new URLSearchParams({ client_id: env.META_APP_ID, redirect_uri: `${BOT_URL}/redes/callback`, state, response_type: 'code', ...(env.META_CONFIG_ID ? { config_id: env.META_CONFIG_ID, override_default_response_type: 'true' } : { scope: RD_PERMISOS }) });
     return json(request, { url: `https://www.facebook.com/${RD_VER}/dialog/oauth?${q}` });
+  }
+  if (paso === 'paginas') {
+    const lista = await fsList(env, 'redes_paginas', quien.token).catch(() => []);
+    return json(request, { paginas: lista.map(x => ({ id: x._id, nombre: x.nombre, ig: x.igUser || '' })) });
   }
   if (paso === 'desconectar') {
     await fetch(docUrl(env, 'config/redes'), { method: 'DELETE', headers: { Authorization: `Bearer ${quien.token}` } });

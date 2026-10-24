@@ -1024,6 +1024,13 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .cal-fila.sig .cal-pill { background:var(--blue); color:#fff; }
 .cal-acts { display:flex; gap:6px; }
 @media (max-width:600px) { .cd-tabs { gap:6px; } .cd-tab { padding:10px; } .cd-tab small { display:none; } .cal-fila { grid-template-columns:40px 48px 1fr; } .cal-img { width:48px; height:60px; } .cal-acts { grid-column:3; } }
+.sa-lista { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.sa-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+.sa-top { display:flex; align-items:center; gap:12px; } .sa-mid { font-size:13px; color:var(--text-mid); } .sa-mid b { color:var(--black); font-size:16px; }
+.sa-acts { display:flex; gap:6px; flex-wrap:wrap; }
+.sa-guia { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px 18px; font-size:13px; color:var(--text-mid); line-height:1.6; } .sa-guia b { color:var(--black); } .sa-guia ol { margin:8px 0 0 18px; padding:0; }
+#sa-cod { width:100%; box-sizing:border-box; font:12px/1.5 ui-monospace,Menlo,monospace; background:#f8fafc; color:#0f172a; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px; resize:none; }
+@media (max-width:600px) { #sa-stats { grid-template-columns:1fr 1fr !important; } }
 .cd-sec-intro { font-size:12.5px; color:var(--text-mid); margin:0 0 12px; line-height:1.6; }
 .md-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:start; }
 .md-card { background:var(--white,#fff); border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px; }
@@ -2121,6 +2128,9 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   <button class="nav-tab" onclick="switchPage('contenido', this)">
     <i class="fa-solid fa-share-nodes"></i> Redes y publicaciones
   </button>
+  <button class="nav-tab" onclick="switchPage('autopilot', this)">
+    <i class="fa-solid fa-robot"></i> Social Media Autopilot
+  </button>
   <div class="solo-movil">
     <div class="nav-group">Herramientas</div>
     <button class="nav-tab" onclick="cerrarMenuMovil();abrirDiagnostico()"><i class="fa-solid fa-heart-pulse"></i> Probar sistema</button>
@@ -2644,6 +2654,23 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   </div>
 </div>
 
+<div id="page-autopilot" class="page">
+  <div class="proy-main" style="max-width:1000px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Social Media Autopilot</div>
+        <div style="font-size:11px;color:var(--text-soft);">Publicaciones automáticas en el Facebook e Instagram de tus clientes con web. 15 posts al mes con su marca por $155 mensuales.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-logout" onclick="_sa.paginas=null;renderAutopilot(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
+        <button class="btn-nuevo-cliente" onclick="saEditar('')">+ Agregar cliente</button>
+      </div>
+    </div>
+    <div id="sa-stats" class="cb-tiles" style="margin-bottom:14px;grid-template-columns:repeat(3,1fr)"></div>
+    <div id="sa-body"></div>
+  </div>
+</div>
+
 <div id="page-smm" class="page">
   <div class="proy-main">
     <div class="proy-header">
@@ -3073,6 +3100,7 @@ const CATALOGO_BASE = [
   ['Seguidores TikTok', 'TikTok 1,000 Seguidores', 63, 59], ['Seguidores TikTok', 'TikTok 3,000 Seguidores', 86, 80], ['Seguidores TikTok', 'TikTok 5,000 Seguidores', 144, 134], ['Seguidores TikTok', 'TikTok 10,000 Seguidores', 219, 204],
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135],
+  ['Redes sociales', 'Social Media Autopilot · 15 posts al mes en Facebook e Instagram', 155, 144],
   ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233], ['Aliados', 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', 300, 279]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
@@ -3122,7 +3150,7 @@ function initCatalogo() {
       x.nombre = nombre;
       db.collection('catalogo').doc(x._id).update({ nombre, ...(/1 año/.test(nombre) ? { precio: 250, precioEur: 233 } : {}) }).catch(() => {});
     });
-    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|despegue/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|despegue|autopilot/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
@@ -3409,6 +3437,7 @@ function switchPage(page, btn) {
   if (page === 'smm')        renderSmm();
   if (page === 'miweb')      renderMiWeb();
   if (page === 'contenido')  renderContenido();
+  if (page === 'autopilot')  renderAutopilot();
   if (page === 'prospectos') renderProspectos();
   if (page === 'llamadas')   renderLlamadas();
   if (page === 'aliados')    renderAliados();
@@ -4771,6 +4800,147 @@ async function rdPublicar(i) {
     toast(fallo ? 'Revisa: alguna red no se pudo publicar' : '¡Publicado!', fallo ? 'err' : 'ok');
     btn.textContent = 'Listo'; btn.onclick = closePortalModal; btn.disabled = false;
   } catch (e) { res.innerHTML = `<div style="color:#dc2626;font-size:12.5px;margin:8px 0">${esc(e.message)}</div>`; btn.disabled = false; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SOCIAL MEDIA AUTOPILOT — publicaciones automáticas en las redes de los clientes ($155/mes)
+   Firestore: autopilot/{id} (la misma forma que config/autopublicar + pageId, clave, cliente).
+   El cliente lo ve en el panel de su web con autopilot.js. Los planes de cada cliente están en
+   contenido/autopilot/<id>/planes.json → [{ mes, titulo, archivo }] y cada plan → { items: [{ titulo, archivo, archivoEn, texto, formato }] }.
+═══════════════════════════════════════════════════════ */
+let _sa = { lista: null, paginas: null };
+const SA_PRECIO = 155;
+async function renderAutopilot(fresco) {
+  const body = document.getElementById('sa-body'); if (!body) return;
+  if (!_sa.lista || fresco) {
+    body.innerHTML = '<div class="pt-empty">Cargando…</div>';
+    try { const s = await db.collection('autopilot').get(); _sa.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); }
+    catch (e) { body.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudo cargar: ${esc(e.message)}</div>`; return; }
+  }
+  rdCargar();
+  const L = _sa.lista;
+  const activos = L.filter(x => x.activo).length;
+  document.getElementById('sa-stats').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Clientes</div><div class="cb-tile-v">${L.length}</div><div class="cb-tile-n">${activos} publicando</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Ingreso mensual</div><div class="cb-tile-v" style="color:var(--green-dark)">$${(activos * SA_PRECIO).toLocaleString('en-US')}</div><div class="cb-tile-n">$${SA_PRECIO} por cliente activo</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Por preparar</div><div class="cb-tile-v">${L.filter(x => (Number(x.indice) || 0) >= (x.cola || []).length).length}</div><div class="cb-tile-n">Sin posts pendientes</div></div>`;
+  if (!L.length) {
+    body.innerHTML = `<div class="sa-guia"><b>Cómo se agrega un cliente</b>
+      <ol><li>El cliente debe tener su página web con DGP.</li>
+      <li>En su Meta Business Suite, el cliente te da acceso a su página de Facebook (con su Instagram vinculado) con permiso de <b>Contenido</b>.</li>
+      <li>Aquí pulsas <b>Agregar cliente</b> y eliges su página.</li>
+      <li>Pides a Claude sus 15 posts del mes y los cargas con <b>Cargar plan</b>.</li>
+      <li>Copias el <b>código para su panel</b> y se pega en el panel de su web.</li>
+      <li>Creas su suscripción de $${SA_PRECIO}/mes en Suscripciones.</li></ol></div>`;
+    return;
+  }
+  body.innerHTML = `<div class="sa-lista">${L.map(saCard).join('')}</div>`;
+}
+function saCard(a) {
+  const total = (a.cola || []).length, i = Math.min(Number(a.indice) || 0, total);
+  const sig = (a.cola || [])[Number(a.indice) || 0];
+  const f = a.activo && sig ? _apFechas(a)[sig.archivo] : null;
+  const estado = !a.pageId ? ['Sin página', 'error'] : !total ? ['Sin plan', 'plan'] : i >= total ? ['Plan terminado', 'error'] : a.activo ? ['Publicando', 'ok'] : ['Pausado', 'plan'];
+  return `<div class="sa-card">
+    <div class="sa-top"><div class="pr-av" style="background:${clColor(a.nombre || '?')}">${esc(clIniciales(a.nombre || '?'))}</div>
+      <div style="flex:1;min-width:0"><div class="pr-name">${esc(a.nombre || a._id)}</div><div class="pr-sub">${esc([a.pageName, a.igUser ? '@' + a.igUser : ''].filter(Boolean).join(' · ') || 'Sin página conectada')}</div></div>
+      <span class="cal-pill ${estado[1]}">${estado[0]}</span></div>
+    <div class="sa-mid"><div><b>${i}</b> de ${total || 0} publicados</div><div class="ll-sub">${sig ? `Próximo: ${esc(sig.titulo)}${f ? ' · ' + esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : ''}` : total ? 'Prepara el plan del próximo mes' : 'Carga el primer plan'} · ${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))}</div></div>
+    <div class="sa-acts">
+      <button class="ll-mini" onclick="saPlan('${a._id}')">Cargar plan</button>
+      <button class="ll-mini" onclick="saCalendario('${a._id}')">Calendario</button>
+      <button class="ll-mini" onclick="saCodigo('${a._id}')">Código para su panel</button>
+      <button class="ll-mini" onclick="saEditar('${a._id}')">Ajustes</button>
+      ${total ? `<button class="ll-mini" onclick="saActivar('${a._id}', ${!a.activo})">${a.activo ? 'Pausar' : 'Activar'}</button>` : ''}
+    </div></div>`;
+}
+async function _saPaginas() {
+  if (_sa.paginas) return _sa.paginas;
+  const d = await rdApi('paginas').catch(e => ({ error: e.message }));
+  _sa.paginas = d.paginas || [];
+  return _sa.paginas;
+}
+async function saEditar(id) {
+  const a = id ? _sa.lista.find(x => x._id === id) : {};
+  const pags = await _saPaginas();
+  ptModal(id ? 'Ajustes del cliente' : 'Agregar cliente', 'Social Media Autopilot · $' + SA_PRECIO + '/mes', `<div class="rd-form">
+    <label class="rd-lbl">Nombre del negocio</label>
+    <input id="sa-nombre" class="ap-sel" list="sa-cl" value="${esc(a.nombre || '')}" placeholder="Ej. Casanova Car Care">
+    <datalist id="sa-cl">${(clientesList || []).map(c => `<option value="${esc(c.empresa || clNombre(c))}">`).join('')}</datalist>
+    <label class="rd-lbl">Su página de Facebook (con Instagram vinculado)</label>
+    <select id="sa-pag" class="ap-sel"><option value="">Elige la página…</option>${pags.map(p => `<option value="${p.id}" ${a.pageId === p.id ? 'selected' : ''}>${esc(p.nombre)}${p.ig ? ' · @' + esc(p.ig) : ' · sin Instagram'}</option>`).join('')}</select>
+    <div class="ll-sub">¿No aparece? El cliente debe darte acceso a su página en Meta Business Suite. Después pulsa <b>Desconectar</b> y <b>Conectar</b> en Redes y publicaciones para actualizar la lista.</div>
+    <label class="rd-lbl">Su página web</label>
+    <input id="sa-web" class="ap-sel" value="${esc(a.web || '')}" placeholder="https://…">
+    <label class="rd-lbl">Cada cuánto</label>
+    <select id="sa-cada" class="ap-sel">${[1, 2, 3].map(n => `<option value="${n}" ${Number(a.cadaDias || 2) === n ? 'selected' : ''}>${_apCada(n)}</option>`).join('')}</select>
+    <label class="rd-lbl">A qué hora (hora de Florida)</label>
+    <select id="sa-hora" class="ap-sel">${Array.from({ length: 15 }, (_, i) => i + 7).map(h => `<option value="${h}" ${Number(a.hora ?? 11) === h ? 'selected' : ''}>${_apHora(h)}</option>`).join('')}</select>
+    <div style="display:flex;gap:16px;flex-wrap:wrap"><label class="rd-chk"><input type="checkbox" id="sa-fb" ${a.redes?.facebook !== false ? 'checked' : ''}> ${_rdIco.fb} Facebook</label><label class="rd-chk"><input type="checkbox" id="sa-ig" ${a.redes?.instagram !== false ? 'checked' : ''}> ${_rdIco.ig} Instagram</label></div>
+    <button class="ll-btn" style="background:var(--blue)" onclick="saGuardar('${id || ''}')">Guardar</button></div>`);
+}
+async function saGuardar(id) {
+  const nombre = document.getElementById('sa-nombre').value.trim();
+  const pageId = document.getElementById('sa-pag').value;
+  if (nombre.length < 2) return toast('Escribe el nombre del negocio', 'err');
+  if (!pageId) return toast('Elige la página de Facebook del cliente', 'err');
+  const p = (_sa.paginas || []).find(x => x.id === pageId) || {};
+  const datos = { nombre, pageId, pageName: p.nombre || '', igUser: p.ig || '', web: document.getElementById('sa-web').value.trim(),
+    cadaDias: Number(document.getElementById('sa-cada').value), hora: Number(document.getElementById('sa-hora').value),
+    redes: { facebook: document.getElementById('sa-fb').checked, instagram: document.getElementById('sa-ig').checked }, actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    if (id) await db.collection('autopilot').doc(id).update(datos);
+    else {
+      const nid = ptNorm(nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || genId('ap');
+      if (_sa.lista.some(x => x._id === nid)) return toast('Ya existe un cliente con ese nombre', 'err');
+      const clave = Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(16).padStart(2, '0')).join('');
+      await db.collection('autopilot').doc(nid).set({ ...datos, activo: false, cola: [], indice: 0, historial: [], clave, creadoPor: currentUser?.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    closePortalModal(); toast(id ? 'Cliente actualizado' : 'Cliente agregado. Ahora carga su plan.', 'ok'); renderAutopilot(true);
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function saPlan(id) {
+  const a = _sa.lista.find(x => x._id === id); if (!a) return;
+  let planes = [];
+  try { const r = await fetch(`contenido/autopilot/${id}/planes.json?v=${Date.now()}`); if (r.ok) planes = await r.json(); } catch (e) {}
+  ptModal('Cargar plan', a.nombre, planes.length ? `<div class="rd-form">
+      <div class="ll-sub">Elige el plan. Reemplaza la lista pendiente y empieza desde el primer post (lo ya publicado queda en el historial).</div>
+      ${planes.map(p => `<button class="ll-mini" style="justify-content:flex-start;padding:12px" onclick="saCargarPlan('${id}','${esc(p.archivo)}')"><b>${esc(p.titulo || p.mes)}</b>&nbsp;· ${esc(p.mes || '')}</button>`).join('')}
+    </div>` : `<div class="rd-form"><div class="ll-sub">Este cliente aún no tiene planes preparados. Pídele a Claude: <b>"Crea los 15 posts de ${esc(a.nombre)} para este mes"</b>, con su logo, colores, servicios y su Instagram. Aparecerán aquí listos para cargar.</div></div>`);
+}
+async function saCargarPlan(id, archivo) {
+  try {
+    const base = `contenido/autopilot/${id}/`;
+    const r = await fetch(base + archivo + '?v=' + Date.now()); if (!r.ok) throw new Error('No se encontró el plan');
+    const plan = await r.json();
+    const abs = f => new URL(base + f, location.href).href;
+    const cola = (plan.items || []).map(x => ({ archivo: x.archivo, titulo: x.titulo, url: abs(x.archivo), ...(x.archivoEn ? { urls: [abs(x.archivo), abs(x.archivoEn)] } : {}), texto: x.texto || '', formato: x.formato || (x.archivoEn ? 'carrusel' : 'feed') }));
+    if (!cola.length) throw new Error('El plan está vacío');
+    await db.collection('autopilot').doc(id).update({ cola, indice: 0, finAvisado: false, plan: plan.titulo || archivo, activo: true });
+    closePortalModal(); toast(`Plan cargado: ${cola.length} posts. Ya está publicando.`, 'ok'); renderAutopilot(true);
+  } catch (e) { toast(e.message, 'err'); }
+}
+function saCalendario(id) {
+  const a = _sa.lista.find(x => x._id === id); if (!a) return;
+  const fs = _apFechas(a), hechos = new Map((a.historial || []).map(x => [x.archivo, x]));
+  const filas = (a.cola || []).map(c => {
+    const h = hechos.get(c.archivo), f = h ? new Date(h.fecha + 'T12:00:00') : fs[c.archivo];
+    return `<div class="ap-item" style="cursor:default"><img src="${esc(c.url)}" alt=""><span><b>${esc(c.titulo)}</b><small>${f ? esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : 'Pausado'}${c.formato === 'carrusel' ? ' · Carrusel' : ''}</small></span>${h ? '<span class="ap-ok">✓ Publicado</span>' : ''}</div>`;
+  }).join('');
+  ptModal('Calendario', a.nombre + (a.plan ? ' · ' + a.plan : ''), `<div class="ap-lista" style="max-height:60vh">${filas || '<div class="ll-sub" style="padding:12px">Sin plan cargado.</div>'}</div>`);
+}
+function saCodigo(id) {
+  const a = _sa.lista.find(x => x._id === id); if (!a) return;
+  const cod = `<div id="dgp-autopilot" data-cliente="${a._id}" data-clave="${a.clave}" data-lang="es"></div><script src="https://adv.dgp-link.com/autopilot.js" defer><\/script>`;
+  ptModal('Código para su panel', a.nombre, `<div class="rd-form">
+    <div class="ll-sub">Pega esta línea en el panel de administración de su web, donde quieras que aparezca la sección de redes. Para inglés cambia <b>data-lang="es"</b> por <b>"en"</b>.</div>
+    <textarea id="sa-cod" rows="5" readonly onclick="this.select()">${esc(cod)}</textarea>
+    <button class="ll-btn" style="background:var(--blue)" onclick="const t=document.getElementById('sa-cod');navigator.clipboard.writeText(t.value).then(()=>toast('Código copiado','ok')).catch(()=>{t.select();toast('Selecciona y copia el código','err')})">Copiar código</button>
+    <div class="ll-sub">El cliente solo ve su calendario, lo publicado y un botón para pausar. No ve claves ni nada de otros clientes.</div></div>`);
+}
+async function saActivar(id, activo) {
+  try { await db.collection('autopilot').doc(id).update({ activo }); toast(activo ? 'Publicando de nuevo' : 'Pausado', 'ok'); renderAutopilot(true); }
+  catch (e) { toast(e.message, 'err'); }
 }
 
 /* Mensajes para difundir (WhatsApp, estados, grupos, redes y mensajes directos). Para agregar uno, súmalo a la lista. */
@@ -9150,7 +9320,7 @@ const SUS_SUGERENCIAS = {
   hosting: ['Hosting mensual', 'Hosting anual', 'Hosting + correo corporativo'],
   dominio: ['Renovación de dominio .com', 'Dominio .net', 'Dominio + SSL'],
   mantenimiento: ['Mantenimiento web mensual', 'Soporte técnico'],
-  marketing: ['WhatsApp Marketing Oro', 'Manejo de redes', 'Publicidad mensual'],
+  marketing: ['Social Media Autopilot', 'WhatsApp Marketing Oro', 'Manejo de redes', 'Publicidad mensual'],
   otro: []
 };
 const SUS_MESES = { semanal: 12 / 52, mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
