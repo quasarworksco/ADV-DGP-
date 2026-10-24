@@ -994,6 +994,36 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
 .cd-sec { margin-bottom:26px; }
 .md-atajo { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:var(--blue); color:#fff; border:none; border-radius:14px; padding:14px 16px; margin-bottom:20px; cursor:pointer; box-shadow:0 8px 20px rgba(20,56,204,.25); font-family:'Plus Jakarta Sans',sans-serif; }
 .md-atajo span { display:flex; flex-direction:column; gap:2px; } .md-atajo b { font-size:14px; } .md-atajo small { font-size:12px; opacity:.85; }
+.cd-prev { position:relative; }
+.cd-carr { display:flex; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; } .cd-carr::-webkit-scrollbar { display:none; }
+.cd-carr img { flex:0 0 100%; width:100%; height:100%; object-fit:cover; scroll-snap-align:start; }
+.cd-carr-n { position:absolute; top:10px; right:10px; background:rgba(11,22,64,.75); color:#fff; font:700 11px 'Plus Jakarta Sans',sans-serif; letter-spacing:.5px; border-radius:999px; padding:4px 9px; pointer-events:none; }
+.ap-est { display:inline-flex; align-items:center; gap:6px; font:700 11px 'Plus Jakarta Sans',sans-serif; border-radius:999px; padding:4px 10px; margin:2px 0 8px; }
+.ap-est.ok { background:rgba(5,150,105,.12); color:#059669; } .ap-est.prox { background:rgba(20,56,204,.1); color:var(--blue); } .ap-est.plan { background:var(--off); color:var(--text-soft); }
+.ap-banner { background:#eef2ff; border:1px solid #c7d2fe; border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:#0f172a; font-size:12.5px; }
+.ap-item .ap-ok { margin-left:auto; flex-shrink:0; font:700 11px 'Plus Jakarta Sans',sans-serif; color:#059669; }
+.cd-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.cd-tab { text-align:left; border:1.5px solid var(--border); background:var(--white); border-radius:14px; padding:12px 14px; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; display:flex; flex-direction:column; gap:2px; color:var(--black); }
+.cd-tab b { font-size:14px; } .cd-tab small { font-size:11.5px; color:var(--text-soft); }
+.cd-tab.on { border-color:var(--blue); box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent); } .cd-tab.on b { color:var(--blue); }
+.cd-tab:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.cal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.cal-h { font:800 16px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
+.cal-aviso { background:var(--white); border:1px dashed var(--border); border-radius:12px; padding:10px 14px; font-size:12.5px; color:var(--text-mid); margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.cal-lista { background:var(--white); border:1px solid var(--border); border-radius:16px; padding:6px 14px 10px; }
+.cal-mes { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-soft); padding:14px 2px 6px; }
+.cal-fila { display:grid; grid-template-columns:46px 56px 1fr auto; gap:14px; align-items:center; padding:10px 2px; border-top:1px solid var(--border); }
+.cal-mes + .cal-fila { border-top:none; }
+.cal-fila.sig { background:color-mix(in srgb,var(--blue) 6%,transparent); border-radius:12px; padding-inline:10px; margin-inline:-8px; }
+.cal-dia { text-align:center; line-height:1; } .cal-dia b { display:block; font:800 22px 'Plus Jakarta Sans',sans-serif; color:var(--black); font-variant-numeric:tabular-nums; } .cal-dia span { font:700 10px 'Plus Jakarta Sans',sans-serif; text-transform:uppercase; letter-spacing:1px; color:var(--text-soft); }
+.cal-img { width:56px; height:70px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
+.cal-fila.ok .cal-img { opacity:.7; }
+.cal-info { min-width:0; } .cal-t { font:700 13.5px 'Plus Jakarta Sans',sans-serif; color:var(--black); } .cal-sub { font-size:11.5px; color:var(--text-soft); margin:2px 0 6px; }
+.cal-pill { display:inline-block; font:700 10.5px 'Plus Jakarta Sans',sans-serif; border-radius:999px; padding:3px 9px; }
+.cal-pill.ok { background:rgba(5,150,105,.12); color:#059669; } .cal-pill.prox { background:color-mix(in srgb,var(--blue) 12%,transparent); color:var(--blue); } .cal-pill.plan { background:var(--off); color:var(--text-soft); } .cal-pill.error { background:rgba(220,38,38,.1); color:#dc2626; }
+.cal-fila.sig .cal-pill { background:var(--blue); color:#fff; }
+.cal-acts { display:flex; gap:6px; }
+@media (max-width:600px) { .cd-tabs { gap:6px; } .cd-tab { padding:10px; } .cd-tab small { display:none; } .cal-fila { grid-template-columns:40px 48px 1fr; } .cal-img { width:48px; height:60px; } .cal-acts { grid-column:3; } }
 .cd-sec-intro { font-size:12.5px; color:var(--text-mid); margin:0 0 12px; line-height:1.6; }
 .md-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:start; }
 .md-card { background:var(--white,#fff); border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px; }
@@ -2089,7 +2119,7 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
     <i class="fa-solid fa-globe"></i> Mi web
   </button>
   <button class="nav-tab" onclick="switchPage('contenido', this)">
-    <i class="fa-solid fa-photo-film"></i> Contenido digital
+    <i class="fa-solid fa-share-nodes"></i> Redes y publicaciones
   </button>
   <div class="solo-movil">
     <div class="nav-group">Herramientas</div>
@@ -2603,11 +2633,12 @@ html.dark [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),
   <div class="proy-main" style="max-width:1100px;">
     <div class="proy-header">
       <div>
-        <div class="panel-title-v" style="margin-bottom:2px;">Contenido digital</div>
-        <div style="font-size:11px;color:var(--text-soft);">Videos, imágenes y mensajes de DGP listos para historias, publicaciones, anuncios y WhatsApp. Descárgalos o copia el texto para publicarlos.</div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Redes y publicaciones</div>
+        <div style="font-size:11px;color:var(--text-soft);">Tu calendario de Facebook e Instagram, los diseños listos para publicar y los mensajes para WhatsApp, todo en un lugar.</div>
       </div>
     </div>
     <div id="cd-redes"></div>
+    <div class="cd-tabs" id="cd-tabs" role="tablist"></div>
     <div class="db-pills" id="cd-filtros" style="margin-bottom:16px;flex-wrap:wrap;"></div>
     <div id="cd-grid"></div>
   </div>
@@ -4458,6 +4489,7 @@ async function llAudio(id, sid) {
 ═══════════════════════════════════════════════════════ */
 // Archivos en /contenido/<tipo>/<AAAA-MM>/ — para agregar uno nuevo basta con sumarlo a esta lista
 const CD_TIPOS = {
+  carrusel: { nombre: 'Carruseles ES + EN',  carpeta: 'carruseles', ratio: '4/5',  fmt: 'Carrusel 4:5 · ES + EN' },
   video:    { nombre: 'Videos',              carpeta: 'videos',    ratio: '9/16', fmt: 'Video 9:16 · MP4' },
   historia: { nombre: 'Historias 9:16',      carpeta: 'historias', ratio: '9/16', fmt: 'Historia 9:16 · JPG' },
   post:     { nombre: 'Publicaciones 1:1',   carpeta: 'posts',     ratio: '1/1',  fmt: 'Post 1:1 · JPG' },
@@ -4472,6 +4504,37 @@ const _cdTx = {
   chat: '¿Hablamos? Escríbenos por Messenger o WhatsApp y te contamos cómo dejar tu página web lista en 48 horas. Respondemos en minutos.'
 };
 const CONTENIDO = [
+  // Plan de publicaciones (carrusel: lámina 1 en español, lámina 2 en inglés). La fecha es la del calendario sugerido.
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-10-26', lang: 'es', titulo: "Tu página web desde $280", archivo: 'carrusel-01-planes-web-es.jpg', archivoEn: 'carrusel-01-planes-web-en.jpg',
+    texto: "🌐 Tu página web profesional desde $280, pago único.\nBásico, Estándar o Premium: en español e inglés, adaptada al celular y lista para que tus clientes te escriban por WhatsApp.\n👉 Mira los planes: https://dgpglobalgroup.com/diseno-web/\n\n🇺🇸 Your professional website from $280, one-time payment. Bilingual, mobile-ready and built to get you WhatsApp messages.\n👉 https://dgpglobalgroup.com/en/web-design/\n\n#DiseñoWeb #PaginaWeb #NegociosLatinos #Florida #SmallBusiness" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-10-28', lang: 'es', titulo: "¿Te encuentran en Google?", archivo: 'carrusel-02-google-es.jpg', archivoEn: 'carrusel-02-google-en.jpg',
+    texto: "🔎 Tus clientes te están buscando en Google. ¿Te encuentran a ti o a tu competencia?\nUna página web bien hecha te pone en el mapa con tus servicios, reseñas y un botón para llamarte o escribirte.\n👉 https://dgpglobalgroup.com/diseno-web/\n\n🇺🇸 Customers are searching on Google. Do they find you or your competitor? A well-built website puts you on the map.\n👉 https://dgpglobalgroup.com/en/web-design/\n\n#Google #SEO #PaginaWeb #MarketingDigital #NegociosHispanos" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-10-30', lang: 'es', titulo: "Web para compañías de limpieza", archivo: 'carrusel-03-limpieza-es.jpg', archivoEn: 'carrusel-03-limpieza-en.jpg',
+    texto: "🧽 ¿Tienes una compañía de limpieza? Consigue más clientes con una web que aparece en Google, muestra tus fotos de antes y después y recibe cotizaciones por WhatsApp.\nDesde $280, pago único.\n👉 https://dgpglobalgroup.com/diseno-web/limpieza/\n\n🇺🇸 Own a cleaning company? Get more clients with a website that shows up on Google and receives quote requests on WhatsApp.\n👉 https://dgpglobalgroup.com/en/web-design/cleaning-companies/\n\n#CleaningBusiness #Limpieza #CompañiaDeLimpieza #PaginaWeb #Florida" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-01', lang: 'es', titulo: "Web para contratistas", archivo: 'carrusel-04-construccion-es.jpg', archivoEn: 'carrusel-04-construccion-en.jpg',
+    texto: "🏗️ Contratista: que tu trabajo hable por ti. Muestra tus proyectos, tus servicios y las zonas donde trabajas, y recibe presupuestos directo en tu WhatsApp.\n👉 https://dgpglobalgroup.com/diseno-web/construccion/\n\n🇺🇸 Contractors: let your work speak for you. Show your projects and get estimate requests straight to your WhatsApp.\n👉 https://dgpglobalgroup.com/en/web-design/contractors/\n\n#Contratistas #Construccion #Remodelacion #Contractors #PaginaWeb" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-03', lang: 'es', titulo: "Vende 24/7 con tu tienda online", archivo: 'carrusel-05-tienda-online-es.jpg', archivoEn: 'carrusel-05-tienda-online-en.jpg',
+    texto: "🛍️ Vende las 24 horas con tu tienda online: catálogo con fotos y precios, y pedidos directo a tu WhatsApp.\nPlan Premium desde $950 con 12 meses de hosting incluidos.\n👉 https://dgpglobalgroup.com/diseno-web/tiendas-online/\n\n🇺🇸 Sell 24/7 with your online store: a photo catalog with prices and orders straight to WhatsApp.\n👉 https://dgpglobalgroup.com/en/web-design/online-stores/\n\n#TiendaOnline #Ecommerce #VentasPorWhatsApp #Emprendedores #NegociosLatinos" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-05', lang: 'es', titulo: "Un logo que se recuerda", archivo: 'carrusel-06-logo-es.jpg', archivoEn: 'carrusel-06-logo-en.jpg',
+    texto: "✏️ Un logo que se recuerda vende más. Diseñamos tu identidad visual: logo original, todas sus versiones y manual de marca. Todos los archivos son tuyos.\nDesde $185, pago único.\n👉 https://dgpglobalgroup.com/paquetes/\n\n🇺🇸 A memorable logo sells more. Original logo, every version and brand guidelines. You own all the files. From $185.\n👉 https://dgpglobalgroup.com/en/packages/\n\n#Logo #Branding #IdentidadVisual #DiseñoGrafico #Emprendedores" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-07', lang: 'es', titulo: "Lanza tu marca completa", archivo: 'carrusel-07-paquetes-marca-es.jpg', archivoEn: 'carrusel-07-paquetes-marca-en.jpg',
+    texto: "🚀 Lanza tu marca completa en un solo pago:\n⭐ Básico $320 · ⭐ Intermedio $480 · ⭐ Avanzado $840\nLogo, manual de marca, redes, seguidores y hasta tu página web con panel CRM.\n👉 https://dgpglobalgroup.com/paquetes/\n\n🇺🇸 Launch your whole brand in one payment: Basic $320 · Intermediate $480 · Advanced $840.\n👉 https://dgpglobalgroup.com/en/packages/\n\n#Branding #MarcaPersonal #RedesSociales #Emprendimiento #SmallBusiness" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-09', lang: 'es', titulo: "Deja el Excel: tu CRM a medida", archivo: 'carrusel-08-crm-es.jpg', archivoEn: 'carrusel-08-crm-en.jpg',
+    texto: "📊 Deja el Excel. Clientes, ventas, cobros y tareas en un solo panel, desde la computadora o el celular.\nCRM a medida por $997, pago único y sin mensualidades de programas. Incluye migración de tu Excel, capacitación y 30 días de ajustes.\n👉 https://dgpglobalgroup.com/sistemas/crm/\n\n🇺🇸 No more spreadsheets. Your custom CRM for $997 one-time, no software subscriptions.\n👉 https://dgpglobalgroup.com/en/custom-systems/crm/\n\n#CRM #Software #Productividad #Negocios #Automatizacion" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-11', lang: 'es', titulo: "Sistemas a medida", archivo: 'carrusel-09-sistemas-es.jpg', archivoEn: 'carrusel-09-sistemas-en.jpg',
+    texto: "💻 Si lo puedes imaginar, lo construimos: reservas, inventario, facturación, turnos, membresías y automatizaciones hechas para tu negocio.\nCuéntanos tu idea y te enviamos una propuesta con precio y tiempo de entrega.\n👉 https://dgpglobalgroup.com/sistemas/\n\n🇺🇸 If you can imagine it, we build it: bookings, inventory, invoicing, scheduling and automations.\n👉 https://dgpglobalgroup.com/en/custom-systems/\n\n#SoftwareAMedida #Apps #Automatizacion #Tecnologia #Negocios" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-13', lang: 'es', titulo: "Que te encuentren en el mapa", archivo: 'carrusel-10-google-maps-es.jpg', archivoEn: 'carrusel-10-google-maps-en.jpg',
+    texto: "📍 Que te encuentren en Google Maps. Configuramos tu perfil de Google Business y lo conectamos con tu página web para que te llamen, te escriban y lleguen a tu negocio.\n👉 https://dgpglobalgroup.com/guias/como-aparecer-en-google-maps/\n\n🇺🇸 Get found on Google Maps. We set up your Google Business Profile and connect it to your website.\n👉 https://dgpglobalgroup.com/en/guides/how-to-show-up-on-google-maps/\n\n#GoogleMaps #GoogleBusiness #NegocioLocal #SEOLocal #Florida" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-15', lang: 'es', titulo: "Abre tu LLC y sal a vender", archivo: 'carrusel-11-llc-es.jpg', archivoEn: 'carrusel-11-llc-en.jpg',
+    texto: "🏢 Abre tu LLC y sal a vender. Con nuestros aliados especializados registramos tu LLC y tu EIN, y te dejamos lista tu página web, dominio .com, hosting por un año y tu perfil de Google Business.\nPaquete Despegue Total: $550 en honorarios (los costos del estado se cotizan aparte).\n👉 https://dgpglobalgroup.com/registro-de-empresas/\n\n🇺🇸 Open your LLC and start selling: LLC + EIN, website, .com domain, 1 year of hosting and Google Business. $550 in fees.\n👉 https://dgpglobalgroup.com/en/business-registration/\n\n#LLC #Emprendedores #NegociosEnUSA #EIN #EmpresaEnUSA" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-17', lang: 'es', titulo: "¿Tu web te trae clientes?", archivo: 'carrusel-12-auditoria-es.jpg', archivoEn: 'carrusel-12-auditoria-en.jpg',
+    texto: "🔍 ¿Ya tienes página web pero no te llegan clientes? Te hacemos una auditoría GRATIS: revisamos cómo se ve en el celular, qué tan rápido carga y si aparece en Google, y te enviamos las mejoras concretas.\n👉 https://dgpglobalgroup.com/auditoria-gratis/\n\n🇺🇸 Is your website bringing in clients? Get a FREE audit of mobile, speed and Google, with the exact fixes.\n👉 https://dgpglobalgroup.com/en/free-audit/\n\n#AuditoriaWeb #SEO #PaginaWeb #MarketingDigital #Gratis" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-19', lang: 'es', titulo: "Habla el idioma de tus clientes", archivo: 'carrusel-13-bilingue-es.jpg', archivoEn: 'carrusel-13-bilingue-en.jpg',
+    texto: "🗣️ Habla el idioma de todos tus clientes. Tu web en español y en inglés, con un botón para cambiar de idioma, para atender a la comunidad hispana y a todo el mercado de EE. UU.\n👉 https://dgpglobalgroup.com/diseno-web/\n\n🇺🇸 Speak every customer's language. Your website in English and Spanish with a one-tap switch.\n👉 https://dgpglobalgroup.com/en/web-design/\n\n#Bilingue #NegociosHispanos #PaginaWeb #Marketing #USA" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-21', lang: 'es', titulo: "Convierte visitas en mensajes", archivo: 'carrusel-14-whatsapp-es.jpg', archivoEn: 'carrusel-14-whatsapp-en.jpg',
+    texto: "💬 Convierte visitas en mensajes. Tu web con botón de WhatsApp siempre visible y mensajes listos por servicio: el cliente toca, te escribe y tú cierras la venta.\n👉 https://dgpglobalgroup.com/guias/vender-por-whatsapp-con-pagina-web/\n\n🇺🇸 Turn visitors into messages with an always-visible WhatsApp button and ready-made messages per service.\n👉 https://dgpglobalgroup.com/en/guides/sell-on-whatsapp-with-a-website/\n\n#WhatsAppBusiness #Ventas #PaginaWeb #MarketingDigital #Emprendedores" },
+  { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-23', lang: 'es', titulo: "+50 negocios ya venden con su web", archivo: 'carrusel-15-portafolio-es.jpg', archivoEn: 'carrusel-15-portafolio-en.jpg',
+    texto: "🏆 Más de 50 negocios ya venden con su página web: limpieza, construcción, tiendas, salud y transporte. ¿El tuyo es el siguiente?\n👉 Mira nuestro trabajo: https://dgpglobalgroup.com/portafolio/\n\n🇺🇸 50+ businesses already sell online with their website. Is yours next?\n👉 https://dgpglobalgroup.com/en/portfolio/\n\n#Portafolio #DiseñoWeb #ClientesFelices #NegociosLatinos #Florida" },
   { tipo: 'video', fecha: '2026-10-10', lang: 'es', titulo: 'Motion · Sitios web y sistemas a medida', dur: '31 s', archivo: 'video-motion-web-sistemas-es.mp4', poster: 'video-motion-web-sistemas-es.jpg',
     texto: 'Sitios web y sistemas a medida para negocios que quieren crecer. Construcción, limpieza, salud, tiendas, restaurantes, transporte y más: si lo puedes imaginar, lo construimos. Cuéntanos tu idea por DM o al WhatsApp +1 (239) 823-1738. dgpglobalgroup.com' },
   { tipo: 'video', fecha: '2026-10-10', lang: 'en', titulo: 'Motion · Websites & custom systems', dur: '31 s', archivo: 'video-motion-web-sistemas-en.mp4', poster: 'video-motion-web-sistemas-en.jpg',
@@ -4505,9 +4568,9 @@ const CONTENIDO = [
     texto: 'Is your business missing on Google? We build a website that actually brings customers: live in 24–48 hours, English and Spanish, WhatsApp and ready for Google and Maps. dgpglobalgroup.com' }
 ].map((c, i) => {
   const dir = `contenido/${CD_TIPOS[c.tipo].carpeta}/${c.fecha.slice(0, 7)}/`;
-  return { ...c, i, url: dir + c.archivo, posterUrl: c.poster ? dir + c.poster : '' };
+  return { ...c, i, url: dir + c.archivo, urlEn: c.archivoEn ? dir + c.archivoEn : '', posterUrl: c.poster ? dir + c.poster : '' };
 });
-let _cdFiltro = 'todo', _cdLang = 'todos';
+let _cdFiltro = 'todo', _cdLang = 'todos', _cdVista = 'calendario';
 const _cdMes = f => { const [y, m] = f.split('-'); return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][+m - 1] + ' ' + y; };
 /* ═══════════════════════════════════════════════════════
    REDES — publicar en Facebook e Instagram desde Contenido digital (la clave vive en el Worker)
@@ -4538,7 +4601,7 @@ function rdBarra() {
   if (e.error) return `<div class="rd-bar"><span class="ll-dot err"></span><div style="flex:1">No se pudo revisar la conexión con Facebook: ${esc(e.error)}</div><button class="ll-mini" onclick="rdCargar(true)">Reintentar</button></div>`;
   if (!e.configurado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Publicar en Facebook e Instagram desde aquí</b><br><span class="ll-sub">Falta un paso único: crear la app de Meta y agregar sus claves en Cloudflare.</span></div><button class="ll-mini" onclick="rdAyuda()">Ver cómo</button></div>`;
   if (!e.conectado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Conecta tus redes</b><br><span class="ll-sub">Inicia sesión con Facebook una vez y podrás publicar cada diseño con un botón.</span></div><button class="btn-nuevo-cliente" onclick="rdConectar()">Conectar Facebook e Instagram</button></div>`;
-  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>${apLinea()}`;
+  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>${(() => { const l = apLinea(); return _cdVista === 'calendario' ? '' : l; })()}`;
 }
 function rdAyuda() {
   ptModal('Conectar Facebook e Instagram', 'Se hace una sola vez', `<div class="rd-pasos">
@@ -4569,7 +4632,7 @@ async function apCargar() {
   if (_ap || !(_rd.estado && _rd.estado.conectado)) return;
   _ap = 'cargando';
   try { const d = await db.collection('config').doc('autopublicar').get(); _ap = d.exists ? d.data() : {}; } catch (e) { _ap = {}; }
-  const rb = document.getElementById('cd-redes'); if (rb) rb.innerHTML = rdBarra();
+  if (document.getElementById('page-contenido').classList.contains('active')) renderContenido();
 }
 const _apHora = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'a. m.' : 'p. m.'}`;
 const _apCada = n => ({ 1: 'todos los días', 2: 'interdiario (cada 2 días)', 3: 'cada 3 días' }[n] || `cada ${n} días`);
@@ -4580,22 +4643,46 @@ function _apProxima(a) {
   if (a.ultimaFecha) f.setDate(f.getDate() + (Number(a.cadaDias) || 2));
   if (!a.ultimaFecha && hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
   while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
-  const item = a.cola[(Number(a.indice) || 0) % a.cola.length];
+  const item = a.cola[Number(a.indice) || 0];
+  if (!item) return '';
   return `${f.toLocaleDateString('es-US', { weekday: 'long', day: 'numeric', month: 'short' })}, ${_apHora(Number(a.hora ?? 10))} · ${item.titulo || ''}`;
+}
+function _apFechas(a) {
+  // Fecha estimada de cada diseño pendiente según la última publicación, la frecuencia y la hora
+  const out = {}, cola = a.cola || [], cada = Number(a.cadaDias) || 2, idx = Number(a.indice) || 0;
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  let f = a.ultimaFecha ? new Date(a.ultimaFecha + 'T12:00:00') : new Date(hoy);
+  if (a.ultimaFecha) f.setDate(f.getDate() + cada); else if (hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
+  while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
+  for (let k = idx; k < cola.length; k++) { out[cola[k].archivo] = new Date(f); f.setDate(f.getDate() + cada); }
+  return out;
+}
+function apEstado(c) {
+  const a = (_ap && _ap !== 'cargando') ? _ap : null;
+  const h = a && (a.historial || []).find(x => x.archivo === c.archivo);
+  const fmt = d => d.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  if (h) return `<span class="ap-est ok">Publicado · ${esc(fmt(new Date(h.fecha + 'T12:00:00')))}</span>`;
+  const f = a && a.activo ? _apFechas(a)[c.archivo] : null;
+  if (f) return `<span class="ap-est prox">Se publica · ${esc(fmt(f))}</span>`;
+  return `<span class="ap-est plan">Plan · ${esc(fmt(new Date(c.fecha + 'T12:00:00')))}</span>`;
 }
 function apLinea() {
   if (!(_rd.estado && _rd.estado.conectado)) return '';
   if (!_ap || _ap === 'cargando') { setTimeout(apCargar, 0); return ''; }
   const a = _ap;
-  return `<div class="rd-auto"><span class="ll-dot ${a.activo ? 'ok' : ''}"></span><div style="flex:1"><b>Publicación automática:</b> ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))} · ${(a.cola || []).length} diseño${(a.cola || []).length === 1 ? '' : 's'} en rotación<br><span class="ll-sub">Próxima: ${esc(_apProxima(a))}</span>` : 'desactivada'}</div><button class="ll-mini" onclick="apAbrir()">${a.activo ? 'Ajustar' : 'Activar'}</button></div>`;
+  return `<div class="rd-auto"><span class="ll-dot ${a.activo ? 'ok' : ''}"></span><div style="flex:1"><b>Publicación automática:</b> ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))} · ${Math.min(Number(a.indice) || 0, (a.cola || []).length)} de ${(a.cola || []).length} publicados<br><span class="ll-sub">${(Number(a.indice) || 0) >= (a.cola || []).length ? '<b style="color:#b45309">Plan terminado.</b> Carga el contenido del próximo mes para seguir publicando.' : 'Próxima: ' + esc(_apProxima(a))}</span>` : 'desactivada'}</div><button class="ll-mini" onclick="apAbrir()">${a.activo ? 'Ajustar' : 'Activar'}</button></div>`;
 }
 function apAbrir() {
   const a = (_ap && _ap !== 'cargando') ? _ap : {};
-  const elegibles = CONTENIDO.filter(c => ['post', 'anuncio', 'historia', 'video'].includes(c.tipo));
+  const elegibles = CONTENIDO.filter(c => ['carrusel', 'post', 'anuncio', 'historia', 'video'].includes(c.tipo));
+  const plan = CONTENIDO.filter(c => c.plan);
+  const nombrePlan = plan[0]?.plan || '';
+  const hechos = new Map((a.historial || []).map(x => [x.archivo, x]));
   const enCola = new Set((a.cola || []).map(x => x.archivo));
   // Por defecto: publicaciones y anuncios en español, sin la promo de Venezuela
-  const marcado = c => a.cola ? enCola.has(c.archivo) : (['post', 'anuncio'].includes(c.tipo) && c.lang === 'es' && !/venezuela|185/i.test(c.archivo + c.titulo));
-  const tipoN = { post: 'Post 1:1', anuncio: 'Anuncio 4:5', historia: 'Historia', video: 'Video / reel' };
+  const usaPlan = !a.cola || !plan.some(c => enCola.has(c.archivo));
+  const marcado = c => usaPlan ? !!c.plan : enCola.has(c.archivo);
+  const tipoN = { carrusel: 'Carrusel ES + EN', post: 'Post 1:1', anuncio: 'Anuncio 4:5', historia: 'Historia', video: 'Video / reel' };
   ptModal('Publicación automática', 'El bot publica por ti en Facebook e Instagram', `<div class="rd-form">
     <label class="rd-chk"><input type="checkbox" id="ap-activo" ${a.activo !== false ? 'checked' : ''}> Activar publicación automática</label>
     <label class="rd-lbl">Cada cuánto</label>
@@ -4606,9 +4693,10 @@ function apAbrir() {
       <label class="rd-chk"><input type="checkbox" id="ap-fb" ${a.redes?.facebook !== false ? 'checked' : ''}> ${_rdIco.fb} Facebook</label>
       <label class="rd-chk"><input type="checkbox" id="ap-ig" ${a.redes?.instagram !== false && _rd.estado.ig ? 'checked' : ''} ${_rd.estado.ig ? '' : 'disabled'}> ${_rdIco.ig} Instagram</label>
     </div>
-    <label class="rd-lbl">Diseños que van rotando (en este orden)</label>
-    <div class="ap-lista">${elegibles.map(c => `<label class="ap-item"><input type="checkbox" value="${c.i}" ${marcado(c) ? 'checked' : ''}><img src="${c.tipo === 'video' ? c.posterUrl : c.url}" alt="" loading="lazy"><span><b>${esc(c.titulo)}</b><small>${tipoN[c.tipo]} · ${c.lang === 'es' ? 'Español' : 'English'}</small></span></label>`).join('')}</div>
-    <div class="ll-sub">Usa el texto sugerido de cada diseño. Cuando termina la lista, vuelve a empezar. Te llega un aviso a Telegram cada vez que publica.</div>
+    ${nombrePlan ? `<div class="ap-banner"><div style="flex:1"><b>${esc(nombrePlan)}</b> · ${plan.length} carruseles en español e inglés, uno para cada fecha.</div><button class="ll-mini" type="button" onclick="document.querySelectorAll('.ap-lista input').forEach(i => i.checked = !!CONTENIDO[Number(i.value)].plan)">Usar este plan</button></div>` : ''}
+    <label class="rd-lbl">Diseños que se publican (en este orden, sin repetirse)</label>
+    <div class="ap-lista">${elegibles.map(c => `<label class="ap-item"><input type="checkbox" value="${c.i}" ${marcado(c) ? 'checked' : ''}><img src="${c.tipo === 'video' ? c.posterUrl : c.url}" alt="" loading="lazy"><span><b>${esc(c.titulo)}</b><small>${tipoN[c.tipo]}${c.tipo === 'carrusel' ? '' : ' · ' + (c.lang === 'es' ? 'Español' : 'English')}</small></span>${hechos.has(c.archivo) ? `<span class="ap-ok">✓ ${esc(hechos.get(c.archivo).fecha.slice(5).split('-').reverse().join('/'))}</span>` : ''}</label>`).join('')}</div>
+    <div class="ll-sub">Usa el texto de cada diseño (español e inglés). No se repite: cuando se publica el último, te llega un aviso a Telegram para cargar el contenido del próximo mes. También te avisa cada vez que publica.</div>
     <button class="ll-btn" style="background:var(--blue)" onclick="apGuardar()">Guardar</button>
   </div>`);
 }
@@ -4618,12 +4706,13 @@ async function apGuardar() {
   if (activo && !sel.length) return toast('Elige al menos un diseño', 'err');
   const fb = document.getElementById('ap-fb').checked, ig = document.getElementById('ap-ig').checked;
   if (activo && !fb && !ig) return toast('Elige Facebook, Instagram o ambos', 'err');
-  const forma = c => c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed';
-  const cola = sel.map(c => ({ archivo: c.archivo, titulo: c.titulo, url: new URL(c.url, location.href).href, texto: c.texto || '', formato: forma(c) }));
+  const forma = c => c.tipo === 'carrusel' ? 'carrusel' : c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed';
+  const abs = u => new URL(u, location.href).href;
+  const cola = sel.map(c => ({ archivo: c.archivo, titulo: c.titulo, url: abs(c.url), ...(c.urlEn ? { urls: [abs(c.url), abs(c.urlEn)] } : {}), texto: c.texto || '', formato: forma(c) }));
   const previo = (_ap && _ap !== 'cargando') ? _ap : {};
   const misma = JSON.stringify((previo.cola || []).map(x => x.archivo)) === JSON.stringify(cola.map(x => x.archivo));
   const datos = { activo, cadaDias: Number(document.getElementById('ap-cada').value), hora: Number(document.getElementById('ap-hora').value), redes: { facebook: fb, instagram: ig }, cola,
-    indice: misma ? (previo.indice || 0) : 0, actualizadoPor: currentUser?.email || '', actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
+    indice: misma ? (previo.indice || 0) : 0, ...(misma ? {} : { finAvisado: false }), actualizadoPor: currentUser?.email || '', actualizadoAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     await db.collection('config').doc('autopublicar').set(datos, { merge: true });
     _ap = { ...previo, ...datos };
@@ -4635,14 +4724,14 @@ async function apGuardar() {
 function rdBoton(c) {
   return _rd.estado && _rd.estado.conectado ? `<button class="cd-pub" onclick="rdAbrir(${c.i})">${_rdIco.pub} Publicar en redes</button>` : '';
 }
-function _rdFormato(c) { return c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed'; }
+function _rdFormato(c) { return c.tipo === 'carrusel' ? 'carrusel' : c.tipo === 'historia' ? 'historia' : c.tipo === 'video' ? 'reel' : 'feed'; }
 function rdAbrir(i) {
   const c = CONTENIDO[i], e = _rd.estado || {}, f = _rdFormato(c);
-  const nombre = { feed: 'Publicación', historia: 'Historia', reel: 'Reel (video)' }[f];
+  const nombre = { feed: 'Publicación', historia: 'Historia', reel: 'Reel (video)', carrusel: 'Carrusel ES + EN' }[f];
   ptModal('Publicar en redes', `${c.titulo} · ${nombre}`, `
     <div class="rd-form">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        <div class="rd-prev">${c.tipo === 'video' ? `<img src="${c.posterUrl}" alt="">` : `<img src="${c.url}" alt="">`}</div>
+        <div class="rd-prev">${c.tipo === 'video' ? `<img src="${c.posterUrl}" alt="">` : `<img src="${c.url}" alt="">`}${c.urlEn ? `<img src="${c.urlEn}" alt="" style="border-top:2px solid #fff">` : ''}</div>
         <div style="flex:1;display:flex;flex-direction:column;gap:8px">
           <label class="rd-chk"><input type="checkbox" id="rd-fb" checked> ${_rdIco.fb} Facebook · ${esc(e.pagina || '')}</label>
           <label class="rd-chk"><input type="checkbox" id="rd-ig" ${e.ig ? 'checked' : 'disabled'}> ${_rdIco.ig} Instagram${e.ig ? ' · @' + esc(e.ig) : ' (no vinculado)'}</label>
@@ -4667,7 +4756,7 @@ async function rdPublicar(i) {
   btn.disabled = true; res.innerHTML = '<div class="ll-sub" style="margin:8px 0">Publicando… no cierres esta ventana.</div>';
   const linea = (ico, red, r) => `<div class="rd-linea">${ico} <b>${red}:</b> ${r.error ? `<span style="color:#dc2626">${esc(r.error)}</span>` : r.pendiente ? 'procesando el video…' : r.programado ? '<span style="color:#059669">programado</span>' : '<span style="color:#059669">publicado</span>'}</div>`;
   try {
-    const d = await rdApi('publicar', { url: new URL(c.url, location.href).href, formato: f, texto: document.getElementById('rd-texto')?.value || '', facebook: fb, instagram: ig, programar: prog ? new Date(prog).toISOString() : '' });
+    const d = await rdApi('publicar', { url: new URL(c.url, location.href).href, ...(c.urlEn ? { urls: [new URL(c.url, location.href).href, new URL(c.urlEn, location.href).href] } : {}), formato: f, texto: document.getElementById('rd-texto')?.value || '', facebook: fb, instagram: ig, programar: prog ? new Date(prog).toISOString() : '' });
     if (d.error) throw new Error(d.error);
     const pintar = () => { res.innerHTML = (d.facebook ? linea(_rdIco.fb, 'Facebook', d.facebook) : '') + (d.instagram ? linea(_rdIco.ig, 'Instagram', d.instagram) : ''); };
     pintar();
@@ -4867,24 +4956,66 @@ function renderMensajes(lang) {
         </div>
       </div>`).join('')}</div></div>`;
   }).join('');
-  return `<button class="ll-mini" style="margin-bottom:12px" onclick="_cdFiltro='todo';renderContenido()">← Volver a videos e imágenes</button><div class="cd-sec-intro">Textos listos para copiar y pegar en WhatsApp, grupos, estados, Facebook, Instagram o mensajes directos. Cada uno lleva el enlace a la página de ese servicio.</div>${pills}${grupos || '<div style="color:var(--text-soft);font-size:13px;">No hay mensajes en este idioma.</div>'}`;
+  return `<div class="cd-sec-intro">Textos listos para copiar y pegar en WhatsApp, grupos, estados, Facebook, Instagram o mensajes directos. Cada uno lleva el enlace a la página de ese servicio.</div>${pills}${grupos || '<div style="color:var(--text-soft);font-size:13px;">No hay mensajes en este idioma.</div>'}`;
 }
 function mdCopiar(i) {
   const t = MENSAJES[i].t;
   (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Mensaje copiado', 'ok')).catch(() => { prompt('Copia el mensaje:', t); });
 }
 
+/* Calendario: el plan en orden de fechas, con lo ya publicado y lo que sigue */
+function cdCalendario() {
+  const conectado = _rd.estado && _rd.estado.conectado;
+  const a = (_ap && _ap !== 'cargando') ? _ap : {};
+  const porArchivo = new Map(CONTENIDO.map(c => [c.archivo, c]));
+  const cola = a.activo && (a.cola || []).length ? a.cola.map(x => porArchivo.get(x.archivo)).filter(Boolean) : CONTENIDO.filter(c => c.plan);
+  const fechas = a.activo ? _apFechas(a) : {};
+  const hechos = new Map((a.historial || []).map(x => [x.archivo, x]));
+  const filas = cola.map(c => {
+    const h = hechos.get(c.archivo);
+    const f = h ? new Date(h.fecha + 'T12:00:00') : fechas[c.archivo] || new Date(c.fecha + 'T12:00:00');
+    return { c, f, estado: h ? (h.facebook === 'error' || h.instagram === 'error' ? 'error' : 'ok') : fechas[c.archivo] ? 'prox' : 'plan', h };
+  });
+  const sigIdx = filas.findIndex(x => x.estado === 'prox');
+  const hechosN = filas.filter(x => x.h).length;
+  const icCp = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  const etiqueta = { ok: 'Publicado', error: 'Revisar', prox: 'Programado', plan: 'En el plan' };
+  const intro = !conectado
+    ? '<div class="cal-aviso">Conecta Facebook e Instagram (arriba) para que el calendario se publique solo.</div>'
+    : !a.activo ? `<div class="cal-aviso">La publicación automática está apagada. <button class="ll-mini" onclick="apAbrir()">Activarla</button></div>` : '';
+  let mes = '';
+  const cuerpo = filas.map((x, k) => {
+    const m = x.f.toLocaleDateString('es-US', { month: 'long', year: 'numeric' });
+    const cab = m !== mes ? `<div class="cal-mes">${esc(m.charAt(0).toUpperCase() + m.slice(1))}</div>` : '';
+    mes = m;
+    return `${cab}<div class="cal-fila ${x.estado} ${k === sigIdx ? 'sig' : ''}">
+      <div class="cal-dia"><b>${x.f.getDate()}</b><span>${esc(x.f.toLocaleDateString('es-US', { weekday: 'short' }))}</span></div>
+      <img class="cal-img" src="${x.c.url}" alt="" loading="lazy">
+      <div class="cal-info"><div class="cal-t">${esc(x.c.titulo)}</div><div class="cal-sub">${x.c.tipo === 'carrusel' ? 'Carrusel · español + inglés' : esc(CD_TIPOS[x.c.tipo].fmt)}${x.h ? ` · Facebook ${x.h.facebook === 'publicado' ? '✓' : '✕'} · Instagram ${x.h.instagram === 'publicado' ? '✓' : x.h.instagram ? '✕' : '—'}` : ''}</div>
+        <span class="cal-pill ${x.estado}">${k === sigIdx ? 'Siguiente' : etiqueta[x.estado]}</span></div>
+      <div class="cal-acts">${conectado && !x.h ? `<button class="ll-mini" onclick="rdAbrir(${x.c.i})">Ver y publicar</button>` : `<button class="ll-mini" onclick="${conectado ? `rdAbrir(${x.c.i})` : `window.open('${x.c.url}','_blank')`}">Ver</button>`}<button class="ll-mini" onclick="cdCopiar(${x.c.i})">${icCp} Texto</button></div>
+    </div>`;
+  }).join('');
+  return `<div class="cal-head"><div><div class="cal-h">${esc(CONTENIDO.find(c => c.plan)?.plan || 'Calendario')}</div><div class="ll-sub">${hechosN} de ${filas.length} publicados · ${a.activo ? `${_apCada(Number(a.cadaDias) || 2)} a las ${_apHora(Number(a.hora ?? 10))}` : 'fechas sugeridas'} · no se repiten</div></div>${conectado ? `<button class="ll-mini" onclick="apAbrir()">Ajustar</button>` : ''}</div>${intro}<div class="cal-lista">${cuerpo}</div>
+  <div class="ll-sub" style="margin-top:12px">Cuando se publique el último, te llega un aviso a Telegram para preparar el contenido del mes siguiente.</div>`;
+}
 function renderContenido() {
   rdCargar();
   const rb = document.getElementById('cd-redes'); if (rb) rb.innerHTML = rdBarra();
+  if (_cdFiltro === 'mensajes') { _cdVista = 'mensajes'; _cdFiltro = 'todo'; }
+  const pend = CONTENIDO.filter(c => c.plan).length;
+  const tabs = [['calendario', 'Calendario', `${pend} programados`], ['biblioteca', 'Biblioteca', `${CONTENIDO.length} diseños y videos`], ['mensajes', 'Mensajes', `${MENSAJES.length} textos para WhatsApp`]];
+  document.getElementById('cd-tabs').innerHTML = tabs.map(([k, v, d]) => `<button role="tab" aria-selected="${_cdVista === k}" class="cd-tab ${_cdVista === k ? 'on' : ''}" onclick="_cdVista='${k}';renderContenido()"><b>${v}</b><small>${d}</small></button>`).join('');
+  const fil = document.getElementById('cd-filtros');
+  fil.style.display = _cdVista === 'biblioteca' ? '' : 'none';
+  if (_cdVista === 'calendario') { document.getElementById('cd-grid').innerHTML = cdCalendario(); return; }
+  if (_cdVista === 'mensajes') { document.getElementById('cd-grid').innerHTML = renderMensajes('todos'); return; }
   const cnt = t => CONTENIDO.filter(c => (t === 'todo' || c.tipo === t) && (_cdLang === 'todos' || c.lang === _cdLang)).length;
   const pill = (sel, k, v, fn) => `<button class="dash-period-btn ${sel === k ? 'active' : ''}" onclick="${fn}='${k}';renderContenido()">${v}</button>`;
   document.getElementById('cd-filtros').innerHTML =
     [['todo', 'Todo'], ...Object.entries(CD_TIPOS).map(([k, v]) => [k, v.nombre])].map(([k, v]) => pill(_cdFiltro, k, `${v} <span style="opacity:.6">${cnt(k)}</span>`, '_cdFiltro')).join('') +
-    pill(_cdFiltro, 'mensajes', `Mensajes para difundir <span style="opacity:.6">${MENSAJES.length}</span>`, '_cdFiltro') +
     '<span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch"></span>' +
     [['todos', 'ES + EN'], ['es', 'Español'], ['en', 'English']].map(([k, v]) => pill(_cdLang, k, v, '_cdLang')).join('');
-  if (_cdFiltro === 'mensajes') { document.getElementById('cd-grid').innerHTML = renderMensajes('todos'); return; }
   const lista = CONTENIDO.filter(c => (_cdFiltro === 'todo' || c.tipo === _cdFiltro) && (_cdLang === 'todos' || c.lang === _cdLang));
   const icDl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>';
   const icCp = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -4892,33 +5023,38 @@ function renderContenido() {
     <div class="cd-card">
       <div class="cd-prev" style="aspect-ratio:${T.ratio}">${c.tipo === 'video'
         ? `<video src="${c.url}" poster="${c.posterUrl}" controls playsinline muted preload="none"></video>`
+        : c.urlEn ? `<div class="cd-carr"><img src="${c.url}" alt="${esc(c.titulo)}" loading="lazy"><img src="${c.urlEn}" alt="" loading="lazy"></div><span class="cd-carr-n">1/2 · ES → EN</span>`
         : `<img src="${c.url}" alt="${esc(c.titulo)}" loading="lazy">`}</div>
       <div class="cd-info">
         <div class="cd-t">${esc(c.titulo)}</div>
         <div class="cd-tags"><span class="cd-tag ${c.tipo === 'video' ? 'v' : ''}">${esc(T.fmt)}${c.dur ? ' · ' + c.dur : ''}</span><span class="cd-tag">${c.lang === 'es' ? 'Español' : 'English'}</span></div>
+        ${c.tipo === 'carrusel' ? apEstado(c) : ''}
         <div class="cd-acts">
-          <a class="cd-dl" href="${c.url}" download="${c.archivo}">${icDl} Descargar</a>
-          <button class="cd-cp" onclick="cdCopiar(${c.i})">${icCp} Copiar texto</button>
+          ${c.urlEn ? `<a class="cd-dl" href="${c.url}" download="${c.archivo}">${icDl} ES</a><a class="cd-dl" href="${c.urlEn}" download="${c.archivoEn}">${icDl} EN</a>` : `<a class="cd-dl" href="${c.url}" download="${c.archivo}">${icDl} Descargar</a>`}
+          <button class="cd-cp" onclick="cdCopiar(${c.i})">${icCp} ${c.urlEn ? 'Texto' : 'Copiar texto'}</button>
         </div>
         ${rdBoton(c)}
       </div>
     </div>`; };
   // Arriba, lo más reciente (última fecha publicada); el resto, agrupado por tipo (carpeta) y mes
   const grupos = [];
-  const ultima = lista.reduce((m, c) => c.fecha > m ? c.fecha : m, '');
-  const recientes = _cdFiltro === 'todo' && ultima ? lista.filter(c => c.fecha === ultima) : [];
+  // El plan de publicaciones tiene fechas futuras: no cuenta para "Recientes"
+  const ultima = lista.filter(c => !c.plan).reduce((m, c) => c.fecha > m ? c.fecha : m, '');
+  const recientes = _cdFiltro === 'todo' && ultima ? lista.filter(c => !c.plan && c.fecha === ultima) : [];
   if (recientes.length) grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Recientes</span><span class="cd-mes">${fmtDate(ultima + "T12:00")} · ${recientes.length}</span></div>
         <div class="cd-grid">${recientes.map(card).join('')}</div></div>`);
   Object.keys(CD_TIPOS).forEach(t => {
     const deTipo = lista.filter(c => c.tipo === t && !recientes.includes(c));
-    [...new Set(deTipo.map(c => c.fecha.slice(0, 7)))].sort().reverse().forEach(mes => {
-      const items = deTipo.filter(c => c.fecha.startsWith(mes)).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    // Los carruseles del plan van en orden de calendario; el resto, lo más nuevo primero
+    const asc = t === 'carrusel';
+    const meses = [...new Set(deTipo.map(c => c.fecha.slice(0, 7)))].sort();
+    (asc ? meses : meses.reverse()).forEach(mes => {
+      const items = deTipo.filter(c => c.fecha.startsWith(mes)).sort((a, b) => asc ? a.fecha.localeCompare(b.fecha) : b.fecha.localeCompare(a.fecha));
       grupos.push(`<div class="cd-sec"><div class="cd-sec-h"><span class="cd-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${CD_TIPOS[t].nombre}</span><span class="cd-mes">${_cdMes(mes)} · ${items.length}</span></div>
         <div class="cd-grid">${items.map(card).join('')}</div></div>`);
     });
   });
-  const atajo = `<button class="md-atajo" onclick="_cdFiltro='mensajes';renderContenido()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span><b>Mensajes para difundir</b><small>${MENSAJES.length} textos listos para WhatsApp, grupos y redes</small></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto"><path d="m9 18 6-6-6-6"/></svg></button>`;
-  document.getElementById('cd-grid').innerHTML = (_cdFiltro === 'todo' ? atajo : '') + (grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>');
+  document.getElementById('cd-grid').innerHTML = (grupos.join('') || '<div style="color:var(--text-soft);font-size:13px;">No hay contenido en este filtro.</div>');
 }
 function cdCopiar(i) {
   const t = CONTENIDO[i].texto;
