@@ -698,7 +698,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24i';
+const WORKER_VERSION = '2026-10-24j';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2007,19 +2007,23 @@ async function registrarLead(env, token, d, opciones = {}) {
       }
     }
     const primer = nombre.split(' ')[0];
+    // Postulaciones al programa de 10 webs gratis: acuse propio, sin borrador de cotización
+    const esNHD = /negocio hispano digital/i.test(servicio);
     const auto = await automatizaciones(env, token);
     let acuse = false, borrador = null;
     if (auto.vendedor && correo && !opciones.dudoso && await correoRecibe(correo) && !(await acuseReciente(correo))) {
       // 1) Acuse inmediato con plantilla fija (sin IA: no puede equivocarse)
-      acuse = await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Group USA`,
+      acuse = esNHD ? await enviarCorreoBot(env, correo, `${primer}, recibimos tu postulación · Negocio Hispano Digital`,
+        correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por postular, ${primer}!`, texto: `Recibimos la postulación de ${negocio || 'tu negocio'} al programa Negocio Hispano Digital. Las postulaciones cierran el 15 de diciembre de 2026 y anunciamos a los 10 ganadores el 8 de enero de 2027. Si tu negocio es seleccionado, te escribimos por WhatsApp. ¡Mucha suerte!`, boton: 'Ver el programa', link: 'https://dgpglobalgroup.com/negocio-hispano-digital/', nota: 'DGP Global Group · Negocio Hispano Digital' }),
+        `¡Gracias por postular, ${primer}! Recibimos tu postulación al programa Negocio Hispano Digital. Anunciamos a los ganadores el 8 de enero de 2027.`).catch(() => false) : await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Group USA`,
         correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Group USA · Servicios Digitales Profesionales' }),
         `¡Gracias por escribirnos, ${primer}! Recibimos tu mensaje y te responderemos en menos de 24 horas. WhatsApp: +1 (239) 823-1738`).catch(() => false);
       // 2) Borrador de cotización SOLO con servicios y precios de tu catálogo; tú lo apruebas
-      borrador = await borradorDesdeContacto(env, token, { nombre, correo, servicio, mensaje, negocio }).catch(e => { console.warn('Vendedor', e); return null; });
+      if (!esNHD) borrador = await borradorDesdeContacto(env, token, { nombre, correo, servicio, mensaje, negocio }).catch(e => { console.warn('Vendedor', e); return null; });
     }
-    const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Group USA por tu mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}. ¿Cuándo podemos conversar?`)}` : null;
+    const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Group USA por tu ${esNHD ? 'postulación al programa Negocio Hispano Digital' : `mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}`}. ¿Cuándo podemos conversar?`)}` : null;
     await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
-      text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en el panel, sección <b>Prospectos</b>.'}`,
+      text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}${esNHD ? '🏆 <b>Nueva postulación · 10 webs gratis</b>' : `📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web`}${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en el panel, sección <b>Prospectos</b>.'}`,
       reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
     }).catch(() => {});
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
