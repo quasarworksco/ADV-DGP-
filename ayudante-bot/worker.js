@@ -3076,7 +3076,7 @@ Formato: 2 a 5 líneas cortas, sin markdown, cada una empezando con "• ". Incl
 ══════════════════════════════════════════════════════════════ */
 const RD_VER = 'v23.0';
 const RD_PAGINA_PREFERIDA = '823496920849508';
-const RD_PERMISOS = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+const RD_PERMISOS = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish,business_management';
 const RD_MEDIA = 'https://adv.dgp-link.com/contenido/';
 const rdListo = env => !!(env.META_APP_ID && env.META_APP_SECRET);
 const rdB64 = u8 => btoa(String.fromCharCode(...u8));
