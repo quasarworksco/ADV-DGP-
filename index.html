@@ -5894,9 +5894,42 @@ ${b.testimonios ? `- Testimonios reales:\n${b.testimonios.split('\n').filter(Boo
 ${b.tieneDominio === 'si' && b.dominio ? `- Dominio del cliente: ${b.dominio}\n` : b.dominio ? `- Dominio sugerido: ${b.dominio} (verificar disponibilidad)\n` : ''}${b.fechaDeseada ? `- Fecha deseada de lanzamiento: ${b.fechaDeseada}\n` : ''}- Diseño mobile-first, probado en celular y computadora.
 - Formulario de contacto funcional y aviso de privacidad en el pie de página.
 
+${claudeMdNegocio(b)}
+
 ${REGLAS_MARCA_PROMPT}
 
 Referencia interna: factura ${doc.docId || fsId} · cliente ${doc.cli || '—'} · DGP Global Group`;
+}
+/* CLAUDE.md para la raíz del repositorio del negocio: reglas de diseño generales + su identidad, rellenada con el brief */
+function claudeMdNegocio(b) {
+  const linea = (t, v) => v ? `- ${t}: ${v}\n` : '';
+  const pal = typeof b.colores === 'object' && b.colores?.paleta && PALETAS_BRIEF[b.colores.paleta];
+  const colores = pal ? `principal ${pal[0]}, secundario ${pal[1]}, fondo ${pal[2]} (paleta ${b.colores.paleta.replace(/-/g, ' ')})`
+    : typeof b.colores === 'object' && b.colores ? `principal ${b.colores.c1 || '—'}, secundario ${b.colores.c2 || '—'}, fondo ${b.colores.c3 || '—'}`
+    : typeof b.colores === 'string' && b.colores ? b.colores : 'por definir (anótalos aquí en cuanto se elijan)';
+  const logo = b.tipo === 'logo' ? 'en diseño en este proyecto; cuando esté listo, guárdalo en el repositorio y anota aquí su ruta'
+    : b.logoUrl ? b.logoUrl : b.logo === 'no' ? 'no tiene; usar el nombre del negocio como logotipo tipográfico' : 'pendiente (anota aquí su ruta cuando llegue)';
+  const redes = b.redes ? Object.entries({ Instagram: b.redes.ig, Facebook: b.redes.fb, TikTok: b.redes.tt, YouTube: b.redes.yt, 'X/Twitter': b.redes.tw, LinkedIn: b.redes.li, WhatsApp: b.redes.wa, 'Google Business': b.redes.gmb })
+    .filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(' · ') : '';
+  return `## CLAUDE.md del repositorio
+Si aún no existe, crea en la raíz del repositorio de este negocio un archivo CLAUDE.md con este contenido (completa lo que diga "por definir" en cuanto lo decidas) y síguelo en todo el trabajo:
+
+\`\`\`markdown
+# ${b.negocio || 'Negocio'}: guía de diseño y marca
+
+## Reglas de diseño generales
+- Antes de diseñar o escribir algo, revisa la identidad de abajo y úsala siempre: sus colores, fuentes, logo y tono. No inventes otros.
+- No uses emojis en ningún lugar. Usa solo íconos SVG de línea, limpios y consistentes (estilo Lucide o Heroicons).
+- Diseño mobile-first, responsive, rápido y accesible (contraste suficiente y texto alternativo en las imágenes).
+- Textos claros, orientados a beneficios y sin "lorem ipsum".
+- En webs, al pie de página y en letra pequeña: "Diseñado y desarrollado por DGP Global Group", con enlace a https://dgpglobalgroup.com.
+
+## Identidad del negocio
+${linea('Nombre', b.negocio)}${linea('Eslogan', b.slogan)}${linea('A qué se dedica', b.descripcion)}${linea('Qué lo hace diferente', b.diferencia)}${linea('Público', b.publico)}${linea('Ubicación', b.ubicacion)}- Colores: ${colores}
+- Fuentes: por definir (elige una pareja de Google Fonts acorde al estilo, una para títulos y otra para textos, y anótala aquí)
+- Logo: ${logo}
+- Tono de los textos: ${b.tono || 'por definir'}
+${linea('Estilo visual', b.estilo)}${linea('Evitar', b.noGusta)}${linea('Idioma', b.idioma)}${linea('Redes', redes)}${linea('Contacto', [b.tel, b.correo].filter(Boolean).join(' · '))}\`\`\``;
 }
 function generarPromptBrief(fsId) {
   const box = document.getElementById('proy-prompt-' + fsId);
@@ -5958,6 +5991,8 @@ NOTAS
 
 ENTREGABLES: logo principal, versiones (horizontal, vertical, ícono, blanco y negro) y manual de marca con colores, tipografías y usos.
 
+${claudeMdNegocio(b)}
+
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 
   } else if (tipo === 'redes') {
@@ -5981,6 +6016,8 @@ COMUNICACIÓN
 
 ${REGLAS_MARCA_PROMPT.replace('Al final de la página, en el pie (footer)', 'En los diseños, publicaciones o páginas que se creen')}
 
+${claudeMdNegocio(b)}
+
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 
   } else if (tipo === 'ads') {
@@ -5998,6 +6035,8 @@ CAMPAÑA
   · Descripción / público: ${b.extra || '—'}
 
 ${REGLAS_MARCA_PROMPT.replace('Al final de la página, en el pie (footer)', 'En los diseños, publicaciones o páginas que se creen')}
+
+${claudeMdNegocio(b)}
 
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
   }
