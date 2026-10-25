@@ -7091,6 +7091,16 @@ async function deshacerUltimoAbono(fsId, sinConfirmar) {
   } catch (e) { toast('No se pudo quitar el abono.', 'err'); }
 }
 
+/* Pago resuelto en el panel: los avisos de Telegram de esa factura quedan como "ya registrado" (sin botones) */
+async function sincronizarPagoTelegram(fsId, estado) {
+  const d = docsMap[fsId];
+  if (d && Array.isArray(d.tgPagoMsgs) && !d.tgPagoMsgs.length) return;
+  try {
+    const tok = await currentUser.getIdToken();
+    await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'pago-sync', id: fsId, estado }) });
+  } catch (e) { console.warn('pago-sync', e); }
+}
+
 /* ═══ Paquetes de aliado desde Facturación: el hosting se crea solo al confirmarse el pago ═══ */
 function alPaqDeItem(s) { const t = String(s || ''); return Object.entries(AL_PAQUETES).find(([, p]) => t.startsWith(p.nombre)) || null; }
 function alPaqEnCarrito() { for (const it of cart) { const r = alPaqDeItem(it.s); if (r) return r; } return null; }
@@ -7177,6 +7187,7 @@ async function marcarPagado(fsId) {
     toastAccion('Marcado como pagado ✅', 'Deshacer', () => deshacerPago(fsId, true));
     alPagarFacturaSuscripcion(doc);
     crearHostingAliado(fsId);
+    sincronizarPagoTelegram(fsId, 'pagado');
     /* Refresh the open sheet */
     const updated = { ...doc, type:'recibo', pagado:true, pagadoParcial:false, fechaPago, docId:newDocId };
     openSheet(updated);
@@ -7245,6 +7256,7 @@ async function confirmarPagoParcial() {
       toastAccion('Pago completo registrado ✅', 'Deshacer', () => deshacerPago(fsId, true));
       alPagarFacturaSuscripcion(doc);
       crearHostingAliado(fsId);
+      sincronizarPagoTelegram(fsId, 'pagado');
     } else {
       /* Partial */
       await db.collection('documentos').doc(fsId).update({
@@ -7253,6 +7265,7 @@ async function confirmarPagoParcial() {
         pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
       });
       toastAccion('Pago parcial registrado 💰', 'Deshacer', () => deshacerUltimoAbono(fsId, true));
+      sincronizarPagoTelegram(fsId, 'abono');
     }
     document.getElementById('modalPagoParcial').classList.remove('show');
     pagoParcialFsId = null;

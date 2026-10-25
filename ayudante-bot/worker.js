@@ -674,7 +674,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
     const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
-    await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+    const enviado = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
         `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
@@ -685,7 +685,10 @@ async function handleVerificar(request, env, firebaseLogin) {
         `${lectura.remitente ? 'De: ' + lectura.remitente + '\n' : ''}` +
         `\n${ev.mensaje}\n\nRevisa que el dinero llegó y confirma con los botones.`,
         reply_markup: botonesPago(fsId, ev) })
-    }).catch(() => {});
+    }).then(r => r.json()).catch(() => null);
+    // Se guarda el mensaje para quitarle los botones si el pago se resuelve desde el panel
+    const msgId = enviado?.result?.message_id;
+    if (msgId) await fsUpdate(env, `documentos/${fsId}`, { tgPagoMsgs: [...(Array.isArray(doc.tgPagoMsgs) ? doc.tgPagoMsgs : []), msgId].slice(-10) }, ['tgPagoMsgs'], token).catch(() => {});
 
     return json(request, verificacion);
   } catch (e) {
@@ -698,7 +701,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-25a';
+const WORKER_VERSION = '2026-10-25b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1001,13 +1004,20 @@ async function handleTarea(request, env) {
   try {
     const v = await verificarEquipo(request, env);
     if (v.error) return json(request, { error: v.error }, v.status);
-    const { tarea } = await request.json().catch(() => ({}));
+    const cuerpo = await request.json().catch(() => ({}));
+    const { tarea } = cuerpo;
     if (tarea === 'respaldo') { const r = await enviarRespaldo(env); return json(request, { ok: true, mensaje: `Respaldo enviado a Telegram (${r.registros} registros) ✅` }); }
     if (tarea === 'telegram') {
       const r = await asegurarWebhook(env);
       if (!r.ok) return json(request, { error: r.error || 'No se pudo conectar el bot' }, 502);
       if (r.nuevo) await tgEnviar(env, '🤖 ¡Listo! Ahora puedes hablarme: mándame una nota de voz para crear facturas, y te pondré botones en los avisos de pago.\n\nEscribe /ayuda para ver ejemplos.');
       return json(request, { ok: true, mensaje: r.nuevo ? 'Bot de Telegram conectado ✅ (te escribió un mensaje)' : 'El bot de Telegram ya estaba conectado ✅' });
+    }
+    if (tarea === 'pago-sync') {
+      const b2 = cuerpo;
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(b2.id || '')) return json(request, { error: 'Factura no válida' }, 400);
+      const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
+      return json(request, { ok: true, actualizados: n });
     }
     if (tarea === 'briefing') { await briefingLunes(env); return json(request, { ok: true, mensaje: 'Altair te envió el briefing (texto y audio) a Telegram ✅' }); }
     if (tarea === 'semanal') { await resumenSemanal(env); return json(request, { ok: true, mensaje: 'Resumen semanal con análisis enviado a Telegram ✅' }); }
@@ -1251,6 +1261,17 @@ async function handleTgNotif(request, env, ctx) {
   return new Response('ok');
 }
 
+/* Pago resuelto (en el panel o con otro botón): los avisos de Telegram de esa factura quedan marcados como hechos */
+async function tgSincronizarPago(env, token, fsId, estado, exceptoMsg) {
+  const doc = await fsGet(env, `documentos/${fsId}`, token);
+  const msgs = (Array.isArray(doc?.tgPagoMsgs) ? doc.tgPagoMsgs : []).map(Number).filter(Boolean);
+  if (!msgs.length) return 0;
+  const texto = { pagado: '✅ Pagado · ya registrado', abono: '💰 Abono ya registrado', rechazado: '❌ Comprobante rechazado' }[estado] || '✅ Ya resuelto';
+  for (const id of msgs) if (id !== Number(exceptoMsg)) await tgApi(env, 'editMessageReplyMarkup', { chat_id: TG_CHAT, message_id: id, reply_markup: { inline_keyboard: [[{ text: texto, callback_data: `n:${fsId}` }]] } }).catch(() => {});
+  await fsUpdate(env, `documentos/${fsId}`, { tgPagoMsgs: [] }, ['tgPagoMsgs'], token);
+  return msgs.length;
+}
+
 /* ── Botones ── */
 function botonesPago(fsId, ev) {
   const rechazar = { text: '❌ Rechazar', callback_data: `r:${fsId}` };
@@ -1276,10 +1297,14 @@ async function tgCallback(env, cq) {
     wr: () => botResenaWeb(env, token, id, 'rechazada'),
     k: () => botCrearDesdeBorrador(env, token, id, true),
     m: () => botRecordatorioManual(env, token, id),
-    sv: () => botRecuperarSospechoso(env, token, id)
+    sv: () => botRecuperarSospechoso(env, token, id),
+    n: async () => ({ aviso: 'Esto ya se resolvió', ya: true })
   };
   const res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' };
   await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
+  if (res.ya) return;
+  // Otros avisos de la misma factura (varios comprobantes) también quedan como resueltos
+  if (['p', 'a', 'r'].includes(acc)) await tgSincronizarPago(env, token, id, { p: 'pagado', a: 'abono', r: 'rechazado' }[acc], cq.message.message_id).catch(() => {});
   // Quita los botones para no repetir la acción
   await tgApi(env, 'editMessageReplyMarkup', { chat_id: chat, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
   if (res.html) await tgApi(env, 'sendMessage', { chat_id: chat, text: res.html, parse_mode: 'HTML', disable_web_page_preview: true,
