@@ -2295,15 +2295,15 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 
 
 /* ═══ Pantalla de carga en blanco y negro ═══ */
-#splash-screen { background:radial-gradient(circle at 50% 42%,#1c1c1e 0,#0a0a0a 55%,#000 100%) !important; }
-#splash-screen::before { background:radial-gradient(circle,rgba(255,255,255,.14) 0,transparent 62%) !important; opacity:1 !important; }
-.splash-logo { width:104px; height:104px; object-fit:contain; margin-bottom:22px; filter:drop-shadow(0 10px 30px rgba(255,255,255,.12)); animation:splashLogo 1s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes splashLogo { 0% { opacity:0; transform:scale(.7) translateY(10px); filter:blur(6px) drop-shadow(0 0 0 transparent); } 100% { opacity:1; transform:none; filter:blur(0) drop-shadow(0 10px 30px rgba(255,255,255,.12)); } }
-#splash-screen .splash-logo-text { font-size:30px !important; letter-spacing:7px !important; color:rgba(255,255,255,.62) !important; }
-#splash-screen .splash-logo-text span { color:rgba(255,255,255,.62) !important; }
+#splash-screen { background:#000 !important; }
+#splash-screen::before { display:none !important; }
+.splash-logo { width:104px; height:104px; object-fit:contain; margin-bottom:22px; animation:splashLogo 1s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes splashLogo { 0% { opacity:0; transform:scale(.7) translateY(10px); filter:blur(6px) drop-shadow(0 0 0 transparent); } 100% { opacity:1; transform:none; filter:blur(0); } }
+#splash-screen .splash-logo-text { font-size:30px !important; letter-spacing:7px !important; color:#fff !important; }
+#splash-screen .splash-logo-text span { color:#fff !important; }
 #splash-screen #splash-saludo.splash-logo-sub { font:800 30px/1.2 'Plus Jakarta Sans',sans-serif !important; letter-spacing:-.4px !important; color:#fff !important; margin-top:16px !important; animation:splashFadeUp .8s .25s ease both !important; }
-#splash-screen .splash-bar-wrap { background:rgba(255,255,255,.1) !important; width:180px !important; margin-top:28px !important; }
-#splash-screen .splash-bar { background:linear-gradient(90deg,#9ca3af,#fff) !important; }
+#splash-screen .splash-bar-wrap { background:rgba(255,255,255,.14) !important; width:180px !important; margin-top:28px !important; }
+#splash-screen .splash-bar { background:#fff !important; }
 @media (max-width:600px) { .splash-logo { width:84px; height:84px; } #splash-screen .splash-logo-text { font-size:22px !important; letter-spacing:5px !important; } #splash-screen #splash-saludo.splash-logo-sub { font-size:24px !important; } }
 
 /* ═══ Historial, clientes, gráfica y pantallas vacías ═══ */
