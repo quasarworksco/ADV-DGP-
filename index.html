@@ -3978,7 +3978,19 @@ async function renderAliados(fresco) {
   }
   alPintar();
 }
-function _alDocs(id) { return Object.entries(docsMap || {}).map(([k, d]) => ({ ...d, _fsId: d._fsId || k })).filter(d => d.aliadoId === id && d.type !== 'cotizacion'); }
+// Nombre del aliado sin "LLC", "Inc", signos ni acentos, para reconocerlo aunque se escriba distinto en la factura
+function _alNorm(t) { return ptNorm(String(t || '')).replace(/\b(llc|l l c|inc|corp|corporation|co|ltd|group|grupo)\b/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function _alDeNombre(cli) {
+  const n = _alNorm(cli); if (!n) return null;
+  return (_al.lista || []).find(a => { const m = _alNorm(a.nombre); return m && (m === n || (Math.min(m.length, n.length) >= 5 && (n.startsWith(m + ' ') || m.startsWith(n + ' ')))); }) || null;
+}
+// Si la factura está a nombre de un aliado registrado, queda asignada a él (carga la lista una sola vez)
+async function aliadoParaFactura(cli) {
+  if (!_al.lista) { try { const q = await db.collection('aliados').orderBy('nombre').get(); _al.lista = q.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) { return null; } }
+  return _alDeNombre(cli);
+}
+// Facturas del aliado: las asignadas y también las hechas antes a su nombre desde Facturación
+function _alDocs(id) { const a = (_al.lista || []).find(x => x._id === id); return Object.entries(docsMap || {}).map(([k, d]) => ({ ...d, _fsId: d._fsId || k })).filter(d => d.type !== 'cotizacion' && (d.aliadoId === id || (!d.aliadoId && a && _alDeNombre(d.cli) === a))); }
 function _alSus(id) { return (suscripcionesList || []).filter(s => s.aliadoId === id); }
 function _alSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((d.total || 0) - (d.montoPagado || 0), 0); }
 function _alResumen(id) {
@@ -6781,6 +6793,8 @@ async function saveDoc() {
   };
     const portalCli = portalParaCliente(cli);
     if (portalCli) docData.portalCodigo = portalCli._id;
+    const alFac = await aliadoParaFactura(cli);
+    if (alFac) { docData.aliadoId = alFac._id; docData.aliado = alFac.nombre; }
     const added = await db.collection('documentos').add(docData);
     guardarCuentaPago(docData.metodoPago, docData.infoPago);
     if (portalCli) {
@@ -6800,7 +6814,7 @@ async function saveDoc() {
     btn.innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
     saveCliente(cli);
-    toast('Documento guardado ✅');
+    toast(alFac ? `Documento guardado y asignado al aliado ${alFac.nombre}` : 'Documento guardado ✅');
     /* Show the sheet immediately (use local data since listener may lag) */
     openSheet({ _fsId: added.id, ...docData });
   } catch(err) {
@@ -7409,6 +7423,8 @@ async function saveEditDoc() {
   }
 
   try {
+    // Si ahora está a nombre de un aliado registrado (y no tenía uno), se le asigna
+    if (!docsMap[editFsId]?.aliadoId) { const alFac = await aliadoParaFactura(cli); if (alFac) { updates.aliadoId = alFac._id; updates.aliado = alFac.nombre; } }
     await db.collection('documentos').doc(editFsId).update(updates);
     logActividad('Documento editado', docsMap[editFsId]?.docId || editFsId);
     if (cambioPago && updates.metodoPago) guardarCuentaPago(updates.metodoPago, updates.infoPago);
