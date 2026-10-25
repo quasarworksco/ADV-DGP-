@@ -2306,6 +2306,33 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 #splash-screen .splash-bar { background:#fff !important; }
 @media (max-width:600px) { .splash-logo { width:84px; height:84px; } #splash-screen .splash-logo-text { font-size:22px !important; letter-spacing:5px !important; } #splash-screen #splash-saludo.splash-logo-sub { font-size:24px !important; } }
 
+
+/* ═══ Entrada animada (pantalla de carga) ═══ */
+#splash-screen { transition:opacity .7s cubic-bezier(.4,0,.2,1), visibility .7s, transform .9s cubic-bezier(.4,0,.2,1), filter .7s !important; }
+#splash-screen.hidden { opacity:0 !important; visibility:hidden; transform:scale(1.06); filter:blur(6px); }
+.sp-mark { position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; margin-bottom:26px; }
+.sp-mark .splash-logo { width:84px !important; height:84px !important; margin:0 !important; position:relative; z-index:1; }
+.sp-ring { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+.sp-ring circle { fill:none; stroke-linecap:round; }
+.sp-ring-base { stroke:rgba(255,255,255,.08); stroke-width:1.5; }
+.sp-ring-draw { stroke:#fff; stroke-width:1.5; stroke-dasharray:465; stroke-dashoffset:465; animation:spDraw 1.4s .15s cubic-bezier(.65,0,.35,1) forwards; }
+.sp-ring-arc { stroke:#fff; stroke-width:3; stroke-dasharray:46 419; opacity:0; transform-origin:80px 80px; animation:spArc 1.6s 1.5s linear infinite, spFade .4s 1.5s forwards; }
+@keyframes spDraw { to { stroke-dashoffset:0; } }
+@keyframes spArc { to { transform:rotate(360deg); } }
+@keyframes spFade { to { opacity:.9; } }
+#splash-screen .splash-logo-text { animation:none !important; display:flex; flex-wrap:wrap; justify-content:center; }
+.sp-l { display:inline-block; opacity:0; transform:translateY(10px); filter:blur(4px); animation:spLetra .55s cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(.55s + var(--i) * 38ms); }
+.sp-sp { display:inline-block; width:.45em; }
+@keyframes spLetra { to { opacity:1; transform:none; filter:blur(0); } }
+#splash-screen #splash-saludo.splash-logo-sub { animation:spSube .8s 1.25s cubic-bezier(.2,.8,.2,1) both !important; }
+@keyframes spSube { from { opacity:0; transform:translateY(14px); letter-spacing:.06em; } to { opacity:1; transform:none; letter-spacing:-.4px; } }
+#splash-screen .splash-bar-wrap { position:relative; height:2px !important; width:200px !important; overflow:hidden; animation:spFadeIn .5s 1.4s both !important; }
+#splash-screen .splash-bar { position:absolute; top:0; height:100%; width:38% !important; border-radius:2px; animation:spBarra 1.25s 1.4s cubic-bezier(.65,0,.35,1) infinite !important; }
+@keyframes spBarra { 0% { left:-40%; } 100% { left:100%; } }
+@keyframes spFadeIn { from { opacity:0; } to { opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .sp-l, .sp-ring-draw, .sp-ring-arc, #splash-screen .splash-bar { animation:none !important; opacity:1; transform:none; filter:none; stroke-dashoffset:0; } }
+@media (max-width:600px) { .sp-mark { width:136px; height:136px; } .sp-mark .splash-logo { width:72px !important; height:72px !important; } }
+
 /* ═══ Historial, clientes, gráfica y pantallas vacías ═══ */
 .hr-p-pend { background:#fff7e6 !important; color:#b45309 !important; }
 .hr-p-venc { background:#fef2f2; color:#b91c1c; }
@@ -2580,11 +2607,23 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 
 <!-- ─── LOGIN SCREEN ─── -->
 <div id="splash-screen">
-  <img src="/logo-white.png" alt="DGP Global Group" class="splash-logo">
-  <div class="splash-logo-text">DGP GLOBAL GROUP <span>LLC</span></div>
+  <div class="sp-mark">
+    <svg class="sp-ring" viewBox="0 0 160 160" aria-hidden="true"><circle class="sp-ring-base" cx="80" cy="80" r="74"/><circle class="sp-ring-draw" cx="80" cy="80" r="74"/><circle class="sp-ring-arc" cx="80" cy="80" r="74"/></svg>
+    <img src="/logo-white.png" alt="DGP Global Group" class="splash-logo">
+  </div>
+  <div class="splash-logo-text" id="sp-nombre" aria-label="DGP Global Group LLC">DGP GLOBAL GROUP <span>LLC</span></div>
   <div class="splash-logo-sub" id="splash-saludo">Sistema de Gestión</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
 </div>
+<script>
+  // Letras del nombre una por una
+  (function () {
+    var el = document.getElementById('sp-nombre'); if (!el) return;
+    var t = el.textContent, i = 0;
+    el.innerHTML = t.split('').map(function (ch) { return ch === ' ' ? '<span class="sp-sp"> </span>' : '<span class="sp-l" style="--i:' + (i++) + '">' + ch + '</span>'; }).join('');
+    window._spT0 = Date.now();
+  })();
+</script>
 
 <div id="login-screen" style="display:none;">
   <div class="login-box">
@@ -3950,7 +3989,10 @@ async function verificarAcceso(user) {
 
 function hideSplash() {
   const s = document.getElementById('splash-screen');
-  if (s) s.classList.add('hidden');
+  if (!s || s.classList.contains('hidden') || s._saliendo) return;
+  s._saliendo = true;
+  const espera = Math.max(0, 1900 - (Date.now() - (window._spT0 || 0)));
+  setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 900); }, espera);
 }
 
 function showLogin() {
