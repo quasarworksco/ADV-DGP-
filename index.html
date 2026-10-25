@@ -2291,6 +2291,77 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 
 
 
+
+/* ═══ 1) Menos mayúsculas espaciadas: títulos en texto normal y negrita ═══ */
+.panel-title-f, .dash-section-label, .hist-section-title, .al-sec-h, .proy-section-title, .pt-toolbar-title, .hr-sec-t, .scl-t, .srv-rap-t, .alt-t, .pi-t, .cal-mes, .cd-mes, .sa-v2 .sa-label, .edit-add-section .edit-section-label {
+  text-transform:none !important; letter-spacing:-.15px !important; font-family:'Plus Jakarta Sans',sans-serif !important; font-weight:800 !important; font-size:15px !important; color:var(--black) !important; }
+.panel-title-f::before { content:none !important; }
+.ff label, .field-label, .login-field label, .rd-lbl, .cp-label, .enc-cal small, .cl-num small, .scl-dia small, .cat-g, .sus-tipo {
+  text-transform:none !important; letter-spacing:0 !important; font-size:12.5px !important; font-weight:600 !important; color:var(--text-mid) !important; }
+.cb-tile-l, .rg-l, .dash-kpi-label, .cliente-stats-label, .semana-label, .amount-label, .pt-stat-l, .smm-l, .al-kpis span {
+  text-transform:none !important; letter-spacing:0 !important; font-size:12.5px !important; font-weight:600 !important; color:var(--text-soft) !important; }
+.subtab-btn, .btn-primary-f, .btn-add-f, .btn-nuevo-cliente, .btn-close, .btn-wa, .pt-tab {
+  text-transform:none !important; letter-spacing:.1px !important; font-size:13.5px !important; font-weight:700 !important; }
+.cart-table th, .cb-table th, .ma-tabla th, .smm-tabla th { letter-spacing:.6px !important; }
+.nav-group { letter-spacing:1px !important; font-size:10px !important; }
+
+/* ═══ 2) Menú lateral más fino ═══ */
+.nav-ind { display:none; }
+@media (min-width:900px) { .nav-ind { display:block; } }
+@media (min-width:900px) {
+  .nav-tabs { position:fixed; }
+  .nav-ind { position:absolute; left:12px; right:12px; top:0; border-radius:10px; pointer-events:none; z-index:0; opacity:0;
+    background:linear-gradient(90deg,color-mix(in srgb,var(--blue) 38%,transparent),rgba(255,255,255,.06)); box-shadow:inset 3px 0 0 color-mix(in srgb,var(--blue) 55%,#9cc2ff), 0 6px 18px rgba(0,0,0,.18);
+    transition:transform .35s var(--ease-out), height .35s var(--ease-out), opacity .2s; }
+  .nav-tab { position:relative; z-index:1; }
+  .nav-tab.active, .nav-tab.active:hover { background:transparent !important; box-shadow:none !important; color:#fff !important; font-weight:600 !important; }
+  .nav-tab.active > i { color:color-mix(in srgb,var(--blue) 40%,#fff); }
+  body.menu-min .nav-ind { left:10px; right:10px; }
+  html.mono .nav-ind { background:rgba(255,255,255,.1); box-shadow:inset 3px 0 0 #fff; }
+}
+.nav-tip { position:fixed; z-index:100001; transform:translateY(-50%) translateX(-4px); background:#0b1640; color:#fff; font:600 12.5px 'Plus Jakarta Sans',sans-serif; padding:7px 11px; border-radius:8px; box-shadow:0 10px 24px rgba(0,0,0,.25); pointer-events:none; opacity:0; transition:opacity .12s, transform .16s var(--ease-out); white-space:nowrap; }
+.nav-tip.on { opacity:1; transform:translateY(-50%); }
+.nav-tip::before { content:''; position:absolute; left:-4px; top:50%; width:8px; height:8px; background:inherit; transform:translateY(-50%) rotate(45deg); border-radius:2px; }
+
+/* ═══ 4) Avisos con ícono, color y barra de tiempo ═══ */
+.toast.v2 { display:flex !important; align-items:center; gap:10px; padding:11px 16px 11px 12px !important; border-radius:14px !important; background:#0f172a !important; color:#fff !important; box-shadow:0 18px 40px rgba(8,12,24,.35); overflow:hidden; white-space:normal !important; max-width:min(92vw,460px); }
+.toast.v2.err { background:#0f172a !important; }
+.toast-ic { width:26px; height:26px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; }
+.toast-ic.t-ok { background:#16a34a; } .toast-ic.t-err { background:#dc2626; } .toast-ic.t-info { background:#2563eb; }
+.toast.v2.show .toast-ic { animation:avPop .4s cubic-bezier(.3,1.6,.5,1); }
+.toast-tx { font:600 13px/1.35 'Plus Jakarta Sans',sans-serif; }
+.toast-bar { position:absolute; left:0; bottom:0; height:3px; width:100%; transform-origin:left; opacity:.9; }
+.toast-bar.t-ok { background:#22c55e; } .toast-bar.t-err { background:#ef4444; } .toast-bar.t-info { background:#3b82f6; }
+.toast.v2.show .toast-bar { animation-name:toastBar; animation-timing-function:linear; animation-fill-mode:both; }
+@keyframes toastBar { from { transform:scaleX(1); } to { transform:scaleX(0); } }
+.toast.v2 .toast-btn { margin-left:6px; }
+
+/* ═══ 8) Meta del mes alcanzada ═══ */
+#meta-bar.meta-ok { position:relative; overflow:hidden; background:linear-gradient(90deg,#059669,#22c55e) !important; }
+#meta-bar.meta-ok::after { content:''; position:absolute; inset:0; background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%); animation:metaBrillo 2.2s ease-in-out infinite; }
+@keyframes metaBrillo { from { transform:translateX(-100%); } to { transform:translateX(100%); } }
+
+/* ═══ 9) Pantalla de carga e inicio de sesión ═══ */
+#splash-screen::before, #login-screen::after { content:''; position:absolute; width:620px; height:620px; border-radius:50%; background:radial-gradient(circle,color-mix(in srgb,var(--blue) 45%,transparent) 0,transparent 65%); left:50%; top:50%; transform:translate(-50%,-50%); animation:glowMov 7s ease-in-out infinite alternate; pointer-events:none; opacity:.55; }
+@keyframes glowMov { 0% { transform:translate(-62%,-56%) scale(.9); } 100% { transform:translate(-38%,-44%) scale(1.1); } }
+#splash-screen > * , #login-screen > * { position:relative; z-index:1; }
+.splash-logo-sub#splash-saludo { font-size:13px !important; letter-spacing:.3px !important; text-transform:none !important; color:rgba(255,255,255,.75) !important; margin-top:10px !important; font-weight:500; }
+.login-box { backdrop-filter:blur(14px); }
+.login-hola { text-align:center; margin:4px 0 22px; }
+.login-hola b { display:block; font:800 24px/1.2 'Plus Jakarta Sans',sans-serif; color:#fff; letter-spacing:-.3px; animation:cardIn .6s var(--ease-out) both; }
+.login-hola span { display:block; font-size:13px; color:rgba(255,255,255,.6); margin-top:6px; animation:cardIn .6s .08s var(--ease-out) both; }
+
+.login-field label { color:rgba(255,255,255,.72) !important; }
+.btn-login-email { text-transform:none !important; letter-spacing:.2px !important; font-size:14px !important; font-weight:700 !important; }
+/* ═══ 10) Temporada: Navidad (diciembre) ═══ */
+html[data-temporada="navidad"] .header { box-shadow:0 1px 0 rgba(0,0,0,.02); }
+html[data-temporada="navidad"] .header::after { content:''; position:absolute; left:0; right:0; bottom:-3px; height:3px; pointer-events:none;
+  background:repeating-linear-gradient(90deg,#dc2626 0 14px,#16a34a 14px 28px,#f59e0b 28px 42px,#2563eb 42px 56px); opacity:.85; animation:luces 2.4s linear infinite; }
+@keyframes luces { from { background-position:0 0; } to { background-position:56px 0; } }
+html[data-temporada="navidad"] #login-screen::before { background-image:radial-gradient(circle,rgba(255,255,255,.55) 1.3px,transparent 1.6px), radial-gradient(circle,rgba(255,255,255,.35) 1px,transparent 1.3px) !important; background-size:48px 48px, 31px 31px !important; animation:nieve 14s linear infinite; }
+@keyframes nieve { from { background-position:0 0, 0 0; } to { background-position:40px 480px, -30px 310px; } }
+@media (prefers-reduced-motion: reduce) { #splash-screen::before, #login-screen::after, html[data-temporada] .header::after, html[data-temporada] #login-screen::before, #meta-bar.meta-ok::after { animation:none !important; } }
+
 /* ═══ Vista previa de Facturación con el diseño real ═══ */
 @media (min-width:1100px) { .panel-f:has(#ipv) { position:sticky; top:calc(var(--hdr-h, 71px) + 16px); align-self:start; } }
 .ipv { background:#fff; color:#0f172a; border:1px solid #e6e9f2; border-top:5px solid #0b1640; border-radius:14px; padding:20px 20px 16px; margin:8px 0 12px; box-shadow:0 10px 30px rgba(11,22,64,.08); transition:border-color .3s; }
@@ -2471,7 +2542,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <div id="splash-screen">
   <img src="/logo-white.png" alt="DGP Global Group" style="width:64px;height:64px;object-fit:contain;margin-bottom:16px;">
   <div class="splash-logo-text">DGP GLOBAL GROUP <span>LLC</span></div>
-  <div class="splash-logo-sub">Sistema de Gestión</div>
+  <div class="splash-logo-sub" id="splash-saludo">Sistema de Gestión</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
 </div>
 
@@ -2482,7 +2553,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <div class="login-logo-text">DGP GLOBAL GROUP <span>LLC</span></div>
       <div class="login-logo-sub">Sistema de Gestión</div>
     </div>
-    <div class="login-title">Iniciar Sesión</div>
+    <div class="login-hola"><b id="login-hola-t">Bienvenido</b><span id="login-hola-s">Inicia sesión para continuar</span></div>
     <div class="login-field">
       <label>Correo electrónico</label>
       <input type="email" id="login-email" placeholder="usuario@dgpgroup.com" autocomplete="username">
@@ -2560,6 +2631,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         </div></div>
         <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirDiagnostico()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Probar sistema</span></button>
         <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirBuscador()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Buscar</span><kbd>Ctrl K</kbd></button>
+        <button class="hdr-mi" id="hdr-temporada" role="menuitem" hidden onclick="toggleTemporada()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19"/></svg><span>Detalles navideños</span></button>
         <div class="hdr-menu-sep"></div>
         <button class="hdr-mi danger" role="menuitem" onclick="logoutUser()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Salir</span></button>
       </div>
@@ -3522,19 +3594,30 @@ function esc(s) {
 
 // Sin emojis en los avisos: se quitan aquí para todo el panel
 const _sinEmoji = m => String(m ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B50}\u{23F0}-\u{23FF}]\uFE0F?/gu, '').replace(/\s{2,}/g, ' ').trim();
+const TOAST_ICO = {
+  ok: '<path d="M20 6 9 17l-5-5"/>',
+  err: '<path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/>'
+};
+function _toastHtml(msg, type, ms) {
+  const k = TOAST_ICO[type] ? type : 'ok';
+  return `<span class="toast-ic t-${k}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${TOAST_ICO[k]}</svg></span><span class="toast-tx">${esc(msg)}</span><i class="toast-bar t-${k}" style="animation-duration:${ms}ms"></i>`;
+}
 function toast(msg, type='ok') {
   msg = _sinEmoji(msg);
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast show ${type}`;
+  const t = document.getElementById('toast'), ms = type === 'err' ? 4500 : 3200;
+  t.innerHTML = _toastHtml(msg, type, ms);
+  t.className = 'toast'; void t.offsetWidth;
+  t.className = `toast show ${type} v2`;
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.className = 'toast', 3200);
+  t._timer = setTimeout(() => t.className = 'toast v2', ms);
 }
 /* Aviso con botón (ej. "Deshacer"), visible unos segundos más */
 function toastAccion(msg, etiqueta, fn, ms = 9000) {
   const t = document.getElementById('toast');
-  t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="toast-btn">${esc(etiqueta)}</button>`;
-  t.className = 'toast show ok accion';
+  t.innerHTML = _toastHtml(_sinEmoji(msg), 'ok', ms).replace('<i class="toast-bar', `<button type="button" class="toast-btn">${esc(etiqueta)}</button><i class="toast-bar`);
+  t.className = 'toast'; void t.offsetWidth;
+  t.className = 'toast show ok accion v2';
   t.querySelector('.toast-btn').onclick = () => { t.className = 'toast'; clearTimeout(t._timer); fn(); };
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.className = 'toast', ms);
@@ -3948,6 +4031,7 @@ function switchPage(page, btn) {
   if (page === 'llamadas')   renderLlamadas();
   if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
+  if (typeof navIndicador === 'function') requestAnimationFrame(navIndicador);
 }
 
 
@@ -7919,6 +8003,12 @@ function renderMetaBar() {
   const faltante   = Math.max(metaMensual - totalMes, 0);
 
   bar.style.width   = porcentaje.toFixed(1) + '%';
+  bar.classList.toggle('meta-ok', porcentaje >= 100);
+  if (porcentaje >= 100 && totalMes > 0) {
+    const clave = 'dgp-meta-' + new Date().toISOString().slice(0, 7);
+    let ya = true; try { ya = localStorage.getItem(clave) === '1'; if (!ya) localStorage.setItem(clave, '1'); } catch (e) {}
+    if (!ya) setTimeout(() => { try { lanzarConfeti(); } catch (e) {} toast('¡Meta del mes alcanzada! Excelente trabajo'); }, 600);
+  }
   bar.style.background = porcentaje >= 100 ? 'var(--green-dark)' : 'var(--blue)';
   pct.textContent   = porcentaje.toFixed(0) + '%';
   pct.style.color   = porcentaje >= 100 ? 'var(--green-dark)' : 'var(--blue)';
@@ -9747,12 +9837,64 @@ function selloPagado() {
   setTimeout(() => el.classList.add('fuera'), 1900); setTimeout(() => el.remove(), 2500);
 }
 
+
+/* ═══ Saludo en la pantalla de carga y en el inicio de sesión (recuerda el último nombre en este equipo) ═══ */
+function _saludoHora() { const h = new Date().getHours(); return h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; }
+(function saludoEntrada() {
+  let n = ''; try { n = localStorage.getItem('dgp-nombre') || ''; } catch (e) {}
+  const p = n.split(' ')[0];
+  const sp = document.getElementById('splash-saludo'); if (sp) sp.textContent = p ? `${_saludoHora()}, ${p}` : 'Sistema de Gestión';
+  const t = document.getElementById('login-hola-t'), s = document.getElementById('login-hola-s');
+  if (t) t.textContent = _saludoHora();
+  if (s) s.textContent = p ? `Bienvenido de nuevo, ${p}. Inicia sesión para continuar.` : 'Inicia sesión para continuar.';
+})();
+
+/* ═══ Menú lateral: indicador que se desliza y nombres al pasar el mouse con el menú colapsado ═══ */
+function navIndicador() {
+  const nav = document.querySelector('.nav-tabs'), act = nav?.querySelector('.nav-tab.active');
+  if (!nav) return;
+  let ind = nav.querySelector('.nav-ind');
+  if (!ind) { ind = document.createElement('span'); ind.className = 'nav-ind'; nav.prepend(ind); }
+  if (!act || act.offsetParent === null) { ind.style.opacity = '0'; return; }
+  ind.style.opacity = '1';
+  ind.style.transform = `translateY(${act.offsetTop}px)`;
+  ind.style.height = act.offsetHeight + 'px';
+}
+document.querySelector('.nav-tabs')?.addEventListener('click', e => { if (e.target.closest('.nav-tab')) requestAnimationFrame(navIndicador); });
+window.addEventListener('resize', () => requestAnimationFrame(navIndicador));
+setTimeout(navIndicador, 400);
+(function navTips() {
+  const tip = document.createElement('div'); tip.className = 'nav-tip'; document.body.appendChild(tip);
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    const label = [...b.childNodes].filter(n => !(n.nodeType === 1 && /badge/.test(n.id || ''))).map(n => n.textContent).join('').trim().replace(/\s+/g, ' ');
+    b.setAttribute('aria-label', label);
+    b.addEventListener('mouseenter', () => {
+      if (!document.body.classList.contains('menu-min')) return;
+      const r = b.getBoundingClientRect(); tip.textContent = label;
+      tip.style.top = (r.top + r.height / 2) + 'px'; tip.style.left = (r.right + 12) + 'px'; tip.classList.add('on');
+    });
+    b.addEventListener('mouseleave', () => tip.classList.remove('on'));
+  });
+})();
+
+/* ═══ Detalles de temporada (diciembre: Navidad). Se pueden apagar desde tu menú ═══ */
+function temporadaActual() { const d = new Date(), m = d.getMonth() + 1; return m === 12 ? 'navidad' : ''; }
+function aplicarTemporada() {
+  let off = false; try { off = localStorage.getItem('dgp-temporada') === 'off'; } catch (e) {}
+  const t = off ? '' : temporadaActual();
+  document.documentElement.dataset.temporada = t;
+  const b = document.getElementById('hdr-temporada'); if (b) { b.hidden = !temporadaActual(); b.querySelector('span').textContent = off ? 'Activar detalles navideños' : 'Quitar detalles navideños'; }
+}
+function toggleTemporada() { try { localStorage.setItem('dgp-temporada', localStorage.getItem('dgp-temporada') === 'off' ? 'on' : 'off'); } catch (e) {} aplicarTemporada(); }
+aplicarTemporada();
+
 /* ═══ Perfil y saludo ═══ */
 function nombrePerfil(u) { u = u || currentUser; return (u?.displayName || '').trim(); }
 function pintarPerfil(u) {
   u = u || currentUser;
   const n = nombrePerfil(u), mn = document.getElementById('hdr-menu-nombre'), mc = document.getElementById('hdr-menu-correo');
   if (mn) mn.textContent = n || 'Mi cuenta';
+  try { if (n) localStorage.setItem('dgp-nombre', n); } catch (e) {}
   if (mc) mc.textContent = u?.email || '';
   pintarSaludo();
 }
