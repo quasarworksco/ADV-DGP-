@@ -2373,8 +2373,10 @@ html.dark .rg-card::after, html.dark .cb-tile::after { background:radial-gradien
 }
 
 /* ═══ Entrada animada (pantalla de carga) ═══ */
-#splash-screen { transition:opacity .7s cubic-bezier(.4,0,.2,1), visibility .7s, transform .9s cubic-bezier(.4,0,.2,1), filter .7s !important; }
-#splash-screen.hidden { opacity:0 !important; visibility:hidden; transform:scale(1.06); filter:blur(6px); }
+/* Salida tipo santamaría: la pantalla sube de abajo hacia arriba */
+#splash-screen { transition:transform .75s cubic-bezier(.76,0,.24,1), visibility 0s linear .75s !important; will-change:transform; }
+#splash-screen::after { content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:rgba(255,255,255,.18); }
+#splash-screen.hidden { opacity:1 !important; visibility:hidden; transform:translateY(-100%); filter:none; }
 .sp-mark { position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; margin-bottom:26px; }
 .sp-mark .splash-logo { width:84px !important; height:84px !important; margin:0 !important; position:relative; z-index:1; }
 .sp-ring { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
@@ -4093,7 +4095,7 @@ function hideSplash() {
   if (!s || s.classList.contains('hidden') || s._saliendo) return;
   s._saliendo = true;
   const espera = Math.max(0, 2500 - (Date.now() - (window._spT0 || 0)));
-  setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 900); }, espera);
+  setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 850); }, espera);
 }
 
 function showLogin() {
