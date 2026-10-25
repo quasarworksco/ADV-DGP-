@@ -2161,6 +2161,147 @@ html.dark.mono [style*="background:#f8fafc"]:not(.doc-sheet *):not(.doc-sheet),h
 html.dark.mono [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),html.dark.mono [style*="background-color: #ffffff"]:not(.doc-sheet *):not(.doc-sheet){background-color:#18181b !important}
 .color-menu .cm-mono { background:linear-gradient(135deg,#111 50%,#fff 50%) !important; box-shadow:inset 0 0 0 1px #d4d4d8; }
 
+
+/* ═══ Encabezado v2: buscador, menú de usuario y menos botones sueltos ═══ */
+.header-right .hdr-opt, .header-right .theme-toggle, .header-right .live-dot, .header-right .btn-salir { display:none !important; }
+.hdr-search { display:inline-flex; align-items:center; gap:10px; height:36px; min-width:330px; padding:0 8px 0 12px; border-radius:10px; border:1px solid var(--border); background:var(--off); color:var(--text-soft); font:500 12.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer; text-align:left; }
+.hdr-search span { flex:1; }
+.hdr-search:hover { border-color:color-mix(in srgb,var(--blue) 35%,var(--border)); color:var(--text-mid); background:var(--white); box-shadow:0 2px 10px rgba(11,22,64,.06); }
+kbd { font:600 10px 'Plus Jakarta Sans',sans-serif; color:var(--text-soft); background:var(--white); border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; padding:2px 6px; letter-spacing:.3px; white-space:nowrap; }
+.header-right .altair-btn { background:linear-gradient(135deg,color-mix(in srgb,var(--blue) 10%,var(--white)),var(--white)) !important; }
+.header-right .altair-btn svg { color:var(--blue); transition:transform .5s var(--ease-out); }
+.header-right .altair-btn:hover svg { transform:rotate(72deg) scale(1.1); }
+.hdr-user { position:relative; display:flex; }
+.hdr-user .user-avatar { border:0; cursor:pointer; outline-offset:2px; transition:transform var(--t-med) var(--ease-out), box-shadow var(--t-med); }
+.hdr-user .user-avatar:hover { transform:translateY(-1px); box-shadow:0 6px 16px color-mix(in srgb,var(--blue) 35%,transparent); }
+.hdr-user .user-avatar[aria-expanded="true"] { box-shadow:var(--ring); }
+.hdr-live { position:absolute; right:-2px; bottom:-2px; width:10px; height:10px; border-radius:50%; background:#22c55e; border:2px solid var(--white); pointer-events:none; }
+.hdr-live::after { content:''; position:absolute; inset:-2px; border-radius:50%; border:2px solid #22c55e; opacity:0; animation:hdrPing 2.6s ease-out infinite; }
+@keyframes hdrPing { 0% { transform:scale(.8); opacity:.6; } 80%,100% { transform:scale(2.2); opacity:0; } }
+.hdr-menu { position:absolute; right:0; top:calc(100% + 10px); width:270px; padding:6px; border-radius:14px; background:var(--white); border:1px solid var(--border); box-shadow:0 18px 50px rgba(11,22,64,.18); z-index:300; opacity:0; visibility:hidden; transform:translateY(-6px) scale(.98); transform-origin:top right; transition:opacity .16s ease, transform .2s var(--ease-out), visibility 0s .2s; }
+.hdr-menu.open { opacity:1; visibility:visible; transform:none; transition:opacity .16s ease, transform .22s var(--ease-out); }
+.hdr-menu-head { padding:10px 10px 12px; border-bottom:1px solid var(--border); margin-bottom:6px; }
+.hdr-menu-head b { display:block; font:700 13.5px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
+.hdr-menu-head small { display:block; font-size:11.5px; color:var(--text-soft); margin-top:1px; overflow:hidden; text-overflow:ellipsis; }
+.hdr-menu-live { display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:10.5px; font-weight:600; color:#15803d; background:rgba(34,197,94,.1); padding:3px 8px; border-radius:999px; }
+.hdr-menu-live::before { content:''; width:6px; height:6px; border-radius:50%; background:#22c55e; }
+.hdr-mi { display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; background:transparent; border-radius:9px; color:var(--text-mid); font:500 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; text-align:left; }
+.hdr-mi span { flex:1; }
+.hdr-mi:hover { background:var(--off); color:var(--black); }
+.hdr-mi.danger:hover { background:#fef2f2; color:#dc2626; }
+.hdr-mi-colors { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; font:500 13px 'Plus Jakarta Sans',sans-serif; color:var(--text-mid); }
+.hdr-mi-colors div { display:flex; gap:7px; }
+.hdr-mi-colors button { width:20px; height:20px; border-radius:50%; border:2px solid var(--white); box-shadow:0 0 0 1px var(--border); cursor:pointer; transition:transform .15s var(--ease-out); }
+.hdr-mi-colors button:hover { transform:scale(1.18); }
+.hdr-menu-sep { height:1px; background:var(--border); margin:6px 4px; }
+html.dark .hdr-menu-live { color:#4ade80; }
+html.dark .hdr-mi.danger:hover { background:rgba(239,68,68,.12); color:#f87171; }
+@media (max-width:1100px) { .hdr-search { min-width:0; } .hdr-search span, .hdr-search kbd { display:none; } .hdr-search { width:36px; padding:0; justify-content:center; } }
+@media (max-width:600px) { .hdr-search { width:34px; height:34px; } .hdr-menu { position:fixed; right:10px; top:58px; width:min(290px, calc(100vw - 20px)); } }
+
+/* ═══ Buscador rápido ═══ */
+.bs-over { position:fixed; inset:0; z-index:100000; display:flex; justify-content:center; align-items:flex-start; padding:12vh 16px 16px; background:rgba(8,12,24,.45); backdrop-filter:blur(6px); opacity:0; visibility:hidden; transition:opacity .18s ease, visibility 0s .18s; }
+.bs-over.open { opacity:1; visibility:visible; transition:opacity .18s ease; }
+.bs-box { width:100%; max-width:620px; background:var(--white); border:1px solid var(--border); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.3); overflow:hidden; transform:translateY(-8px) scale(.985); transition:transform .24s var(--ease-out); }
+.bs-over.open .bs-box { transform:none; }
+.bs-in { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); color:var(--text-soft); }
+.bs-in input { flex:1; border:0 !important; outline:0; background:transparent !important; font:500 15px 'Plus Jakarta Sans',sans-serif; color:var(--black) !important; padding:0 !important; box-shadow:none !important; }
+.bs-list { max-height:min(56vh,440px); overflow-y:auto; padding:6px; }
+.bs-g { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-soft); padding:10px 10px 4px; }
+.bs-it { display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; border:0; background:transparent; border-radius:10px; cursor:pointer; text-align:left; color:var(--text-mid); }
+.bs-it.on { background:color-mix(in srgb,var(--blue) 9%,var(--white)); }
+.bs-ic { width:32px; height:32px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--off); border:1px solid var(--border); color:var(--text-mid); }
+.bs-it.on .bs-ic { color:var(--blue); border-color:color-mix(in srgb,var(--blue) 30%,var(--border)); }
+.bs-tx { flex:1; min-width:0; }
+.bs-tx b { display:block; font:600 13.5px 'Plus Jakarta Sans',sans-serif; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bs-tx small { display:block; font-size:11.5px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bs-go { opacity:0; color:var(--text-soft); font-size:13px; transition:opacity .12s; }
+.bs-it.on .bs-go { opacity:1; }
+.bs-vacio { padding:28px 16px; text-align:center; font-size:13px; color:var(--text-soft); }
+.bs-foot { display:flex; gap:16px; padding:10px 16px; border-top:1px solid var(--border); font-size:11px; color:var(--text-soft); background:var(--off); }
+.bs-foot kbd { margin-right:3px; }
+@media (max-width:600px) { .bs-over { padding-top:10px; } .bs-foot { display:none; } }
+
+/* ═══ Ventanas (modales): encabezado claro, botón cerrar y entrada suave ═══ */
+.modal-overlay.show { animation:ovIn .2s ease both; }
+@keyframes ovIn { from { opacity:0; } to { opacity:1; } }
+.modal-overlay { background:rgba(8,12,24,.5) !important; }
+.edit-sheet { animation:sheetIn .28s var(--ease-out) both !important; border:1px solid var(--border); border-radius:18px !important; }
+@keyframes sheetIn { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
+.edit-sheet-header { position:relative; background:var(--white) !important; padding:22px 56px 16px 24px !important; border-bottom:1px solid var(--border); }
+.edit-sheet-header::before { content:''; position:absolute; left:0; top:0; right:0; height:3px; background:linear-gradient(90deg,var(--blue),color-mix(in srgb,var(--blue) 40%,#7dd3fc)); border-radius:18px 18px 0 0; }
+.edit-sheet-header h3 { font:800 19px/1.2 'Plus Jakarta Sans',sans-serif !important; letter-spacing:-.2px !important; color:var(--black) !important; }
+.edit-sheet-header p { font-size:12.5px !important; color:var(--text-soft) !important; margin-top:4px !important; line-height:1.45; }
+.sheet-x { position:absolute; top:16px; right:14px; width:32px; height:32px; border-radius:9px; border:1px solid transparent; background:transparent; color:var(--text-soft); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s, color .15s, transform .25s var(--ease-out); }
+.sheet-x:hover { background:var(--off); color:var(--black); transform:rotate(90deg); }
+.edit-sheet-body { padding:20px 24px 24px !important; }
+.btn-edit-save { text-transform:none !important; letter-spacing:.2px !important; font-size:13.5px !important; font-weight:700 !important; padding:13px !important; border-radius:11px !important; box-shadow:0 8px 20px color-mix(in srgb,var(--blue) 28%,transparent); }
+.btn-edit-save:hover { filter:brightness(1.06); box-shadow:0 12px 26px color-mix(in srgb,var(--blue) 34%,transparent); }
+.btn-edit-cancel { text-transform:none !important; letter-spacing:.2px !important; font-size:13px !important; font-weight:600 !important; background:var(--white) !important; color:var(--text-mid) !important; border:1px solid var(--border) !important; border-radius:11px !important; }
+.btn-edit-cancel:hover { background:var(--off) !important; color:var(--black) !important; border-color:color-mix(in srgb,var(--black) 15%,var(--border)) !important; }
+html.mono .btn-edit-save { box-shadow:0 8px 20px rgba(0,0,0,.18); }
+
+/* ═══ Altair ═══ */
+.alt-hero { position:relative; overflow:hidden; border-radius:16px !important; padding:16px !important; background:linear-gradient(135deg,#0b1633,#162a5c 55%,#1d6fb3) !important; }
+.alt-hero::after { content:''; position:absolute; inset:0; background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.08) 45%,transparent 60%); transform:translateX(-100%); animation:altBrillo 5s ease-in-out infinite; pointer-events:none; }
+@keyframes altBrillo { 0%,55% { transform:translateX(-100%); } 85%,100% { transform:translateX(100%); } }
+.alt-hero b { font:700 15px 'Plus Jakarta Sans',sans-serif !important; }
+.alt-ej { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.alt-ej span { font-size:11px; color:#e0f2fe; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.16); padding:4px 9px; border-radius:999px; }
+html.mono .alt-hero { background:linear-gradient(135deg,#0a0a0a,#262626) !important; }
+html.mono .alt-orb { background:radial-gradient(circle at 30% 30%,#fafafa,#a3a3a3 50%,#404040) !important; box-shadow:0 0 22px rgba(255,255,255,.25) !important; }
+.alt-t { font-family:'Plus Jakarta Sans',sans-serif !important; margin-top:4px; }
+.alt-row { padding:13px 4px !important; border-radius:10px; border-bottom:1px solid var(--border) !important; transition:background .15s; font-family:'Plus Jakarta Sans',sans-serif !important; }
+.alt-row:hover { background:var(--off); }
+.alt-row b { font-size:13.5px !important; font-weight:700; }
+.alt-row small { font-size:12px !important; }
+/* Interruptor con resorte */
+.alt-sw { width:46px !important; height:27px !important; background:color-mix(in srgb,var(--black) 14%,var(--white)) !important; transition:background .25s ease, box-shadow .25s !important; box-shadow:inset 0 1px 2px rgba(0,0,0,.12); }
+.alt-sw::after { top:3px !important; left:3px !important; width:21px !important; height:21px !important; background:#fff !important; box-shadow:0 2px 5px rgba(0,0,0,.22) !important; transition:left .32s cubic-bezier(.3,1.45,.55,1), width .2s ease !important; }
+.alt-sw:active::after { width:26px !important; }
+.alt-sw:checked { background:var(--blue) !important; box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 14%,transparent); }
+.alt-sw:checked::after { left:22px !important; }
+.alt-sw:checked:active::after { left:17px !important; }
+.alt-sw:focus-visible { outline:none; box-shadow:var(--ring); }
+html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !important; }
+.alt-acts { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+.alt-act { display:flex; align-items:center; gap:10px; padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--white); color:var(--blue); cursor:pointer; text-align:left; }
+.alt-act span b { display:block; font:700 12.5px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
+.alt-act span small { display:block; font-size:11px; color:var(--text-soft); margin-top:1px; }
+.alt-act:hover { border-color:color-mix(in srgb,var(--blue) 35%,var(--border)); box-shadow:0 8px 20px rgba(11,22,64,.08); transform:translateY(-2px); }
+@media (max-width:420px) { .alt-acts { grid-template-columns:1fr; } }
+
+/* ═══ Más vida: entrada de secciones, tarjetas escalonadas y avisos ═══ */
+@media (prefers-reduced-motion: no-preference) {
+  .page.active { animation:pageIn .34s var(--ease-out) both; }
+  @keyframes pageIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .rg-grid > .rg-card { animation:cardIn .42s var(--ease-out) both; }
+  .rg-grid > .rg-card:nth-child(2) { animation-delay:.04s; } .rg-grid > .rg-card:nth-child(3) { animation-delay:.08s; } .rg-grid > .rg-card:nth-child(4) { animation-delay:.12s; }
+  .rg-grid > .rg-card:nth-child(5) { animation-delay:.16s; } .rg-grid > .rg-card:nth-child(6) { animation-delay:.2s; } .rg-grid > .rg-card:nth-child(7) { animation-delay:.24s; } .rg-grid > .rg-card:nth-child(8) { animation-delay:.28s; }
+  @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.985); } to { opacity:1; transform:none; } }
+  .toast.show { animation:toastIn .38s cubic-bezier(.3,1.4,.55,1) both; }
+  @keyframes toastIn { from { transform:translateX(-50%) translateY(24px) scale(.96); opacity:0; } to { transform:translateX(-50%) translateY(0) scale(1); opacity:1; } }
+  .nav-tab.active { animation:navIn .3s var(--ease-out); }
+  @keyframes navIn { from { transform:scale(.97); } to { transform:none; } }
+  .btn-edit-save, .alt-act, .hdr-search { transition:transform var(--t-med) var(--ease-out), box-shadow var(--t-med), background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), filter var(--t-fast); }
+  .btn-edit-save:hover { transform:translateY(-1px); }
+}
+@media (prefers-reduced-motion: reduce) { .hdr-live::after, .alt-hero::after, .alt-orb { animation:none !important; } }
+
+
+/* Saludo del inicio y avatar con ícono */
+.hdr-user .user-avatar { color:#fff; }
+.hdr-user .user-avatar svg { display:block; }
+.dash-saludo { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:2px 0 22px; }
+.dash-saludo h2 { font:800 26px/1.15 'Plus Jakarta Sans',sans-serif; letter-spacing:-.5px; color:var(--black); }
+.dash-saludo p { font-size:13px; color:var(--text-soft); margin-top:4px; }
+.dash-saludo-btn { flex:none; height:34px; padding:0 14px; border-radius:9px; border:1px solid var(--border); background:var(--white); color:var(--text-mid); font:600 12.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.dash-saludo-btn:hover { background:var(--off); color:var(--black); transform:translateY(-1px); }
+@media (prefers-reduced-motion: no-preference) { .dash-saludo h2 { animation:cardIn .5s var(--ease-out) both; } }
+@media (max-width:600px) { .dash-saludo h2 { font-size:21px; } .dash-saludo-btn { display:none; } }
+html.mono:not(.dark) .hdr-user .user-avatar { color:#fff; }
+html.dark.mono .hdr-user .user-avatar { color:#fff; }
+
 /* Datos del cliente del aliado en Facturación */
 .al-hbox { margin:12px 0 4px; padding:14px; border:1px solid var(--border); border-left:3px solid var(--blue); border-radius:12px; background:var(--bg-alt); }
 .al-hbox-t { font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-mid); }
@@ -2284,6 +2425,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     </div>
   </div>
   <div class="header-right">
+    <button class="hdr-search" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
     <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente y automatizaciones" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg><span class="hide-m">Altair</span></button>
     <button class="btn-logout hdr-opt" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
     <button class="btn-logout theme-toggle" onclick="toggleTema()" title="Modo noche / día" aria-label="Cambiar entre modo noche y modo día" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg class="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
@@ -2300,7 +2442,25 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       </div>
     </div>
     <div class="live-dot">EN VIVO</div>
-    <div class="user-avatar" id="user-avatar-init">?</div>
+    <div class="hdr-user">
+      <button class="user-avatar" id="user-avatar-init" onclick="toggleMenuUsuario(event)" aria-haspopup="true" aria-expanded="false" title="Tu cuenta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      <span class="hdr-live" title="Conectado en vivo"></span>
+      <div class="hdr-menu" id="hdr-menu" role="menu">
+        <div class="hdr-menu-head"><b id="hdr-menu-nombre">Mi cuenta</b><small id="hdr-menu-correo"></small><span class="hdr-menu-live">Conectado en vivo</span></div>
+        <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirPerfil()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg><span>Configurar perfil</span></button>
+        <button class="hdr-mi" role="menuitem" onclick="toggleTema();cerrarMenuUsuario()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Modo noche / día</span><kbd>N</kbd></button>
+        <div class="hdr-mi-colors"><span>Color</span><div>
+          <button onclick="setColor('#1438cc')" style="background:#1438cc" title="Azul" aria-label="Azul"></button>
+          <button onclick="setColor('#dc2626')" style="background:#dc2626" title="Rojo" aria-label="Rojo"></button>
+          <button onclick="setColor('#d97706')" style="background:#d97706" title="Amarillo" aria-label="Amarillo"></button>
+          <button onclick="setColor('mono')" class="cm-mono" title="Blanco y negro" aria-label="Blanco y negro"></button>
+        </div></div>
+        <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirDiagnostico()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Probar sistema</span></button>
+        <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirBuscador()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Buscar</span><kbd>Ctrl K</kbd></button>
+        <div class="hdr-menu-sep"></div>
+        <button class="hdr-mi danger" role="menuitem" onclick="logoutUser()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Salir</span></button>
+      </div>
+    </div>
     <button class="btn-logout btn-salir" onclick="logoutUser()" title="Salir" aria-label="Salir"><i class="fa-solid fa-right-from-bracket"></i><span> Salir</span></button>
   </div>
 </header>
@@ -2554,6 +2714,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <div class="dash-main">
 
     <!-- RESUMEN GENERAL: lo importante de cada sección -->
+    <div class="dash-saludo"><div><h2 id="dash-saludo-t">Bienvenido</h2><p id="dash-saludo-s"></p></div><button class="dash-saludo-btn" onclick="abrirPerfil()" title="Configurar perfil">Editar perfil</button></div>
     <div class="db-head"><div class="dash-section-label" style="margin:0;">Resumen general</div><span style="font-size:11px;color:var(--text-soft);">Toca una tarjeta para ir a la sección</span></div>
     <div id="dash-resumen" class="rg-grid"></div>
 
@@ -3155,6 +3316,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <div class="modal-overlay" id="modalPortal">
   <div class="edit-sheet" style="max-width:480px;">
     <div class="edit-sheet-header">
+      <button class="sheet-x" onclick="closePortalModal()" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       <h3 id="mp-title">Portal</h3>
       <p id="mp-sub"></p>
     </div>
@@ -3569,8 +3731,7 @@ function showApp(user) {
   hideSplash();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display    = 'block';
-  const ini = (user.displayName || user.email || '?')[0].toUpperCase();
-  document.getElementById('user-avatar-init').textContent = ini;
+  pintarPerfil(user);
   initPage();
   cargarBadgeResenasWeb();
   setTimeout(() => llIniciar().catch(e => console.warn('Llamadas', e)), 2500);
@@ -7692,6 +7853,7 @@ async function renderResumenGeneral() {
   if (document.getElementById('page-dashboard').classList.contains('active')) el.innerHTML = tarjetas(extra);
 }
 function renderDashboard() {
+  pintarSaludo();
   renderResumenGeneral();
   renderCobranza();
   const now          = new Date();
@@ -9365,6 +9527,130 @@ function abrirPortalDeCliente(clienteId) {
 }
 
 /* ── Modal genérico ── */
+
+
+/* ═══ Perfil y saludo ═══ */
+function nombrePerfil(u) { u = u || currentUser; return (u?.displayName || '').trim(); }
+function pintarPerfil(u) {
+  u = u || currentUser;
+  const n = nombrePerfil(u), mn = document.getElementById('hdr-menu-nombre'), mc = document.getElementById('hdr-menu-correo');
+  if (mn) mn.textContent = n || 'Mi cuenta';
+  if (mc) mc.textContent = u?.email || '';
+  pintarSaludo();
+}
+function pintarSaludo() {
+  const t = document.getElementById('dash-saludo-t'), sub = document.getElementById('dash-saludo-s');
+  if (!t) return;
+  const h = new Date().getHours(), n = nombrePerfil();
+  const saludo = h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  t.textContent = n ? `${saludo}, ${n.split(' ')[0]}` : `${saludo}, bienvenido`;
+  const f = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (sub) sub.textContent = f.charAt(0).toUpperCase() + f.slice(1) + (n ? '' : ' · Pon tu nombre en "Editar perfil"');
+}
+function abrirPerfil() {
+  const u = currentUser;
+  ptModal('Configurar perfil', 'Así te saluda el panel y te ve tu equipo', `
+    <div class="ff"><label>Tu nombre</label><input id="pf-nom" value="${esc(nombrePerfil(u))}" placeholder="Ej. Andrés Espina" maxlength="60"></div>
+    <div class="ff"><label>Correo de acceso</label><input value="${esc(u?.email || '')}" disabled></div>
+    <button class="btn-edit-save" onclick="guardarPerfil()">Guardar</button>`);
+  setTimeout(() => document.getElementById('pf-nom')?.focus(), 80);
+}
+async function guardarPerfil() {
+  const n = (document.getElementById('pf-nom')?.value || '').trim().replace(/\s+/g, ' ');
+  if (!n) return toast('Escribe tu nombre', 'err');
+  try { await currentUser.updateProfile({ displayName: n }); pintarPerfil(currentUser); closePortalModal(); toast(`Listo, ${n.split(' ')[0]}`); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+
+/* ═══ Menú de usuario (avatar) ═══ */
+function toggleMenuUsuario(e) {
+  e?.stopPropagation();
+  const m = document.getElementById('hdr-menu'), b = document.getElementById('user-avatar-init');
+  const abrir = !m.classList.contains('open');
+  m.classList.toggle('open', abrir); b.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+}
+function cerrarMenuUsuario() { document.getElementById('hdr-menu')?.classList.remove('open'); document.getElementById('user-avatar-init')?.setAttribute('aria-expanded', 'false'); }
+document.addEventListener('click', e => { if (!e.target.closest('.hdr-user')) cerrarMenuUsuario(); });
+
+/* ═══ Buscador rápido (Ctrl+K o /): secciones, clientes, facturas y acciones ═══ */
+let _bsSel = 0, _bsRes = [];
+function _bsIco(d) { return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`; }
+const BS_ICO = {
+  seccion: _bsIco('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
+  cliente: _bsIco('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+  factura: _bsIco('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
+  accion: _bsIco('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>')
+};
+function _bsAcciones() {
+  const ir = p => () => irASeccion(p);
+  return [
+    { t: 'Nueva factura', d: 'Ir a Facturación', fn: () => { irASeccion('facturacion'); setTimeout(() => document.getElementById('cli-nom')?.focus(), 250); } },
+    { t: 'Nuevo cliente', d: 'Abrir ficha en blanco', fn: () => { irASeccion('clientes'); setTimeout(() => openClienteModal(), 250); } },
+    { t: 'Modo noche / día', d: 'Cambiar el tema', fn: () => toggleTema() },
+    { t: 'Altair y automatizaciones', d: 'Tu asistente en Telegram', fn: () => abrirAltair() },
+    { t: 'Probar sistema', d: 'Revisar que todo funcione', fn: () => abrirDiagnostico() },
+    { t: 'Suscripciones por cobrar', d: 'Hosting, dominios y planes', fn: ir('suscripciones') }
+  ];
+}
+function abrirBuscador() {
+  let o = document.getElementById('bs-over');
+  if (!o) {
+    o = document.createElement('div'); o.id = 'bs-over'; o.className = 'bs-over';
+    o.innerHTML = `<div class="bs-box" role="dialog" aria-label="Buscar">
+      <div class="bs-in">${_bsIco('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>')}<input id="bs-q" placeholder="Busca un cliente, una factura (FAC-…) o una sección" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div>
+      <div class="bs-list" id="bs-list"></div>
+      <div class="bs-foot"><span><kbd>↑</kbd><kbd>↓</kbd> moverte</span><span><kbd>Enter</kbd> abrir</span><span><kbd>Esc</kbd> cerrar</span></div></div>`;
+    document.body.appendChild(o);
+    o.addEventListener('click', e => { if (e.target === o) cerrarBuscador(); });
+    const q = o.querySelector('#bs-q');
+    q.addEventListener('input', () => { _bsSel = 0; _bsPintar(q.value); });
+    q.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); _bsSel = Math.min(_bsSel + 1, _bsRes.length - 1); _bsMarcar(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); _bsSel = Math.max(_bsSel - 1, 0); _bsMarcar(); }
+      else if (e.key === 'Enter') { e.preventDefault(); _bsAbrir(_bsSel); }
+      else if (e.key === 'Escape') cerrarBuscador();
+    });
+  }
+  cerrarMenuUsuario();
+  o.classList.add('open');
+  const q = o.querySelector('#bs-q'); q.value = ''; _bsSel = 0; _bsPintar('');
+  setTimeout(() => q.focus(), 30);
+}
+function cerrarBuscador() { document.getElementById('bs-over')?.classList.remove('open'); }
+function _bsPintar(texto) {
+  const n = ptNorm(texto || ''), has = t => !n || ptNorm(t).includes(n);
+  const secciones = [...document.querySelectorAll('.nav-tab')].map(b => { const m = (b.getAttribute('onclick') || '').match(/switchPage\('([a-z]+)'/); return m ? { t: b.textContent.trim().replace(/\s+/g, ' '), d: 'Sección', tipo: 'seccion', fn: () => b.click() } : null; })
+    .filter(Boolean).filter((x, i, a) => a.findIndex(y => y.t === x.t) === i);
+  const acciones = _bsAcciones().map(a => ({ ...a, tipo: 'accion' }));
+  const grupos = [];
+  if (!n) { grupos.push(['Acciones rápidas', acciones]); grupos.push(['Secciones', secciones.slice(0, 8)]); }
+  else {
+    const cli = (clientesList || []).filter(c => has([clNombre(c), c.empresa, c.correo, c.telefono].filter(Boolean).join(' '))).slice(0, 6)
+      .map(c => ({ t: clNombre(c), d: [c.empresa, c.telefono || c.correo].filter(Boolean).join(' · ') || 'Cliente', tipo: 'cliente', fn: () => { irASeccion('clientes'); setTimeout(() => openClienteModal(c._id), 250); } }));
+    const fac = Object.entries(docsMap || {}).map(([k, d]) => ({ ...d, _fsId: d._fsId || k })).filter(d => d.type !== 'cotizacion' && has([d.docId, d.cli, d.clienteFinal, d.aliado].filter(Boolean).join(' ')))
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 6)
+      .map(d => ({ t: `${d.docId || 'Documento'} · ${d.cli || '—'}`, d: `$${(Number(d.total) || 0).toFixed(2)} · ${d.pagado || d.type === 'recibo' ? 'Pagada' : d.pagadoParcial ? 'Pago parcial' : 'Pendiente'}${d.fecha ? ' · ' + d.fecha : ''}`, tipo: 'factura', fn: () => openSheetById(d._fsId) }));
+    grupos.push(['Acciones', acciones.filter(a => has(a.t + ' ' + a.d))], ['Secciones', secciones.filter(x => has(x.t))], ['Clientes', cli], ['Facturas', fac]);
+  }
+  _bsRes = []; let html = '';
+  grupos.filter(g => g[1].length).forEach(([titulo, items]) => {
+    html += `<div class="bs-g">${titulo}</div>`;
+    items.forEach(it => { const i = _bsRes.push(it) - 1; html += `<button class="bs-it" data-i="${i}" onmouseenter="_bsSel=${i};_bsMarcar()" onclick="_bsAbrir(${i})"><span class="bs-ic">${BS_ICO[it.tipo]}</span><span class="bs-tx"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="bs-go">↵</span></button>`; });
+  });
+  document.getElementById('bs-list').innerHTML = html || `<div class="bs-vacio">No encontré nada con “${esc(texto)}”. Prueba con el nombre del cliente o el número de factura.</div>`;
+  _bsMarcar();
+}
+function _bsMarcar() { document.querySelectorAll('#bs-list .bs-it').forEach(b => b.classList.toggle('on', +b.dataset.i === _bsSel)); document.querySelector('#bs-list .bs-it.on')?.scrollIntoView({ block: 'nearest' }); }
+function _bsAbrir(i) { const it = _bsRes[i]; if (!it) return; cerrarBuscador(); try { it.fn(); } catch (e) { console.warn(e); } }
+document.addEventListener('keydown', e => {
+  const enCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); document.getElementById('bs-over')?.classList.contains('open') ? cerrarBuscador() : abrirBuscador(); return; }
+  if (enCampo || document.getElementById('app-shell')?.style.display === 'none') return;
+  if (e.key === '/') { e.preventDefault(); abrirBuscador(); }
+  else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) toggleTema();
+  else if (e.key === 'Escape') { cerrarMenuUsuario(); if (document.getElementById('modalPortal')?.classList.contains('show')) closePortalModal(); }
+});
+
 function ptModal(title, sub, html) {
   document.querySelector('#modalPortal .edit-sheet').style.maxWidth = '480px';
   document.getElementById('mp-title').textContent = title;
@@ -10872,18 +11158,18 @@ function abrirAltair() {
   ptModal('Altair', 'Tu asistente: háblale en Telegram y deja que trabaje por ti', `
     <div class="alt-hero">
       <div class="alt-orb"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg></div>
-      <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz: "¿Cuánto me debe Ana?", "¿Quién vence esta semana?", "Recuérdale a Luis que pague", "Crea una factura para Pedro de 200 por una web". Te responde con su voz.</small></div>
+      <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz o un mensaje y te responde con su voz. Por ejemplo:</small>
+        <div class="alt-ej"><span>¿Cuánto me debe Ana?</span><span>¿Quién vence esta semana?</span><span>Recuérdale a Luis que pague</span><span>Factura a Pedro de $200 por una web</span></div></div>
     </div>
     <div class="alt-t">Automatizaciones</div>
     ${fila('cobrador', 'Cobrador amable', 'Día 3 y día 8 de atraso le escribe al cliente por correo; el día 15 te avisa para que llames.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
     ${fila('chaching', 'Cha-ching al cobrar', 'Sonido de caja registradora y confeti en este panel cuando entra un pago.')}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
-      <button class="btn-edit-cancel" style="margin:0;" onclick="ejecutarTareaBot('briefing', this)">Probar briefing</button>
-      <button class="btn-edit-cancel" style="margin:0;" onclick="sonarChaching();lanzarConfeti();">Probar cha-ching</button>
-    </div>
-    <button class="btn-edit-cancel" onclick="closePortalModal()">Cerrar</button>`);
+    <div class="alt-acts">
+      <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>
+      <button class="alt-act" onclick="sonarChaching();lanzarConfeti();"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
+    </div>`);
 }
 async function cambiarAuto(k, on) {
   if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) { sonarChaching(); lanzarConfeti(); } return; }
