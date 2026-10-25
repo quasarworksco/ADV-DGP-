@@ -2290,6 +2290,50 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 
 
 
+
+/* ═══ Vista previa de Facturación con el diseño real ═══ */
+@media (min-width:1100px) { .panel-f:has(#ipv) { position:sticky; top:calc(var(--hdr-h, 71px) + 16px); align-self:start; } }
+.ipv { background:#fff; color:#0f172a; border:1px solid #e6e9f2; border-top:5px solid #0b1640; border-radius:14px; padding:20px 20px 16px; margin:8px 0 12px; box-shadow:0 10px 30px rgba(11,22,64,.08); transition:border-color .3s; }
+.ipv.recibo { border-top-color:#059669; }
+.ipv-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; padding-bottom:14px; border-bottom:1px solid #eef1f6; }
+.ipv-brand { display:flex; gap:10px; align-items:center; min-width:0; }
+.ipv-logo { width:36px; height:36px; object-fit:contain; border-radius:9px; box-shadow:0 0 0 1px #e6e9f2; padding:3px; background:#fff; flex:none; }
+.ipv-brand b { display:block; font:800 11.5px/1.15 'Plus Jakarta Sans',sans-serif; letter-spacing:1.4px; text-transform:uppercase; color:#0b1640; }
+.ipv-brand small { display:block; font-size:10px; color:#64748b; line-height:1.4; margin-top:2px; }
+.ipv-doc { text-align:right; flex:none; }
+.ipv-type { font:800 17px/1 'Plus Jakarta Sans',sans-serif; letter-spacing:2.5px; color:#0b1640; transition:color .3s; }
+.ipv.recibo .ipv-type { color:#065f46; }
+.ipv-num { font-size:10.5px; color:#64748b; margin-top:4px; font-variant-numeric:tabular-nums; }
+.ipv-status { display:inline-flex; align-items:center; gap:5px; margin-top:7px; padding:3px 9px; border-radius:999px; font:700 9.5px 'Plus Jakarta Sans',sans-serif; letter-spacing:.8px; text-transform:uppercase; background:#fff7e6; color:#b45309; transition:background .3s, color .3s; }
+.ipv-status::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.ipv.recibo .ipv-status { background:#e8f8ef; color:#047857; }
+.ipv-cli { padding:14px 0 10px; }
+.ipv-cli span { display:block; font-size:9px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:#8a94a8; }
+.ipv-cli b { display:block; font:800 15px/1.25 'Plus Jakarta Sans',sans-serif; color:#0f172a; margin-top:2px; transition:color .2s; }
+.ipv-cli b.vacio { color:#cbd2e1; }
+.ipv-cli small { display:block; font-size:11px; color:#64748b; margin-top:2px; }
+.ipv-nota { font-size:11.5px; color:#475569; background:#f8fafc; border:1px solid #e6e9f2; border-left:3px solid #d97706; border-radius:8px; padding:8px 10px; margin-bottom:10px; line-height:1.45; }
+.ipv-nota b { color:#0f172a; }
+.ipv .empty-cart { color:#94a3b8 !important; border:1.5px dashed #e6e9f2; border-radius:10px; padding:18px !important; width:100%; margin:4px 0; background:transparent !important; }
+.ipv .ipv-tabla { width:100%; margin:4px 0 0; }
+.ipv .ipv-tabla thead th { background:transparent !important; border:0 !important; border-bottom:1.5px solid #0f172a !important; color:#475569 !important; font-size:9px !important; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; padding:6px 4px !important; }
+.ipv .ipv-tabla thead th:first-child { padding-left:0 !important; }
+.ipv .ipv-tabla td { border-bottom:1px solid #eef1f6 !important; padding:10px 4px !important; color:#334155 !important; font-size:12.5px; vertical-align:top; background:transparent !important; }
+.ipv .ipv-tabla td:first-child { padding-left:0 !important; }
+.ipv .ipv-tabla td.ctr, .ipv .ipv-tabla th.ctr { text-align:center; }
+.ipv .ipv-tabla td:nth-child(3) { color:#0f172a !important; }
+.ipv-item { font-weight:600; color:#0f172a; }
+.ipv-item-sub { font-size:10.5px; color:#94a3b8; margin-top:1px; }
+.ipv .ipv-tabla tbody tr { animation:cardIn .3s var(--ease-out) both; }
+.ipv .cart-total { margin-top:12px !important; padding:13px 16px !important; border-radius:11px !important; background:#0b1640 !important; border:0 !important; transition:background .3s; }
+.ipv.recibo .cart-total { background:#065f46 !important; }
+.ipv .cart-total-label { color:rgba(255,255,255,.72) !important; font-size:9.5px !important; font-weight:700; letter-spacing:1.8px !important; text-transform:uppercase; }
+.ipv .cart-total-value { color:#fff !important; font:800 22px/1 'Plus Jakarta Sans',sans-serif !important; font-variant-numeric:tabular-nums; }
+.ipv-foot { text-align:center; font-size:10.5px; color:#64748b; line-height:1.5; margin-top:12px; }
+.ipv-foot b { color:#0f172a; font-weight:600; }
+html.mono .ipv { border-top-color:#111; } html.mono .ipv-type, html.mono .ipv-brand b { color:#111; } html.mono .ipv .cart-total { background:#111 !important; }
+html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
+
 /* ═══ Campana de avisos ═══ */
 .av-wrap { position:relative; display:flex; }
 .av-btn { position:relative; width:36px; height:36px; border-radius:10px; border:1px solid var(--border); background:var(--white); color:var(--text-mid); display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -2708,20 +2752,28 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 
       <!-- CART -->
       <div class="panel-f" style="display:flex;flex-direction:column;">
-        <div class="panel-title-f">Vista Previa del Documento</div>
+        <div class="panel-title-f">Vista previa</div>
         <div class="prev-meta" id="prev-meta"></div>
-
-        <div id="cart-empty" class="empty-cart" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Añade servicios para comenzar</div>
-        <table class="cart-table" id="cart-table" style="display:none;">
-          <thead><tr><th>Servicio</th><th style="text-align:right">Subtotal</th><th></th></tr></thead>
-          <tbody id="cart-list"></tbody>
-        </table>
+        <div class="ipv" id="ipv">
+          <div class="ipv-head">
+            <div class="ipv-brand"><img src="/logo.png" alt="" class="ipv-logo"><div><b>DGP Global Group</b><small>dgpglobalgroup.com<br>Diseño web y sistemas</small></div></div>
+            <div class="ipv-doc"><div class="ipv-type" id="ipv-type">FACTURA</div><div class="ipv-num">N° se asigna al guardar</div><div class="ipv-num" id="ipv-fecha"></div><span class="ipv-status" id="ipv-status">Pendiente de pago</span></div>
+          </div>
+          <div class="ipv-cli"><span>Facturado a</span><b id="ipv-cli" class="vacio">Nombre del cliente</b><small id="ipv-ref"></small></div>
+          <div class="ipv-nota" id="ipv-nota" hidden><b>Instrucciones de pago:</b> <span id="ipv-nota-t"></span></div>
+        <div id="cart-empty" class="empty-cart" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Agrega servicios para verlos aquí</div>
+          <table class="cart-table ipv-tabla" id="cart-table" style="display:none;">
+            <thead><tr><th>Descripción</th><th class="ctr">Cant.</th><th style="text-align:right">Importe</th><th></th></tr></thead>
+            <tbody id="cart-list"></tbody>
+          </table>
+          <div class="cart-total" id="cart-total" style="display:none;">
+            <span class="cart-total-label" id="ipv-total-l">Total a pagar</span>
+            <span class="cart-total-value" id="cart-total-val">$0.00</span>
+          </div>
+          <div class="ipv-foot" id="ipv-foot">Una vez realizado el pago, recibirás tu recibo de confirmación.<br><b>DGP Global Group — dgpglobalgroup.com</b></div>
+        </div>
         <div id="precio-intel"></div>
         <div id="al-hosting-box" class="al-hbox" hidden></div>
-        <div class="cart-total" id="cart-total" style="display:none;">
-          <span class="cart-total-label">Total</span>
-          <span class="cart-total-value" id="cart-total-val">$0.00</span>
-        </div>
 
         <button class="btn-primary-f" id="btn-submit" onclick="saveDoc()" style="margin-top:auto;padding-top:16px;display:inline-flex;align-items:center;gap:6px;justify-content:center;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura
@@ -6953,8 +7005,28 @@ function actualizarResumenDoc() {
     + `<span${cli ? ' class="on"' : ''}>${cli ? 'Para: ' + esc(cli) : 'Sin cliente'}</span>`
     + (emisor ? `<span>Emite: ${esc(emisor)}</span>` : '')
     + (portal ? '<span class="on">Se registra en su portal</span>' : '');
+  ipvActualizar();
 }
-document.addEventListener('input', e => { if (e.target && e.target.id === 'cli-nom') actualizarResumenDoc(); });
+/* Vista previa con el diseño real de la factura */
+function ipvActualizar() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const recibo = v('doc-type') === 'recibo';
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  document.getElementById('ipv')?.classList.toggle('recibo', recibo);
+  set('ipv-type', recibo ? 'RECIBO' : 'FACTURA');
+  set('ipv-fecha', 'Fecha: ' + fmtDate());
+  set('ipv-status', recibo ? 'Pago confirmado' : 'Pendiente de pago');
+  set('ipv-total-l', recibo ? 'Total pagado' : 'Total a pagar');
+  const cli = v('cli-nom'), cEl = document.getElementById('ipv-cli');
+  if (cEl) { cEl.textContent = cli || 'Nombre del cliente'; cEl.classList.toggle('vacio', !cli); }
+  const ref = v('pago-ref'), emisor = v('doc-emisor');
+  set('ipv-ref', [ref ? 'Ref: ' + ref : '', emisor ? 'Emitida por: ' + emisor : ''].filter(Boolean).join(' · '));
+  const nota = v('doc-nota'), nEl = document.getElementById('ipv-nota');
+  if (nEl) { nEl.hidden = recibo || !nota; set('ipv-nota-t', nota); }
+  const foot = document.getElementById('ipv-foot');
+  if (foot) foot.innerHTML = (recibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.') + '<br><b>DGP Global Group — dgpglobalgroup.com</b>';
+}
+document.addEventListener('input', e => { if (e.target && ['cli-nom', 'doc-nota', 'pago-ref'].includes(e.target.id)) actualizarResumenDoc(); });
 document.addEventListener('change', e => { if (e.target && ['doc-type', 'doc-emisor', 'cli-nom'].includes(e.target.id)) actualizarResumenDoc(); });
 
 function renderCart() {
@@ -6966,8 +7038,9 @@ function renderCart() {
   let html = '';
   cart.forEach((item, i) => {
     html += `<tr>
-      <td><div style="font-weight:500">${esc(item.s)}</div><div style="font-size:10px;color:var(--text-soft)">x${item.c} · $${item.p.toFixed(2)} c/u</div></td>
-      <td style="text-align:right;font-weight:600">$${item.t.toFixed(2)}</td>
+      <td><div class="ipv-item">${esc(item.s)}</div><div class="ipv-item-sub">$${item.p.toFixed(2)} c/u</div></td>
+      <td class="ctr">${item.c}</td>
+      <td style="text-align:right;font-weight:700">$${item.t.toFixed(2)}</td>
       <td><button class="remove-btn" onclick="removeItem(${i})">×</button></td>
     </tr>`;
   });
