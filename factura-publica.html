@@ -292,6 +292,58 @@
       .pub-terms-contact { margin:16px 0 0; border-radius:0; flex-direction:column; }
       .pub-terms-accept { padding:12px 20px 24px; }
     }
+
+    /* ═══ Membrete profesional (oct 2026) ═══ */
+    .pub-card { border-radius:18px; }
+    .pub-zigzag-dark, .pub-zigzag-blue { display:none; }
+    .inv-head { position:relative; padding:30px 32px 22px; background:#fff; border-top:5px solid #0b1640; display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+    .inv-head.recibo { border-top-color:#059669; }
+    .inv-brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .inv-logo { width:44px; height:44px; object-fit:contain; border-radius:10px; box-shadow:0 0 0 1px #e6e9f2; padding:4px; background:#fff; }
+    .inv-brand-name { font:800 14px/1.1 'Plus Jakarta Sans',sans-serif; letter-spacing:1.8px; text-transform:uppercase; color:#0b1640; }
+    .inv-brand-sub { font:500 11px/1.4 'IBM Plex Sans',sans-serif; color:#64748b; margin-top:3px; }
+    .inv-doc { text-align:right; flex:none; }
+    .inv-type { font:800 22px/1 'Plus Jakarta Sans',sans-serif; letter-spacing:3px; color:#0b1640; }
+    .inv-head.recibo .inv-type { font-size:17px; letter-spacing:2px; color:#065f46; }
+    .inv-num { font:600 12px 'IBM Plex Sans',sans-serif; color:#64748b; margin-top:6px; font-variant-numeric:tabular-nums; letter-spacing:.3px; }
+    .inv-status { display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 10px; border-radius:999px; font:700 10px 'IBM Plex Sans',sans-serif; letter-spacing:1px; text-transform:uppercase; }
+    .inv-status::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .inv-status.pendiente { background:#fff7e6; color:#b45309; }
+    .inv-status.parcial { background:#fff1e7; color:#c2410c; }
+    .inv-status.pagado { background:#e8f8ef; color:#047857; }
+    .pub-body { padding:0 32px; }
+    .pub-meta { border-top:1px solid #eef1f6; padding-top:14px; }
+    .pub-meta-label { font-size:9.5px; font-weight:700; letter-spacing:1.4px; color:#8a94a8; }
+    .pub-meta-value { font:700 13px 'IBM Plex Sans',sans-serif; color:#0f172a; }
+    .pub-client, .pub-client.blue { background:transparent; border:0; border-radius:0; padding:0; }
+    .pub-client-label, .pub-client-label.dark, .pub-client-label.blue { font-size:9.5px; font-weight:700; letter-spacing:1.4px; color:#8a94a8; }
+    .pub-client-name { font:800 17px/1.25 'Plus Jakarta Sans',sans-serif; letter-spacing:0; color:#0f172a; margin-top:3px; }
+    .pub-nota { background:#f8fafc; border:1px solid #e6e9f2; border-left:3px solid #d97706; border-radius:8px; color:#475569; }
+    .pub-nota strong { color:#0f172a; }
+    .pub-partial-value { font:800 18px 'IBM Plex Sans',sans-serif; }
+    .pub-body thead th { background:transparent; border:0; border-bottom:1.5px solid #0f172a; border-radius:0 !important; color:#475569; font-size:9.5px; font-weight:700; letter-spacing:1.2px; padding:8px; }
+    .pub-body thead th:first-child { padding-left:0; border-left:0; }
+    .pub-body thead th:last-child { padding-right:0; border-right:0; }
+    .pub-body tbody td { padding:12px 8px; border-bottom:1px solid #eef1f6; color:#334155; }
+    .pub-body tbody td:first-child { padding-left:0; }
+    .pub-body tbody td:last-child { padding-right:0; color:#0f172a; }
+    .pub-body .item-name { font-weight:600; }
+    .pub-sub { padding:12px 0 0; }
+    .pub-total { margin:14px 32px 0; padding:16px 18px; border-radius:12px; }
+    .pub-total.dark { background:#0b1640; }
+    .pub-total.blue { background:#065f46; }
+    .pub-total-label { color:rgba(255,255,255,.7); font-weight:700; letter-spacing:2px; }
+    .pub-total-amount { font:800 26px/1 'Plus Jakarta Sans',sans-serif; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
+    .pub-btn { transition:transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s, background-color .15s; }
+    .pub-btn:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(11,22,64,.10); }
+    .pub-btn:active { transform:scale(.97); }
+    @media (max-width:480px) {
+      .inv-head { padding:26px 20px 18px; flex-direction:column; gap:14px; }
+      .inv-doc { text-align:left; }
+      .pub-body { padding:0 20px; }
+      .pub-total { margin:14px 20px 0; }
+    }
+    @media print { .inv-head, .inv-status, .pub-total { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   </style>
 </head>
 <body>
@@ -878,14 +930,16 @@
     );
 
     card.innerHTML = `
-      <div class="${headerClass}">
-        <div class="pub-brandrow">
-          <img src="/logo-white.png" alt="DGP Group" class="pub-logo">
-          <div><div class="pub-brand">DGP GLOBAL GROUP</div><div class="pub-brand-sub">dgpglobalgroup.com · Diseño web y sistemas</div></div>
+      <div class="inv-head${isRecibo ? ' recibo' : ''}">
+        <div class="inv-brand">
+          <img src="/logo.png" alt="DGP Global Group" class="inv-logo">
+          <div><div class="inv-brand-name">DGP Global Group</div><div class="inv-brand-sub">dgpglobalgroup.com<br>Diseño web y sistemas</div></div>
         </div>
-        <div class="pub-title">${docTitle}</div>
-        <div class="pub-docnum">N° ${esc(doc.docId || id)}</div>
-        <div class="pub-badge ${badgeClass}">${badgeText}</div>
+        <div class="inv-doc">
+          <div class="inv-type">${isRecibo ? 'RECIBO' : 'FACTURA'}</div>
+          <div class="inv-num">N° ${esc(doc.docId || doc._fsId)}</div>
+          <span class="inv-status ${badgeClass}">${badgeText}</span>
+        </div>
       </div>
       <div class="${zigzagClass}"></div>
       <div class="pub-body">
