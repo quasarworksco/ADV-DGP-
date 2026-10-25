@@ -2311,8 +2311,11 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 /* ═══ Entrada con partículas ═══ */
 .sp-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; transition:opacity .6s ease; }
 .sp-canvas.sp-fuera { opacity:0; }
-#sp-logo { opacity:0; animation:none !important; transition:opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1); transform:scale(.96); }
-#sp-logo.sp-ya { opacity:1; transform:none; }
+#sp-logo { opacity:0; animation:none !important; transform:none !important; filter:none !important; transition:opacity .45s ease; }
+#sp-logo.sp-ya { opacity:1; }
+#splash-screen .splash-logo-text { min-height:40px; align-items:center; }
+html body #splash-screen #splash-saludo.splash-logo-sub { min-height:40px; }
+#splash-screen { justify-content:center; }
 .sp-l { animation-delay:calc(1.25s + var(--i) * 38ms) !important; }
 html body #splash-screen #splash-saludo.splash-logo-sub { animation-delay:1.95s !important; }
 html body #splash-screen .splash-bar-wrap { animation-delay:2s !important; }
@@ -2698,7 +2701,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       var o = off.getContext('2d'); o.drawImage(img, 0, 0, S, S);
       var d; try { d = o.getImageData(0, 0, S, S).data; } catch (e) { img.classList.add('sp-ya'); return; }
       var pts = [], paso = Math.max(2, Math.round(S / 48));
-      for (var y = 0; y < S; y += paso) for (var x = 0; x < S; x += paso) if (d[(y * S + x) * 4 + 3] > 140) pts.push([r.left + x, r.top + y]);
+      for (var y = 0; y < S; y += paso) for (var x = 0; x < S; x += paso) if (d[(y * S + x) * 4 + 3] > 140) pts.push([x, y]);
       var P = pts.map(function (t) {
         return { x: Math.random() * W, y: Math.random() * H, tx: t[0], ty: t[1], dl: Math.random() * 420, s: 0.7 + Math.random() * 1 };
       });
@@ -2706,7 +2709,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       var ease = function (k) { return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
       (function cuadro(now) {
         ctx.clearRect(0, 0, W, H);
-        var listo = true;
+        var listo = true, rr = img.getBoundingClientRect(), esc = (rr.width || S) / S;  // destino según dónde está el logo ahora
+        for (var j = 0; j < P.length; j++) { P[j].tx = rr.left + pts[j][0] * esc; P[j].ty = rr.top + pts[j][1] * esc; }
         for (var i = 0; i < P.length; i++) {
           var p = P[i], k = Math.min(1, Math.max(0, (now - t0 - p.dl) / DUR)), e = ease(k);
           if (k < 1) listo = false;
