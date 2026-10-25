@@ -2858,15 +2858,12 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     </div>
     <div class="db-grid-2">
       <div class="cb-card">
-        <div class="cb-title">Ventas por empleado</div>
-        <div class="cb-sub">Según el emisor de cada factura</div>
-        <div id="dash-emp-bars"></div>
-      </div>
-      <div class="cb-card">
         <div class="cb-title">Top clientes</div>
         <div class="cb-sub">Los que más compraron en el período</div>
         <div id="dash-top-clients"></div>
-        <div class="cb-title" style="margin-top:18px;">Servicios más vendidos</div>
+      </div>
+      <div class="cb-card">
+        <div class="cb-title">Servicios más vendidos</div>
         <div class="cb-sub">Por cantidad de ventas</div>
         <div id="dash-top-services"></div>
       </div>
@@ -8041,7 +8038,8 @@ function renderDashboard() {
     }
   });
   const maxEmp = Math.max(...Object.values(empSums), 0.01);
-  document.getElementById('dash-emp-bars').innerHTML = EMPLEADOS.map(e => {
+  // Ventas por empleado ya no se muestran (solo hay un vendedor); se deja el cálculo por si vuelve a hacer falta
+  (document.getElementById('dash-emp-bars') || {}).innerHTML = EMPLEADOS.map(e => {
     const v   = empSums[e.nombre]   || 0;
     const cnt = empCounts[e.nombre] || 0;
     const avg = cnt > 0 ? (v / cnt) : 0;
