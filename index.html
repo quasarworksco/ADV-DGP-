@@ -2292,6 +2292,46 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 
 
 
+
+
+/* ═══ Pantalla de carga en blanco y negro ═══ */
+#splash-screen { background:radial-gradient(circle at 50% 42%,#1c1c1e 0,#0a0a0a 55%,#000 100%) !important; }
+#splash-screen::before { background:radial-gradient(circle,rgba(255,255,255,.14) 0,transparent 62%) !important; opacity:1 !important; }
+.splash-logo { width:104px; height:104px; object-fit:contain; margin-bottom:22px; filter:drop-shadow(0 10px 30px rgba(255,255,255,.12)); animation:splashLogo 1s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes splashLogo { 0% { opacity:0; transform:scale(.7) translateY(10px); filter:blur(6px) drop-shadow(0 0 0 transparent); } 100% { opacity:1; transform:none; filter:blur(0) drop-shadow(0 10px 30px rgba(255,255,255,.12)); } }
+#splash-screen .splash-logo-text { font-size:30px !important; letter-spacing:7px !important; color:rgba(255,255,255,.62) !important; }
+#splash-screen .splash-logo-text span { color:rgba(255,255,255,.62) !important; }
+#splash-screen #splash-saludo.splash-logo-sub { font:800 30px/1.2 'Plus Jakarta Sans',sans-serif !important; letter-spacing:-.4px !important; color:#fff !important; margin-top:16px !important; animation:splashFadeUp .8s .25s ease both !important; }
+#splash-screen .splash-bar-wrap { background:rgba(255,255,255,.1) !important; width:180px !important; margin-top:28px !important; }
+#splash-screen .splash-bar { background:linear-gradient(90deg,#9ca3af,#fff) !important; }
+@media (max-width:600px) { .splash-logo { width:84px; height:84px; } #splash-screen .splash-logo-text { font-size:22px !important; letter-spacing:5px !important; } #splash-screen #splash-saludo.splash-logo-sub { font-size:24px !important; } }
+
+/* ═══ Historial, clientes, gráfica y pantallas vacías ═══ */
+.hr-p-pend { background:#fff7e6 !important; color:#b45309 !important; }
+.hr-p-venc { background:#fef2f2; color:#b91c1c; }
+html.dark .hr-p-pend { background:rgba(245,158,11,.15) !important; color:#fbbf24 !important; } html.dark .hr-p-venc { background:rgba(239,68,68,.15); color:#f87171; }
+.hr-fecha small { display:block; font-size:10.5px; color:var(--text-soft); margin-top:2px; white-space:nowrap; }
+.hr-fecha small.tarde { color:#dc2626; font-weight:600; }
+.hist-filter-btn { text-transform:none !important; letter-spacing:0 !important; font-size:12.5px !important; font-weight:600 !important; transition:background .15s, color .15s, border-color .15s, transform .2s var(--ease-out); }
+.hist-filter-btn:hover { transform:translateY(-1px); }
+.hr-row { transition:background .15s, box-shadow .2s, transform .2s var(--ease-out); }
+.hr-row:hover { transform:translateX(2px); }
+.cl-num.cl-d.debe { color:#b91c1c; font-weight:800; }
+.cl-av { box-shadow:0 0 0 3px color-mix(in srgb,var(--white) 70%,transparent); transition:transform .25s var(--ease-out); }
+.cl-row:hover .cl-av { transform:scale(1.08) rotate(-4deg); }
+.cb-meta line { stroke:#16a34a; stroke-width:1.5; opacity:.8; }
+.cb-meta text { fill:#16a34a; font:700 10px 'Plus Jakarta Sans',sans-serif; }
+.cb-tip { border-radius:10px !important; padding:8px 11px !important; line-height:1.5; box-shadow:0 10px 24px rgba(0,0,0,.25); transition:opacity .15s, left .12s var(--ease-out); }
+.vacio { display:flex; flex-direction:column; align-items:center; text-align:center; padding:40px 16px 44px; color:color-mix(in srgb,var(--blue) 55%,var(--text-soft)); }
+.vacio svg { margin-bottom:10px; animation:vacioFlota 4s ease-in-out infinite; }
+@keyframes vacioFlota { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+.vacio b { font:800 17px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
+.vacio p { font-size:13px; color:var(--text-soft); max-width:360px; margin:6px 0 16px; line-height:1.5; }
+.vacio-btn { height:38px; padding:0 18px; border:0; border-radius:10px; background:var(--blue); color:#fff; font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; box-shadow:0 8px 20px color-mix(in srgb,var(--blue) 28%,transparent); }
+.vacio-btn:hover { transform:translateY(-1px); filter:brightness(1.06); }
+html.dark.mono .vacio-btn, html.mono .vacio-btn { color:#fff; }
+@media (prefers-reduced-motion: reduce) { .vacio svg { animation:none; } }
+
 /* ═══ 1) Menos mayúsculas espaciadas: títulos en texto normal y negrita ═══ */
 .panel-title-f, .dash-section-label, .hist-section-title, .al-sec-h, .proy-section-title, .pt-toolbar-title, .hr-sec-t, .scl-t, .srv-rap-t, .alt-t, .pi-t, .cal-mes, .cd-mes, .sa-v2 .sa-label, .edit-add-section .edit-section-label {
   text-transform:none !important; letter-spacing:-.15px !important; font-family:'Plus Jakarta Sans',sans-serif !important; font-weight:800 !important; font-size:15px !important; color:var(--black) !important; }
@@ -2540,7 +2580,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 
 <!-- ─── LOGIN SCREEN ─── -->
 <div id="splash-screen">
-  <img src="/logo-white.png" alt="DGP Global Group" style="width:64px;height:64px;object-fit:contain;margin-bottom:16px;">
+  <img src="/logo-white.png" alt="DGP Global Group" class="splash-logo">
   <div class="splash-logo-text">DGP GLOBAL GROUP <span>LLC</span></div>
   <div class="splash-logo-sub" id="splash-saludo">Sistema de Gestión</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
@@ -2866,6 +2906,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
             <button class="hist-filter-btn" data-filter="factura" onclick="setHistFilter('factura',this)">Pendientes</button>
             <button class="hist-filter-btn" data-filter="parcial" onclick="setHistFilter('parcial',this)">Parciales</button>
             <button class="hist-filter-btn" data-filter="recibo" onclick="setHistFilter('recibo',this)">Pagados</button>
+            <button class="hist-filter-btn" data-filter="vencidas" onclick="setHistFilter('vencidas',this)">Vencidas</button>
+            <button class="hist-filter-btn" data-filter="mes" onclick="setHistFilter('mes',this)">Pagadas este mes</button>
+            <button class="hist-filter-btn" data-filter="aliados" onclick="setHistFilter('aliados',this)">De aliados</button>
           </div>
           <div class="hist-filters" id="hist-emisor-filters" style="margin-top:6px;"></div>
         </div>
@@ -7664,6 +7707,7 @@ function setHistEmisorFilter(f, btn) {
   renderHistorial();
 }
 
+function histDias(d) { const f = new Date(_fechaIso(d.fecha)); return isNaN(f) ? 0 : Math.floor((Date.now() - f) / 864e5); }
 function setHistFilter(f, btn) {
   histFilter = f;
   document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
@@ -7702,10 +7746,15 @@ function renderHistorial() {
   if (histFilter === 'factura') allDocs = allDocs.filter(d => d.type === 'factura' && !d.pagado && !d.pagadoParcial);
   else if (histFilter === 'parcial') allDocs = allDocs.filter(d => !!d.pagadoParcial && !d.pagado);
   else if (histFilter === 'recibo')  allDocs = allDocs.filter(d => d.pagado || d.type === 'recibo');
+  else if (histFilter === 'vencidas') allDocs = allDocs.filter(d => !d.pagado && d.type !== 'recibo' && histDias(d) > 15);
+  else if (histFilter === 'mes') { const ym = new Date().toISOString().slice(0, 7); allDocs = allDocs.filter(d => (d.pagado || d.type === 'recibo') && _fechaIso(d.fechaPago || d.fecha).startsWith(ym)); }
+  else if (histFilter === 'aliados') allDocs = allDocs.filter(d => !!d.aliadoId);
   if (histEmisorFilter !== 'todos') allDocs = allDocs.filter(d => d.emisor === histEmisorFilter);
 
   if (!allDocs.length) {
-    container.innerHTML = `<div style="text-align:center;color:var(--text-soft);font-size:12px;padding:28px 0;">${q || histFilter !== 'todos' || histEmisorFilter !== 'todos' ? 'No se encontraron resultados.' : 'Sin documentos registrados aún'}</div>`;
+    container.innerHTML = q || histFilter !== 'todos' || histEmisorFilter !== 'todos'
+      ? vacioHTML('buscar', 'Nada por aquí', 'No hay facturas con esa búsqueda o filtro.', 'Ver todas', "document.getElementById('hist-search').value='';setHistFilter('todos',document.querySelector('[data-filter=todos]'))")
+      : vacioHTML('facturas', 'Crea tu primera factura', 'Cuando hagas una factura o recibo aparecerá aquí, con su estado y lo que falta por cobrar.', 'Nueva factura', "document.querySelector('.subtab-btn')?.click()");
     return;
   }
 
@@ -7717,7 +7766,8 @@ function renderHistorial() {
     const id = esc(d._fsId || '');
     const comps = compPendientes(d).length;
     const saldo = cbSaldo(d);
-    const pill = { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
+    const dias = grupo !== 'pagado' ? histDias(d) : 0;
+    const pill = grupo !== 'pagado' && dias > 15 ? ['Vencida', 'hr-p-venc'] : { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
     const servicios = (d.items || []).map(i => i.s).join(', ');
     const principal = grupo === 'pendiente'
       ? `<button class="hr-btn ok" onclick="event.stopPropagation();marcarPagado('${id}')">${HR_ICON.check}<span>Pagado</span></button>`
@@ -7731,7 +7781,7 @@ function renderHistorial() {
         <div class="hr-cli">${esc(d.cli || '—')}</div>
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
-      <span class="hr-fecha">${esc(d.fecha || '—')}</span>
+      <span class="hr-fecha">${esc(d.fecha || '—')}${grupo !== 'pagado' && dias > 0 ? `<small class="${dias > 15 ? 'tarde' : ''}">hace ${dias} día${dias !== 1 ? 's' : ''}</small>` : ''}${d.aliado ? `<small>Aliado: ${esc(d.aliado)}</small>` : ''}</span>
       <div class="hr-monto">$${(d.total || 0).toFixed(2)}${grupo === 'parcial' ? `<small>Debe $${saldo.toFixed(2)}</small>` : ''}</div>
       <div class="hr-acc">
         ${principal}
@@ -8843,7 +8893,9 @@ function renderClientes() {
   const total = clientesList.length;
   document.getElementById('clientes-count').textContent = (q || clTagFiltro) ? `${lista.length} de ${total}` : total;
   if (!lista.length) {
-    container.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-soft);font-size:13px;">${q || clTagFiltro ? 'No se encontraron clientes con ese filtro.' : 'Aún no hay clientes. ¡Agrega el primero!'}</div>`;
+    container.innerHTML = q || clTagFiltro
+      ? vacioHTML('buscar', 'Sin resultados', 'No hay clientes con esa búsqueda o filtro. Prueba con otro nombre, correo o teléfono.', 'Limpiar búsqueda', "document.getElementById('clientes-search').value='';setClTagFiltro('');renderClientes()")
+      : vacioHTML('clientes', 'Agrega tu primer cliente', 'Aquí verás a cada cliente con lo que te ha comprado, lo que debe y su última factura.', 'Nuevo cliente', 'openClienteModal()');
     return;
   }
   // Orden
@@ -8871,6 +8923,8 @@ function renderClientes() {
       <div class="cl-num cl-ult"><small>Última</small>${x.ultima ? x.ultima.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</div>
       <div class="hr-acc">
         ${tel ? `<button class="hr-ico" title="WhatsApp" style="color:#16a34a;" onclick="event.stopPropagation();window.open('https://wa.me/${tel}','_blank')">${WA}</button>` : ''}
+        <button class="hr-ico" title="Factura nueva" onclick="event.stopPropagation();facturaPara('${esc(c._id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg></button>
+        ${c.portalCodigo ? `<button class="hr-ico" title="Ver portal" onclick="event.stopPropagation();irASeccion('portal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>` : ''}
         <button class="hr-ico" title="Editar" onclick="event.stopPropagation();openClienteModal('${esc(c._id)}')">${HR_ICON.edit}</button>
         <button class="hr-ico del" title="Eliminar" onclick="event.stopPropagation();deleteCliente('${esc(c._id)}')">${HR_ICON.del}</button>
       </div>
@@ -8878,6 +8932,24 @@ function renderClientes() {
   }).join('')}</div>`;
 }
 
+
+/* ═══ Pantallas vacías con dibujo y botón de acción ═══ */
+const VACIO_DIB = {
+  clientes: '<circle cx="60" cy="44" r="18"/><path d="M28 98c4-18 18-28 32-28s28 10 32 28"/><circle cx="96" cy="34" r="10" opacity=".5"/><path d="M86 70c6-6 14-8 22-5" opacity=".5"/>',
+  facturas: '<rect x="34" y="18" width="52" height="70" rx="6"/><path d="M44 36h32M44 48h32M44 60h20"/><circle cx="88" cy="84" r="16" opacity=".9"/><path d="M82 84h12M88 78v12"/>',
+  buscar: '<circle cx="54" cy="52" r="24"/><path d="M72 70l20 20"/><path d="M46 52h16" opacity=".5"/>'
+};
+function vacioHTML(dib, titulo, texto, btnTxt, btnFn) {
+  return `<div class="vacio"><svg width="120" height="110" viewBox="0 0 120 110" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${VACIO_DIB[dib] || ''}</svg>
+    <b>${titulo}</b><p>${texto}</p>${btnTxt ? `<button class="vacio-btn" onclick="${btnFn}">${btnTxt}</button>` : ''}</div>`;
+}
+
+// Desde la ficha de un cliente: ir a Facturación con su nombre ya puesto
+function facturaPara(id) {
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  irASeccion('facturacion');
+  setTimeout(() => { const nb = document.querySelector('.subtab-btn'); if (nb && !nb.classList.contains('active')) nb.click(); const i = document.getElementById('cli-nom'); if (i) { i.value = clNombre(c); i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); } document.getElementById('cart-empty')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 250);
+}
 function openClienteModal(id) {
   editClienteId = id || null;
   const c = id ? clientesList.find(x => x._id === id) : null;
@@ -10274,7 +10346,8 @@ function renderCobranza() {
 
   // Gráfico de barras (SVG)
   const W = 560, H = 190, padL = 44, padB = 22, padT = 16, cw = (W - padL) / 12, bw = Math.min(26, cw - 10);
-  const maxMes = Math.max(...meses.map(x => x.total), 1);
+  const metaM = typeof metaMensual === 'number' && metaMensual > 0 ? metaMensual : 0;
+  const maxMes = Math.max(...meses.map(x => x.total), metaM, 1);
   const paso = Math.pow(10, Math.floor(Math.log10(maxMes)));
   const tope = Math.ceil(maxMes / paso) * paso;
   const y = v => padT + (H - padT - padB) * (1 - v / tope);
@@ -10315,7 +10388,7 @@ function renderCobranza() {
       <div class="cb-card cb-chart${window._cbAnimado ? '' : ' cb-anim'}" id="cb-chart">
         <div class="cb-title">Ingresos cobrados por mes</div>
         <div class="cb-sub">Últimos 12 meses · pagos registrados en facturas</div>
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cobrados por mes, últimos 12 meses">${grid}${barras}</svg>
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cobrados por mes, últimos 12 meses">${grid}${barras}${metaM ? `<g class="cb-meta"><line x1="${padL}" x2="${W}" y1="${y(metaM)}" y2="${y(metaM)}" stroke-dasharray="5 4"></line><text x="${W - 2}" y="${y(metaM) - 5}" text-anchor="end">Meta ${cbMoney(metaM).replace('.00', '')}</text></g>` : ''}</svg>
         <div class="cb-tip" id="cb-tip"></div>
         <details style="margin-top:8px;"><summary style="font-size:11px;color:var(--text-soft);cursor:pointer;">Ver como tabla</summary>
           <table class="cb-table" style="margin-top:6px;"><tr><th>Mes</th><th class="num">Cobrado</th><th class="num">Pagos</th></tr>
@@ -10344,7 +10417,8 @@ function renderCobranza() {
   card.querySelectorAll('.cb-bar').forEach(g => {
     g.addEventListener('mouseenter', () => {
       const x = meses[+g.dataset.i];
-      tip.innerHTML = `${NOMBRES[x.m]} ${x.y}<br><strong>${cbMoney(x.total)}</strong> · ${x.n} pago${x.n !== 1 ? 's' : ''}`;
+      const dif = metaM ? x.total - metaM : 0;
+      tip.innerHTML = `${NOMBRES[x.m]} ${x.y}<br><strong>${cbMoney(x.total)}</strong> · ${x.n} pago${x.n !== 1 ? 's' : ''}${metaM ? `<br><span style="color:${dif >= 0 ? '#4ade80' : '#fbbf24'}">${dif >= 0 ? 'Superó la meta por ' + cbMoney(dif) : 'Faltaron ' + cbMoney(-dif) + ' para la meta'}</span>` : ''}`;
       const rc = card.getBoundingClientRect(), rb = g.getBoundingClientRect();
       tip.style.left = (rb.left - rc.left + rb.width / 2) + 'px';
       tip.style.top = (rb.top - rc.top + 18) + 'px';
