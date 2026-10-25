@@ -2727,6 +2727,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <button class="proy-filter-btn" onclick="filterProyectos('seguidores',this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Seguidores</button>
       <button class="proy-filter-btn" onclick="filterProyectos('redes',this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes</button>
       <button class="proy-filter-btn" onclick="filterProyectos('ads',this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> ADS</button>
+      <button class="proy-filter-btn" onclick="filterProyectos('crm',this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg> CRM</button>
       <button class="proy-filter-btn" onclick="filterProyectos('logo',this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg> LOGO</button>
     </div>
     <div id="proy-list"></div>
@@ -6247,6 +6248,37 @@ ${claudeMdNegocio(b)}
 
 Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
 
+  } else if (tipo === 'crm') {
+    const lista = a => (a && a.length) ? a.map(x => '  · ' + x).join('\n') : '  · —';
+    prompt = `Hola Andrés, aquí está el brief para el CRM a medida:
+
+BRIEF — CRM A MEDIDA
+
+CONTACTO
+  · Negocio: ${b.negocio || '—'} (${b.industria || '—'})
+  · Nombre: ${b.nombre || '—'}
+  · Correo: ${b.correo || '—'} · WhatsApp: ${b.tel || '—'}
+
+MÓDULOS
+${lista(b.modulos)}
+
+INTEGRACIONES
+${lista(b.integraciones)}
+
+EQUIPO Y OPERACIÓN
+  · Usuarios: ${b.usuarios || '—'} · Roles: ${b.roles || '—'}
+  · Hoy lo maneja con: ${b.manejoActual || '—'} · Datos a migrar: ${b.migrar || '—'}
+  · Idioma: ${b.idioma || '—'} · Dispositivo: ${b.dispositivo || '—'}
+
+PROCESO
+  · Cómo trabaja: ${b.proceso || '—'}
+  · Lo que más le cuesta: ${b.dolor || '—'}
+  · Fecha deseada: ${b.fechaDeseada || '—'}
+  · Referencia: ${b.referencia || '—'}
+  · Notas: ${b.extra || '—'}
+
+Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
+
   } else if (tipo === 'ads') {
     prompt = `Hola Andrés, aquí está el brief para la campaña publicitaria:
 
@@ -6330,9 +6362,10 @@ function renderProyectos() {
   const container = document.getElementById('proy-list');
   if (!container) return;
 
-  const TIPO_LABEL = { web:'Sitio Web', seguidores:'Seguidores', redes:'Redes Sociales', ads:'Publicidad', logo:'Identidad Visual' };
-  const TIPO_CLS   = { web:'web', seguidores:'seg', redes:'red', ads:'ads', logo:'logo' };
+  const TIPO_LABEL = { web:'Sitio Web', seguidores:'Seguidores', redes:'Redes Sociales', ads:'Publicidad', logo:'Identidad Visual', crm:'CRM a medida' };
+  const TIPO_CLS   = { web:'web', seguidores:'seg', redes:'red', ads:'ads', logo:'logo', crm:'web' };
   const TIPO_ICON  = {
+    crm:        `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>`,
     logo:       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`,
     web:        `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
     seguidores: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
@@ -6469,6 +6502,19 @@ function renderProyectos() {
           <div class="proy-row"><span class="proy-row-key">Tono</span><span class="proy-row-val">${esc(b.tono||'—')}</span></div>
           ${b.extra ? `<div class="proy-row"><span class="proy-row-key">Notas</span><span class="proy-row-val">${esc(b.extra)}</span></div>` : ''}
         </div>`;
+
+    } else if (tipo === 'crm') {
+      const fila = (k, v) => v ? `<div class="proy-row"><span class="proy-row-key">${k}</span><span class="proy-row-val">${esc(v)}</span></div>` : '';
+      const chips = arr => (arr || []).map(x => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:999px;background:var(--blue-xlight);color:var(--text-mid);font-size:11px;font-weight:600;">${esc(x)}</span>`).join('') || '<span style="font-size:12px;color:var(--text-soft);">Ninguno marcado</span>';
+      detalles = `
+        <div class="proy-section"><div class="proy-section-title">Contacto</div>
+          ${fila('Negocio', b.negocio)}${fila('Nombre', b.nombre)}${fila('Correo', b.correo)}${fila('WhatsApp', b.tel)}${fila('Industria', b.industria)}</div>
+        <div class="proy-section"><div class="proy-section-title">Módulos</div><div>${chips(b.modulos)}</div></div>
+        <div class="proy-section"><div class="proy-section-title">Integraciones</div><div>${chips(b.integraciones)}</div></div>
+        <div class="proy-section"><div class="proy-section-title">Equipo y operación</div>
+          ${fila('Usuarios', b.usuarios)}${fila('Roles', b.roles)}${fila('Hoy lo maneja con', b.manejoActual)}${fila('Datos a migrar', b.migrar)}${fila('Idioma', b.idioma)}${fila('Dispositivo', b.dispositivo)}</div>
+        <div class="proy-section"><div class="proy-section-title">Proceso</div>
+          ${fila('Cómo trabaja', b.proceso)}${fila('Lo que más le cuesta', b.dolor)}${fila('Fecha deseada', b.fechaDeseada)}${fila('Referencia', b.referencia)}${fila('Notas', b.extra)}</div>`;
 
     } else if (tipo === 'ads') {
       detalles = `

@@ -114,7 +114,24 @@
     .helio-body.open { max-height:800px; }
     @media print { .helio-section { display:none; } }
     /* ── Brief del Proyecto ── */
-    .brief-section { margin:0 32px 20px; }
+    .brief-section { margin:0 32px 20px; position:relative; z-index:1; }
+    .brief-section + .pub-actions, .pub-actions { position:relative; z-index:0; margin-top:4px; }
+    .crm-help { font-size:11.5px; color:#64748b; line-height:1.5; margin:0 0 10px; }
+    .crm-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .crm-chip { display:flex; gap:9px; align-items:flex-start; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; cursor:pointer; background:#fff; transition:border-color .15s, background-color .15s, box-shadow .2s; }
+    .crm-chip:hover { border-color:#c7d0e4; }
+    .crm-chip input { margin-top:2px; accent-color:#0b1640; flex:none; }
+    .crm-chip b { display:block; font-size:12px; font-weight:600; color:#0f172a; line-height:1.3; }
+    .crm-chip small { display:block; font-size:10.5px; color:#64748b; margin-top:2px; line-height:1.35; }
+    .crm-chip:has(input:checked) { border-color:#0b1640; background:#f5f7fc; box-shadow:0 0 0 3px rgba(11,22,64,.06); }
+    .crm-grid.compact .crm-chip { padding:9px 12px; }
+    .crm-radios { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+    .crm-radio { cursor:pointer; }
+    .crm-radio input { position:absolute; opacity:0; pointer-events:none; }
+    .crm-radio span { display:inline-block; padding:7px 12px; border:1.5px solid #e2e8f0; border-radius:999px; font-size:12px; color:#334155; transition:all .15s; }
+    .crm-radio input:checked + span { background:#0b1640; border-color:#0b1640; color:#fff; }
+    .crm-radio input:focus-visible + span { box-shadow:0 0 0 3px rgba(11,22,64,.18); }
+    @media (max-width:480px) { .crm-grid { grid-template-columns:1fr; } }
     .brief-toggle { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#0b1640 0%,#14246b 60%,#1438cc 130%); border-radius:12px; padding:14px 18px; cursor:pointer; user-select:none; }
     .brief-toggle-left { display:flex; align-items:center; gap:10px; }
     .brief-toggle-icon { font-size:22px; }
@@ -418,7 +435,8 @@
       redes:      /redes|social|instagram|facebook|contenido|community|manejo/.test(texto),
       ads:        /ads|publicidad|pauta|campa[ñn]a|google ads|meta ads/.test(texto),
       seguidores: /seguidor|follower|crecimiento|seguidores|\blikes?\b|me gusta/.test(texto),
-      logo:       /identidad|logo|marca|branding|paquete/.test(texto)
+      logo:       /identidad|logo|marca|branding|paquete/.test(texto),
+      crm:        /\bcrm\b|sistema a medida|software a medida|sistema de gesti/.test(texto)
     };
   }
 
@@ -1037,7 +1055,7 @@
   ══════════════════════════════════════════ */
   function renderBrief(doc, fsId) {
     const s = detectServicios(doc.items);
-    if (!s.web && !s.seguidores && !s.redes && !s.ads && !s.logo) return '';
+    if (!s.web && !s.seguidores && !s.redes && !s.ads && !s.logo && !s.crm) return '';
 
     const contactName = 'Andrés';
     if (doc.brief) {
@@ -1051,7 +1069,8 @@
     }
 
     let formHTML = '';
-    if (s.web)        formHTML = _briefWebForm(fsId, doc);
+    if (s.crm)        formHTML = _briefCrmForm(fsId, doc);
+    else if (s.web)   formHTML = _briefWebForm(fsId, doc);
     else if (s.logo)  formHTML = _briefLogoForm(fsId);
     else if (s.seguidores) formHTML = _briefSeguidoresForm(doc, fsId);
     else if (s.redes) formHTML = _briefRedesForm(fsId);
@@ -1064,7 +1083,7 @@
           <span class="brief-toggle-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
           <div class="brief-toggle-text">
             <strong>Brief del Proyecto</strong>
-            <small>Cuéntanos lo que necesitamos para empezar — opcional pero importante</small>
+            <small>${s.crm ? 'Elige los módulos e integraciones de tu CRM' : 'Cuéntanos lo que necesitamos para empezar — opcional pero importante'}</small>
           </div>
         </div>
         <span class="brief-toggle-arrow" id="brief-arrow">▼</span>
@@ -1516,6 +1535,80 @@
       <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','logo')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar brief</button>
       <div class="brief-err" id="brief-err"></div>`;
   }
+  /* Brief de CRM / sistema a medida: módulos e integraciones basados en los CRM que ya construimos */
+  const CRM_MODULOS = [
+    ['Clientes y contactos', 'Fichas con historial, notas y documentos'],
+    ['Prospectos y embudo de ventas', 'Etapas, seguimiento y recordatorios'],
+    ['Cotizaciones', 'Propuestas que el cliente acepta en línea'],
+    ['Facturación y cobros', 'Facturas, recibos, abonos y saldos pendientes'],
+    ['Suscripciones y pagos recurrentes', 'Planes mensuales o anuales con aviso de cobro'],
+    ['Proyectos y tareas', 'Estados, responsables y fechas de entrega'],
+    ['Agenda y citas', 'Calendario de reservas o visitas'],
+    ['Inventario y productos', 'Existencias, precios y movimientos'],
+    ['Equipo, roles y permisos', 'Cada usuario ve solo lo que le corresponde'],
+    ['Portal privado para clientes', 'Tus clientes ven sus facturas y avances'],
+    ['Contratos con firma digital', 'El cliente firma desde el celular'],
+    ['Gastos y comisiones', 'Control de gastos y pagos a vendedores'],
+    ['Reportes y panel de ventas', 'Gráficas de ingresos, cobranza y metas'],
+    ['Encuestas y reseñas', 'Satisfacción del cliente después del servicio'],
+  ];
+  const CRM_INTEGRACIONES = [
+    'WhatsApp (mensajes listos)', 'Correos automáticos', 'Avisos por Telegram', 'Formularios de tu página web',
+    'Pagos en línea (tarjeta, PayPal, Zelle)', 'Llamadas y SMS', 'Google Calendar', 'Google Sheets / Excel',
+    'Leads de Facebook e Instagram', 'Asistente con inteligencia artificial'
+  ];
+  function _briefCrmForm(fsId, doc) {
+    const chip = (name, val, sub) => `<label class="crm-chip"><input type="checkbox" name="${name}" value="${esc(val)}"><span><b>${esc(val)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
+    const radio = (name, opts) => `<div class="crm-radios">${opts.map(o => `<label class="crm-radio"><input type="radio" name="${name}" value="${esc(o)}"><span>${esc(o)}</span></label>`).join('')}</div>`;
+    return `
+      <div class="brief-step">
+        <div class="brief-step-title">Datos de contacto</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Tu nombre <span class="req">*</span></label><input id="b-nombre" class="brief-input" type="text" placeholder="Nombre y apellido"></div>
+          <div class="brief-field"><label class="brief-label">Correo <span class="req">*</span></label><input id="b-correo" class="brief-input" type="email" placeholder="correo@ejemplo.com" value="${esc(doc.clienteCorreo || '')}"></div>
+        </div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Nombre del negocio <span class="req">*</span></label><input id="b-negocio" class="brief-input" type="text" placeholder="Mi Empresa LLC" value="${esc(doc.cli || '')}"></div>
+          <div class="brief-field"><label class="brief-label">WhatsApp</label><input id="b-tel" class="brief-input" type="tel" placeholder="+1 (000) 000-0000"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">¿A qué se dedica tu negocio? <span class="req">*</span></label><input id="b-industria" class="brief-input" type="text" placeholder="Ej: compañía de limpieza, constructora, tienda, agencia de seguros"></div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">Módulos que necesitas</div>
+        <p class="crm-help">Marca todo lo que tu equipo usaría. Si no sabes, marca lo más importante y lo definimos juntos.</p>
+        <div class="crm-grid">${CRM_MODULOS.map(([m, d]) => chip('b-mod', m, d)).join('')}</div>
+        <div class="brief-field" style="margin-top:10px;"><label class="brief-label">¿Otra sección que necesites?</label><input id="b-mod-otro" class="brief-input" type="text" placeholder="Ej: control de flota, órdenes de trabajo, membresías"></div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">Integraciones</div>
+        <div class="crm-grid compact">${CRM_INTEGRACIONES.map(i => chip('b-int', i)).join('')}</div>
+        <div class="brief-field" style="margin-top:10px;"><label class="brief-label">¿Usas otro programa que deba conectarse?</label><input id="b-int-otro" class="brief-input" type="text" placeholder="Ej: QuickBooks, Square, Shopify"></div>
+        <p class="crm-help">Algunas integraciones tienen costo de terceros (por ejemplo, llamadas o pagos con tarjeta). Te lo confirmamos antes de empezar.</p>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">Tu equipo y tu operación</div>
+        <div class="brief-field"><label class="brief-label">¿Cuántas personas usarán el CRM?</label>${radio('b-usuarios', ['Solo yo', '2 a 5', '6 a 15', 'Más de 15'])}</div>
+        <div class="brief-field"><label class="brief-label">¿Qué roles habrá? (ej: dueño, vendedor, contabilidad)</label><input id="b-roles" class="brief-input" type="text" placeholder="Dueño, 2 vendedores, 1 asistente"></div>
+        <div class="brief-field"><label class="brief-label">¿Cómo lo manejas hoy?</label>${radio('b-hoy', ['Excel o Google Sheets', 'Papel / cuaderno', 'Otro programa', 'Todavía no lo llevo'])}</div>
+        <div class="brief-field"><label class="brief-label">¿Hay datos que pasar al CRM?</label>${radio('b-migrar', ['Sí, tengo un Excel o CSV', 'Sí, de otro programa', 'No, empiezo de cero'])}</div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">Idioma del sistema</label>${radio('b-idioma', ['Español', 'Inglés', 'Ambos'])}</div>
+          <div class="brief-field"><label class="brief-label">¿Dónde lo usarán más?</label>${radio('b-dispositivo', ['Computadora', 'Celular', 'Ambos'])}</div>
+        </div>
+      </div>
+      <div class="brief-step">
+        <div class="brief-step-title">Cuéntanos más</div>
+        <div class="brief-field"><label class="brief-label">Describe paso a paso cómo trabaja tu negocio hoy <span class="req">*</span></label><textarea id="b-proceso" class="brief-input brief-textarea" placeholder="Ej: el cliente llama, le hacemos un estimado, agendamos la visita, hacemos el trabajo y cobramos en 2 partes"></textarea></div>
+        <div class="brief-field"><label class="brief-label">¿Qué es lo que más tiempo te quita o se te olvida?</label><textarea id="b-dolor" class="brief-input brief-textarea" style="min-height:60px" placeholder="Ej: dar seguimiento a cotizaciones, saber quién me debe"></textarea></div>
+        <div class="brief-2col">
+          <div class="brief-field"><label class="brief-label">¿Para cuándo lo necesitas?</label><input id="b-fecha" class="brief-input" type="date"></div>
+          <div class="brief-field"><label class="brief-label">Un sistema que te guste (opcional)</label><input id="b-ref" class="brief-input" type="text" placeholder="Nombre o enlace"></div>
+        </div>
+        <div class="brief-field"><label class="brief-label">Algo más que debamos saber</label><textarea id="b-extra" class="brief-input brief-textarea" style="min-height:60px"></textarea></div>
+      </div>
+      <button class="brief-submit-btn" onclick="guardarBrief('${fsId}','crm')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enviar brief del CRM</button>
+      <div class="brief-err" id="brief-err"></div>`;
+  }
   function _briefAdsForm(fsId) {
     return `
       <div class="brief-step">
@@ -1655,6 +1748,22 @@
         estilo: marcados('b-estilo').join(', '), tipoLogo: marcados('b-tipologo')[0] || '',
         colores: v('b-colores'), noGusta: v('b-nogusta'), referencias: v('b-ref'),
         usos: marcados('b-usos'), extra: v('b-extra'),
+      };
+    } else if (tipo === 'crm') {
+      if (!negocio || !v('b-industria') || !v('b-proceso')) {
+        errEl.style.display = 'block';
+        errEl.textContent   = 'Por favor completa los campos obligatorios (*)';
+        btn.disabled = false; btn.textContent = 'Enviar brief del CRM';
+        return;
+      }
+      const marcados = n => [...document.querySelectorAll(`input[name="${n}"]:checked`)].map(c => c.value);
+      const uno = n => document.querySelector(`input[name="${n}"]:checked`)?.value || '';
+      brief = { ...brief, negocio, tel: v('b-tel'), industria: v('b-industria'),
+        modulos: [...marcados('b-mod'), ...(v('b-mod-otro') ? [v('b-mod-otro')] : [])],
+        integraciones: [...marcados('b-int'), ...(v('b-int-otro') ? [v('b-int-otro')] : [])],
+        usuarios: uno('b-usuarios'), roles: v('b-roles'), manejoActual: uno('b-hoy'), migrar: uno('b-migrar'),
+        idioma: uno('b-idioma'), dispositivo: uno('b-dispositivo'),
+        proceso: v('b-proceso'), dolor: v('b-dolor'), fechaDeseada: v('b-fecha'), referencia: v('b-ref'), extra: v('b-extra'),
       };
     } else if (tipo === 'ads') {
       brief = { ...brief, negocio,
