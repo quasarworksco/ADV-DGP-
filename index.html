@@ -2307,6 +2307,68 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 @media (max-width:600px) { .splash-logo { width:84px; height:84px; } #splash-screen .splash-logo-text { font-size:22px !important; letter-spacing:5px !important; } #splash-screen #splash-saludo.splash-logo-sub { font-size:24px !important; } }
 
 
+
+/* ═══ Entrada con partículas ═══ */
+.sp-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; transition:opacity .6s ease; }
+.sp-canvas.sp-fuera { opacity:0; }
+#sp-logo { opacity:0; animation:none !important; transition:opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1); transform:scale(.96); }
+#sp-logo.sp-ya { opacity:1; transform:none; }
+.sp-l { animation-delay:calc(1.25s + var(--i) * 38ms) !important; }
+html body #splash-screen #splash-saludo.splash-logo-sub { animation-delay:1.95s !important; }
+html body #splash-screen .splash-bar-wrap { animation-delay:2s !important; }
+html body #splash-screen .splash-bar { animation-delay:2s !important; }
+html body #splash-screen .sp-l { animation-delay:calc(1.25s + var(--i) * 38ms) !important; }
+
+/* ═══ Transición entre secciones ═══ */
+@media (prefers-reduced-motion: no-preference) {
+  .page.active { animation:pageIn2 .42s cubic-bezier(.2,.8,.2,1) both !important; }
+  @keyframes pageIn2 { from { opacity:0; transform:translate(var(--dx, 0px), var(--dy, 10px)); } to { opacity:1; transform:none; } }
+}
+
+/* ═══ Botón Generar factura con progreso ═══ */
+#btn-submit { position:relative; transition:width .35s cubic-bezier(.2,.8,.2,1), border-radius .35s, background .3s, box-shadow .3s, transform .2s !important; }
+#btn-submit.cargando, #btn-submit.listo { color:transparent !important; pointer-events:none; width:56px !important; height:56px; padding:0 !important; border-radius:50% !important; margin-left:auto; margin-right:auto; align-self:center; }
+#btn-submit.cargando > *, #btn-submit.listo > * { opacity:0; }
+#btn-submit.cargando::after { content:''; position:absolute; inset:16px; border-radius:50%; border:3px solid rgba(255,255,255,.35); border-top-color:#fff; animation:giro .7s linear infinite; }
+#btn-submit.listo { background:#16a34a !important; box-shadow:0 10px 26px rgba(22,163,74,.4) !important; }
+#btn-submit.listo::after { content:''; position:absolute; left:50%; top:50%; width:20px; height:11px; border-left:3px solid #fff; border-bottom:3px solid #fff; transform:translate(-50%,-70%) rotate(-45deg); animation:check .35s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes giro { to { transform:rotate(360deg); } }
+@keyframes check { from { transform:translate(-50%,-70%) rotate(-45deg) scale(0); } to { transform:translate(-50%,-70%) rotate(-45deg) scale(1); } }
+
+/* ═══ Factura que sale volando ═══ */
+.vuelo { position:fixed; z-index:100002; width:120px; height:150px; background:#fff; border-radius:10px; box-shadow:0 18px 40px rgba(0,0,0,.3); padding:16px 14px; display:flex; flex-direction:column; gap:8px; pointer-events:none; animation:vuela 1.1s cubic-bezier(.5,0,.75,0) forwards; border-top:5px solid #0b1640; }
+.vuelo i { display:block; height:6px; border-radius:3px; background:#e6e9f2; } .vuelo i:nth-child(2) { width:70%; } .vuelo i:nth-child(4) { width:55%; }
+.vuelo b { margin-top:auto; height:16px; border-radius:5px; background:#0b1640; }
+@keyframes vuela { 0% { transform:scale(1) rotate(0); opacity:1; } 25% { transform:scale(.8) rotate(-6deg) translateY(10px); opacity:1; } 100% { transform:translate(60vw,-70vh) scale(.15) rotate(25deg); opacity:0; } }
+
+/* ═══ Reflejo que sigue al cursor ═══ */
+.rg-card, .cb-tile, .alt-act { position:relative; overflow:hidden; }
+.rg-card::after, .cb-tile::after, .alt-act::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .25s;
+  background:radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb,var(--blue) 12%,transparent), transparent 70%); }
+.rg-card:hover::after, .cb-tile:hover::after, .alt-act:hover::after { opacity:1; }
+html.dark .rg-card::after, html.dark .cb-tile::after { background:radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.07), transparent 70%); }
+
+/* ═══ Número de la campana con rebote ═══ */
+.av-count.bump { animation:avBump .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes avBump { 0% { transform:translateY(0) scale(1); } 30% { transform:translateY(-7px) scale(1.25); } 60% { transform:translateY(1px) scale(.95); } 100% { transform:none; } }
+
+/* ═══ Barra inferior en el celular ═══ */
+.bnav { display:none; }
+@media (max-width:700px) {
+  .bnav { display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:0; right:0; bottom:0; z-index:400; padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+    background:color-mix(in srgb,var(--white) 92%,transparent); backdrop-filter:blur(14px); border-top:1px solid var(--border); box-shadow:0 -8px 24px rgba(11,22,64,.08); }
+  .bnav-b { position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 0 4px; border:0; background:transparent; color:var(--text-soft); font:600 10.5px 'Plus Jakarta Sans',sans-serif; border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bnav-b svg { transition:transform .25s cubic-bezier(.3,1.5,.5,1); }
+  .bnav-b.on { color:var(--blue); }
+  .bnav-b.on svg { transform:translateY(-2px) scale(1.08); }
+  .bnav-b.on::before { content:''; position:absolute; top:-6px; left:30%; right:30%; height:3px; border-radius:0 0 3px 3px; background:var(--blue); }
+  .bnav-b:active svg { transform:scale(.88); }
+  .bnav-n { position:absolute; top:2px; left:calc(50% + 6px); min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#ef4444; color:#fff; font:700 9.5px/16px 'Plus Jakarta Sans',sans-serif; font-style:normal; }
+  #app-shell { padding-bottom:calc(68px + env(safe-area-inset-bottom,0px)); }
+  .toast { bottom:calc(82px + env(safe-area-inset-bottom,0px)) !important; }
+  html.dark .bnav-b.on { color:color-mix(in srgb,var(--blue) 45%,#fff); }
+}
+
 /* ═══ Entrada animada (pantalla de carga) ═══ */
 #splash-screen { transition:opacity .7s cubic-bezier(.4,0,.2,1), visibility .7s, transform .9s cubic-bezier(.4,0,.2,1), filter .7s !important; }
 #splash-screen.hidden { opacity:0 !important; visibility:hidden; transform:scale(1.06); filter:blur(6px); }
@@ -2608,8 +2670,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <!-- ─── LOGIN SCREEN ─── -->
 <div id="splash-screen">
   <div class="sp-mark">
-    <svg class="sp-ring" viewBox="0 0 160 160" aria-hidden="true"><circle class="sp-ring-base" cx="80" cy="80" r="74"/><circle class="sp-ring-draw" cx="80" cy="80" r="74"/><circle class="sp-ring-arc" cx="80" cy="80" r="74"/></svg>
-    <img src="/logo-white.png" alt="DGP Global Group" class="splash-logo">
+    <canvas class="sp-canvas" id="sp-canvas" aria-hidden="true"></canvas>
+    <img src="/logo-white.png" alt="DGP Global Group" class="splash-logo" id="sp-logo">
   </div>
   <div class="splash-logo-text" id="sp-nombre" aria-label="DGP Global Group LLC">DGP GLOBAL GROUP <span>LLC</span></div>
   <div class="splash-logo-sub" id="splash-saludo">Sistema de Gestión</div>
@@ -2622,6 +2684,41 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     var t = el.textContent, i = 0;
     el.innerHTML = t.split('').map(function (ch) { return ch === ' ' ? '<span class="sp-sp"> </span>' : '<span class="sp-l" style="--i:' + (i++) + '">' + ch + '</span>'; }).join('');
     window._spT0 = Date.now();
+  })();
+  // Puntos blancos que vienen de toda la pantalla y forman el logo
+  (function () {
+    var cv = document.getElementById('sp-canvas'), img = document.getElementById('sp-logo');
+    if (!cv || !img || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { if (img) img.classList.add('sp-ya'); return; }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    var ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    var empezar = function () {
+      var r = img.getBoundingClientRect(), S = Math.round(r.width) || 84;
+      var off = document.createElement('canvas'); off.width = S; off.height = S;
+      var o = off.getContext('2d'); o.drawImage(img, 0, 0, S, S);
+      var d; try { d = o.getImageData(0, 0, S, S).data; } catch (e) { img.classList.add('sp-ya'); return; }
+      var pts = [], paso = Math.max(2, Math.round(S / 48));
+      for (var y = 0; y < S; y += paso) for (var x = 0; x < S; x += paso) if (d[(y * S + x) * 4 + 3] > 140) pts.push([r.left + x, r.top + y]);
+      var P = pts.map(function (t) {
+        return { x: Math.random() * W, y: Math.random() * H, tx: t[0], ty: t[1], dl: Math.random() * 420, s: 0.7 + Math.random() * 1 };
+      });
+      var t0 = performance.now(), DUR = 1400;
+      var ease = function (k) { return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+      (function cuadro(now) {
+        ctx.clearRect(0, 0, W, H);
+        var listo = true;
+        for (var i = 0; i < P.length; i++) {
+          var p = P[i], k = Math.min(1, Math.max(0, (now - t0 - p.dl) / DUR)), e = ease(k);
+          if (k < 1) listo = false;
+          var x = p.x + (p.tx - p.x) * e, y = p.y + (p.ty - p.y) * e;
+          ctx.globalAlpha = 0.25 + 0.75 * e;
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, p.s * (1.6 - 0.6 * e), 0, 6.283); ctx.fill();
+        }
+        if (!listo) requestAnimationFrame(cuadro);
+        else { img.classList.add('sp-ya'); cv.classList.add('sp-fuera'); }
+      })(t0);
+    };
+    if (img.complete && img.naturalWidth) requestAnimationFrame(empezar); else img.addEventListener('load', empezar);
   })();
 </script>
 
@@ -3991,7 +4088,7 @@ function hideSplash() {
   const s = document.getElementById('splash-screen');
   if (!s || s.classList.contains('hidden') || s._saliendo) return;
   s._saliendo = true;
-  const espera = Math.max(0, 1900 - (Date.now() - (window._spT0 || 0)));
+  const espera = Math.max(0, 2500 - (Date.now() - (window._spT0 || 0)));
   setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 900); }, espera);
 }
 
@@ -4096,6 +4193,14 @@ function populateServiceSelects() {
    NAVIGATION
 ═══════════════════════════════════════════════════════ */
 function switchPage(page, btn) {
+  // Dirección del movimiento: hacia abajo o arriba en el menú (o a los lados al deslizar en el celular)
+  const tabs = [...document.querySelectorAll('.nav-tab')], iPrev = tabs.findIndex(b => b.classList.contains('active')), iNew = tabs.indexOf(btn);
+  const pg = document.getElementById('page-' + page);
+  if (pg) {
+    const dir = window._navDir || (iNew > iPrev ? 'y+' : 'y-'); window._navDir = null;
+    pg.style.setProperty('--dx', dir === 'x+' ? '26px' : dir === 'x-' ? '-26px' : '0px');
+    pg.style.setProperty('--dy', dir === 'y+' ? '16px' : dir === 'y-' ? '-16px' : '0px');
+  }
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4117,6 +4222,7 @@ function switchPage(page, btn) {
   if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
   if (typeof navIndicador === 'function') requestAnimationFrame(navIndicador);
+  if (typeof bnPintar === 'function') bnPintar();
 }
 
 
@@ -7231,7 +7337,7 @@ async function saveDoc() {
   const btn = document.getElementById('btn-submit');
   const btnHtmlOriginal = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = 'Procesando...';
+  btn.classList.remove('listo'); btn.classList.add('cargando');
 
   try {
   const total  = parseFloat(cart.reduce((a,b) => a+b.t, 0).toFixed(2));
@@ -7264,9 +7370,9 @@ async function saveDoc() {
     const alFac = await aliadoParaFactura(cli);
     if (alFac) { docData.aliadoId = alFac._id; docData.aliado = alFac.nombre; }
     const alH = alHostingDeFormulario();
-    if (alH?.error) { toast(alH.error, 'err'); btn.disabled = false; btn.innerHTML = btnHtmlOriginal; return; }
+    if (alH?.error) { toast(alH.error, 'err'); btn.disabled = false; btn.classList.remove('cargando'); btn.innerHTML = btnHtmlOriginal; return; }
     if (alH) {
-      if (!alFac) { toast('Este paquete es de aliado: pon la factura a nombre de un aliado registrado', 'err'); btn.disabled = false; btn.innerHTML = btnHtmlOriginal; return; }
+      if (!alFac) { toast('Este paquete es de aliado: pon la factura a nombre de un aliado registrado', 'err'); btn.disabled = false; btn.classList.remove('cargando'); btn.innerHTML = btnHtmlOriginal; return; }
       docData.hostingAliado = alH; docData.clienteFinal = alH.clienteFinal;
       docData.nota = [docData.nota, `Proyecto para: ${alH.clienteFinal}${alH.dominio ? ' · ' + alH.dominio : ''}`].filter(Boolean).join(' · ');
       if (alH.combo) Object.assign(docData, { combo: alH.combo, comboTotal: alH.comboTotal, comboParteAliado: alH.comboParteAliado });
@@ -7292,10 +7398,13 @@ async function saveDoc() {
     logActividad('Nuevo documento', `${docId} · ${cli} · $${total.toFixed(2)}`);
     saveCliente(cli);
     toast(alFac ? `Documento guardado y asignado al aliado ${alFac.nombre}` : 'Documento guardado ✅');
+    btn.classList.remove('cargando'); btn.classList.add('listo');
+    setTimeout(() => btn.classList.remove('listo'), 1400);
     /* Show the sheet immediately (use local data since listener may lag) */
-    openSheet({ _fsId: added.id, ...docData });
+    setTimeout(() => openSheet({ _fsId: added.id, ...docData }), 650);
   } catch(err) {
     console.error('saveDoc error:', err?.code, err?.message, err);
+    btn.classList.remove('cargando', 'listo');
     toast(`Error: ${err?.message || err?.code || 'desconocido'}`, 'err');
     btn.disabled = false;
     btn.innerHTML = type === 'factura' ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generar Factura' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Generar Recibo';
@@ -8497,6 +8606,7 @@ function descargarPDF(fsId) {
 }
 
 function enviarWhatsApp(fsId) {
+  facturaVuela();
   const doc = docsMap[fsId];
   if (!doc) return;
   const tipo   = doc.pagado ? 'RECIBO' : (doc.pagadoParcial ? 'FACTURA (Pago Parcial)' : 'FACTURA');
@@ -8519,6 +8629,7 @@ function enviarWhatsApp(fsId) {
 }
 
 function enviarEmail(fsId) {
+  facturaVuela();
   const doc = docsMap[fsId];
   if (!doc) return;
   const tipo  = doc.pagado ? 'Recibo' : 'Factura';
@@ -9920,7 +10031,8 @@ function pintarAvisos() {
   const b = document.getElementById('av-count'); if (!b) return;
   b.textContent = total > 99 ? '99+' : total; b.hidden = !total;
   const btn = document.getElementById('av-btn');
-  if (_avUlt >= 0 && total > _avUlt) { btn.classList.remove('ring'); void btn.offsetWidth; btn.classList.add('ring'); }
+  if (_avUlt >= 0 && total > _avUlt) { btn.classList.remove('ring'); b.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('ring'); b.classList.add('bump'); }
+  const bn = document.getElementById('bnav-n'); if (bn) { bn.textContent = b.textContent; bn.hidden = !total; }
   _avUlt = total;
   const list = document.getElementById('av-list');
   const html = L.length ? L.map((x, i) => `<button class="av-it" style="--c:${x.c};--d:${i * 35}ms" onclick="cerrarAvisos();${x.fn ? `_avFn[${i}]()` : `irASeccion('${x.ir}')`}"><span class="av-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${x.ico}</svg></span><span class="av-tx"><b>${esc(x.t)}</b><small>${esc(x.d || '')}</small></span><span class="av-n">${x.n}</span></button>`).join('')
@@ -9951,6 +10063,61 @@ function selloPagado() {
   setTimeout(() => el.classList.add('fuera'), 1900); setTimeout(() => el.remove(), 2500);
 }
 
+
+
+/* ═══ Factura que sale volando al enviarla ═══ */
+function facturaVuela() {
+  const sh = document.getElementById('doc-sheet');
+  if (!sh || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = sh.getBoundingClientRect();
+  const g = document.createElement('div'); g.className = 'vuelo';
+  g.innerHTML = '<i></i><i></i><i></i><i></i><b></b>';
+  Object.assign(g.style, { left: r.left + r.width / 2 - 60 + 'px', top: Math.max(20, r.top + 80) + 'px' });
+  document.body.appendChild(g);
+  setTimeout(() => g.remove(), 1200);
+}
+
+/* ═══ Reflejo que sigue al cursor en las tarjetas ═══ */
+document.addEventListener('pointermove', e => {
+  const c = e.target.closest?.('.rg-card, .cb-tile, .alt-act, .vacio-btn');
+  if (!c) return;
+  const r = c.getBoundingClientRect();
+  c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+}, { passive: true });
+
+/* ═══ Celular: barra inferior tipo app y deslizar para cambiar de sección ═══ */
+const BN_ORDEN = ['dashboard', 'facturacion', 'clientes'];
+function bnPintar() {
+  const act = document.querySelector('.page.active')?.id?.replace('page-', '');
+  document.querySelectorAll('.bnav-b[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === act));
+}
+(function bnInit() {
+  const ico = d => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const nav = document.createElement('nav'); nav.className = 'bnav'; nav.setAttribute('aria-label', 'Accesos rápidos');
+  nav.innerHTML = `
+    <button class="bnav-b" data-p="dashboard" onclick="irASeccion('dashboard')">${ico('<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>')}<span>Inicio</span></button>
+    <button class="bnav-b" data-p="facturacion" onclick="irASeccion('facturacion')">${ico('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>')}<span>Facturas</span></button>
+    <button class="bnav-b" data-p="clientes" onclick="irASeccion('clientes')">${ico('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>')}<span>Clientes</span></button>
+    <button class="bnav-b" onclick="abrirBuscador()">${ico('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>')}<span>Buscar</span></button>
+    <button class="bnav-b" onclick="toggleAvisos(event)">${ico('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>')}<span>Avisos</span><em class="bnav-n" id="bnav-n" hidden></em></button>`;
+  document.getElementById('app-shell')?.appendChild(nav);
+  // Deslizar el dedo a los lados entre Inicio, Facturas y Clientes
+  let x0 = 0, y0 = 0, t0 = 0, ok = false;
+  document.addEventListener('touchstart', e => {
+    const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+    let el = e.target; ok = !e.target.closest('input, textarea, select, .modal-overlay, .bs-over, .av-menu, .hdr-menu, canvas');
+    while (ok && el && el !== document.body) { if (el.scrollWidth > el.clientWidth + 4 && getComputedStyle(el).overflowX !== 'visible') ok = false; el = el.parentElement; }
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!ok || window.innerWidth > 700) return;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dx) < 80 || Math.abs(dy) > 45 || Date.now() - t0 > 600) return;
+    const act = document.querySelector('.page.active')?.id?.replace('page-', ''), i = BN_ORDEN.indexOf(act);
+    if (i < 0) return;
+    const j = i + (dx < 0 ? 1 : -1);
+    if (j >= 0 && j < BN_ORDEN.length) { window._navDir = dx < 0 ? 'x+' : 'x-'; irASeccion(BN_ORDEN[j]); }
+  }, { passive: true });
+})();
 
 /* ═══ Saludo en la pantalla de carga y en el inicio de sesión (recuerda el último nombre en este equipo) ═══ */
 function _saludoHora() { const h = new Date().getHours(); return h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; }
