@@ -206,6 +206,7 @@ export default {
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
     if (ruta === '/tarea') return handleTarea(request, env);
+    if (ruta === '/tarjeta') return handleTarjeta(request, env);
     if (ruta === '/email') return handleEmail(request, env);
     if (ruta === '/resena') return handleResena(request, env);
     if (ruta === '/encuesta') return handleEncuesta(request, env);
@@ -701,7 +702,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-25d';
+const WORKER_VERSION = '2026-10-25e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -995,6 +996,48 @@ async function enviarRespaldo(env) {
   const d = await res.json().catch(() => ({}));
   if (!d.ok) throw new Error('Telegram: ' + (d.description || res.status));
   return { registros: total };
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  Tarjeta de presentación → datos del cliente (solo equipo)
+//  POST /tarjeta { imagen: dataURL }  →  { nombre, apellido, empresa, telefono, correo, web, cargo, direccion }
+// ══════════════════════════════════════════════════════════════
+const PROMPT_TARJETA = `Lee esta tarjeta de presentación (o captura con datos de contacto) y responde SOLO un JSON:
+{"nombre": texto o null, "apellido": texto o null, "empresa": texto o null, "cargo": texto o null, "telefono": texto o null, "correo": texto o null, "web": texto o null, "direccion": texto o null, "redes": texto o null}
+- "nombre" es el nombre de pila y "apellido" el apellido de la persona; si solo hay nombre de empresa, deja nombre en null.
+- Teléfono con código de país si aparece (ej. +1 239 555 0101). Si hay varios, el móvil o WhatsApp.
+- No inventes datos: si algo no se lee, null.`;
+async function leerTarjetaIA(env, dataUrl) {
+  let ultimo = null;
+  if (env.AI) for (const modelo of MODELOS_CF) {
+    try {
+      const out = await env.AI.run(modelo, { messages: [{ role: 'user', content: [{ type: 'text', text: PROMPT_TARJETA }, { type: 'image_url', image_url: { url: dataUrl } }] }], max_tokens: 800, temperature: 0 });
+      const j = extraerJSON(textoDeRespuestaAI(out)); if (j) return j;
+      ultimo = 'respuesta sin JSON';
+    } catch (e) { ultimo = e.message || String(e); }
+  }
+  if (env.GROQ_API_KEY) for (const modelo of [...new Set([env.GROQ_VISION_MODEL, ...MODELOS_DEFAULT].filter(Boolean))]) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: modelo, temperature: 0, max_completion_tokens: 800, messages: [{ role: 'user', content: [{ type: 'text', text: PROMPT_TARJETA }, { type: 'image_url', image_url: { url: dataUrl } }] }] }) });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) { const j = extraerJSON(data.choices?.[0]?.message?.content); if (j) return j; ultimo = 'respuesta sin JSON'; }
+    else ultimo = data.error?.message || `HTTP ${res.status}`;
+  }
+  throw new Error('No se pudo leer la tarjeta: ' + ultimo);
+}
+async function handleTarjeta(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+  try {
+    const v = await verificarEquipo(request, env);
+    if (v.error) return json(request, { error: v.error }, v.status);
+    const { imagen } = await request.json().catch(() => ({}));
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(imagen || '') || imagen.length > 3_000_000) return json(request, { error: 'Sube una foto JPG o PNG de menos de 2 MB' }, 400);
+    const d = await leerTarjetaIA(env, imagen);
+    const t = x => (typeof x === 'string' ? x.trim().slice(0, 160) : '') || '';
+    return json(request, { ok: true, datos: { nombre: t(d.nombre), apellido: t(d.apellido), empresa: t(d.empresa), cargo: t(d.cargo), telefono: t(d.telefono), correo: t(d.correo).toLowerCase(), web: t(d.web), direccion: t(d.direccion), redes: t(d.redes) } });
+  } catch (e) { return json(request, { error: e.message || 'Error' }, 502); }
 }
 
 /* ── POST /tarea (solo equipo) ── */
