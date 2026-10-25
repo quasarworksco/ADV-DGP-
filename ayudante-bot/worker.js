@@ -698,7 +698,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-24j';
+const WORKER_VERSION = '2026-10-25a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1287,6 +1287,25 @@ async function tgCallback(env, cq) {
 }
 
 /* Igual que "Marcar pagado" del panel (guarda la foto para poder deshacer y renueva la suscripción) */
+
+/* Paquete de aliado pagado: crea la ficha del cliente final y su hosting/dominio en Suscripciones (una sola vez) */
+async function crearHostingAliadoBot(env, token, fsId, doc) {
+  const h = doc.hostingAliado;
+  if (!h || doc.hostingCreado) return '';
+  await fsUpdate(env, `documentos/${fsId}`, { hostingCreado: true }, ['hostingCreado'], token);
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const clientes = await fsList(env, 'clientes', token).catch(() => []);
+  const ex = clientes.find(c => norm([c.nombre, c.apellido].filter(Boolean).join(' ')) === norm(h.clienteFinal) || norm(c.empresa) === norm(h.clienteFinal));
+  const clienteId = ex ? ex._id : await fsCreate(env, 'clientes', { nombre: h.clienteFinal, apellido: '', empresa: h.clienteFinal, telefono: h.clienteTel || '', correo: h.clienteCorreo || '',
+    notas: `Cliente del aliado ${doc.aliado || ''}`, tags: ['aliado'], cumpleanos: '', origen: 'aliado', aliadoId: doc.aliadoId || null, aliado: doc.aliado || '', createdAt: new Date(), updatedAt: new Date(), creadoPor: 'telegram' }, token);
+  const inicio = hoyVE();
+  const base = { cliente: h.clienteFinal, clienteId, portalCodigo: null, moneda: 'usd', fechaFin: '', estado: 'activa', emisor: doc.emisor || '', autoFactura: false,
+    notas: `Cliente del aliado ${doc.aliado || ''} · ${h.nombrePaquete}`, aliadoId: doc.aliadoId || null, aliado: doc.aliado || '', facturaId: fsId, createdAt: new Date(), updatedAt: new Date() };
+  const ids = [await fsCreate(env, 'suscripciones', { ...base, tipo: 'hosting', servicio: h.servicio, dominio: h.dominio || '', precio: h.precio, ciclo: h.ciclo, inicio, proximoPago: sumarCiclo(inicio, h.ciclo), diasAntes: 5 }, token)];
+  if (h.dominioCom) ids.push(await fsCreate(env, 'suscripciones', { ...base, tipo: 'dominio', servicio: 'Dominio .com', dominio: h.dominio, precio: h.renovDominio, ciclo: 'anual', inicio, proximoPago: sumarCiclo(inicio, 'anual'), diasAntes: 15 }, token));
+  await fsUpdate(env, `documentos/${fsId}`, { hostingIds: ids, clienteId }, ['hostingIds', 'clienteId'], token);
+  return `\n🖥️ Hosting${h.dominioCom ? ' y dominio' : ''} de ${escHtml(h.clienteFinal)} creado en Suscripciones`;
+}
 async function botMarcarPagado(env, token, fsId, pagoNuevo) {
   const doc = await fsGet(env, `documentos/${fsId}`, token);
   if (!doc) return { aviso: 'Esa factura ya no existe' };
@@ -1312,6 +1331,7 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo) {
     if (sub.portalCodigo) await fsUpdate(env, `portal/${sub.portalCodigo}/suscripciones/${doc.suscripcionId}`, { proximoPago: nueva }, ['proximoPago'], token).catch(() => {});
     extra = `\n🔁 Suscripción renovada · próximo pago ${escHtml(fechaCorta(nueva))}`;
   }
+  extra += await crearHostingAliadoBot(env, token, fsId, doc).catch(e => { console.error('hosting aliado', e); return '\n⚠️ No se pudo crear el hosting del aliado: créalo en Suscripciones.'; });
   const animo = ['¡Brutal! 💰', '¡Eso es! Un pago más 🔥', '¡Cha-ching! 💸', '¡Vamos con todo! 🚀', '¡Así se hace! 🙌'][Math.floor(Math.random() * 5)];
   return { aviso: 'Pago confirmado ✅', html: `${animo}\n✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
 }

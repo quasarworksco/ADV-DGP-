@@ -2161,6 +2161,13 @@ html.dark.mono [style*="background:#f8fafc"]:not(.doc-sheet *):not(.doc-sheet),h
 html.dark.mono [style*="background-color:#ffffff"]:not(.doc-sheet *):not(.doc-sheet),html.dark.mono [style*="background-color: #ffffff"]:not(.doc-sheet *):not(.doc-sheet){background-color:#18181b !important}
 .color-menu .cm-mono { background:linear-gradient(135deg,#111 50%,#fff 50%) !important; box-shadow:inset 0 0 0 1px #d4d4d8; }
 
+/* Datos del cliente del aliado en Facturación */
+.al-hbox { margin:12px 0 4px; padding:14px; border:1px solid var(--border); border-left:3px solid var(--blue); border-radius:12px; background:var(--bg-alt); }
+.al-hbox-t { font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-mid); }
+.al-hbox-n { font-size:11.5px; color:var(--text-soft); line-height:1.45; margin:4px 0 10px; }
+.al-hbox-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.al-hbox .ff { margin-bottom:8px; }
+
 /* ═══ Factura: membrete profesional (también es lo que se exporta a PDF) ═══ */
 #doc-sheet { border-radius:18px; max-width:520px; }
 #doc-sheet .sheet-zigzag-dark, #doc-sheet .sheet-zigzag-blue { display:none; }
@@ -2491,6 +2498,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
           <tbody id="cart-list"></tbody>
         </table>
         <div id="precio-intel"></div>
+        <div id="al-hosting-box" class="al-hbox" hidden></div>
         <div class="cart-total" id="cart-total" style="display:none;">
           <span class="cart-total-label">Total</span>
           <span class="cart-total-value" id="cart-total-val">$0.00</span>
@@ -4044,7 +4052,6 @@ function alDetalle(a) {
       <div class="pt-head-name">${esc(a.nombre)}</div>
       <div class="pt-head-sub">${esc([a.telefono, a.correo].filter(Boolean).join(' · ') || 'Sin datos de contacto')}</div>
       <div class="pt-head-actions">
-        <button class="pt-hbtn" onclick="alNuevoProyecto('${a._id}')">+ Nuevo proyecto</button>
         <button class="pt-hbtn" onclick="alNuevoRef('${a._id}')">⇄ Registrar referido</button>
         ${a.telefono ? `<button class="pt-hbtn" onclick="alEstadoCuenta('${a._id}')">Enviar estado de cuenta</button>` : ''}
         <button class="pt-hbtn" onclick="alEditar('${a._id}')">Editar</button>
@@ -6746,6 +6753,7 @@ function renderCart() {
   });
   document.getElementById('cart-list').innerHTML = html;
   renderPrecioInteligente();
+  renderAlHostingBox();
   document.getElementById('cart-total-val').textContent = '$' + cart.reduce((a,b) => a+b.t, 0).toFixed(2);
 }
 
@@ -6762,6 +6770,7 @@ async function saveDoc() {
   if (type === 'cotizacion') return guardarCotizacion();
 
   const btn = document.getElementById('btn-submit');
+  const btnHtmlOriginal = btn.innerHTML;
   btn.disabled = true;
   btn.textContent = 'Procesando...';
 
@@ -6795,8 +6804,17 @@ async function saveDoc() {
     if (portalCli) docData.portalCodigo = portalCli._id;
     const alFac = await aliadoParaFactura(cli);
     if (alFac) { docData.aliadoId = alFac._id; docData.aliado = alFac.nombre; }
+    const alH = alHostingDeFormulario();
+    if (alH?.error) { toast(alH.error, 'err'); btn.disabled = false; btn.innerHTML = btnHtmlOriginal; return; }
+    if (alH) {
+      if (!alFac) { toast('Este paquete es de aliado: pon la factura a nombre de un aliado registrado', 'err'); btn.disabled = false; btn.innerHTML = btnHtmlOriginal; return; }
+      docData.hostingAliado = alH; docData.clienteFinal = alH.clienteFinal;
+      docData.nota = [docData.nota, `Proyecto para: ${alH.clienteFinal}${alH.dominio ? ' · ' + alH.dominio : ''}`].filter(Boolean).join(' · ');
+      if (alH.combo) Object.assign(docData, { combo: alH.combo, comboTotal: alH.comboTotal, comboParteAliado: alH.comboParteAliado });
+    }
     const added = await db.collection('documentos').add(docData);
     guardarCuentaPago(docData.metodoPago, docData.infoPago);
+    if (docData.pagado && docData.hostingAliado) crearHostingAliado(added.id, { ...docData, _fsId: added.id });
     if (portalCli) {
       registrarFacturaEnPortal(added.id, portalCli._id);
       crearProyectoDesdeFactura(portalCli._id, added.id, docData);
@@ -7072,6 +7090,67 @@ async function deshacerUltimoAbono(fsId, sinConfirmar) {
     if (document.getElementById('modalDoc').classList.contains('show')) openSheet({ ...doc, pagos: resto, montoPagado: monto, pagadoParcial: monto > 0.009, _fsId: fsId });
   } catch (e) { toast('No se pudo quitar el abono.', 'err'); }
 }
+
+/* ═══ Paquetes de aliado desde Facturación: el hosting se crea solo al confirmarse el pago ═══ */
+function alPaqDeItem(s) { const t = String(s || ''); return Object.entries(AL_PAQUETES).find(([, p]) => t.startsWith(p.nombre)) || null; }
+function alPaqEnCarrito() { for (const it of cart) { const r = alPaqDeItem(it.s); if (r) return r; } return null; }
+function renderAlHostingBox() {
+  const box = document.getElementById('al-hosting-box'); if (!box) return;
+  const r = alPaqEnCarrito();
+  if (!r) { box.hidden = true; box.dataset.paq = ''; return; }
+  const [key, p] = r;
+  box.hidden = false;
+  if (box.dataset.paq === key) return; // ya está dibujada: no borrar lo escrito
+  box.dataset.paq = key;
+  box.innerHTML = `
+    <div class="al-hbox-t">Cliente del aliado</div>
+    <div class="al-hbox-n">El hosting${p.dominioCom ? ' y el dominio' : ''} se crean solos cuando se confirme el pago de esta factura. Pon la factura a nombre del aliado.</div>
+    <div class="ff"><label>Nombre o negocio del cliente final *</label><input id="alh-cli" placeholder="Ej. Panadería La Esquina"></div>
+    <div class="al-hbox-2"><div class="ff"><label>WhatsApp</label><input id="alh-tel" placeholder="+1 ..."></div><div class="ff"><label>Correo</label><input id="alh-cor" type="email"></div></div>
+    <div class="ff"><label>Dominio${p.dominioCom ? ' .com *' : ' (si ya lo tiene)'}</label><input id="alh-dom" placeholder="negocio.com"></div>
+    <div class="al-hbox-2"><div class="ff"><label>${p.ciclo === 'mensual' ? 'Hosting mensual después' : 'Hosting anual después'} ($)</label><input id="alh-ren" type="number" min="0" step="1" value="${p.renov}"></div>
+    ${p.dominioCom ? `<div class="ff"><label>Renovación del dominio ($/año)</label><input id="alh-domren" type="number" min="0" step="1" value="${p.renovDominio}"></div>` : '<div></div>'}</div>
+    ${p.combo ? `<div class="al-hbox-n" style="margin-top:4px">${esc(p.combo.nombre)}: el cliente paga $${p.combo.total} al aliado; $${p.combo.aliado} son del aliado (${esc(p.combo.aliadoIncluye)}) y $${p.precio} son de DGP.</div>` : ''}`;
+}
+function alHostingDeFormulario() {
+  const r = alPaqEnCarrito(); if (!r) return null;
+  const [key, p] = r, v = id => (document.getElementById(id)?.value || '').trim().replace(/\s+/g, ' ');
+  const clienteFinal = v('alh-cli'), dominio = v('alh-dom').toLowerCase(), renov = parseFloat(v('alh-ren')), renovDom = parseFloat(v('alh-domren'));
+  if (!clienteFinal) return { error: 'Escribe el nombre del cliente del aliado' };
+  if (p.dominioCom && !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(dominio)) return { error: 'Escribe el dominio .com del cliente (ej. negocio.com)' };
+  if (isNaN(renov) || renov < 0) return { error: 'Revisa el precio del hosting' };
+  return { paquete: key, nombrePaquete: p.nombre, servicio: p.servicio, ciclo: p.ciclo, precio: renov, dominio,
+    dominioCom: !!p.dominioCom, renovDominio: p.dominioCom ? (isNaN(renovDom) ? p.renovDominio : renovDom) : null,
+    clienteFinal, clienteTel: v('alh-tel'), clienteCorreo: v('alh-cor'),
+    ...(p.combo ? { combo: p.combo.nombre, comboTotal: p.combo.total, comboParteAliado: p.combo.aliado } : {}) };
+}
+// Al confirmarse el pago: crea la ficha del cliente final (si no existe) y su hosting/dominio en Suscripciones, una sola vez
+async function crearHostingAliado(fsId, d) {
+  const doc = d || docsMap[fsId];
+  const h = doc && doc.hostingAliado;
+  if (!h || doc.hostingCreado) return;
+  try {
+    await db.collection('documentos').doc(fsId).update({ hostingCreado: true });
+    const existente = (clientesList || []).find(c => ptNorm(clNombre(c)) === ptNorm(h.clienteFinal) || ptNorm(c.empresa || '') === ptNorm(h.clienteFinal));
+    let clienteId = existente?._id;
+    if (!clienteId) {
+      clienteId = ptNorm(h.clienteFinal).replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString(36);
+      await db.collection('clientes').doc(clienteId).set({ nombre: h.clienteFinal, apellido: '', empresa: h.clienteFinal, telefono: h.clienteTel || '', correo: h.clienteCorreo || '',
+        notas: `Cliente del aliado ${doc.aliado || ''}`, tags: ['aliado'], cumpleanos: '', origen: 'aliado', aliadoId: doc.aliadoId || null, aliado: doc.aliado || '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' });
+    }
+    const inicio = todayISO(), base = { cliente: h.clienteFinal, clienteId, portalCodigo: null, moneda: 'usd', fechaFin: '', estado: 'activa', emisor: doc.emisor || EMISOR_FACTURAS,
+      autoFactura: false, notas: `Cliente del aliado ${doc.aliado || ''} · ${h.nombrePaquete}`, aliadoId: doc.aliadoId || null, aliado: doc.aliado || '', facturaId: fsId,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const ids = [];
+    ids.push((await db.collection('suscripciones').add({ ...base, tipo: 'hosting', servicio: h.servicio, dominio: h.dominio || '', precio: h.precio, ciclo: h.ciclo, inicio, proximoPago: ptSumarCiclo(inicio, h.ciclo), diasAntes: 5 })).id);
+    if (h.dominioCom) ids.push((await db.collection('suscripciones').add({ ...base, tipo: 'dominio', servicio: 'Dominio .com', dominio: h.dominio, precio: h.renovDominio, ciclo: 'anual', inicio, proximoPago: ptSumarCiclo(inicio, 'anual'), diasAntes: 15 })).id);
+    await db.collection('documentos').doc(fsId).update({ hostingIds: ids, clienteId });
+    logActividad('Hosting de aliado creado', `${doc.aliado || ''} · ${h.clienteFinal}`);
+    toast(`Hosting${h.dominioCom ? ' y dominio' : ''} de ${h.clienteFinal} creado en Suscripciones`, 'ok');
+  } catch (e) { toast('No se pudo crear el hosting: ' + e.message, 'err'); }
+}
+
 async function marcarPagado(fsId) {
   if (!fsId) return;
   const doc = docsMap[fsId];
@@ -7097,6 +7176,7 @@ async function marcarPagado(fsId) {
     logActividad('Factura pagada', newDocId || fsId);
     toastAccion('Marcado como pagado ✅', 'Deshacer', () => deshacerPago(fsId, true));
     alPagarFacturaSuscripcion(doc);
+    crearHostingAliado(fsId);
     /* Refresh the open sheet */
     const updated = { ...doc, type:'recibo', pagado:true, pagadoParcial:false, fechaPago, docId:newDocId };
     openSheet(updated);
@@ -7164,6 +7244,7 @@ async function confirmarPagoParcial() {
       });
       toastAccion('Pago completo registrado ✅', 'Deshacer', () => deshacerPago(fsId, true));
       alPagarFacturaSuscripcion(doc);
+      crearHostingAliado(fsId);
     } else {
       /* Partial */
       await db.collection('documentos').doc(fsId).update({
