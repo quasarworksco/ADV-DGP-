@@ -3192,7 +3192,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <span class="sheet-total-amount">$<span id="s-total">0.00</span></span>
     </div>
     <div class="sheet-footer">
-      <p id="s-footer-text">¡Gracias por su preferencia!<br><strong>DGP Global Group LLC — Servicios Digitales Profesionales</strong></p>
+      <p id="s-footer-text">¡Gracias por su preferencia!<br><strong>DGP Global Group — Servicios Digitales Profesionales</strong></p>
     </div>
     <div class="sheet-actions" id="sheet-actions"></div>
   </div>
@@ -7035,7 +7035,7 @@ function openSheet(doc) {
     <div class="inv-head${isRecibo ? ' recibo' : ''}">
       <div class="inv-brand">
         <img src="/logo.png" alt="DGP Global Group" class="inv-logo">
-        <div><div class="inv-brand-name">DGP Global Group LLC</div><div class="inv-brand-sub">dgpglobalgroup.com<br>${L('Diseño web y sistemas','Web design & systems')}</div></div>
+        <div><div class="inv-brand-name">DGP Global Group</div><div class="inv-brand-sub">dgpglobalgroup.com<br>${L('Diseño web y sistemas','Web design & systems')}</div></div>
       </div>
       <div class="inv-doc">
         <div class="inv-type">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO','RECEIPT')}</div>
@@ -7117,8 +7117,8 @@ function openSheet(doc) {
   document.getElementById('s-total').textContent = (doc.total || 0).toFixed(2);
 
   document.getElementById('s-footer-text').innerHTML = isRecibo
-    ? L('¡Gracias por su preferencia!','Thank you for your business!') + '<br><strong>DGP Global Group LLC — dgpglobalgroup.com</strong>'
-    : L('Una vez realizado el pago, recibirás tu recibo de confirmación.','Once payment is received, you will get your receipt.') + '<br><strong>DGP Global Group LLC — dgpglobalgroup.com</strong>';
+    ? L('¡Gracias por su preferencia!','Thank you for your business!') + '<br><strong>DGP Global Group — dgpglobalgroup.com</strong>'
+    : L('Una vez realizado el pago, recibirás tu recibo de confirmación.','Once payment is received, you will get your receipt.') + '<br><strong>DGP Global Group — dgpglobalgroup.com</strong>';
 
   const fsId = doc._fsId || '';
   const actions = document.getElementById('sheet-actions');
@@ -8194,7 +8194,7 @@ function enviarWhatsApp(fsId) {
       : '⏳ PENDIENTE DE PAGO';
   const items = (doc.items || []).map(it => `  • ${it.s} x${it.c} — $${it.t.toFixed(2)}`).join('\n');
   const msg =
-    `*${tipo} — DGP Global Group LLC*\n\n` +
+    `*${tipo} — DGP Global Group*\n\n` +
     `📋 *N°:* ${doc.docId || '—'}\n` +
     `👤 *Cliente:* ${doc.cli || '—'}\n` +
     `📅 *Fecha:* ${doc.fecha || '—'}\n\n` +
@@ -10681,15 +10681,15 @@ function correoTextos(tipo, doc) {
   const total = cbMoney(tipo === 'factura' ? (cbSaldo(doc) || doc.total) : doc.total);
   const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long' }) : '';
   if (tipo === 'cotizacion') return {
-    asunto: `Cotización ${doc.docId || ''} · DGP Global Group LLC`,
+    asunto: `Cotización ${doc.docId || ''} · DGP Global Group`,
     mensaje: `Hola ${nombre},\n\nTe compartimos la cotización ${doc.docId || ''} por ${total}.${vence ? ` Es válida hasta el ${vence}.` : ''}\n\nPuedes revisarla y aceptarla desde el botón de abajo. Si quieres ajustar algo, responde a este correo.`
   };
   if (tipo === 'recibo') return {
-    asunto: `Recibo de pago ${doc.docId || ''} · DGP Global Group LLC`,
+    asunto: `Recibo de pago ${doc.docId || ''} · DGP Global Group`,
     mensaje: `Hola ${nombre},\n\n¡Gracias por tu pago! Aquí tienes tu recibo ${doc.docId || ''} por ${total}.`
   };
   return {
-    asunto: `Factura ${doc.docId || ''} · DGP Global Group LLC`,
+    asunto: `Factura ${doc.docId || ''} · DGP Global Group`,
     mensaje: `Hola ${nombre},\n\nTe compartimos tu factura ${doc.docId || ''} por ${total}.\n\nDesde el botón de abajo puedes ver el detalle, pagar con tu método preferido y subir tu comprobante.`
   };
 }
@@ -10800,7 +10800,7 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
       </tr></table>
       <div class="tx2" style="font-size:12.5px;color:${CM.suave};margin-top:16px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" class="lk" style="color:${CM.azul};text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
       <div class="tx2" style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:12px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GLOBAL GROUP</div>
-      ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Global Group LLC.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
+      ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Global Group.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
     </td></tr>
 
   </table>
@@ -10846,7 +10846,7 @@ function correoHTML(tipo, doc, mensaje, link) {
     </td></tr>
     <tr><td align="center" class="pad" style="padding:28px 34px 10px;">${correoBoton(boton, link)}</td></tr>
     <tr><td align="center" class="pad tx2" style="padding:4px 34px 26px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">¿El botón no abre? Copia este enlace:<br><a href="${e(link)}" class="lk" style="color:${CM.azul};word-break:break-all;">${e(link)}</a></td></tr>`;
-  return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Global Group LLC`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
+  return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Global Group`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
 }
 function abrirCorreo(coleccion, id) {
   const d = correoDatos(coleccion, id);
@@ -10877,7 +10877,7 @@ async function enviarCorreo() {
   if (!_correo) return;
   const para = document.getElementById('co-para').value.trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) { toast('Escribe un correo válido.', 'err'); return; }
-  const asunto = document.getElementById('co-asunto').value.trim() || 'DGP Global Group LLC';
+  const asunto = document.getElementById('co-asunto').value.trim() || 'DGP Global Group';
   const mensaje = document.getElementById('co-msg').value;
   const btn = document.getElementById('co-btn');
   btn.disabled = true; btn.textContent = 'Enviando…';
@@ -10887,7 +10887,7 @@ async function enviarCorreo() {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ coleccion: _correo.coleccion, id: _correo.id, para, asunto,
         html: correoHTML(_correo.tipo, _correo.doc, mensaje, _correo.link),
-        texto: `${mensaje}\n\n${_correo.link}\n\nDGP Global Group LLC · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738` })
+        texto: `${mensaje}\n\n${_correo.link}\n\nDGP Global Group · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738` })
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
@@ -10934,7 +10934,7 @@ function openCampana() {
     <div class="ff"><label>Mensaje <span style="text-transform:none;letter-spacing:0;color:var(--text-soft);">— escribe {nombre} y se cambia por el nombre de cada cliente</span></label>
       <textarea id="cp-msg" rows="6" style="resize:vertical;" oninput="campPrevia()">Hola {nombre},
 
-Queremos contarte que en DGP Global Group LLC tenemos nuevas soluciones para que tu negocio venda más en digital.
+Queremos contarte que en DGP Global Group tenemos nuevas soluciones para que tu negocio venda más en digital.
 
 Si quieres saber cuál te conviene, responde a este correo o escríbenos por WhatsApp. ¡Será un gusto ayudarte!</textarea></div>
     <div class="ff"><label>Imagen (opcional)</label>
@@ -11074,7 +11074,7 @@ async function enviarCampana(prueba) {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ coleccion: 'campanas', id: campId, para: c.correo.trim(), asunto: x.asunto,
             html: campCuerpoHTML(x.titulo || x.asunto, x.mensaje, nombre, x.img, x.btn, x.url),
-            texto: `${x.mensaje.replace(/\{nombre\}/gi, nombre || 'hola')}\n\n${x.btn && x.url ? x.btn + ': ' + x.url + '\n\n' : ''}DGP Global Group LLC · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738\nSi no deseas recibir más novedades, responde BAJA.` })
+            texto: `${x.mensaje.replace(/\{nombre\}/gi, nombre || 'hola')}\n\n${x.btn && x.url ? x.btn + ': ' + x.url + '\n\n' : ''}DGP Global Group · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738\nSi no deseas recibir más novedades, responde BAJA.` })
         });
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);

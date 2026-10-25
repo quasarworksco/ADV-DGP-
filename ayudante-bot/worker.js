@@ -6,7 +6,7 @@
 
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
-const SYSTEM_PROMPT = `Eres el asistente de ventas interno de DGP Global Group LLC. Los empleados te escriben lo que les dicen sus clientes y tú das UN mensaje listo para copiar y enviar.
+const SYSTEM_PROMPT = `Eres el asistente de ventas interno de DGP Global Group. Los empleados te escriben lo que les dicen sus clientes y tú das UN mensaje listo para copiar y enviar.
 
 FORMATO DE RESPUESTA:
 - Solo el mensaje para el cliente. Sin comentarios ni prefijos.
@@ -57,7 +57,7 @@ TÉCNICAS DE PERSUASIÓN — aplícalas siempre de forma natural:
 ════════════════════════════════════════
 SOBRE LA EMPRESA
 ════════════════════════════════════════
-DGP Global Group LLC — servicios digitales profesionales.
+DGP Global Group — servicios digitales profesionales.
 Fundador: Andrés Espina | dgpgroup.usa@gmail.com | +1 (239) 823-1738 | dgp-link.com
 
 Equipo: Kevin Bermudez, Angel Rosales, Paul Espina.
@@ -701,7 +701,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-25c';
+const WORKER_VERSION = '2026-10-25d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1063,7 +1063,7 @@ async function handleEmail(request, env) {
     if (!['documentos', 'cotizaciones', 'campanas'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: conPixel(String(b.html || ''), b.coleccion, b.id, para), texto: String(b.texto || ''), nombre: 'DGP Global Group LLC', responderA: 'dgpgroup.usa@gmail.com' })
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: conPixel(String(b.html || ''), b.coleccion, b.id, para), texto: String(b.texto || ''), nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com' })
     });
     const r = await res.json().catch(() => ({ ok: false, error: 'Google respondió algo inesperado (revisa que la URL termine en /exec y que el acceso sea "Cualquier usuario")' }));
     if (!r.ok) return json(request, { error: 'Gmail: ' + (r.error || 'no se pudo enviar') }, 502);
@@ -1129,7 +1129,7 @@ async function handleEncuesta(request, env) {
 /* Plantilla de los correos automáticos del bot (misma línea que los del panel) */
 function correoResenaHTML(nombre, link) {
   return correoBotHTML({ icono: 'estrellas', titulo: `¡Gracias por confiar en nosotros, ${nombre}!`,
-    texto: 'Nos alegró mucho saber que tu experiencia con DGP Global Group LLC fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.',
+    texto: 'Nos alegró mucho saber que tu experiencia con DGP Global Group fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.',
     boton: 'Dejar mi reseña en Google', link, nota: 'Solo toma un momento. ¡Gracias de corazón!' });
 }
 function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota = '', oferta = '' }) {
@@ -1157,7 +1157,7 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
   <tr><td align="center" style="border-radius:24px 24px 0 0;padding:26px 20px;background-color:#172b5e;background-image:linear-gradient(150deg,#0b1633 0%,#172b5e 42%,#166baf 82%,#3eaedd 122%);">
     <img src="${SITIO}/logo-white.png" width="42" height="42" alt="DGP" style="display:block;border:0;margin:0 auto;">
-    ${blanco(`<div style="${f}color:#ffffff;font-size:13px;font-weight:700;letter-spacing:2.5px;margin-top:10px;">DGP GLOBAL GROUP LLC</div>`)}
+    ${blanco(`<div style="${f}color:#ffffff;font-size:13px;font-weight:700;letter-spacing:2.5px;margin-top:10px;">DGP GLOBAL GROUP</div>`)}
   </td></tr>
   <tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e1ecf5;border-top:0;border-radius:0 0 24px 24px;padding:34px 30px;text-align:center;">
     <div>${cabeza}</div>
@@ -1173,7 +1173,7 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
   </td></tr>
   <tr><td align="center" class="tx2" style="padding-top:24px;font-size:12px;color:#64748b;line-height:1.7;">
     <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
-    <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#94a3b8;font-weight:600;">DGP GLOBAL GROUP LLC</span>
+    <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#94a3b8;font-weight:600;">DGP GLOBAL GROUP</span>
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -1192,9 +1192,9 @@ async function recordarResenas(env, token, docs, correoDe) {
     const nombre = String(e.cliente || doc?.cli || '').split(' ')[0] || 'hola';
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto: `${nombre}, ¿nos ayudas con una reseña en Google?`, nombre: 'DGP Global Group LLC', responderA: 'dgpgroup.usa@gmail.com',
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto: `${nombre}, ¿nos ayudas con una reseña en Google?`, nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com',
         html: correoResenaHTML(nombre, `${BOT_URL}/resena?e=${e._id}`),
-        texto: `¡Gracias por confiar en nosotros, ${nombre}! ¿Nos regalas 30 segundos para dejar tu reseña en Google?\n${GOOGLE_RESENA}\n\nDGP Global Group LLC · dgpglobalgroup.com` })
+        texto: `¡Gracias por confiar en nosotros, ${nombre}! ¿Nos regalas 30 segundos para dejar tu reseña en Google?\n${GOOGLE_RESENA}\n\nDGP Global Group · dgpglobalgroup.com` })
     });
     const r = await res.json().catch(() => ({}));
     if (!r.ok) { console.warn('Reseña correo', correo, r.error); continue; }
@@ -1386,7 +1386,7 @@ async function botRechazar(env, token, fsId) {
 /* ── Mensajes: voz o texto → factura / cotización ── */
 async function tgMensaje(env, msg) {
   const chat = String(msg.chat?.id || '');
-  if (chat !== TG_CHAT) return tgApi(env, 'sendMessage', { chat_id: chat, text: 'Este bot es privado de DGP Global Group LLC.' });
+  if (chat !== TG_CHAT) return tgApi(env, 'sendMessage', { chat_id: chat, text: 'Este bot es privado de DGP Global Group.' });
   const texto = String(msg.text || msg.caption || '').trim();
   if (/^\/(start|ayuda|help)\b/i.test(texto)) return tgEnviar(env, AYUDA_BOT);
   if (/^\/meta\b/i.test(texto)) { const token = await firebaseLogin(env); return tgEnviar(env, (await lineaMeta(env, token)) || '🎯 Aún no tienes una meta del mes. Ponla en el panel → Dashboard.'); }
@@ -1408,7 +1408,7 @@ async function tgMensaje(env, msg) {
   if (!dicho) return tgEnviar(env, AYUDA_BOT);
   return altair(env, dicho, porVoz);
 }
-const AYUDA_BOT = `✨ <b>Hola, soy Altair</b>, el asistente de DGP Global Group LLC.
+const AYUDA_BOT = `✨ <b>Hola, soy Altair</b>, el asistente de DGP Global Group.
 
 🎙 <b>Háblame o escríbeme</b> lo que necesites:
 <i>"¿Cuánto me debe Ana?"</i>
@@ -1426,7 +1426,7 @@ Si me hablas con una nota de voz, te respondo con mi voz. 🎧
 /* ══════════════════════════════════════════════════════════════
    ALTAIR — entiende la intención y responde con los datos reales
 ══════════════════════════════════════════════════════════════ */
-const ALTAIR_PERSONA = `Eres Altair, el asistente de negocios de DGP Global Group LLC (agencia de servicios digitales). Hablas en español latino, cercano, positivo y motivador, como un socio de confianza. Eres breve y directo.`;
+const ALTAIR_PERSONA = `Eres Altair, el asistente de negocios de DGP Global Group (agencia de servicios digitales). Hablas en español latino, cercano, positivo y motivador, como un socio de confianza. Eres breve y directo.`;
 
 async function altair(env, dicho, porVoz) {
   const token = await firebaseLogin(env);
@@ -1545,7 +1545,7 @@ async function botRecordatorioManual(env, token, fsId) {
   const datos = { clientes: await fsList(env, 'clientes', token).catch(() => []), portales: await fsList(env, 'portal', token).catch(() => []), docs: [] };
   const correo = doc.clienteCorreo || correoCliente(datos, doc.cli);
   if (!correo) return { aviso: 'No tengo su correo' };
-  const ok = await enviarCorreoBot(env, correo, `Recordatorio: factura ${doc.docId || ''} · DGP Global Group LLC`, correoCobranzaHTML(doc, fsId, 1), textoCobranza(doc, fsId, 1), { c: 'documentos', id: fsId });
+  const ok = await enviarCorreoBot(env, correo, `Recordatorio: factura ${doc.docId || ''} · DGP Global Group`, correoCobranzaHTML(doc, fsId, 1), textoCobranza(doc, fsId, 1), { c: 'documentos', id: fsId });
   if (!ok) return { aviso: 'No se pudo enviar el correo' };
   await fsUpdate(env, `documentos/${fsId}`, { cobranza: { ...(doc.cobranza || {}), manualAt: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
   return { aviso: 'Recordatorio enviado ✉️', html: `✉️ Listo, le envié el recordatorio a <b>${escHtml(doc.cli || '')}</b> (${escHtml(correo)}). ¡Ojalá pague pronto! 💪` };
@@ -1687,7 +1687,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
   // Vendedor nocturno: con tu aprobación, la cotización le llega al cliente por correo
   let enviadoA = '';
   if (b.enviarA && !sinEnviar) {
-    const ok = await enviarCorreoBot(env, b.enviarA, `${nombre}, aquí está tu cotización · DGP Global Group LLC`,
+    const ok = await enviarCorreoBot(env, b.enviarA, `${nombre}, aquí está tu cotización · DGP Global Group`,
       correoBotHTML({ icono: 'factura', titulo: `${nombre}, preparamos tu propuesta`, texto: `Gracias por escribirnos. Según lo que nos contaste, armamos esta cotización (${docId}) por ${dinero(b.total)}. Desde el botón puedes revisarla y aceptarla; si quieres ajustar algo, responde este correo o escríbenos por WhatsApp.`, boton: 'Ver mi cotización', link, nota: 'Válida por 15 días.' }),
       `Hola ${nombre}, aquí está tu cotización ${docId} por ${dinero(b.total)}: ${link}`, { c: 'cotizaciones', id: nuevoId });
     if (ok) { enviadoA = b.enviarA; await fsUpdate(env, `cotizaciones/${nuevoId}`, { clienteCorreo: b.enviarA, correos: [{ para: b.enviarA, fecha: new Date().toISOString(), por: 'altair' }] }, ['clienteCorreo', 'correos'], token).catch(() => {}); }
@@ -1788,7 +1788,7 @@ async function resumenSemanal(env) {
   };
   let analisis = '';
   try {
-    analisis = await aiTexto(env, `Eres el analista de negocio de una agencia digital pequeña (DGP Global Group LLC). Con los DATOS de la semana escribe entre 3 y 5 viñetas en español, muy concretas, cada una de una o dos líneas.
+    analisis = await aiTexto(env, `Eres el analista de negocio de una agencia digital pequeña (DGP Global Group). Con los DATOS de la semana escribe entre 3 y 5 viñetas en español, muy concretas, cada una de una o dos líneas.
 Incluye: cómo le fue comparado con la semana anterior, qué se vendió más, riesgos (cobros atrasados, meses con muchas renovaciones) y UNA recomendación accionable para la próxima semana.
 Usa los números exactos de los DATOS, no inventes nada. Sin títulos ni introducción. Cada línea empieza con "• ".`, JSON.stringify(datos), 600);
     analisis = analisis.split('\n').map(l => l.trim()).filter(l => l.startsWith('•')).slice(0, 6).map(escHtml).join('\n');
@@ -1822,7 +1822,7 @@ async function enviarCorreoBot(env, para, asunto, html, texto, rastreo) {
   if (rastreo) html = conPixel(html, rastreo.c, rastreo.id, para);
   const res = await fetch(env.EMAIL_WEBHOOK, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Global Group LLC', responderA: 'dgpgroup.usa@gmail.com' })
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com' })
   });
   const r = await res.json().catch(() => ({}));
   if (!r.ok) console.warn('Correo automático', para, r.error);
@@ -1878,7 +1878,7 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe) {
     if (!correo || await yaEnviado(env, token, clave)) continue;
     const nombre = String(d.cli).split(' ')[0];
     const ok = await enviarCorreoBot(env, correo, `${nombre}, ¡hoy cumplimos ${anios} año${anios > 1 ? 's' : ''} juntos!`,
-      correoBotHTML({ icono: 'cohete', titulo: `¡Hace ${anios} año${anios > 1 ? 's' : ''} lanzamos tu proyecto, ${nombre}!`, texto: `Un día como hoy pusimos en marcha ${(d.items || [])[0]?.s || 'tu proyecto'}. Gracias por crecer con DGP Global Group LLC. Para celebrarlo te tenemos un regalo:`, oferta: OFERTA_ANIVERSARIO, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¿Una idea nueva para tu negocio? Responde este correo y la hacemos realidad.' }),
+      correoBotHTML({ icono: 'cohete', titulo: `¡Hace ${anios} año${anios > 1 ? 's' : ''} lanzamos tu proyecto, ${nombre}!`, texto: `Un día como hoy pusimos en marcha ${(d.items || [])[0]?.s || 'tu proyecto'}. Gracias por crecer con DGP Global Group. Para celebrarlo te tenemos un regalo:`, oferta: OFERTA_ANIVERSARIO, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¿Una idea nueva para tu negocio? Responde este correo y la hacemos realidad.' }),
       `¡Hace ${anios} año(s) lanzamos tu proyecto, ${nombre}! Tu regalo: ${OFERTA_ANIVERSARIO}`);
     if (ok) { await marcarEnviado(env, token, clave, { tipo: 'aniversario', cliente: d.cli, correo }); enviados.push({ tipo: 'Aniversario', cliente: d.cli, correo }); }
   }
@@ -1892,7 +1892,7 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe) {
     const clave = `cumple_${c._id}_${anio}`;
     if (!correo || await yaEnviado(env, token, clave)) continue;
     const ok = await enviarCorreoBot(env, correo, `¡Feliz cumpleaños, ${nombre}!`,
-      correoBotHTML({ icono: 'regalo', titulo: `¡Feliz cumpleaños, ${nombre}!`, texto: 'Todo el equipo de DGP Global Group LLC te desea un día increíble y un año lleno de éxitos para ti y tu negocio. Como regalo:', oferta: OFERTA_CUMPLE, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¡Que lo disfrutes mucho!' }),
+      correoBotHTML({ icono: 'regalo', titulo: `¡Feliz cumpleaños, ${nombre}!`, texto: 'Todo el equipo de DGP Global Group te desea un día increíble y un año lleno de éxitos para ti y tu negocio. Como regalo:', oferta: OFERTA_CUMPLE, boton: 'Ver nuestros servicios', link: 'https://dgpglobalgroup.com', nota: '¡Que lo disfrutes mucho!' }),
       `¡Feliz cumpleaños, ${nombre}! Tu regalo: ${OFERTA_CUMPLE}`);
     if (ok) { await marcarEnviado(env, token, clave, { tipo: 'cumpleanos', cliente: nombreCli(c), correo }); enviados.push({ tipo: 'Cumpleaños', cliente: nombreCli(c), correo }); }
   }
@@ -2060,13 +2060,13 @@ async function registrarLead(env, token, d, opciones = {}) {
       // 1) Acuse inmediato con plantilla fija (sin IA: no puede equivocarse)
       acuse = esNHD ? await enviarCorreoBot(env, correo, `${primer}, recibimos tu postulación · Negocio Hispano Digital`,
         correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por postular, ${primer}!`, texto: `Recibimos la postulación de ${negocio || 'tu negocio'} al programa Negocio Hispano Digital. Las postulaciones cierran el 15 de diciembre de 2026 y anunciamos a los 10 ganadores el 8 de enero de 2027. Si tu negocio es seleccionado, te escribimos por WhatsApp. ¡Mucha suerte!`, boton: 'Ver el programa', link: 'https://dgpglobalgroup.com/negocio-hispano-digital/', nota: 'DGP Global Group · Negocio Hispano Digital' }),
-        `¡Gracias por postular, ${primer}! Recibimos tu postulación al programa Negocio Hispano Digital. Anunciamos a los ganadores el 8 de enero de 2027.`).catch(() => false) : await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Global Group LLC`,
-        correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group LLC · Servicios Digitales Profesionales' }),
+        `¡Gracias por postular, ${primer}! Recibimos tu postulación al programa Negocio Hispano Digital. Anunciamos a los ganadores el 8 de enero de 2027.`).catch(() => false) : await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Global Group`,
+        correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Servicios Digitales Profesionales' }),
         `¡Gracias por escribirnos, ${primer}! Recibimos tu mensaje y te responderemos en menos de 24 horas. WhatsApp: +1 (239) 823-1738`).catch(() => false);
       // 2) Borrador de cotización SOLO con servicios y precios de tu catálogo; tú lo apruebas
       if (!esNHD) borrador = await borradorDesdeContacto(env, token, { nombre, correo, servicio, mensaje, negocio }).catch(e => { console.warn('Vendedor', e); return null; });
     }
-    const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Global Group LLC por tu ${esNHD ? 'postulación al programa Negocio Hispano Digital' : `mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}`}. ¿Cuándo podemos conversar?`)}` : null;
+    const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Global Group por tu ${esNHD ? 'postulación al programa Negocio Hispano Digital' : `mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}`}. ¿Cuándo podemos conversar?`)}` : null;
     await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
       text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}${esNHD ? '🏆 <b>Nueva postulación · 10 webs gratis</b>' : `📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web`}${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en el panel, sección <b>Prospectos</b>.'}`,
       reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
@@ -2622,7 +2622,7 @@ async function cobradorAmable(env, token, docs, correoDe, telDe) {
     }
     const correo = d.clienteCorreo || correoDe(d.cli);
     if (!correo || enviados.length >= 15) continue;
-    const ok = await enviarCorreoBot(env, correo, etapa.n === 2 ? `¿Todo bien? Tu factura ${d.docId || ''} sigue pendiente` : `Recordatorio: factura ${d.docId || ''} · DGP Global Group LLC`,
+    const ok = await enviarCorreoBot(env, correo, etapa.n === 2 ? `¿Todo bien? Tu factura ${d.docId || ''} sigue pendiente` : `Recordatorio: factura ${d.docId || ''} · DGP Global Group`,
       correoCobranzaHTML(d, d._id, etapa.n), textoCobranza(d, d._id, etapa.n), { c: 'documentos', id: d._id });
     if (ok) {
       await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, [`e${etapa.n}`]: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});

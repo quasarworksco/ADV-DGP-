@@ -1,7 +1,7 @@
 {
-  "name": "DGP Global Group LLC — Sistema de Gestión",
+  "name": "DGP Global Group — Sistema de Gestión",
   "short_name": "DGP Global Group",
-  "description": "Sistema de gestión de ventas, facturación y CRM — DGP Global Group LLC",
+  "description": "Sistema de gestión de ventas, facturación y CRM — DGP Global Group",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080d1a",

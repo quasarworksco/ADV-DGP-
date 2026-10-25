@@ -30,9 +30,9 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents || '{}');
     if (d.clave !== CLAVE) return responder({ ok: false, error: 'Clave incorrecta' });
     if (!d.para || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.para)) return responder({ ok: false, error: 'Correo del cliente no válido' });
-    GmailApp.sendEmail(d.para, d.asunto || 'DGP Global Group LLC', d.texto || '', {
+    GmailApp.sendEmail(d.para, d.asunto || 'DGP Global Group', d.texto || '', {
       htmlBody: d.html || '',
-      name: d.nombre || 'DGP Global Group LLC',
+      name: d.nombre || 'DGP Global Group',
       replyTo: d.responderA || Session.getActiveUser().getEmail()
     });
     return responder({ ok: true, restantes: MailApp.getRemainingDailyQuota() });

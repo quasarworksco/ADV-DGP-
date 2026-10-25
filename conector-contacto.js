@@ -1,5 +1,5 @@
 /*
- * DGP Global Group LLC — Conector de formularios
+ * DGP Global Group — Conector de formularios
  * Pega esta línea en tu web (antes de </body>):
  *   <script src="https://adv.dgp-link.com/conector-contacto.js" defer></script>
  *

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cotización — DGP Global Group LLC</title>
+  <title>Cotización — DGP Global Group</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#172b5e">
   <meta name="color-scheme" content="light dark">
@@ -169,7 +169,7 @@
       <div class="head">
         <div class="brandrow">
           <img src="/logo-white.png" alt="DGP Global Group">
-          <div><div class="brand">DGP GLOBAL GROUP LLC</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
+          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
         </div>
         <div class="title">Tu ${tipo}</div>
         <div class="docnum">N° ${esc(doc.docId || id)}</div>
@@ -245,12 +245,12 @@
       accion = `<div class="estado warn"><strong>Esta cotización venció el ${fechaLarga(c.venceEl)}</strong>Los precios pueden haber cambiado. Escríbenos y te la actualizamos.<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent('Hola, quiero actualizar la cotización ' + (c.docId || ''))}" target="_blank" rel="noopener">Pedir cotización actualizada</a></div>`;
     }
 
-    document.title = `Cotización ${c.docId || ''} — DGP Global Group LLC`;
+    document.title = `Cotización ${c.docId || ''} — DGP Global Group`;
     document.getElementById('card').innerHTML = `
       <div class="head ${headCls}">
         <div class="brandrow">
           <img src="/logo-white.png" alt="DGP Global Group">
-          <div><div class="brand">DGP GLOBAL GROUP LLC</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
+          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
         </div>
         <div class="title">Cotización</div>
         <div class="docnum">N° ${esc(c.docId || id)}</div>
@@ -271,7 +271,7 @@
       </div>
       <div class="total"><span class="total-label">Total</span><span class="total-amount">${money(c.total)}</span></div>
       ${accion}
-      <div class="foot">Esta cotización no es una factura. Los precios son válidos hasta la fecha indicada.<br><strong>DGP Global Group LLC</strong> · <a href="https://dgpglobalgroup.com" target="_blank" rel="noopener">dgpglobalgroup.com</a></div>`;
+      <div class="foot">Esta cotización no es una factura. Los precios son válidos hasta la fecha indicada.<br><strong>DGP Global Group</strong> · <a href="https://dgpglobalgroup.com" target="_blank" rel="noopener">dgpglobalgroup.com</a></div>`;
   }
 
   async function responder(estado) {
