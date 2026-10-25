@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Mi Portal · DGP Group USA</title>
+  <title>Mi Portal · DGP Global Group LLC</title>
   <meta name="theme-color" content="#1438cc">
   <link rel="icon"             href="/logo.png" type="image/png">
   <link rel="apple-touch-icon" href="/icon-192.png">
@@ -297,8 +297,8 @@
 <!-- ══════════ LOGIN ══════════ -->
 <div id="login" class="hidden">
   <div class="login-card">
-    <img src="/logo.png" alt="DGP Group" class="login-logo">
-    <div class="login-brand">DGP GROUP <span>USA</span></div>
+    <img src="/logo.png" alt="DGP Global Group" class="login-logo">
+    <div class="login-brand">DGP GLOBAL GROUP <span>LLC</span></div>
     <div class="login-sub">Portal de clientes</div>
     <label class="login-label" for="code-input">Tu código de acceso</label>
     <input id="code-input" class="login-input" placeholder="DGP-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20">
@@ -314,9 +314,9 @@
 <div id="app" class="hidden">
   <header class="topbar">
     <div class="tb-brand">
-      <img src="/logo.png" alt="DGP Group">
+      <img src="/logo.png" alt="DGP Global Group">
       <div style="min-width:0;">
-        <div class="tb-name">DGP GROUP <span>USA</span></div>
+        <div class="tb-name">DGP GLOBAL GROUP <span>LLC</span></div>
         <div class="tb-sub" id="tb-sub">Portal de clientes</div>
       </div>
     </div>
@@ -345,7 +345,7 @@
     <div class="chat-head">
       <img src="/logo-white.png" alt="">
       <div>
-        <div class="chat-head-title">Soporte DGP Group</div>
+        <div class="chat-head-title">Soporte DGP Global Group</div>
         <div class="chat-head-sub">Te respondemos lo antes posible</div>
       </div>
       <button class="chat-close" onclick="toggleChat(false)" aria-label="Cerrar chat">
@@ -824,7 +824,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
         <div class="alert-ico">${I.chat}</div>
         <div class="alert-body">
           <div class="alert-title">Tienes ${noLeidos} mensaje${noLeidos !== 1 ? 's' : ''} nuevo${noLeidos !== 1 ? 's' : ''}</div>
-          <div class="alert-text">El equipo de DGP Group te respondió.</div>
+          <div class="alert-text">El equipo de DGP Global Group te respondió.</div>
         </div>
         <button class="alert-btn" onclick="toggleChat(true)">Abrir chat</button>
       </div>`);
@@ -870,7 +870,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
       <div class="hero">
         <div class="hero-hi">Hola de nuevo,</div>
         <div class="hero-name">${esc(portal.nombre || 'Cliente')}</div>
-        <div class="hero-msg">Aquí ves el estado de tus proyectos, tus pagos y tus documentos con DGP Group. Si necesitas algo, escríbenos por el chat.</div>
+        <div class="hero-msg">Aquí ves el estado de tus proyectos, tus pagos y tus documentos con DGP Global Group. Si necesitas algo, escríbenos por el chat.</div>
       </div>
 
       <div class="alerts">${alerts.join('')}</div>
@@ -1170,7 +1170,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
     const oculto = CODE.slice(0, 4) + '••••-' + CODE.slice(-4);
     return `
       <div class="page-title">Mi cuenta</div>
-      <div class="page-sub">Tus datos registrados con DGP Group.</div>
+      <div class="page-sub">Tus datos registrados con DGP Global Group.</div>
       <div class="grid-2">
         <div>
           <div class="card">
@@ -1226,7 +1226,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
     const visibles = mensajes.filter(m => { const d = toDate(m.fecha); return !d || d.getTime() > limite; });
     body.innerHTML = welcome + visibles.map(m => `
       <div class="msg ${m.de === 'admin' ? 'admin' : 'cliente'}">
-        ${m.de === 'admin' ? `<div class="msg-author">${esc(m.autor || 'DGP Group')}</div>` : ''}<div class="msg-text">${esc(m.texto)}</div>
+        ${m.de === 'admin' ? `<div class="msg-author">${esc(m.autor || 'DGP Global Group')}</div>` : ''}<div class="msg-text">${esc(m.texto)}</div>
         <div class="msg-time">${fmtTime(m.fecha)}</div>
       </div>`).join('');
     body.scrollTop = body.scrollHeight;

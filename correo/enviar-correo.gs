@@ -1,5 +1,5 @@
 /**
- * DGP Group — Envío de correos desde tu Gmail (Google Apps Script)
+ * DGP Global Group — Envío de correos desde tu Gmail (Google Apps Script)
  * ─────────────────────────────────────────────────────────────────
  * El panel le pide al bot (Cloudflare) que envíe un correo; el bot llama
  * a este script, que lo manda desde TU Gmail. Así los correos salen de
@@ -30,9 +30,9 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents || '{}');
     if (d.clave !== CLAVE) return responder({ ok: false, error: 'Clave incorrecta' });
     if (!d.para || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.para)) return responder({ ok: false, error: 'Correo del cliente no válido' });
-    GmailApp.sendEmail(d.para, d.asunto || 'DGP Group USA', d.texto || '', {
+    GmailApp.sendEmail(d.para, d.asunto || 'DGP Global Group LLC', d.texto || '', {
       htmlBody: d.html || '',
-      name: d.nombre || 'DGP Group USA',
+      name: d.nombre || 'DGP Global Group LLC',
       replyTo: d.responderA || Session.getActiveUser().getEmail()
     });
     return responder({ ok: true, restantes: MailApp.getRemainingDailyQuota() });

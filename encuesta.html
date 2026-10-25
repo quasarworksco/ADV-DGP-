@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Encuesta de Satisfacción · DGP Group</title>
+  <title>Encuesta de Satisfacción · DGP Global Group</title>
   <link rel="icon" href="/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -122,14 +122,14 @@
   }
 
   function renderForm(card, doc) {
-    const brand = 'DGP Group USA';
+    const brand = 'DGP Global Group LLC';
     const color = '#1438cc';
     const headerBg = 'linear-gradient(135deg,#0f172a,#1e3a5f)';
     const servicios = (doc.items||[]).map(i=>i.s).join(', ') || '—';
 
     card.innerHTML = `
       <div class="enc-header" style="background:${headerBg};">
-        <img src="/logo-white.png" alt="DGP Group" class="enc-logo">
+        <img src="/logo-white.png" alt="DGP Global Group" class="enc-logo">
         <div class="enc-brand">${brand}</div>
         <div class="enc-title">¿Cómo fue tu experiencia?</div>
         <div class="enc-sub">Tu opinión nos ayuda a mejorar. Solo toma 1 minuto.</div>
@@ -264,8 +264,8 @@
     const estrella = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="1.2" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
     card.innerHTML = `
       <div class="enc-header">
-        <img src="/logo-white.png" alt="DGP Group" class="enc-logo">
-        <div class="enc-brand">DGP Group USA</div>
+        <img src="/logo-white.png" alt="DGP Global Group" class="enc-logo">
+        <div class="enc-brand">DGP Global Group LLC</div>
         <div class="enc-title">Encuesta enviada</div>
       </div>
       <div class="enc-done" style="display:block;">
