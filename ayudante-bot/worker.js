@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26f';
+const WORKER_VERSION = '2026-10-26g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -756,6 +756,14 @@ async function handleDiagnostico(request, env, firebaseLogin) {
     } catch (e) { out.checks.autopublicar = { ok: false, error: e.message }; }
   }
   out.checks.correo = (env.EMAIL_WEBHOOK && env.EMAIL_CLAVE) ? { ok: true } : { ok: false, error: 'Faltan EMAIL_WEBHOOK y EMAIL_CLAVE (ver correo/enviar-correo.gs)' };
+  // Comprueba que el programa de envío responde y cuántos correos quedan hoy (≈100 = Gmail gratis, ≈1500 = Google Workspace)
+  if (out.checks.correo.ok) {
+    try {
+      const r = await fetch(env.EMAIL_WEBHOOK, { redirect: 'follow' });
+      const j = await r.json().catch(() => null);
+      out.checks.correo = j && j.ok ? { ok: true, restantesHoy: j.restantes, cuenta: j.restantes > 150 ? 'Google Workspace (info@dgpglobalgroup.com)' : 'Gmail' } : { ok: false, error: 'El programa de envío no respondió bien (HTTP ' + r.status + ')' };
+    } catch (e) { out.checks.correo = { ok: false, error: 'No se pudo contactar el programa de envío: ' + e.message }; }
+  }
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
   if (q.get('ia')) {
     try {
