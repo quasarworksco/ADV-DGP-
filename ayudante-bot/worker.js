@@ -675,8 +675,8 @@ async function handleVerificar(request, env, firebaseLogin) {
       ['verificacionIA', `verificaciones.${key}`], token);
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
-    const tgToken = tgToken(env);
-    const enviado = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+    const tgTok = tgToken(env);
+    const enviado = await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
         `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26a';
+const WORKER_VERSION = '2026-10-26b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -773,8 +773,8 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   // Telegram: mensaje de prueba al chat de notificaciones
   if (q.get('telegram')) {
     try {
-      const tgToken = tgToken(env);
-      const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+      const tgTok = tgToken(env);
+      const res = await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: TG_CHAT, text: '✅ Prueba del sistema DGP Global Group: las notificaciones llegan correctamente.' })
       });
