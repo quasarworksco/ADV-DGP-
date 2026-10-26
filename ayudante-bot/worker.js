@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26c';
+const WORKER_VERSION = '2026-10-26d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1363,6 +1363,9 @@ async function tgCallback(env, cq) {
     r: () => botRechazar(env, token, id),
     c: () => botCrearDesdeBorrador(env, token, id),
     ce: () => botCrearDesdeBorrador(env, token, id, false, 'en'),
+    sp: () => botSeguimientoProspecto(env, token, id, 'es'),
+    spe: () => botSeguimientoProspecto(env, token, id, 'en'),
+    rq: () => botRecordarCotizacion(env, token, id),
     x: () => botCancelarBorrador(env, token, id),
     wa: () => botResenaWeb(env, token, id, 'aprobada'),
     wr: () => botResenaWeb(env, token, id, 'rechazada'),
@@ -1372,7 +1375,7 @@ async function tgCallback(env, cq) {
     n: async () => ({ aviso: 'Esto ya se resolvió', ya: true })
   };
   // Crear y enviar tarda unos segundos: se contesta al instante para que el botón no se quede "pensando"
-  const lento = ['c', 'ce', 'k', 'p', 'a'].includes(acc);
+  const lento = ['c', 'ce', 'k', 'p', 'a', 'sp', 'spe', 'rq'].includes(acc);
   if (lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: acc === 'ce' ? 'Creating…' : 'Un momento…' });
   let res;
   try { res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' }; }
@@ -1382,12 +1385,55 @@ async function tgCallback(env, cq) {
   // Otros avisos de la misma factura (varios comprobantes) también quedan como resueltos
   if (['p', 'a', 'r'].includes(acc)) await tgSincronizarPago(env, token, id, { p: 'pagado', a: 'abono', r: 'rechazado' }[acc], cq.message.message_id).catch(() => {});
   // Quita los botones para no repetir la acción
-  await tgApi(env, 'editMessageReplyMarkup', { chat_id: chat, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
+  const enlaces = (cq.message?.reply_markup?.inline_keyboard || []).map(f => f.filter(b => b.url)).filter(f => f.length);
+  await tgApi(env, 'editMessageReplyMarkup', { chat_id: chat, message_id: cq.message.message_id, reply_markup: { inline_keyboard: enlaces } });
   if (res.html) await tgApi(env, 'sendMessage', { chat_id: chat, text: res.html, parse_mode: 'HTML', disable_web_page_preview: true,
     reply_to_message_id: cq.message.message_id, ...(res.markup ? { reply_markup: res.markup } : {}) });
 }
 
 /* Igual que "Marcar pagado" del panel (guarda la foto para poder deshacer y renueva la suscripción) */
+
+
+/* ── Seguimiento por correo a un prospecto: le pide un número donde escribirle ── */
+async function botSeguimientoProspecto(env, token, id, idioma) {
+  const p = await fsGet(env, `prospectos/${id}`, token);
+  if (!p) return { aviso: 'Ese prospecto ya no existe' };
+  if (!p.correo) return { aviso: 'No tiene correo', html: `⚠️ ${escHtml(p.nombre || 'Ese prospecto')} no dejó correo. Escríbele por WhatsApp o llámalo.` };
+  const EN = idioma === 'en', nombre = String(p.nombre || '').split(' ')[0] || (EN ? 'there' : '');
+  const serv = p.servicio && !/chat|web/i.test(p.servicio) ? p.servicio : '';
+  const ok = EN
+    ? await enviarCorreoBot(env, p.correo, `${nombre}, a quick question · DGP Global Group`,
+      correoBotHTML({ icono: 'encuesta', titulo: `Hi ${nombre}!`, texto: `Thank you for reaching out to DGP Global Group${serv ? ` about ${serv}` : ''}. We would love to help you, and it is much faster to talk directly. Do you have a phone or WhatsApp number where we can reach you? Just reply to this email with it, or message us on WhatsApp using the button below.`, boton: 'Message us on WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Web design & systems' }),
+      `Hi ${nombre}! Thank you for reaching out to DGP Global Group. Do you have a phone or WhatsApp number where we can reach you? Reply to this email or message us: https://wa.me/12398231738`, { c: 'prospectos', id })
+    : await enviarCorreoBot(env, p.correo, `${nombre ? nombre + ', ' : ''}una pregunta rápida · DGP Global Group`,
+      correoBotHTML({ icono: 'encuesta', titulo: `¡Saludos${nombre ? ', ' + nombre : ''}!`, texto: `Gracias por escribirnos a DGP Global Group${serv ? ` sobre ${serv}` : ''}. Queremos ayudarte y es mucho más rápido conversar directo. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Puedes respondernos este correo con tu número o escribirnos por WhatsApp desde el botón.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Diseño web y sistemas' }),
+      `¡Saludos${nombre ? ', ' + nombre : ''}! Gracias por escribirnos a DGP Global Group. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Respóndenos este correo o escríbenos: https://wa.me/12398231738`, { c: 'prospectos', id });
+  if (!ok) return { aviso: 'No se pudo enviar', html: `⚠️ No pude enviar el correo a ${escHtml(p.correo)}. Revisa que el correo esté configurado (Probar sistema).` };
+  const seg = [...(Array.isArray(p.seguimientos) ? p.seguimientos : []), { tipo: 'pedir-whatsapp', idioma: EN ? 'en' : 'es', fecha: new Date().toISOString(), por: 'telegram' }].slice(-20);
+  await fsUpdate(env, `prospectos/${id}`, { seguimientos: seg, estado: p.estado === 'nuevo' ? 'contactado' : (p.estado || 'contactado'), ultimoSeguimiento: new Date() }, ['seguimientos', 'estado', 'ultimoSeguimiento'], token).catch(() => {});
+  return { aviso: 'Correo enviado ✅', html: `✉️ <b>Seguimiento enviado${EN ? ' en inglés 🇺🇸' : ''}</b> a ${escHtml(p.nombre || '')} (${escHtml(p.correo)})\nLe pedimos un número de WhatsApp. Si responde, el correo te llega a tu Gmail.` };
+}
+
+/* ── Recordatorio de una cotización enviada: "te enviamos una cotización sobre tu solicitud" ── */
+async function botRecordarCotizacion(env, token, id) {
+  const c = await fsGet(env, `cotizaciones/${id}`, token);
+  if (!c) return { aviso: 'Esa cotización ya no existe' };
+  if (['aceptada', 'facturada', 'rechazada'].includes(c.estado)) return { aviso: 'Ya respondió', html: `ℹ️ ${escHtml(c.cli || '')} ya respondió esa cotización (${escHtml(c.estado)}). No hace falta recordarle.` };
+  const para = c.clienteCorreo || (Array.isArray(c.correos) && c.correos.length ? c.correos[c.correos.length - 1].para : '');
+  if (!para) return { aviso: 'No tiene correo', html: '⚠️ Esa cotización no tiene correo del cliente. Envíale el enlace por WhatsApp.' };
+  const EN = c.idioma === 'en', nombre = String(c.cli || '').split(' ')[0] || (EN ? 'there' : '');
+  const link = `${SITIO}/cotizacion.html?id=${id}${EN ? '&lang=en' : ''}`;
+  const ok = EN
+    ? await enviarCorreoBot(env, para, `${nombre}, did you get a chance to review your quote? · DGP Global Group`,
+      correoBotHTML({ icono: 'factura', titulo: `Hi ${nombre}!`, texto: `We sent you a quote (${c.docId || ''}) for ${dinero(c.total)} about your request. Did you get a chance to review it? If you have any questions or would like to adjust something, just reply to this email. You can also accept it directly from the button below.`, boton: 'View my quote', link, nota: 'DGP Global Group · Web design & systems' }),
+      `Hi ${nombre}! We sent you a quote (${c.docId || ''}) for ${dinero(c.total)}. Did you get a chance to review it? ${link}`, { c: 'cotizaciones', id })
+    : await enviarCorreoBot(env, para, `${nombre}, ¿pudiste revisar tu cotización? · DGP Global Group`,
+      correoBotHTML({ icono: 'factura', titulo: `¡Saludos, ${nombre}!`, texto: `Te hemos enviado una cotización (${c.docId || ''}) por ${dinero(c.total)} sobre tu solicitud. ¿Pudiste revisarla? Si tienes alguna duda o quieres ajustar algo, responde este correo. También puedes aceptarla directo desde el botón.`, boton: 'Ver mi cotización', link, nota: 'DGP Global Group · Diseño web y sistemas' }),
+      `¡Saludos, ${nombre}! Te hemos enviado una cotización (${c.docId || ''}) por ${dinero(c.total)} sobre tu solicitud. ¿Pudiste revisarla? ${link}`, { c: 'cotizaciones', id });
+  if (!ok) return { aviso: 'No se pudo enviar', html: `⚠️ No pude enviar el recordatorio a ${escHtml(para)}.` };
+  await fsUpdate(env, `cotizaciones/${id}`, { correos: [...(Array.isArray(c.correos) ? c.correos : []), { para, fecha: new Date().toISOString(), por: 'altair', tipo: 'recordatorio' }] }, ['correos'], token).catch(() => {});
+  return { aviso: 'Recordatorio enviado ✅', html: `⏰ <b>Recordatorio enviado${EN ? ' en inglés 🇺🇸' : ''}</b> a ${escHtml(c.cli || '')} (${escHtml(para)}) sobre la cotización ${escHtml(c.docId || '')}.` };
+}
 
 /* Paquete de aliado pagado: crea la ficha del cliente final y su hosting/dominio en Suscripciones (una sola vez) */
 async function crearHostingAliadoBot(env, token, fsId, doc) {
@@ -1779,7 +1825,8 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar, idioma = 'es') {
   return {
     aviso: b.tipo === 'cotizacion' ? 'Cotización creada ✅' : 'Factura creada ✅',
     html: `✅ <b>${b.tipo === 'cotizacion' ? 'Cotización' : 'Factura'} creada${EN ? ' en inglés 🇺🇸' : ''}</b> · ${escHtml(docId)}\n👤 ${escHtml(b.cliente)} · ${dinero(b.total)}${enviadoA ? `\n📨 Enviada por correo a ${escHtml(enviadoA)}` : ''}${conPago?.metodoPago ? `\n💳 Datos de pago: ${escHtml(conPago.metodoPago)} (los de tu última factura)` : '\n⚠️ Sin datos de pago: agrégalos en el panel si hace falta.'}${correo ? `\n✉️ ${escHtml(correo)}` : ''}`,
-    markup: { inline_keyboard: [[{ text: '🔗 Abrir', url: link }, { text: '💬 Enviar por WhatsApp', url: `https://wa.me/${tel}?text=${encodeURIComponent(textoWa)}` }]] }
+    markup: { inline_keyboard: [[{ text: '🔗 Abrir', url: link }, { text: '💬 Enviar por WhatsApp', url: `https://wa.me/${tel}?text=${encodeURIComponent(textoWa)}` }],
+      ...(b.tipo === 'cotizacion' && (enviadoA || correo) ? [[{ text: '⏰ Recordarle por correo (seguimiento)', callback_data: `rq:${nuevoId}` }]] : [])] }
   };
 }
 
@@ -2106,6 +2153,7 @@ async function acuseReciente(correo) {
 /* Registra el contacto en el CRM y avisa (también se usa al recuperar de la cuarentena) */
 async function registrarLead(env, token, d, opciones = {}) {
   const { nombre, correo = '', telefono = '', servicio = '', negocio = '', mensaje = '' } = d;
+  let prospectoId = null;
   {
     const clientes = await fsList(env, 'clientes', token);
     const tel = telefono.replace(/\D/g, '');
@@ -2125,10 +2173,11 @@ async function registrarLead(env, token, d, opciones = {}) {
       const prospectos = await fsList(env, 'prospectos', token).catch(() => []);
       const previo = prospectos.find(x => (correo && String(x.correo || '').toLowerCase() === correo) || (tel.length >= 7 && String(x.telefono || '').replace(/\D/g, '').endsWith(tel.slice(-9))));
       if (previo) {
+        prospectoId = previo._id;
         await fsUpdate(env, `prospectos/${previo._id}`, { mensajesWeb: [...(Array.isArray(previo.mensajesWeb) ? previo.mensajesWeb : []), entrada].slice(-20), mensaje: mensaje.slice(0, 600), ultimoContactoWeb: new Date(), ...(previo.estado === 'descartado' ? { estado: 'nuevo' } : {}) },
           ['mensajesWeb', 'mensaje', 'ultimoContactoWeb', ...(previo.estado === 'descartado' ? ['estado'] : [])], token);
       } else {
-        await fsCreate(env, 'prospectos', {
+        prospectoId = await fsCreate(env, 'prospectos', {
           nombre, correo, telefono, negocio, servicio, mensaje: mensaje.slice(0, 600), origen, estado: 'nuevo', intentos: 0,
           ...(opciones.dudoso ? { revisar: opciones.dudoso.join(', ') } : {}), mensajesWeb: [entrada], creadoPor: origen, createdAt: new Date()
         }, token);
@@ -2152,7 +2201,8 @@ async function registrarLead(env, token, d, opciones = {}) {
     const wa = tel.length >= 7 ? `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${primer}! Te escribo de DGP Global Group por tu ${esNHD ? 'postulación al programa Negocio Hispano Digital' : `mensaje en nuestra web${servicio ? ` sobre ${servicio}` : ''}`}. ¿Cuándo podemos conversar?`)}` : null;
     await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
       text: `${opciones.dudoso ? `⚠️ <b>Revisa: podría ser spam</b> (${escHtml(opciones.dudoso.join(', '))}). Lo dejé pasar por si es un cliente; Altair no le respondió.\n\n` : ''}${opciones.recuperado ? '♻️ <i>Recuperado de la cuarentena</i>\n' : ''}${esNHD ? '🏆 <b>Nueva postulación · 10 webs gratis</b>' : `📩 <b>${existe ? 'Cliente escribió de nuevo' : 'Nuevo posible cliente'}</b> desde la web`}${acuse ? '\n✉️ <i>Altair ya le respondió que lo contactaremos pronto.</i>' : ''}\n\n👤 ${escHtml(nombre)}${negocio ? ` · ${escHtml(negocio)}` : ''}${servicio ? `\n🎯 Le interesa: <b>${escHtml(servicio)}</b>` : ''}${correo ? `\n✉️ ${escHtml(correo)}` : ''}${telefono ? `\n📱 ${escHtml(telefono)}` : ''}${mensaje ? `\n\n💬 “${escHtml(mensaje.slice(0, 800))}”` : ''}\n\n${existe ? 'Se agregó el mensaje a su ficha en Clientes.' : 'Quedó en el panel, sección <b>Prospectos</b>.'}`,
-      reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
+      reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])],
+        ...(prospectoId && correo && !esNHD ? [[{ text: '✉️ Correo: pedir su WhatsApp', callback_data: `sp:${prospectoId}` }, { text: '🇺🇸 Ask for WhatsApp', callback_data: `spe:${prospectoId}` }]] : [])].filter(f => f.length) }
     }).catch(() => {});
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
       [{ text: '✅ Crear y enviársela', callback_data: `c:${borrador.id}` }, { text: '🇺🇸 Crear y enviar en inglés', callback_data: `ce:${borrador.id}` }],
