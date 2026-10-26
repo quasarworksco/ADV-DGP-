@@ -10946,7 +10946,7 @@ async function correrDiagnostico() {
     { id: 'groq', titulo: 'IA de respaldo (Groq)' },
     { id: 'ia', titulo: 'La IA lee un comprobante de prueba ($123.45)' },
     { id: 'telegram', titulo: 'Mensaje de prueba enviado a Telegram' },
-    { id: 'correo', titulo: 'Envío de correos desde tu Gmail' }
+    { id: 'correo', titulo: 'Envío de correos (info@dgpglobalgroup.com)' }
   ];
   _diagRes = tests.map(t => ({ ...t, estado: 'wait' }));
   diagRender();
@@ -11012,7 +11012,7 @@ async function correrDiagnostico() {
       const PLACEMENT = 'Groq bloquea algunas regiones. En Cloudflare → <b>ayudante-dgp-bot</b> → <b>Settings</b> → <b>Placement</b>, cambia a <b>Smart</b> y guarda. Espera 10–15 minutos y vuelve a probar.' + (d.region ? ` (Esta vez el Worker corrió en: ${esc(d.region)})` : '');
       set('groq', c.groq?.ok, c.groq?.ok ? (c.groq.aviso || 'Modelo de visión: ' + c.groq.modelo) : c.groq?.error, c.groq?.bloqueoRegion ? PLACEMENT : 'Revisa el secreto <b>GROQ_API_KEY</b> en Cloudflare (que sea una clave válida de console.groq.com).');
       set('ia', c.ia?.ok, c.ia?.ok ? `Leyó $${Number(c.ia.monto).toFixed(2)} con ${c.ia.modelo}` : c.ia?.error, c.ia?.bloqueoRegion || /Forbidden/i.test(c.ia?.error || '') ? PLACEMENT : 'Si Groq está bien, puede ser un fallo temporal: vuelve a probar en unos minutos.');
-      set('correo', c.correo?.ok, c.correo?.ok ? 'Configurado (Gmail)' : (c.correo?.error || 'No configurado'), 'Sigue los pasos del archivo <b>correo/enviar-correo.gs</b> y agrega en Cloudflare los secretos <b>EMAIL_WEBHOOK</b> y <b>EMAIL_CLAVE</b>.');
+      set('correo', c.correo?.ok, c.correo?.ok ? `Funciona${c.correo.restantesHoy != null ? ' · te quedan ' + c.correo.restantesHoy + ' correos hoy' : ''}` : (c.correo?.error || 'No configurado'), 'Sigue los pasos del archivo <b>correo/enviar-correo.gs</b> y agrega en Cloudflare los secretos <b>EMAIL_WEBHOOK</b> y <b>EMAIL_CLAVE</b>.');
       set('telegram', c.telegram?.ok, c.telegram?.ok ? 'Revisa tu Telegram: te llegó un mensaje de prueba' : c.telegram?.error, 'Asegúrate de que el bot de notificaciones siga activo en tu chat de Telegram (escríbele /start).');
     }
   } catch (e) {

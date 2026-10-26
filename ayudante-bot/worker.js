@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26g';
+const WORKER_VERSION = '2026-10-26h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -761,7 +761,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
     try {
       const r = await fetch(env.EMAIL_WEBHOOK, { redirect: 'follow' });
       const j = await r.json().catch(() => null);
-      out.checks.correo = j && j.ok ? { ok: true, restantesHoy: j.restantes, cuenta: j.restantes > 150 ? 'Google Workspace (info@dgpglobalgroup.com)' : 'Gmail' } : { ok: false, error: 'El programa de envío no respondió bien (HTTP ' + r.status + ')' };
+      out.checks.correo = j && j.ok ? { ok: true, restantesHoy: j.restantes, remitente: j.remitente || null } : { ok: false, error: 'El programa de envío no respondió bien (HTTP ' + r.status + ')' };
     } catch (e) { out.checks.correo = { ok: false, error: 'No se pudo contactar el programa de envío: ' + e.message }; }
   }
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
