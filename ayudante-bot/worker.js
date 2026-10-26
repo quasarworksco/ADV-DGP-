@@ -58,7 +58,7 @@ TÉCNICAS DE PERSUASIÓN — aplícalas siempre de forma natural:
 SOBRE LA EMPRESA
 ════════════════════════════════════════
 DGP Global Group — servicios digitales profesionales.
-Fundador: Andrés Espina | dgpgroup.usa@gmail.com | +1 (239) 823-1738 | dgp-link.com
+Fundador: Andrés Espina | info@dgpglobalgroup.com | +1 (239) 823-1738 | dgp-link.com
 
 Equipo: Kevin Bermudez, Angel Rosales, Paul Espina.
 
@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26e';
+const WORKER_VERSION = '2026-10-26f';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1133,7 +1133,7 @@ async function handleEmail(request, env) {
     if (!['documentos', 'cotizaciones', 'campanas'].includes(b.coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id || '')) return json(request, { error: 'Documento no válido' }, 400);
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: conPixel(String(b.html || ''), b.coleccion, b.id, para), texto: String(b.texto || ''), nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com' })
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto: String(b.asunto || '').slice(0, 200), html: conPixel(String(b.html || ''), b.coleccion, b.id, para), texto: String(b.texto || ''), nombre: 'DGP Global Group', responderA: 'info@dgpglobalgroup.com' })
     });
     const r = await res.json().catch(() => ({ ok: false, error: 'Google respondió algo inesperado (revisa que la URL termine en /exec y que el acceso sea "Cualquier usuario")' }));
     if (!r.ok) return json(request, { error: 'Gmail: ' + (r.error || 'no se pudo enviar') }, 502);
@@ -1262,7 +1262,7 @@ async function recordarResenas(env, token, docs, correoDe) {
     const nombre = String(e.cliente || doc?.cli || '').split(' ')[0] || 'hola';
     const res = await fetch(env.EMAIL_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto: `${nombre}, ¿nos ayudas con una reseña en Google?`, nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com',
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto: `${nombre}, ¿nos ayudas con una reseña en Google?`, nombre: 'DGP Global Group', responderA: 'info@dgpglobalgroup.com',
         html: correoResenaHTML(nombre, `${BOT_URL}/resena?e=${e._id}`),
         texto: `¡Gracias por confiar en nosotros, ${nombre}! ¿Nos regalas 30 segundos para dejar tu reseña en Google?\n${GOOGLE_RESENA}\n\nDGP Global Group · dgpglobalgroup.com` })
     });
@@ -1952,7 +1952,7 @@ async function enviarCorreoBot(env, para, asunto, html, texto, rastreo) {
   if (rastreo) html = conPixel(html, rastreo.c, rastreo.id, para);
   const res = await fetch(env.EMAIL_WEBHOOK, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Global Group', responderA: 'dgpgroup.usa@gmail.com' })
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para, asunto, html, texto, nombre: 'DGP Global Group', responderA: 'info@dgpglobalgroup.com' })
   });
   const r = await res.json().catch(() => ({}));
   if (!r.ok) console.warn('Correo automático', para, r.error);
@@ -2505,7 +2505,7 @@ WEB DESIGN: Landing Page from $280 one-time (24-48h delivery) | Standard Site up
 GRAPHIC DESIGN: Visual Identity (logo + brand guidelines) from $185 | Business Card from $26 | Social Media Posts/Flyers from $15 each.
 PACKAGES (one-time): Basic $320 (logo, brand guidelines, social media review, 1,000 followers, business card; 48h) | Intermediate $480 (adds 3,000 followers and 10 Instagram posts; 72h) | Advanced $840 (5,000 followers, 10 posts, invoice and business card design, One Page website, admin panel with CRM; 72h).
 CUSTOM SYSTEMS: CRM, admin panels, inventory, custom software — custom quote.
-CONTACT: WhatsApp +1 (239) 823-1738 | Email dgpgroup.usa@gmail.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
+CONTACT: WhatsApp +1 (239) 823-1738 | Email info@dgpglobalgroup.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
 
 GUIDELINES:
 1. Always end with a question or call to action that moves toward a consultation or quote.
