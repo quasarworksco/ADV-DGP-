@@ -202,6 +202,7 @@ export default {
     const ruta = new URL(request.url).pathname;
     if (ruta === TG_RUTA) return handleTgNotif(request, env, ctx);
     if (ruta === '/contacto') return handleContacto(request, env);
+    if (ruta === '/aviso') return handleAviso(request, env);
     if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
@@ -301,7 +302,7 @@ async function sendMsg(token, chatId, text) {
 }
 
 async function enviarResumenMensual(env) {
-  const TG_TOKEN = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+  const TG_TOKEN = tgToken(env);
   const TG_CHAT  = '8446165096';
   const PROJECT  = env.FIREBASE_PROJECT || 'dgp-group';
 
@@ -674,7 +675,7 @@ async function handleVerificar(request, env, firebaseLogin) {
       ['verificacionIA', `verificaciones.${key}`], token);
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
-    const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+    const tgToken = tgToken(env);
     const enviado = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
@@ -702,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-25e';
+const WORKER_VERSION = '2026-10-26a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -772,7 +773,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   // Telegram: mensaje de prueba al chat de notificaciones
   if (q.get('telegram')) {
     try {
-      const tgToken = env.TG_TOKEN_NOTIF || '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+      const tgToken = tgToken(env);
       const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: TG_CHAT, text: '✅ Prueba del sistema DGP Global Group: las notificaciones llegan correctamente.' })
@@ -791,7 +792,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
 //  · Semanal: respaldo de toda la base de datos a Telegram
 //  · POST /tarea {tarea:'diaria'|'respaldo'} (solo equipo, con token de Firebase)
 // ══════════════════════════════════════════════════════════════
-const TG_NOTIF_DEFAULT = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
+const TG_NOTIF_DEFAULT = '';  // el token va SOLO como Secret TG_TOKEN_NOTIF en Cloudflare
 const SITIO = 'https://adv.dgp-link.com';
 const EMISOR_FACTURAS = 'Andrés Espina';   // emisor de todas las facturas nuevas (las anteriores conservan el suyo)
 const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
@@ -1038,6 +1039,32 @@ async function handleTarjeta(request, env) {
     const t = x => (typeof x === 'string' ? x.trim().slice(0, 160) : '') || '';
     return json(request, { ok: true, datos: { nombre: t(d.nombre), apellido: t(d.apellido), empresa: t(d.empresa), cargo: t(d.cargo), telefono: t(d.telefono), correo: t(d.correo).toLowerCase(), web: t(d.web), direccion: t(d.direccion), redes: t(d.redes) } });
   } catch (e) { return json(request, { error: e.message || 'Error' }, 502); }
+}
+
+
+/* ── POST /aviso { col, id, texto, foto? } ──
+   Avisos a Telegram desde las páginas públicas (factura, cotización, portal) sin exponer el token.
+   Solo para documentos que existen, con texto limitado y como mucho 20 avisos por hora por conexión. */
+async function handleAviso(request, env) {
+  const h = corsContacto(request);
+  const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  if (request.method !== 'POST') return resp({ error: 'Método no permitido' }, 405);
+  if (!ORIGENES_CONTACTO.includes(request.headers.get('Origin') || '')) return resp({ error: 'No permitido' }, 403);
+  const b = await request.json().catch(() => ({}));
+  const col = ['documentos', 'cotizaciones', 'portal'].includes(b.col) ? b.col : '';
+  if (!col || !/^[A-Za-z0-9_-]{3,64}$/.test(b.id || '')) return resp({ error: 'Aviso no válido' }, 400);
+  const texto = String(b.texto || '').replace(/[<>]/g, '').trim().slice(0, 1500);
+  const foto = typeof b.foto === 'string' && b.foto.startsWith(CLOUDINARY_PREFIX) ? b.foto : '';
+  if (!texto) return resp({ error: 'Falta el texto' }, 400);
+  if (await superaLimite(request, 'aviso', 20, 3600)) return resp({ ok: true });
+  try {
+    const token = await firebaseLogin(env);
+    if (!(await fsGet(env, `${col}/${b.id}`, token))) return resp({ error: 'No encontrado' }, 404);
+    if (foto) await tgApi(env, 'sendPhoto', { chat_id: TG_CHAT, photo: foto, caption: texto.slice(0, 1000) });
+    else await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: texto, disable_web_page_preview: true });
+    return resp({ ok: true });
+  } catch (e) { console.error('aviso', e); return resp({ ok: true }); }
 }
 
 /* ── POST /tarea (solo equipo) ── */

@@ -129,8 +129,8 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const TG_TOKEN   = '8938228745:AAHXuxCaO6EZlC-vafwTGvUCT6ILHGOnQuk';
-  const TG_CHAT_ID = '8446165096';
+  const AVISO_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/aviso';  // los avisos a Telegram pasan por el bot (el token no va en la página)
+  const aviso = (col, id, texto, foto) => fetch(AVISO_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ col, id, texto, foto }) }).catch(() => {});
   const WA = '12398231738';
 
   const id = new URLSearchParams(location.search).get('id');
@@ -195,8 +195,7 @@
       try {
         await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
         doc.clienteCorreo = correo; doc.clienteTelefono = tel;
-        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: TG_CHAT_ID, text: `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.` }) }).catch(() => {});
+        aviso(coleccion, id, `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.`);
         alListo();
       } catch (e) {
         btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
@@ -289,13 +288,10 @@
         respondidoAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       Object.assign(cot, { estado, respondidoPor: nombre, respuestaNota: nota });
-      fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TG_CHAT_ID, disable_web_page_preview: true, text:
+      aviso('cotizaciones', id,
           `${estado === 'aceptada' ? '✅ COTIZACIÓN ACEPTADA' : '❌ Cotización rechazada'}\n\n` +
           `🧾 ${cot.docId || id} · ${money(cot.total)}\n👤 ${cot.cli || '—'}${nombre && nombre !== cot.cli ? ' (' + nombre + ')' : ''}` +
-          `${nota ? '\n💬 "' + nota + '"' : ''}\n\n${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotizaciones:\nhttps://adv.dgp-link.com/' : ''}` })
-      }).catch(() => {});
+          `${nota ? '\n💬 "' + nota + '"' : ''}\n\n${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotizaciones:\nhttps://adv.dgp-link.com/' : ''}`);
       render();
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     } catch (e) {
