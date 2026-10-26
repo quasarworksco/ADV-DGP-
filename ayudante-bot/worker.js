@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26d';
+const WORKER_VERSION = '2026-10-26e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2879,6 +2879,7 @@ ${lista}`, `Servicio de interés: ${c.servicio || '—'}\nMensaje: ${c.mensaje |
 const PIXEL_GIF = Uint8Array.from(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), c => c.charCodeAt(0));
 const COLECCIONES_RASTREO = ['documentos', 'cotizaciones', 'campanas'];
 function conPixel(html, coleccion, id, para) {
+  return html;  // Seguimiento de aperturas desactivado: los pixeles invisibles hacen que los correos caigan en spam
   if (!COLECCIONES_RASTREO.includes(coleccion) || !/^[A-Za-z0-9_-]{1,64}$/.test(id || '') || id === 'prueba') return html;
   const q = new URLSearchParams({ c: coleccion, id, t: Date.now().toString(36), ...(coleccion === 'campanas' ? { r: String(para || '').slice(0, 120) } : {}) });
   const img = `<img src="${BOT_URL}/abierto?${q.toString().replace(/&/g, '&amp;')}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;">`;

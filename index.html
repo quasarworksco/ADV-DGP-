@@ -11690,7 +11690,8 @@ function correoHTML(tipo, doc, mensaje, link) {
     </td></tr>
     <tr><td align="center" class="pad" style="padding:28px 34px 10px;">${correoBoton(boton, link)}</td></tr>
     <tr><td align="center" class="pad tx2" style="padding:4px 34px 26px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">${CL('¿El botón no abre? Copia este enlace:', 'Button not working? Copy this link:')}<br><a href="${e(link)}" class="lk" style="color:${CM.azul};word-break:break-all;">${e(link)}</a></td></tr>`;
-  return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Global Group`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
+  // Correo de factura, recibo o cotización: sin bloque de servicios (lo promocional lo manda a spam)
+  return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Global Group`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo, servicios: false });
 }
 function abrirCorreo(coleccion, id, en) {
   _correoEN = en === undefined ? (correoDatos(coleccion, id)?.doc?.idioma === 'en') : !!en;
@@ -11701,7 +11702,7 @@ function abrirCorreo(coleccion, id, en) {
   const previos = Array.isArray(d.doc.correos) ? d.doc.correos : [];
   closeModal();
   ptModal('Enviar por correo', `${d.doc.docId || ''} · ${d.doc.cli || ''}`, `
-    ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${Number(d.doc.aperturas) ? ` · <b>abierto ${d.doc.aperturas} ${Number(d.doc.aperturas) === 1 ? 'vez' : 'veces'}</b>` : ' · aún no lo abre'}</div>` : ''}
+    ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
     <div class="co-idioma" role="group" aria-label="Idioma del correo"><span>Idioma del correo</span>
       <button type="button" class="${_correoEN ? '' : 'on'}" onclick="correoIdioma(false)">Español</button>
       <button type="button" class="${_correoEN ? 'on' : ''}" onclick="correoIdioma(true)">English</button></div>
@@ -11965,7 +11966,7 @@ function etiquetaApertura(d) {
   if (!(d.correos || []).length) return '';
   const n = Number(d.aperturas) || 0;
   const f = d.ultimaApertura?.toDate ? d.ultimaApertura.toDate() : (d.ultimaApertura ? new Date(d.ultimaApertura) : null);
-  if (!n) return `<span class="emisor-tag" style="margin:0;background:#f8fafc;color:#64748b;" title="Aún no ha abierto el correo">${SVG_OJO}Sin abrir</span>`;
+  if (!n) return '';  // ya no se mide si abren el correo (el pixel enviaba los correos a spam)
   return `<span class="emisor-tag" style="margin:0;background:#eff6ff;color:#1d4ed8;border-color:rgba(29,78,216,.2);" title="Abrió el correo ${n} ${n === 1 ? 'vez' : 'veces'}${f ? ' · última: ' + f.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}">${SVG_OJO}Abierta${n > 1 ? ' ' + n + '×' : ''}</span>`;
 }
 /* ═══════════════════════════════════════════════════════
