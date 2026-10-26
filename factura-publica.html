@@ -395,6 +395,9 @@
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // Idioma: ?lang=en en el enlace o factura creada en inglés
+  let EN = new URLSearchParams(location.search).get('lang') === 'en';
+  const L = (es, en) => EN ? en : es;
   async function loadFactura() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -412,6 +415,8 @@
         return;
       }
       const doc = { _fsId: id, ...snap.data() };
+      if (doc.idioma === 'en') EN = true;
+      document.documentElement.lang = EN ? 'en' : 'es';
       const esRecibo = doc.pagado || doc.type === 'recibo';
       if (!doc.clienteCorreo && !esRecibo) pedirCorreo(card, doc, 'documentos', id, () => renderFactura(card, doc));
       else renderFactura(card, doc);
@@ -448,54 +453,54 @@
 
     if (s.web) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Sitios Web</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Incluye 2 rondas de ajustes después de la entrega para que el resultado sea exactamente lo que necesitas. Una ronda = todos los cambios enviados juntos en un mensaje.</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Todos los planes incluyen 1 mes de soporte gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>El dominio lo registra el cliente a su nombre. El sitio se activa al completar el pago.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>El crecimiento en buscadores y ventas depende también del contenido, la inversión en marketing y el tiempo. DGP Global Group entrega las mejores bases para lograrlo.</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> ${L('Sitios Web', 'Websites')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Sitio entregado funcional, optimizado y con SEO básico incluido para mejorar tu visibilidad en buscadores.', 'Fully working, optimized website with basic SEO included to improve your visibility on search engines.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Incluye 2 rondas de ajustes después de la entrega para que el resultado sea exactamente lo que necesitas. Una ronda = todos los cambios enviados juntos en un mensaje.', 'Includes 2 rounds of revisions after delivery so the result is exactly what you need. One round = all changes sent together in one message.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Todos los planes incluyen 1 mes de soporte gratuito. Planes desde $450 incluyen hosting + mantenimiento por 6 meses o 1 año.', 'All plans include 1 month of free support. Plans from $450 include hosting + maintenance for 6 months or 1 year.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('El dominio lo registra el cliente a su nombre. El sitio se activa al completar el pago.', 'The domain is registered in the client’s name. The site goes live once payment is complete.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('El crecimiento en buscadores y ventas depende también del contenido, la inversión en marketing y el tiempo. DGP Global Group entrega las mejores bases para lograrlo.', 'Search and sales growth also depend on content, marketing investment and time. DGP Global Group delivers the best foundation to achieve it.')}</div>
       </div>`);
 
     if (s.redes) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Redes Sociales</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Aprobación de contenido en 48h para mantenerte siempre en control de lo que se publica.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados de engagement varían según el nicho, la audiencia y los algoritmos de cada plataforma.</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> ${L('Redes Sociales', 'Social Media')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Contenido diseñado para tu marca, publicado con consistencia para construir una presencia profesional.', 'Content designed for your brand, published consistently to build a professional presence.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Aprobación de contenido en 48h para mantenerte siempre en control de lo que se publica.', 'Content approval within 48h so you are always in control of what gets published.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('Servicio mensual. Cancelación con 15 días de aviso. El mes en curso no es reembolsable una vez iniciado.', 'Monthly service. Cancel with 15 days’ notice. The current month is non-refundable once started.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('Los resultados de engagement varían según el nicho, la audiencia y los algoritmos de cada plataforma.', 'Engagement results vary by niche, audience and each platform’s algorithms.')}</div>
       </div>`);
 
     if (s.ads) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Publicidad (ADS)</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>El presupuesto de pauta (lo que se invierte en Meta/Google) lo paga el cliente directamente a la plataforma. DGP Global Group cobra solo la gestión.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>Los resultados dependen del presupuesto, el mercado y los algoritmos. Trabajamos para optimizar al máximo cada campaña.</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ${L('Publicidad (ADS)', 'Advertising (Ads)')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Gestión profesional de campañas para maximizar el rendimiento de tu inversión publicitaria.', 'Professional campaign management to maximize the return on your ad spend.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('El presupuesto de pauta (lo que se invierte en Meta/Google) lo paga el cliente directamente a la plataforma. DGP Global Group cobra solo la gestión.', 'The ad budget (what is spent on Meta/Google) is paid by the client directly to the platform. DGP Global Group only charges for management.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('Los resultados dependen del presupuesto, el mercado y los algoritmos. Trabajamos para optimizar al máximo cada campaña.', 'Results depend on budget, market and algorithms. We work to optimize every campaign as much as possible.')}</div>
       </div>`);
 
     if (s.seguidores) terminosEspecificos.push(`
       <div class="pub-terms-section">
-        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Seguidores</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.</div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span>La garantía de reposición aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.</div>
+        <div class="pub-terms-section-title" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${L('Seguidores', 'Followers')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span>${L('Crecimiento garantizado de por vida: si los seguidores bajan, se reponen sin costo adicional.', 'Lifetime guaranteed growth: if followers drop, they are refilled at no extra cost.')}</div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span>${L('La garantía de reposición aplica mientras la cuenta esté activa. No aplica si la cuenta es suspendida o eliminada por la plataforma.', 'The refill guarantee applies while the account is active. It does not apply if the platform suspends or deletes the account.')}</div>
       </div>`);
 
     return `
       <div class="pub-terms">
-        <div class="pub-terms-title">Información del Servicio</div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Trabajo 100% personalizado, entregado en los tiempos acordados con acompañamiento durante todo el proceso.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>Al completar el pago, ${cliente} recibe licencia de uso permanente sobre todo el material entregado.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span><span>El trabajo inicia y se entrega según los pagos acordados. Cambios fuera del alcance original se cotizan por separado antes de realizarse.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span><span>Los pagos realizados no son reembolsables, ya que representan tiempo y recursos comprometidos desde el inicio del proyecto.</span></div>
-        <div class="pub-term-item"><span class="pub-term-num">i</span><span>DGP Global Group no asume responsabilidad por interrupciones en servicios de terceros como Meta, Google o proveedores de hosting.</span></div>
+        <div class="pub-terms-title">${L('Información del Servicio', 'Service Information')}</div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>${L('Trabajo 100% personalizado, entregado en los tiempos acordados con acompañamiento durante todo el proceso.', '100% custom work, delivered on the agreed timeline with support throughout the process.')}</span></div>
+        <div class="pub-term-item"><span class="pub-term-num ok">✓</span><span>${L(`Al completar el pago, ${cliente} recibe licencia de uso permanente sobre todo el material entregado.`, `Once payment is complete, ${cliente} receives a permanent license to use all delivered material.`)}</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>${L('El trabajo inicia y se entrega según los pagos acordados. Cambios fuera del alcance original se cotizan por separado antes de realizarse.', 'Work starts and is delivered according to the agreed payments. Changes outside the original scope are quoted separately before being made.')}</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>${L('Los pagos realizados no son reembolsables, ya que representan tiempo y recursos comprometidos desde el inicio del proyecto.', 'Payments made are non-refundable, as they represent time and resources committed from the start of the project.')}</span></div>
+        <div class="pub-term-item"><span class="pub-term-num">i</span><span>${L('DGP Global Group no asume responsabilidad por interrupciones en servicios de terceros como Meta, Google o proveedores de hosting.', 'DGP Global Group is not responsible for outages in third-party services such as Meta, Google or hosting providers.')}</span></div>
         ${terminosEspecificos.join('')}
       </div>
       <div class="pub-terms-contact">
-        <div class="pub-terms-contact-col"><strong>Proveedor</strong>Andrés Espina — DGP Global Group</div>
+        <div class="pub-terms-contact-col"><strong>${L('Proveedor', 'Provider')}</strong>Andrés Espina — DGP Global Group</div>
         <div class="pub-terms-contact-col"><strong>WhatsApp</strong>+1 (239) 823-1738</div>
-        <div class="pub-terms-contact-col"><strong>Correo</strong>dgpgroup.usa@gmail.com</div>
+        <div class="pub-terms-contact-col"><strong>${L('Correo', 'Email')}</strong>dgpgroup.usa@gmail.com</div>
       </div>
-      <div class="pub-terms-accept">Al realizar el pago, ${cliente} acepta los términos descritos anteriormente.</div>`;
+      <div class="pub-terms-accept">${L(`Al realizar el pago, ${cliente} acepta los términos descritos anteriormente.`, `By making the payment, ${cliente} accepts the terms described above.`)}</div>`;
   }
 
   const METODO_LABELS = {
@@ -504,6 +509,7 @@
     transferencia:'Transferencia Interbancaria (USD)',
     paypal:'PayPal', westernunion:'Western Union'
   };
+  const CAMPO_LABELS_EN = { correo:'Email / Account', telefono:'Phone', wallet:'Wallet address', payid:'Pay ID', banco:'Bank', cuenta:'Account number', rifci:'RIF / ID', cedula:'ID number', ruta:'Routing number', tipo:'Account type', nombre:'Recipient', pais:'Country / City' };
   const CAMPO_LABELS = {
     correo:'Correo / Cuenta', telefono:'Teléfono', wallet:'Dirección Wallet',
     payid:'Pay ID', banco:'Banco', cuenta:'N° de Cuenta', rifci:'RIF / CI',
@@ -595,15 +601,15 @@
     const moneda = doc.moneda === 'eur' ? '€' : '$';
     const filas  = Object.entries(info).filter(([,v]) => v).map(([k, v]) => `
       <div class="pub-pago-row">
-        <span class="pub-pago-key">${CAMPO_LABELS[k] || k}</span>
+        <span class="pub-pago-key">${(EN ? CAMPO_LABELS_EN[k] : CAMPO_LABELS[k]) || k}</span>
         <span style="display:flex;align-items:center;gap:4px">
           <span class="pub-pago-val">${esc(v)}</span>
-          <button class="pub-pago-copy" onclick="copiarTexto('${esc(v)}',this)">Copiar</button>
+          <button class="pub-pago-copy" onclick="copiarTexto('${esc(v)}',this)">${L('Copiar', 'Copy')}</button>
         </span>
       </div>`).join('');
     return `
       <div class="pub-pago">
-        <div class="pub-pago-title">Cómo Pagar</div>
+        <div class="pub-pago-title">${L('Cómo Pagar', 'How to Pay')}</div>
         <div class="pub-pago-card">
           <div class="pub-pago-metodo">${label} · <span style="color:#1438cc">${moneda}${(doc.total||0).toFixed(2)}</span></div>
           ${filas}
@@ -615,27 +621,28 @@
   /* ── Verificación automática del comprobante (IA) ── */
   const VERIFY_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/verificar';
   const IA_ESTILOS = {
-    coincide:          ['#059669', '#f0fdf4', 'rgba(5,150,105,0.25)',  'Monto verificado'],
-    menor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto menor al pendiente'],
-    mayor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto mayor al pendiente'],
-    otra_moneda:       ['#1d4ed8', '#eff6ff', 'rgba(29,78,216,0.2)',   'Revisión manual'],
-    ilegible:          ['#475569', '#f8fafc', 'rgba(71,85,105,0.2)',   'Revisión manual'],
-    no_es_comprobante: ['#dc2626', '#fef2f2', 'rgba(220,38,38,0.25)',  'Revisa la imagen']
+    coincide:          ['#059669', '#f0fdf4', 'rgba(5,150,105,0.25)',  'Monto verificado', 'Amount verified'],
+    menor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto menor al pendiente', 'Amount lower than balance'],
+    mayor:             ['#b45309', '#fffbeb', 'rgba(217,119,6,0.3)',   'Monto mayor al pendiente', 'Amount higher than balance'],
+    otra_moneda:       ['#1d4ed8', '#eff6ff', 'rgba(29,78,216,0.2)',   'Revisión manual', 'Manual review'],
+    ilegible:          ['#475569', '#f8fafc', 'rgba(71,85,105,0.2)',   'Revisión manual', 'Manual review'],
+    no_es_comprobante: ['#dc2626', '#fef2f2', 'rgba(220,38,38,0.25)',  'Revisa la imagen', 'Check the image']
   };
   function iaBox(v) {
     if (!v || !v.estado) return '';
-    const [c, bg, bd, titulo] = IA_ESTILOS[v.estado] || IA_ESTILOS.ilegible;
+    const [c, bg, bd, tituloEs, tituloEn] = IA_ESTILOS[v.estado] || IA_ESTILOS.ilegible;
+    const titulo = L(tituloEs, tituloEn);
     return `<div style="margin-top:10px;padding:12px 14px;border-radius:12px;background:${bg};border:1px solid ${bd};color:${c};text-align:left;font-size:12px;line-height:1.5;">
       <div style="display:flex;align-items:center;gap:6px;font-weight:700;margin-bottom:3px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
-        Verificación automática · ${titulo}
+        ${L('Verificación automática', 'Automatic check')} · ${titulo}
       </div>
-      <div style="color:#334155;">${esc(v.mensaje || '')}</div>
-      <div style="color:#94a3b8;font-size:10.5px;margin-top:4px;">Lectura hecha por IA. Nuestro equipo confirmará el pago.</div>
+      <div style="color:#334155;">${EN ? '' : esc(v.mensaje || '')}</div>
+      <div style="color:#94a3b8;font-size:10.5px;margin-top:4px;">${L('Lectura hecha por IA. Nuestro equipo confirmará el pago.', 'Read by AI. Our team will confirm the payment.')}</div>
     </div>`;
   }
   async function verificarComprobanteIA(fsId, url, cont) {
-    if (cont) cont.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #cbd5e1;color:#64748b;font-size:12px;text-align:center;">Verificando el monto de tu comprobante…</div>`;
+    if (cont) cont.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #cbd5e1;color:#64748b;font-size:12px;text-align:center;">${L('Verificando el monto de tu comprobante…', 'Checking the amount on your receipt…')}</div>`;
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 45000);
@@ -687,9 +694,9 @@
       <img src="${esc(c.url)}" alt="Comprobante ${i + 1}" onclick="verImagen(this.src)" loading="lazy">
       <div class="pub-comp-item-body">
         <div class="pub-comp-item-title">Comprobante ${i + 1}</div>
-        <div class="pub-comp-item-sub">${c.fecha ? 'Enviado el ' + fechaCorta(c.fecha) : 'Enviado'}</div>
+        <div class="pub-comp-item-sub">${c.fecha ? L('Enviado el ', 'Sent on ') + fechaCorta(c.fecha) : L('Enviado', 'Sent')}</div>
         ${compEstado(d, c) === 'registrado'
-          ? `<div style="margin-top:10px;padding:10px 14px;border-radius:12px;background:#f0fdf4;border:1px solid rgba(5,150,105,0.25);color:#059669;font-size:12px;font-weight:700;">✓ Pago confirmado. ¡Gracias!</div>`
+          ? `<div style="margin-top:10px;padding:10px 14px;border-radius:12px;background:#f0fdf4;border:1px solid rgba(5,150,105,0.25);color:#059669;font-size:12px;font-weight:700;">${L('✓ Pago confirmado. ¡Gracias!', '✓ Payment confirmed. Thank you!')}</div>`
           : compEstado(d, c) === 'rechazado' ? '' : iaBox(iaDe(d, c.url))}
       </div>
     </div>`;
@@ -717,18 +724,18 @@
       <div class="pub-comp-wrap">
         ${rech ? `<div style="display:flex;gap:10px;align-items:flex-start;background:#fef2f2;border:1px solid rgba(220,38,38,.25);color:#991b1b;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.55;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div><strong style="display:block;margin-bottom:2px;">No pudimos confirmar tu último pago</strong>Revisa que el monto y el destinatario sean correctos y sube otro comprobante, o escríbenos por <a href="https://wa.me/12398231738" target="_blank" rel="noopener" style="color:#991b1b;font-weight:700;">WhatsApp</a>.</div></div>` : ''}
+          <div><strong style="display:block;margin-bottom:2px;">${L('No pudimos confirmar tu último pago', 'We could not confirm your last payment')}</strong>${L('Revisa que el monto y el destinatario sean correctos y sube otro comprobante, o escríbenos por ', 'Check that the amount and recipient are correct and upload another receipt, or message us on ')}<a href="https://wa.me/12398231738" target="_blank" rel="noopener" style="color:#991b1b;font-weight:700;">WhatsApp</a>.</div></div>` : ''}
         ${lista}
         <div class="pub-comp-area" onclick="document.getElementById('pub-comp-input').click()">
           <div class="pub-comp-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
-          <div class="pub-comp-txt">${comps.length ? 'Subir otro comprobante' : 'Subir comprobante de pago'}</div>
-          <div class="pub-comp-sub">${comps.length ? '¿Hiciste otro pago? Súbelo aquí' : 'JPG, PNG, WebP — máx. 5MB'}</div>
+          <div class="pub-comp-txt">${comps.length ? L('Subir otro comprobante', 'Upload another receipt') : L('Subir comprobante de pago', 'Upload payment receipt')}</div>
+          <div class="pub-comp-sub">${comps.length ? L('¿Hiciste otro pago? Súbelo aquí', 'Made another payment? Upload it here') : L('JPG, PNG, WebP — máx. 5MB', 'JPG, PNG, WebP — max 5MB')}</div>
           <input type="file" id="pub-comp-input" accept="image/*" onchange="subirComprobantePublico(this,'${fsId}')">
           <div class="pub-comp-progress" id="pub-comp-progress">
             <div class="pub-comp-bar" id="pub-comp-bar"></div>
           </div>
         </div>
-        <div class="pub-comp-ok" id="pub-comp-ok" style="align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Comprobante enviado! El equipo de DGP Global Group lo revisará pronto.</div>
+        <div class="pub-comp-ok" id="pub-comp-ok" style="align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ${L('¡Comprobante enviado! El equipo de DGP Global Group lo revisará pronto.', 'Receipt sent! The DGP Global Group team will review it soon.')}</div>
       </div>`;
   }
 
@@ -740,7 +747,7 @@
       <div class="helio-section" id="helio-section">
         <div class="helio-toggle" onclick="toggleHelio()">
           <div class="helio-toggle-left">
-            <span style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> ¿Pagar con cripto?</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> ${L('¿Pagar con cripto?', 'Pay with crypto?')}</span>
             <span class="helio-toggle-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Helio</span>
           </div>
           <span class="helio-toggle-arrow" id="helio-arrow">▼</span>
@@ -852,13 +859,13 @@
   function copiarTexto(txt, btn) {
     navigator.clipboard?.writeText(txt).then(() => {
       btn.textContent = '✓';
-      setTimeout(() => btn.textContent = 'Copiar', 2000);
+      setTimeout(() => btn.textContent = L('Copiar', 'Copy'), 2000);
     });
   }
 
   /* ── Primera vez: pedir el correo del cliente antes de mostrar el documento ── */
   function pedirCorreo(card, doc, coleccion, id, alListo) {
-    const tipo = coleccion === 'cotizaciones' ? 'cotización' : 'factura';
+    const tipo = coleccion === 'cotizaciones' ? L('cotización', 'quote') : L('factura', 'invoice');
     const nombre = String(doc.cli || '').split(' ')[0];
     const campo = 'width:100%;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;box-sizing:border-box;';
     const etiqueta = 'display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:6px;';
@@ -867,37 +874,37 @@
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
           <img src="/logo-white.png" alt="DGP Global Group" style="width:42px;height:42px;object-fit:contain;">
           <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff;line-height:1;">DGP GLOBAL GROUP</div>
-          <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:3px;">dgpglobalgroup.com · Diseño web y sistemas</div></div>
+          <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:3px;">dgpglobalgroup.com · ${L('Diseño web y sistemas', 'Web design & systems')}</div></div>
         </div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:1px;line-height:1;">TU ${tipo.toUpperCase()}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:1px;line-height:1;">${L('TU ', 'YOUR ')}${tipo.toUpperCase()}</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:6px;">N° ${String(doc.docId || id).replace(/[<>&"]/g, '')}</div>
       </div>
       <div style="padding:28px 32px 30px;">
-        <div style="font-size:17px;font-weight:700;color:#0a0f1e;margin-bottom:6px;">Hola${nombre ? ' ' + nombre.replace(/[<>&"]/g, '') : ''} 👋</div>
-        <p style="font-size:13px;color:#475569;line-height:1.6;margin:0 0 20px;">Antes de ver tu ${tipo}, déjanos tu correo. Ahí te enviaremos tus facturas, recibos y avisos de tus servicios.</p>
-        <label style="${etiqueta}" for="g-correo">Correo electrónico *</label>
-        <input type="email" id="g-correo" autocomplete="email" placeholder="tucorreo@ejemplo.com" style="${campo}">
-        <label style="${etiqueta}" for="g-tel">WhatsApp (opcional)</label>
+        <div style="font-size:17px;font-weight:700;color:#0a0f1e;margin-bottom:6px;">${L('Hola', 'Hi')}${nombre ? ' ' + nombre.replace(/[<>&"]/g, '') : ''} 👋</div>
+        <p style="font-size:13px;color:#475569;line-height:1.6;margin:0 0 20px;">${L(`Antes de ver tu ${tipo}, déjanos tu correo. Ahí te enviaremos tus facturas, recibos y avisos de tus servicios.`, `Before viewing your ${tipo}, please leave your email. We will send your invoices, receipts and service updates there.`)}</p>
+        <label style="${etiqueta}" for="g-correo">${L('Correo electrónico *', 'Email *')}</label>
+        <input type="email" id="g-correo" autocomplete="email" placeholder="${L('tucorreo@ejemplo.com', 'you@example.com')}" style="${campo}">
+        <label style="${etiqueta}" for="g-tel">${L('WhatsApp (opcional)', 'WhatsApp (optional)')}</label>
         <input type="tel" id="g-tel" autocomplete="tel" placeholder="+1 305 000 0000" style="${campo}">
         <div id="g-err" style="font-size:12px;color:#dc2626;min-height:16px;margin:-4px 0 8px;"></div>
-        <button id="g-btn" style="width:100%;padding:14px;border:0;border-radius:11px;background:#1438cc;color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;">Ver mi ${tipo}</button>
-        <p style="font-size:11px;color:#94a3b8;text-align:center;margin:14px 0 0;">Solo lo usamos para enviarte información de tus servicios.</p>
+        <button id="g-btn" style="width:100%;padding:14px;border:0;border-radius:11px;background:#1438cc;color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;">${L('Ver mi ' + tipo, 'View my ' + tipo)}</button>
+        <p style="font-size:11px;color:#94a3b8;text-align:center;margin:14px 0 0;">${L('Solo lo usamos para enviarte información de tus servicios.', 'We only use it to send you information about your services.')}</p>
       </div>`;
     const guardar = async () => {
       const correo = document.getElementById('g-correo').value.trim().toLowerCase();
       const tel = document.getElementById('g-tel').value.trim().slice(0, 40);
       const err = document.getElementById('g-err');
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) || correo.length > 120) { err.textContent = 'Escribe un correo válido para continuar.'; return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) || correo.length > 120) { err.textContent = L('Escribe un correo válido para continuar.', 'Enter a valid email to continue.'); return; }
       const btn = document.getElementById('g-btn');
-      btn.disabled = true; btn.textContent = 'Guardando…'; err.textContent = '';
+      btn.disabled = true; btn.textContent = L('Guardando…', 'Saving…'); err.textContent = '';
       try {
         await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
         doc.clienteCorreo = correo; doc.clienteTelefono = tel;
         aviso(coleccion, id, `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.`);
         alListo();
       } catch (e) {
-        btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
-        err.textContent = 'No pudimos guardar tu correo. Intenta de nuevo.';
+        btn.disabled = false; btn.textContent = L('Ver mi ' + tipo, 'View my ' + tipo);
+        err.textContent = L('No pudimos guardar tu correo. Intenta de nuevo.', 'We could not save your email. Please try again.');
       }
     };
     document.getElementById('g-btn').onclick = guardar;
@@ -916,9 +923,9 @@
     const clientStyle = isRecibo ? 'blue' : 'dark';
     const totalClass  = isRecibo ? 'blue' : 'dark';
     const badgeClass  = isRecibo ? 'pagado' : (isParcial ? 'parcial' : 'pendiente');
-    const badgeText   = isRecibo ? 'PAGO CONFIRMADO' : (isParcial ? 'PAGO PARCIAL' : 'PENDIENTE DE PAGO');
-    const docTitle    = isRecibo ? 'RECIBO DE PAGO' : 'FACTURA';
-    const totalLabel  = isRecibo ? 'Total Pagado' : 'Total a Pagar';
+    const badgeText   = isRecibo ? L('PAGO CONFIRMADO', 'PAYMENT CONFIRMED') : (isParcial ? L('PAGO PARCIAL', 'PARTIAL PAYMENT') : L('PENDIENTE DE PAGO', 'PAYMENT DUE'));
+    const docTitle    = isRecibo ? L('RECIBO DE PAGO', 'PAYMENT RECEIPT') : L('FACTURA', 'INVOICE');
+    const totalLabel  = isRecibo ? L('Total Pagado', 'Total Paid') : L('Total a Pagar', 'Total Due');
 
     const items = (doc.items || []).map(it => `
       <tr>
@@ -931,12 +938,12 @@
 
     const parcialBlock = isParcial ? `
       <div class="pub-partial">
-        <div class="pub-partial-col"><div class="pub-partial-label">Pagado</div><div class="pub-partial-value paid">$${(doc.montoPagado||0).toFixed(2)}</div></div>
-        <div class="pub-partial-col" style="text-align:right"><div class="pub-partial-label">Pendiente</div><div class="pub-partial-value">$${((doc.total||0)-(doc.montoPagado||0)).toFixed(2)}</div></div>
+        <div class="pub-partial-col"><div class="pub-partial-label">${L('Pagado', 'Paid')}</div><div class="pub-partial-value paid">$${(doc.montoPagado||0).toFixed(2)}</div></div>
+        <div class="pub-partial-col" style="text-align:right"><div class="pub-partial-label">${L('Pendiente', 'Balance')}</div><div class="pub-partial-value">$${((doc.total||0)-(doc.montoPagado||0)).toFixed(2)}</div></div>
       </div>` : '';
 
     const notaBlock = (isFactura || isParcial) && doc.nota ? `
-      <div class="pub-nota"><strong>Instrucciones de pago:</strong><br>${esc(doc.nota)}</div>` : '';
+      <div class="pub-nota"><strong>${L('Instrucciones de pago:', 'Payment instructions:')}</strong><br>${esc(doc.nota)}</div>` : '';
 
     const waText = encodeURIComponent(
       `Hola, aquí está tu ${docTitle.toLowerCase()} de DGP Global Group:\n${window.location.href}`
@@ -946,10 +953,10 @@
       <div class="inv-head${isRecibo ? ' recibo' : ''}">
         <div class="inv-brand">
           <img src="/logo.png" alt="DGP Global Group" class="inv-logo">
-          <div><div class="inv-brand-name">DGP Global Group</div><div class="inv-brand-sub">dgpglobalgroup.com<br>Diseño web y sistemas</div></div>
+          <div><div class="inv-brand-name">DGP Global Group</div><div class="inv-brand-sub">dgpglobalgroup.com<br>${L('Diseño web y sistemas', 'Web design & systems')}</div></div>
         </div>
         <div class="inv-doc">
-          <div class="inv-type">${isRecibo ? 'RECIBO' : 'FACTURA'}</div>
+          <div class="inv-type">${isRecibo ? L('RECIBO', 'RECEIPT') : L('FACTURA', 'INVOICE')}</div>
           <div class="inv-num">N° ${esc(doc.docId || doc._fsId)}</div>
           <span class="inv-status ${badgeClass}">${badgeText}</span>
         </div>
@@ -957,28 +964,28 @@
       <div class="${zigzagClass}"></div>
       <div class="pub-body">
         <div class="pub-meta">
-          <div class="pub-meta-col"><div class="pub-meta-label">Fecha</div><div class="pub-meta-value">${esc(doc.fecha||'—')}</div></div>
-          ${doc.emisor ? `<div class="pub-meta-col" style="text-align:center"><div class="pub-meta-label">Emitida por</div><div class="pub-meta-value">${esc(doc.emisor)}</div></div>` : ''}
-          ${doc.ref && doc.ref !== '—' ? `<div class="pub-meta-col" style="text-align:right"><div class="pub-meta-label">Referencia</div><div class="pub-meta-value" style="font-size:11px;">${esc(doc.ref)}</div></div>` : ''}
+          <div class="pub-meta-col"><div class="pub-meta-label">${L('Fecha', 'Date')}</div><div class="pub-meta-value">${esc(doc.fecha||'—')}</div></div>
+          ${doc.emisor ? `<div class="pub-meta-col" style="text-align:center"><div class="pub-meta-label">${L('Emitida por', 'Issued by')}</div><div class="pub-meta-value">${esc(doc.emisor)}</div></div>` : ''}
+          ${doc.ref && doc.ref !== '—' ? `<div class="pub-meta-col" style="text-align:right"><div class="pub-meta-label">${L('Referencia', 'Reference')}</div><div class="pub-meta-value" style="font-size:11px;">${esc(doc.ref)}</div></div>` : ''}
         </div>
         <div class="pub-client ${clientStyle}">
-          <div class="pub-client-label ${clientStyle}">Facturado a</div>
+          <div class="pub-client-label ${clientStyle}">${L('Facturado a', 'Bill to')}</div>
           <div class="pub-client-name">${esc(doc.cli||'—')}</div>
         </div>
         ${notaBlock}
         ${parcialBlock}
         <table>
-          <thead><tr><th>Descripción</th><th class="ctr">Cant.</th><th class="num col-precio">Precio</th><th class="num">Importe</th></tr></thead>
+          <thead><tr><th>${L('Descripción', 'Description')}</th><th class="ctr">${L('Cant.', 'Qty')}</th><th class="num col-precio">${L('Precio', 'Price')}</th><th class="num">${L('Importe', 'Amount')}</th></tr></thead>
           <tbody>${items}</tbody>
         </table>
-        ${Math.abs(subtotal - (doc.total || 0)) > 0.009 || (doc.items || []).length > 1 ? `<div class="pub-sub"><span>Subtotal</span><strong>$${subtotal.toFixed(2)}</strong></div>` : ''}
+        ${Math.abs(subtotal - (doc.total || 0)) > 0.009 || (doc.items || []).length > 1 ? `<div class="pub-sub"><span>${L('Subtotal', 'Subtotal')}</span><strong>$${subtotal.toFixed(2)}</strong></div>` : ''}
       </div>
       <div class="pub-total ${totalClass}">
         <span class="pub-total-label">${totalLabel}</span>
         <span class="pub-total-amount">$${(doc.total||0).toFixed(2)}</span>
       </div>
       <div class="pub-footer">
-        <p>${isRecibo ? '¡Gracias por su preferencia!' : 'Una vez realizado el pago, recibirás tu recibo de confirmación.'}<br><strong>DGP Global Group — dgpglobalgroup.com</strong></p>
+        <p>${isRecibo ? L('¡Gracias por su preferencia!', 'Thank you for your business!') : L('Una vez realizado el pago, recibirás tu recibo de confirmación.', 'Once your payment is received, you will get a confirmation receipt.')}<br><strong>DGP Global Group — dgpglobalgroup.com</strong></p>
       </div>
       ${!isRecibo ? renderContrato(doc, doc._fsId) : ''}
       ${!isRecibo && (!doc.contrato || doc.contratoFirmado) ? renderPago(doc) : ''}
@@ -986,8 +993,8 @@
       ${!isRecibo && (!doc.contrato || doc.contratoFirmado) ? renderHelio(doc) : ''}
       ${renderBrief(doc, doc._fsId)}
       <div class="pub-actions">
-        <button class="pub-btn print" onclick="window.print()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
-        <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Compartir</button>
+        <button class="pub-btn print" onclick="window.print()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> ${L('Imprimir', 'Print')}</button>
+        <button class="pub-btn wa" onclick="window.open('https://wa.me/?text=${waText}','_blank')" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ${L('Compartir', 'Share')}</button>
       </div>
       ${renderTerminos(doc)}
       ${renderUpsell(doc)}`;
@@ -1004,6 +1011,7 @@
      UPSELL AUTOMÁTICO
   ══════════════════════════════════════════ */
   function renderUpsell(doc) {
+    if (EN) return '';  // las sugerencias de servicios solo están en español
     const items = (doc.items || []).map(i => (i.s || '').toLowerCase()).join(' ');
 
     let titulo = '', texto = '', servicio = '';

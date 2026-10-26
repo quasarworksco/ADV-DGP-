@@ -2309,6 +2309,13 @@ html.dark .alt-sw:checked { background:color-mix(in srgb,var(--blue) 75%,#fff) !
 
 
 
+
+/* Selector de idioma del correo */
+.co-idioma { display:flex; align-items:center; gap:6px; margin-bottom:14px; padding:4px; border-radius:11px; background:var(--off); border:1px solid var(--border); }
+.co-idioma span { flex:1; font:600 12.5px 'Plus Jakarta Sans',sans-serif; color:var(--text-mid); padding-left:8px; }
+.co-idioma button { height:32px; padding:0 14px; border-radius:8px; border:0; background:transparent; color:var(--text-soft); font:700 12.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.co-idioma button.on { background:var(--white); color:var(--blue); box-shadow:0 2px 8px rgba(11,22,64,.1); }
+
 /* ═══ Cursor con el logo ═══ */
 html, body, #app-shell, #login-screen { cursor:url('/cursor-dgp.png') 12 1, auto; }
 body.esperando, body.esperando * { cursor:url('/cursor-dgp-espera.png') 10 1, progress !important; }
@@ -11497,17 +11504,23 @@ function sincronizarCorreosClientes() {
 function correoDatos(coleccion, id) {
   if (coleccion === 'cotizaciones') {
     const doc = cotizacionesList.find(x => x._id === id);
-    return doc && { doc, tipo: 'cotizacion', link: COT_URL + id };
+    return doc && { doc, tipo: 'cotizacion', link: COT_URL + id + (_correoEN ? '&lang=en' : '') };
   }
   const doc = docsMap[id];
   if (!doc) return null;
   const tipo = (doc.pagado || doc.type === 'recibo') ? 'recibo' : 'factura';
-  return { doc, tipo, link: `https://adv.dgp-link.com/factura-publica.html?id=${id}` };
+  return { doc, tipo, link: `https://adv.dgp-link.com/factura-publica.html?id=${id}${_correoEN ? '&lang=en' : ''}` };
 }
 function correoTextos(tipo, doc) {
   const nombre = (doc.cli || '').split(' ')[0] || 'hola';
   const total = cbMoney(tipo === 'factura' ? (cbSaldo(doc) || doc.total) : doc.total);
-  const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long' }) : '';
+  const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString(_correoEN ? 'en-US' : 'es-ES', { day: '2-digit', month: 'long' }) : '';
+  if (_correoEN) {
+    const n = nombre === 'hola' ? 'there' : nombre;
+    if (tipo === 'cotizacion') return { asunto: `Quote ${doc.docId || ''} · DGP Global Group`, mensaje: `Hi ${n},\n\nHere is quote ${doc.docId || ''} for ${total}.${vence ? ` It is valid until ${vence}.` : ''}\n\nYou can review and accept it using the button below. If you would like to adjust anything, just reply to this email.` };
+    if (tipo === 'recibo') return { asunto: `Payment receipt ${doc.docId || ''} · DGP Global Group`, mensaje: `Hi ${n},\n\nThank you for your payment! Here is your receipt ${doc.docId || ''} for ${total}.` };
+    return { asunto: `Invoice ${doc.docId || ''} · DGP Global Group`, mensaje: `Hi ${n},\n\nHere is your invoice ${doc.docId || ''} for ${total}.\n\nUse the button below to see the details, pay with your preferred method and upload your receipt.` };
+  }
   if (tipo === 'cotizacion') return {
     asunto: `Cotización ${doc.docId || ''} · DGP Global Group`,
     mensaje: `Hola ${nombre},\n\nTe compartimos la cotización ${doc.docId || ''} por ${total}.${vence ? ` Es válida hasta el ${vence}.` : ''}\n\nPuedes revisarla y aceptarla desde el botón de abajo. Si quieres ajustar algo, responde a este correo.`
@@ -11521,6 +11534,9 @@ function correoTextos(tipo, doc) {
     mensaje: `Hola ${nombre},\n\nTe compartimos tu factura ${doc.docId || ''} por ${total}.\n\nDesde el botón de abajo puedes ver el detalle, pagar con tu método preferido y subir tu comprobante.`
   };
 }
+/* Idioma del correo que se está armando (Español / English) */
+let _correoEN = false;
+const CL = (es, en) => _correoEN ? en : es;
 /* Marco común de todos los correos */
 const WEB_DGP = 'https://dgpglobalgroup.com';
 function correoEsc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -11536,10 +11552,10 @@ const cmBlanco = html => `<div class="gm-s"><div class="gm-d">${html}</div></div
 function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '', cuerpo = '', servicios = true, baja = false }) {
   const e = correoEsc;
   const serv = [
-    ['web', 'Páginas web', 'Sitios modernos que venden 24/7'],
-    ['marketing', 'Marketing digital', 'Redes, anuncios y contenido'],
-    ['branding', 'Branding y diseño', 'Identidad que se recuerda'],
-    ['auto', 'Automatización', 'WhatsApp, bots y sistemas']
+    ['web', CL('Páginas web', 'Websites'), CL('Sitios modernos que venden 24/7', 'Modern sites that sell 24/7')],
+    ['marketing', CL('Marketing digital', 'Digital marketing'), CL('Redes, anuncios y contenido', 'Social, ads and content')],
+    ['branding', CL('Branding y diseño', 'Branding & design'), CL('Identidad que se recuerda', 'A memorable identity')],
+    ['auto', CL('Automatización', 'Automation'), CL('WhatsApp, bots y sistemas', 'WhatsApp, bots and systems')]
   ];
   const tile = ([ic, t, d]) => `<td class="tc" width="50%" valign="top" style="padding:6px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="soft" bgcolor="#f3f8fc" style="background-color:#f3f8fc;border:1px solid #e1ecf5;border-radius:16px;"><tr><td style="padding:16px 16px 15px;">
@@ -11605,8 +11621,8 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
         ${servicios ? `
         <tr><td class="pad" style="padding:8px 34px 0;"><div class="ln" style="border-top:1px solid #e6edf5;font-size:0;line-height:0;">&nbsp;</div></td></tr>
         <tr><td class="pad" style="padding:26px 34px 4px;">
-          <div class="lb" style="${CM_TIT}font-size:10.5px;font-weight:600;letter-spacing:2.5px;color:${CM.lbl};">CONOCE TODO LO QUE HACEMOS</div>
-          <div class="tx" style="${CM_TIT}font-size:20px;font-weight:700;color:${CM.texto};margin-top:6px;letter-spacing:-.3px;">Hacemos crecer tu negocio en digital</div>
+          <div class="lb" style="${CM_TIT}font-size:10.5px;font-weight:600;letter-spacing:2.5px;color:${CM.lbl};">${CL('CONOCE TODO LO QUE HACEMOS', 'SEE EVERYTHING WE DO')}</div>
+          <div class="tx" style="${CM_TIT}font-size:20px;font-weight:700;color:${CM.texto};margin-top:6px;letter-spacing:-.3px;">${CL('Hacemos crecer tu negocio en digital', 'We grow your business online')}</div>
         </td></tr>
         <tr><td class="pad" style="padding:10px 28px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${tile(serv[0])}${tile(serv[1])}</tr><tr>${tile(serv[2])}${tile(serv[3])}</tr></table>
@@ -11626,9 +11642,9 @@ function correoMarco({ preheader = '', etiqueta = '', titulo = '', subtitulo = '
         <td class="tx2" style="padding:10px 2px;color:#cbd5e1;">|</td>
         <td style="padding:10px 16px;font-size:12.5px;"><a href="${WEB_DGP}" class="lk" style="${CM_TIT}color:${CM.azul};text-decoration:none;font-weight:600;"><img src="${CM_ICO}web-b.png" width="15" height="15" alt="" style="vertical-align:-3px;border:0;">&nbsp; dgpglobalgroup.com</a></td>
       </tr></table>
-      <div class="tx2" style="font-size:12.5px;color:${CM.suave};margin-top:16px;line-height:1.7;">¿Dudas? Responde a este correo o escríbenos al <a href="https://wa.me/12398231738" class="lk" style="color:${CM.azul};text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
+      <div class="tx2" style="font-size:12.5px;color:${CM.suave};margin-top:16px;line-height:1.7;">${CL('¿Dudas? Responde a este correo o escríbenos al ', 'Questions? Reply to this email or message us at ')}<a href="https://wa.me/12398231738" class="lk" style="color:${CM.azul};text-decoration:none;font-weight:600;">+1 (239) 823-1738</a></div>
       <div class="tx2" style="${CM_TIT}font-size:10.5px;color:${CM.tenue};margin-top:12px;letter-spacing:2.5px;font-weight:600;">© ${new Date().getFullYear()} DGP GLOBAL GROUP</div>
-      ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">Recibes este correo porque eres cliente de DGP Global Group.<br>Si no deseas recibir más novedades, responde con la palabra <strong>BAJA</strong>.</div>` : ''}
+      ${baja ? `<div class="tx2" style="font-size:11px;color:${CM.tenue};margin-top:10px;line-height:1.6;">${CL('Recibes este correo porque eres cliente de DGP Global Group.', 'You are receiving this email because you are a DGP Global Group client.')}<br>${CL('Si no deseas recibir más novedades, responde con la palabra ', 'To stop receiving updates, reply with the word ')}<strong>BAJA</strong>.</div>` : ''}
     </td></tr>
 
   </table>
@@ -11641,12 +11657,12 @@ function correoBoton(texto, link) {
 }
 function correoHTML(tipo, doc, mensaje, link) {
   const e = correoEsc;
-  const titulo = { factura: 'Factura', recibo: 'Recibo de pago', cotizacion: 'Cotización' }[tipo];
-  const etiqueta = { factura: doc.pagadoParcial ? 'ABONO RECIBIDO' : 'PENDIENTE DE PAGO', recibo: '✓ PAGADO', cotizacion: 'PROPUESTA' }[tipo];
-  const boton = { factura: 'Ver y pagar factura', recibo: 'Ver mi recibo', cotizacion: 'Ver y aceptar cotización' }[tipo];
+  const titulo = _correoEN ? { factura: 'Invoice', recibo: 'Payment receipt', cotizacion: 'Quote' }[tipo] : { factura: 'Factura', recibo: 'Recibo de pago', cotizacion: 'Cotización' }[tipo];
+  const etiqueta = _correoEN ? { factura: doc.pagadoParcial ? 'PAYMENT RECEIVED' : 'PAYMENT DUE', recibo: '✓ PAID', cotizacion: 'PROPOSAL' }[tipo] : { factura: doc.pagadoParcial ? 'ABONO RECIBIDO' : 'PENDIENTE DE PAGO', recibo: '✓ PAGADO', cotizacion: 'PROPUESTA' }[tipo];
+  const boton = _correoEN ? { factura: 'View and pay invoice', recibo: 'View my receipt', cotizacion: 'View and accept quote' }[tipo] : { factura: 'Ver y pagar factura', recibo: 'Ver mi recibo', cotizacion: 'Ver y aceptar cotización' }[tipo];
   const saldo = tipo === 'factura' && doc.pagadoParcial ? cbSaldo(doc) : null;
   const monto = (saldo !== null ? saldo : (doc.total || 0)).toFixed(2);
-  const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  const vence = doc.venceEl ? new Date(doc.venceEl + 'T12:00:00').toLocaleDateString(_correoEN ? 'en-US' : 'es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
   const lbl = `${CM_TIT}font-size:9.5px;font-weight:600;letter-spacing:2px;color:${CM.lbl};`;
   const filas = (doc.items || []).map(it => `<tr>
       <td class="tx ln" style="padding:14px 0;border-bottom:1px solid #e6edf5;font-size:14.5px;color:${CM.texto};">${e(it.s)}${(it.c || 1) > 1 ? ` <span class="tx2" style="color:${CM.suave};">× ${it.c}</span>` : ''}</td>
@@ -11656,27 +11672,28 @@ function correoHTML(tipo, doc, mensaje, link) {
     <tr><td class="pad tx" style="padding:32px 34px 6px;font-size:15.5px;line-height:1.75;color:${CM.texto};">${e(mensaje).replace(/\n/g, '<br>')}</td></tr>
     <tr><td class="pad" style="padding:20px 34px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="soft" bgcolor="#f3f8fc" style="background-color:#f3f8fc;border:1px solid #e1ecf5;border-radius:16px;">
-        <tr>${dato('N°', doc.docId || '')}${dato('CLIENTE', doc.cli || '')}${dato('FECHA', doc.fecha ? String(doc.fecha) : '')}${tipo !== 'recibo' ? dato(tipo === 'cotizacion' ? 'VÁLIDA HASTA' : 'VENCE', vence) : ''}</tr>
+        <tr>${dato('N°', doc.docId || '')}${dato(CL('CLIENTE', 'CLIENT'), doc.cli || '')}${dato(CL('FECHA', 'DATE'), doc.fecha ? String(doc.fecha) : '')}${tipo !== 'recibo' ? dato(tipo === 'cotizacion' ? CL('VÁLIDA HASTA', 'VALID UNTIL') : CL('VENCE', 'DUE'), vence) : ''}</tr>
       </table>
     </td></tr>
     <tr><td class="pad" style="padding:24px 34px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr><td class="lb" style="padding:0 0 6px;${lbl}">SERVICIO</td><td class="lb" style="padding:0 0 6px;${lbl}text-align:right;">MONTO</td></tr>
+        <tr><td class="lb" style="padding:0 0 6px;${lbl}">${CL('SERVICIO', 'SERVICE')}</td><td class="lb" style="padding:0 0 6px;${lbl}text-align:right;">${CL('MONTO', 'AMOUNT')}</td></tr>
         ${filas}
-        ${saldo !== null ? `<tr><td class="tx2" style="padding:12px 0 0;font-size:13px;color:${CM.suave};">Ya pagado</td><td style="padding:12px 0 0;font-size:13px;color:#059669;text-align:right;font-weight:600;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
+        ${saldo !== null ? `<tr><td class="tx2" style="padding:12px 0 0;font-size:13px;color:${CM.suave};">${CL('Ya pagado', 'Already paid')}</td><td style="padding:12px 0 0;font-size:13px;color:#059669;text-align:right;font-weight:600;">$${(doc.montoPagado || 0).toFixed(2)}</td></tr>` : ''}
       </table>
     </td></tr>
     <tr><td class="pad" style="padding:22px 34px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:18px;${CM_GRAD}">
-        <tr><td style="padding:20px 22px;">${cmBlanco(`<div style="${CM_TIT}font-size:10px;font-weight:600;letter-spacing:2px;color:#bfe9fa;">${saldo !== null ? 'SALDO PENDIENTE' : tipo === 'recibo' ? 'TOTAL PAGADO' : 'TOTAL A PAGAR'}</div><div style="font-size:12px;color:#dff3fb;margin-top:4px;">USD</div>`)}</td>
+        <tr><td style="padding:20px 22px;">${cmBlanco(`<div style="${CM_TIT}font-size:10px;font-weight:600;letter-spacing:2px;color:#bfe9fa;">${saldo !== null ? CL('SALDO PENDIENTE', 'BALANCE DUE') : tipo === 'recibo' ? CL('TOTAL PAGADO', 'TOTAL PAID') : CL('TOTAL A PAGAR', 'TOTAL DUE')}</div><div style="font-size:12px;color:#dff3fb;margin-top:4px;">USD</div>`)}</td>
           <td align="right" style="padding:20px 22px;">${cmBlanco(`<span style="${CM_TIT}font-size:32px;font-weight:700;color:#ffffff;white-space:nowrap;letter-spacing:-.5px;">$${monto}</span>`)}</td></tr>
       </table>
     </td></tr>
     <tr><td align="center" class="pad" style="padding:28px 34px 10px;">${correoBoton(boton, link)}</td></tr>
-    <tr><td align="center" class="pad tx2" style="padding:4px 34px 26px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">¿El botón no abre? Copia este enlace:<br><a href="${e(link)}" class="lk" style="color:${CM.azul};word-break:break-all;">${e(link)}</a></td></tr>`;
+    <tr><td align="center" class="pad tx2" style="padding:4px 34px 26px;font-size:11.5px;color:${CM.tenue};line-height:1.6;">${CL('¿El botón no abre? Copia este enlace:', 'Button not working? Copy this link:')}<br><a href="${e(link)}" class="lk" style="color:${CM.azul};word-break:break-all;">${e(link)}</a></td></tr>`;
   return correoMarco({ preheader: `${titulo} ${doc.docId || ''} · $${monto} · DGP Global Group`, etiqueta, titulo, subtitulo: `N° ${doc.docId || ''}`, cuerpo });
 }
-function abrirCorreo(coleccion, id) {
+function abrirCorreo(coleccion, id, en) {
+  _correoEN = en === undefined ? (correoDatos(coleccion, id)?.doc?.idioma === 'en') : !!en;
   const d = correoDatos(coleccion, id);
   if (!d) { toast('No se encontró el documento.', 'err'); return; }
   _correo = { coleccion, id, ...d };
@@ -11685,6 +11702,9 @@ function abrirCorreo(coleccion, id) {
   closeModal();
   ptModal('Enviar por correo', `${d.doc.docId || ''} · ${d.doc.cli || ''}`, `
     ${previos.length ? `<div style="font-size:11px;color:var(--green-dark);background:#ecfdf5;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">Ya enviado ${previos.length} vez/veces · último: ${esc(previos[previos.length - 1].para)} el ${new Date(previos[previos.length - 1].fecha).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${Number(d.doc.aperturas) ? ` · <b>abierto ${d.doc.aperturas} ${Number(d.doc.aperturas) === 1 ? 'vez' : 'veces'}</b>` : ' · aún no lo abre'}</div>` : ''}
+    <div class="co-idioma" role="group" aria-label="Idioma del correo"><span>Idioma del correo</span>
+      <button type="button" class="${_correoEN ? '' : 'on'}" onclick="correoIdioma(false)">Español</button>
+      <button type="button" class="${_correoEN ? 'on' : ''}" onclick="correoIdioma(true)">English</button></div>
     <div class="ff"><label>Para</label><input type="email" id="co-para" value="${esc(correoDestinatario(d.doc.cli))}" placeholder="correo@cliente.com"></div>
     <div id="co-sin" style="font-size:11px;color:#b45309;margin:-6px 0 10px;display:none;">Este cliente no tiene correo guardado. Escríbelo aquí (se guarda en su ficha al enviar).</div>
     <div class="ff"><label>Asunto</label><input id="co-asunto" maxlength="200" value="${esc(t.asunto)}"></div>
@@ -11694,6 +11714,20 @@ function abrirCorreo(coleccion, id) {
     <button class="btn-edit-save" id="co-btn" onclick="enviarCorreo()">Enviar correo</button>
     <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button>`);
   document.getElementById('co-sin').style.display = correoDestinatario(d.doc.cli) ? 'none' : 'block';
+  correoPrevia();
+}
+// Cambiar el idioma: rehace asunto, mensaje, enlace y vista previa (conserva el destinatario)
+function correoIdioma(en) {
+  if (!_correo || _correoEN === en) return;
+  const para = document.getElementById('co-para')?.value || '';
+  _correoEN = en;
+  const d = correoDatos(_correo.coleccion, _correo.id); if (!d) return;
+  Object.assign(_correo, d);
+  const t = correoTextos(d.tipo, d.doc);
+  document.getElementById('co-asunto').value = t.asunto;
+  document.getElementById('co-msg').value = t.mensaje;
+  document.getElementById('co-para').value = para;
+  document.querySelectorAll('.co-idioma button').forEach((b, i) => b.classList.toggle('on', i === (en ? 1 : 0)));
   correoPrevia();
 }
 function correoPrevia() {
@@ -11715,7 +11749,7 @@ async function enviarCorreo() {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ coleccion: _correo.coleccion, id: _correo.id, para, asunto,
         html: correoHTML(_correo.tipo, _correo.doc, mensaje, _correo.link),
-        texto: `${mensaje}\n\n${_correo.link}\n\nDGP Global Group · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738` })
+        texto: `${mensaje}\n\n${_correo.link}\n\nDGP Global Group · dgpglobalgroup.com · WhatsApp +1 (239) 823-1738`, idioma: _correoEN ? 'en' : 'es' })
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
