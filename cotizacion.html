@@ -135,71 +135,76 @@
 
   const id = new URLSearchParams(location.search).get('id');
   let cot = null;
+  // Idioma: ?lang=en en el enlace o la cotización creada en inglés
+  let EN = new URLSearchParams(location.search).get('lang') === 'en';
+  const L = (es, en) => EN ? en : es;
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function money(n) { return '$' + (Number(n) || 0).toFixed(2); }
   function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-  function fechaLarga(iso) { return iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' }) : '—'; }
+  function fechaLarga(iso) { return iso ? new Date(iso + 'T12:00:00').toLocaleDateString(EN ? 'en-US' : 'es-ES', { day:'2-digit', month:'long', year:'numeric' }) : '—'; }
   function estadoActual(c) { return c.estado === 'enviada' && c.venceEl && c.venceEl < hoyISO() ? 'vencida' : (c.estado || 'enviada'); }
 
   async function cargar() {
     const card = document.getElementById('card');
-    if (!id) { card.innerHTML = '<div class="missing">Link de cotización no válido.</div>'; return; }
+    if (!id) { card.innerHTML = `<div class="missing">${L('Link de cotización no válido.', 'Invalid quote link.')}</div>`; return; }
     try {
       const snap = await db.collection('cotizaciones').doc(id).get();
       if (!snap.exists) {
-        card.innerHTML = `<div class="missing">Esta cotización no existe o fue retirada.<br><br><a class="btn wa" href="https://wa.me/${WA}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></div>`;
+        card.innerHTML = `<div class="missing">${L('Esta cotización no existe o fue retirada.', 'This quote does not exist or was withdrawn.')}<br><br><a class="btn wa" href="https://wa.me/${WA}" target="_blank" rel="noopener">${L('Escríbenos por WhatsApp', 'Message us on WhatsApp')}</a></div>`;
         return;
       }
       cot = { _id: id, ...snap.data() };
+      if (cot.idioma === 'en') EN = true;
+      document.documentElement.lang = EN ? 'en' : 'es';
       if (!cot.clienteCorreo && estadoActual(cot) === 'enviada') pedirCorreo(document.getElementById('card'), cot, 'cotizaciones', id, render);
       else render();
     } catch (e) {
-      card.innerHTML = '<div class="missing">No pudimos cargar la cotización. Revisa tu conexión e intenta de nuevo.</div>';
+      card.innerHTML = `<div class="missing">${L('No pudimos cargar la cotización. Revisa tu conexión e intenta de nuevo.', 'We could not load the quote. Check your connection and try again.')}</div>`;
     }
   }
 
   /* ── Primera vez: pedir el correo del cliente antes de mostrar el documento ── */
   function pedirCorreo(card, doc, coleccion, id, alListo) {
-    const tipo = coleccion === 'cotizaciones' ? 'cotización' : 'factura';
+    const tipo = coleccion === 'cotizaciones' ? L('cotización', 'quote') : L('factura', 'invoice');
     const nombre = String(doc.cli || '').split(' ')[0];
     card.innerHTML = `
       <div class="head">
         <div class="brandrow">
           <img src="/logo-white.png" alt="DGP Global Group">
-          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
+          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">${L('Servicios Digitales Profesionales', 'Professional Digital Services')}</div></div>
         </div>
-        <div class="title">Tu ${tipo}</div>
+        <div class="title">${L('Tu ' + tipo, 'Your ' + tipo)}</div>
         <div class="docnum">N° ${esc(doc.docId || id)}</div>
       </div>
       <div style="padding:28px 32px 30px;">
-        <div class="g-hola">Hola${nombre ? ' ' + esc(nombre) : ''}</div>
-        <p class="g-txt">Antes de ver tu ${tipo}, déjanos tu correo. Ahí te enviaremos tus facturas, recibos y avisos de tus servicios.</p>
-        <label class="g-lbl" for="g-correo">Correo electrónico *</label>
-        <input class="g-in" type="email" id="g-correo" autocomplete="email" placeholder="tucorreo@ejemplo.com">
-        <label class="g-lbl" for="g-tel">WhatsApp (opcional)</label>
+        <div class="g-hola">${L('Hola', 'Hi')}${nombre ? ' ' + esc(nombre) : ''}</div>
+        <p class="g-txt">${L(`Antes de ver tu ${tipo}, déjanos tu correo. Ahí te enviaremos tus facturas, recibos y avisos de tus servicios.`, `Before viewing your ${tipo}, please leave your email. We will send your invoices, receipts and service updates there.`)}</p>
+        <label class="g-lbl" for="g-correo">${L('Correo electrónico *', 'Email *')}</label>
+        <input class="g-in" type="email" id="g-correo" autocomplete="email" placeholder="${L('tucorreo@ejemplo.com', 'you@example.com')}">
+        <label class="g-lbl" for="g-tel">${L('WhatsApp (opcional)', 'WhatsApp (optional)')}</label>
         <input class="g-in" type="tel" id="g-tel" autocomplete="tel" placeholder="+1 305 000 0000">
         <div class="g-err" id="g-err"></div>
-        <button class="g-btn" id="g-btn">Ver mi ${tipo}</button>
-        <p class="g-nota">Solo lo usamos para enviarte información de tus servicios.</p>
+        <button class="g-btn" id="g-btn">${L('Ver mi ' + tipo, 'View my ' + tipo)}</button>
+        <p class="g-nota">${L('Solo lo usamos para enviarte información de tus servicios.', 'We only use it to send you information about your services.')}</p>
       </div>`;
     const guardar = async () => {
       const correo = document.getElementById('g-correo').value.trim().toLowerCase();
       const tel = document.getElementById('g-tel').value.trim().slice(0, 40);
       const err = document.getElementById('g-err');
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) || correo.length > 120) { err.textContent = 'Escribe un correo válido para continuar.'; return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) || correo.length > 120) { err.textContent = L('Escribe un correo válido para continuar.', 'Enter a valid email to continue.'); return; }
       const btn = document.getElementById('g-btn');
-      btn.disabled = true; btn.textContent = 'Guardando…'; err.textContent = '';
+      btn.disabled = true; btn.textContent = L('Guardando…', 'Saving…'); err.textContent = '';
       try {
         await db.collection(coleccion).doc(id).update({ clienteCorreo: correo, clienteTelefono: tel, clienteCorreoAt: firebase.firestore.FieldValue.serverTimestamp() });
         doc.clienteCorreo = correo; doc.clienteTelefono = tel;
         aviso(coleccion, id, `📧 ${doc.cli || 'Un cliente'} registró su correo al abrir la ${tipo} ${doc.docId || ''}:\n${correo}${tel ? '\n📱 ' + tel : ''}\n\nSe agenda solo en Clientes.`);
         alListo();
       } catch (e) {
-        btn.disabled = false; btn.textContent = `Ver mi ${tipo}`;
-        err.textContent = 'No pudimos guardar tu correo. Intenta de nuevo.';
+        btn.disabled = false; btn.textContent = L('Ver mi ' + tipo, 'View my ' + tipo);
+        err.textContent = L('No pudimos guardar tu correo. Intenta de nuevo.', 'We could not save your email. Please try again.');
       }
     };
     document.getElementById('g-btn').onclick = guardar;
@@ -211,7 +216,7 @@
     const c = cot;
     const est = estadoActual(c);
     const headCls = est === 'aceptada' || est === 'facturada' ? 'ok' : (est === 'rechazada' || est === 'vencida' ? 'no' : '');
-    const badge = { enviada:'Pendiente de aprobación', aceptada:'Aceptada', rechazada:'Rechazada', facturada:'Aprobada · facturada', vencida:'Vencida' }[est];
+    const badge = EN ? { enviada:'Pending approval', aceptada:'Accepted', rechazada:'Declined', facturada:'Approved · invoiced', vencida:'Expired' }[est] : { enviada:'Pendiente de aprobación', aceptada:'Aceptada', rechazada:'Rechazada', facturada:'Aprobada · facturada', vencida:'Vencida' }[est];
     const items = (c.items || []).map(it => `
       <tr>
         <td>${esc(it.s)}</td>
@@ -224,53 +229,53 @@
     if (est === 'enviada') {
       accion = `
         <div class="resp" id="resp">
-          <h3>¿Te parece bien esta propuesta?</h3>
-          <p>Al aceptarla, te enviaremos la factura para comenzar. Si tienes dudas o quieres ajustar algo, escríbenos.</p>
-          <div class="field"><label>Tu nombre</label><input id="r-nombre" maxlength="80" value="${esc(c.cli || '')}"></div>
-          <div class="field"><label>Comentario (opcional)</label><textarea id="r-nota" rows="2" maxlength="300" placeholder="Ej. ¿Podemos empezar el lunes?"></textarea></div>
+          <h3>${L('¿Te parece bien esta propuesta?', 'Does this proposal work for you?')}</h3>
+          <p>${L('Al aceptarla, te enviaremos la factura para comenzar. Si tienes dudas o quieres ajustar algo, escríbenos.', 'Once you accept it, we will send you the invoice to get started. If you have questions or want to adjust anything, message us.')}</p>
+          <div class="field"><label>${L('Tu nombre', 'Your name')}</label><input id="r-nombre" maxlength="80" value="${esc(c.cli || '')}"></div>
+          <div class="field"><label>${L('Comentario (opcional)', 'Comment (optional)')}</label><textarea id="r-nota" rows="2" maxlength="300" placeholder="${L('Ej. ¿Podemos empezar el lunes?', 'E.g. Can we start on Monday?')}"></textarea></div>
           <div class="btns">
-            <button class="btn si" id="btn-si" onclick="responder('aceptada')">Aceptar cotización</button>
-            <button class="btn no" id="btn-no" onclick="responder('rechazada')">Rechazar</button>
+            <button class="btn si" id="btn-si" onclick="responder('aceptada')">${L('Aceptar cotización', 'Accept quote')}</button>
+            <button class="btn no" id="btn-no" onclick="responder('rechazada')">${L('Rechazar', 'Decline')}</button>
           </div>
           <div class="err" id="r-err"></div>
         </div>`;
     } else if (est === 'aceptada') {
-      accion = `<div class="estado ok"><strong>¡Cotización aceptada!</strong>Gracias${c.respondidoPor ? ', ' + esc(c.respondidoPor.split(' ')[0]) : ''}. En breve te enviaremos la factura para comenzar.</div>`;
+      accion = `<div class="estado ok"><strong>${L('¡Cotización aceptada!', 'Quote accepted!')}</strong>${L('Gracias', 'Thank you')}${c.respondidoPor ? ', ' + esc(c.respondidoPor.split(' ')[0]) : ''}. ${L('En breve te enviaremos la factura para comenzar.', 'We will send you the invoice shortly to get started.')}</div>`;
     } else if (est === 'facturada') {
-      accion = `<div class="estado ok"><strong>Cotización aprobada</strong>Ya generamos tu factura.${c.facturaId ? `<br><a class="btn blue" href="/factura-publica.html?id=${encodeURIComponent(c.facturaId)}">Ver mi factura</a>` : ''}</div>`;
+      accion = `<div class="estado ok"><strong>${L('Cotización aprobada', 'Quote approved')}</strong>${L('Ya generamos tu factura.', 'Your invoice is ready.')}${c.facturaId ? `<br><a class="btn blue" href="/factura-publica.html?id=${encodeURIComponent(c.facturaId)}">${L('Ver mi factura', 'View my invoice')}</a>` : ''}</div>`;
     } else if (est === 'rechazada') {
-      accion = `<div class="estado no"><strong>Cotización rechazada</strong>Si cambias de opinión o quieres otra propuesta, escríbenos.<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent('Hola, sobre la cotización ' + (c.docId || '') + '...')}" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>`;
+      accion = `<div class="estado no"><strong>${L('Cotización rechazada', 'Quote declined')}</strong>${L('Si cambias de opinión o quieres otra propuesta, escríbenos.', 'If you change your mind or want a different proposal, message us.')}<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent(L('Hola, sobre la cotización ', 'Hi, about quote ') + (c.docId || '') + '...')}" target="_blank" rel="noopener">${L('Escribir por WhatsApp', 'Message us on WhatsApp')}</a></div>`;
     } else if (est === 'vencida') {
-      accion = `<div class="estado warn"><strong>Esta cotización venció el ${fechaLarga(c.venceEl)}</strong>Los precios pueden haber cambiado. Escríbenos y te la actualizamos.<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent('Hola, quiero actualizar la cotización ' + (c.docId || ''))}" target="_blank" rel="noopener">Pedir cotización actualizada</a></div>`;
+      accion = `<div class="estado warn"><strong>${L('Esta cotización venció el ', 'This quote expired on ')}${fechaLarga(c.venceEl)}</strong>${L('Los precios pueden haber cambiado. Escríbenos y te la actualizamos.', 'Prices may have changed. Message us and we will update it.')}<br><a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent(L('Hola, quiero actualizar la cotización ', 'Hi, I would like to update quote ') + (c.docId || ''))}" target="_blank" rel="noopener">${L('Pedir cotización actualizada', 'Request an updated quote')}</a></div>`;
     }
 
-    document.title = `Cotización ${c.docId || ''} — DGP Global Group`;
+    document.title = `${L('Cotización', 'Quote')} ${c.docId || ''} — DGP Global Group`;
     document.getElementById('card').innerHTML = `
       <div class="head ${headCls}">
         <div class="brandrow">
           <img src="/logo-white.png" alt="DGP Global Group">
-          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">Servicios Digitales Profesionales</div></div>
+          <div><div class="brand">DGP GLOBAL GROUP</div><div class="brand-sub">${L('Servicios Digitales Profesionales', 'Professional Digital Services')}</div></div>
         </div>
-        <div class="title">Cotización</div>
+        <div class="title">${L('Cotización', 'Quote')}</div>
         <div class="docnum">N° ${esc(c.docId || id)}</div>
         <div class="badge">${badge}</div>
       </div>
       <div class="body">
         <div class="meta">
-          <div><div class="meta-label">Fecha</div><div class="meta-value">${esc(c.fecha || '—')}</div></div>
-          ${c.emisor ? `<div style="text-align:center"><div class="meta-label">Preparada por</div><div class="meta-value">${esc(c.emisor)}</div></div>` : ''}
-          ${c.venceEl && est !== 'facturada' ? `<div style="text-align:right"><div class="meta-label">Válida hasta</div><div class="meta-value ${est === 'vencida' ? 'warn' : ''}">${fechaLarga(c.venceEl)}</div></div>` : ''}
+          <div><div class="meta-label">${L('Fecha', 'Date')}</div><div class="meta-value">${esc(c.fecha || '—')}</div></div>
+          ${c.emisor ? `<div style="text-align:center"><div class="meta-label">${L('Preparada por', 'Prepared by')}</div><div class="meta-value">${esc(c.emisor)}</div></div>` : ''}
+          ${c.venceEl && est !== 'facturada' ? `<div style="text-align:right"><div class="meta-label">${L('Válida hasta', 'Valid until')}</div><div class="meta-value ${est === 'vencida' ? 'warn' : ''}">${fechaLarga(c.venceEl)}</div></div>` : ''}
         </div>
-        <div class="client"><div class="client-label">Preparada para</div><div class="client-name">${esc(c.cli || '—')}</div></div>
+        <div class="client"><div class="client-label">${L('Preparada para', 'Prepared for')}</div><div class="client-name">${esc(c.cli || '—')}</div></div>
         ${c.nota ? `<div class="nota">${esc(c.nota)}</div>` : ''}
         <table>
-          <thead><tr><th>Descripción</th><th class="ctr">Cant.</th><th class="num col-precio">Precio</th><th class="num">Importe</th></tr></thead>
+          <thead><tr><th>${L('Descripción', 'Description')}</th><th class="ctr">${L('Cant.', 'Qty')}</th><th class="num col-precio">${L('Precio', 'Price')}</th><th class="num">${L('Importe', 'Amount')}</th></tr></thead>
           <tbody>${items}</tbody>
         </table>
       </div>
       <div class="total"><span class="total-label">Total</span><span class="total-amount">${money(c.total)}</span></div>
       ${accion}
-      <div class="foot">Esta cotización no es una factura. Los precios son válidos hasta la fecha indicada.<br><strong>DGP Global Group</strong> · <a href="https://dgpglobalgroup.com" target="_blank" rel="noopener">dgpglobalgroup.com</a></div>`;
+      <div class="foot">${L('Esta cotización no es una factura. Los precios son válidos hasta la fecha indicada.', 'This quote is not an invoice. Prices are valid until the date shown.')}<br><strong>DGP Global Group</strong> · <a href="https://dgpglobalgroup.com" target="_blank" rel="noopener">dgpglobalgroup.com</a></div>`;
   }
 
   async function responder(estado) {
@@ -278,8 +283,8 @@
     const nota = (document.getElementById('r-nota').value || '').trim();
     const err = document.getElementById('r-err');
     err.textContent = '';
-    if (estado === 'aceptada' && !nombre) { err.textContent = 'Escribe tu nombre para aceptar.'; return; }
-    if (estado === 'rechazada' && !confirm('¿Seguro que quieres rechazar esta cotización?')) return;
+    if (estado === 'aceptada' && !nombre) { err.textContent = L('Escribe tu nombre para aceptar.', 'Enter your name to accept.'); return; }
+    if (estado === 'rechazada' && !confirm(L('¿Seguro que quieres rechazar esta cotización?', 'Are you sure you want to decline this quote?'))) return;
     document.getElementById('btn-si').disabled = true;
     document.getElementById('btn-no').disabled = true;
     try {
@@ -295,7 +300,7 @@
       render();
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     } catch (e) {
-      err.textContent = 'No se pudo guardar tu respuesta. Intenta de nuevo o escríbenos por WhatsApp.';
+      err.textContent = L('No se pudo guardar tu respuesta. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your response. Please try again or message us on WhatsApp.');
       document.getElementById('btn-si').disabled = false;
       document.getElementById('btn-no').disabled = false;
     }

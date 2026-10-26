@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26b';
+const WORKER_VERSION = '2026-10-26c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1362,6 +1362,7 @@ async function tgCallback(env, cq) {
     a: () => botAbono(env, token, id, Number(extra)),
     r: () => botRechazar(env, token, id),
     c: () => botCrearDesdeBorrador(env, token, id),
+    ce: () => botCrearDesdeBorrador(env, token, id, false, 'en'),
     x: () => botCancelarBorrador(env, token, id),
     wa: () => botResenaWeb(env, token, id, 'aprobada'),
     wr: () => botResenaWeb(env, token, id, 'rechazada'),
@@ -1370,8 +1371,13 @@ async function tgCallback(env, cq) {
     sv: () => botRecuperarSospechoso(env, token, id),
     n: async () => ({ aviso: 'Esto ya se resolvió', ya: true })
   };
-  const res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' };
-  await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
+  // Crear y enviar tarda unos segundos: se contesta al instante para que el botón no se quede "pensando"
+  const lento = ['c', 'ce', 'k', 'p', 'a'].includes(acc);
+  if (lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: acc === 'ce' ? 'Creating…' : 'Un momento…' });
+  let res;
+  try { res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' }; }
+  catch (e) { res = { aviso: 'No se pudo completar', html: `⚠️ No pude completar esa acción: ${escHtml(e.message || String(e))}\nIntenta de nuevo o hazlo desde el panel.` }; }
+  if (!lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
   if (res.ya) return;
   // Otros avisos de la misma factura (varios comprobantes) también quedan como resueltos
   if (['p', 'a', 'r'].includes(acc)) await tgSincronizarPago(env, token, id, { p: 'pagado', a: 'abono', r: 'rechazado' }[acc], cq.message.message_id).catch(() => {});
@@ -1711,7 +1717,8 @@ async function botCancelarBorrador(env, token, id) {
   await fsBorrar(env, `borradoresBot/${id}`, token);
   return { aviso: 'Cancelado', html: '🗑 Borrador descartado.' };
 }
-async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
+async function botCrearDesdeBorrador(env, token, id, sinEnviar, idioma = 'es') {
+  const EN = idioma === 'en';
   const b = await fsGet(env, `borradoresBot/${id}`, token);
   if (!b) return { aviso: 'Ese borrador ya se usó' };
   const [clientes, portales, recientes] = await Promise.all([
@@ -1727,7 +1734,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
   const comun = {
     cli: b.cliente, ref: '—', nota: b.nota || '', fecha: isoADmy(hoy), total: b.total, moneda: conPago?.moneda || 'usd',
     emisor: EMISOR_FACTURAS, metodoPago: conPago?.metodoPago || null, infoPago: conPago?.infoPago || {},
-    items: b.items, clienteCorreo: correo, portalCodigo: portal?._id || null, createdBy: 'telegram', createdAt: new Date()
+    items: b.items, clienteCorreo: correo, portalCodigo: portal?._id || null, createdBy: 'telegram', createdAt: new Date(), idioma: EN ? 'en' : 'es'
   };
   const sufijo = Date.now().toString(36).toUpperCase().slice(-6);
   let docId, link, nuevoId;
@@ -1736,7 +1743,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
     docId = 'COT-' + sufijo;
     nuevoId = await fsCreate(env, 'cotizaciones', { ...comun, docId, estado: 'enviada', venceEl: vence }, token);
     if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'cotizacionIds', nuevoId, token).catch(() => {});
-    link = `${SITIO}/cotizacion.html?id=${nuevoId}`;
+    link = `${SITIO}/cotizacion.html?id=${nuevoId}${EN ? '&lang=en' : ''}`;
   } else {
     docId = 'FAC-' + sufijo;
     nuevoId = await fsCreate(env, 'documentos', { ...comun, docId, type: 'factura', contrato: false, pagado: false, fechaPago: null }, token);
@@ -1757,15 +1764,21 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar) {
   // Vendedor nocturno: con tu aprobación, la cotización le llega al cliente por correo
   let enviadoA = '';
   if (b.enviarA && !sinEnviar) {
-    const ok = await enviarCorreoBot(env, b.enviarA, `${nombre}, aquí está tu cotización · DGP Global Group`,
-      correoBotHTML({ icono: 'factura', titulo: `${nombre}, preparamos tu propuesta`, texto: `Gracias por escribirnos. Según lo que nos contaste, armamos esta cotización (${docId}) por ${dinero(b.total)}. Desde el botón puedes revisarla y aceptarla; si quieres ajustar algo, responde este correo o escríbenos por WhatsApp.`, boton: 'Ver mi cotización', link, nota: 'Válida por 15 días.' }),
-      `Hola ${nombre}, aquí está tu cotización ${docId} por ${dinero(b.total)}: ${link}`, { c: 'cotizaciones', id: nuevoId });
+    const ok = EN
+      ? await enviarCorreoBot(env, b.enviarA, `${nombre}, here is your quote · DGP Global Group`,
+        correoBotHTML({ icono: 'factura', titulo: `${nombre}, we prepared your proposal`, texto: `Thank you for reaching out. Based on what you told us, we put together this quote (${docId}) for ${dinero(b.total)}. Use the button to review and accept it; if you would like to adjust anything, just reply to this email or message us on WhatsApp.`, boton: 'View my quote', link, nota: 'Valid for 15 days.' }),
+        `Hi ${nombre}, here is your quote ${docId} for ${dinero(b.total)}: ${link}`, { c: 'cotizaciones', id: nuevoId })
+      : await enviarCorreoBot(env, b.enviarA, `${nombre}, aquí está tu cotización · DGP Global Group`,
+        correoBotHTML({ icono: 'factura', titulo: `${nombre}, preparamos tu propuesta`, texto: `Gracias por escribirnos. Según lo que nos contaste, armamos esta cotización (${docId}) por ${dinero(b.total)}. Desde el botón puedes revisarla y aceptarla; si quieres ajustar algo, responde este correo o escríbenos por WhatsApp.`, boton: 'Ver mi cotización', link, nota: 'Válida por 15 días.' }),
+        `Hola ${nombre}, aquí está tu cotización ${docId} por ${dinero(b.total)}: ${link}`, { c: 'cotizaciones', id: nuevoId });
     if (ok) { enviadoA = b.enviarA; await fsUpdate(env, `cotizaciones/${nuevoId}`, { clienteCorreo: b.enviarA, correos: [{ para: b.enviarA, fecha: new Date().toISOString(), por: 'altair' }] }, ['clienteCorreo', 'correos'], token).catch(() => {}); }
   }
-  const textoWa = `Hola ${nombre}! Te comparto tu ${b.tipo === 'cotizacion' ? 'cotización' : 'factura'} ${docId} por ${dinero(b.total)}:\n${link}\n\n${b.tipo === 'cotizacion' ? 'Desde el enlace puedes revisarla y aceptarla.' : 'Desde el enlace puedes pagar y subir tu comprobante.'} ¡Gracias!`;
+  const textoWa = EN
+    ? `Hi ${nombre}! Here is your ${b.tipo === 'cotizacion' ? 'quote' : 'invoice'} ${docId} for ${dinero(b.total)}:\n${link}\n\n${b.tipo === 'cotizacion' ? 'You can review and accept it from the link.' : 'You can pay and upload your receipt from the link.'} Thank you!`
+    : `Hola ${nombre}! Te comparto tu ${b.tipo === 'cotizacion' ? 'cotización' : 'factura'} ${docId} por ${dinero(b.total)}:\n${link}\n\n${b.tipo === 'cotizacion' ? 'Desde el enlace puedes revisarla y aceptarla.' : 'Desde el enlace puedes pagar y subir tu comprobante.'} ¡Gracias!`;
   return {
     aviso: b.tipo === 'cotizacion' ? 'Cotización creada ✅' : 'Factura creada ✅',
-    html: `✅ <b>${b.tipo === 'cotizacion' ? 'Cotización' : 'Factura'} creada</b> · ${escHtml(docId)}\n👤 ${escHtml(b.cliente)} · ${dinero(b.total)}${enviadoA ? `\n📨 Enviada por correo a ${escHtml(enviadoA)}` : ''}${conPago?.metodoPago ? `\n💳 Datos de pago: ${escHtml(conPago.metodoPago)} (los de tu última factura)` : '\n⚠️ Sin datos de pago: agrégalos en el panel si hace falta.'}${correo ? `\n✉️ ${escHtml(correo)}` : ''}`,
+    html: `✅ <b>${b.tipo === 'cotizacion' ? 'Cotización' : 'Factura'} creada${EN ? ' en inglés 🇺🇸' : ''}</b> · ${escHtml(docId)}\n👤 ${escHtml(b.cliente)} · ${dinero(b.total)}${enviadoA ? `\n📨 Enviada por correo a ${escHtml(enviadoA)}` : ''}${conPago?.metodoPago ? `\n💳 Datos de pago: ${escHtml(conPago.metodoPago)} (los de tu última factura)` : '\n⚠️ Sin datos de pago: agrégalos en el panel si hace falta.'}${correo ? `\n✉️ ${escHtml(correo)}` : ''}`,
     markup: { inline_keyboard: [[{ text: '🔗 Abrir', url: link }, { text: '💬 Enviar por WhatsApp', url: `https://wa.me/${tel}?text=${encodeURIComponent(textoWa)}` }]] }
   };
 }
@@ -2142,7 +2155,7 @@ async function registrarLead(env, token, d, opciones = {}) {
       reply_markup: { inline_keyboard: [[...(wa ? [{ text: '💬 Responder por WhatsApp', url: wa }] : [])]].filter(f => f.length) }
     }).catch(() => {});
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
-      [{ text: '✅ Crear y enviársela', callback_data: `c:${borrador.id}` }],
+      [{ text: '✅ Crear y enviársela', callback_data: `c:${borrador.id}` }, { text: '🇺🇸 Crear y enviar en inglés', callback_data: `ce:${borrador.id}` }],
       [{ text: '📝 Solo crearla', callback_data: `k:${borrador.id}` }, { text: '❌ Descartar', callback_data: `x:${borrador.id}` }]] } }).catch(() => {});
   }
 }
