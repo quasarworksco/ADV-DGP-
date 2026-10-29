@@ -1,0 +1,24 @@
+# Configuración para la compilación automática de Cloudflare (Workers Builds),
+# que se ejecuta desde la raíz del repositorio. Es la misma de ayudante-bot/wrangler.toml:
+# si cambias una, cambia la otra.
+name = "ayudante-dgp-bot"
+main = "ayudante-bot/worker.js"
+compatibility_date = "2024-09-23"
+# No borrar las variables guardadas en el panel de Cloudflare al publicar
+keep_vars = true
+
+# Ejecutar SIEMPRE en EE. UU. (junto a Firebase, us-central): Groq bloquea
+# algunas regiones (p. ej. cuando el Worker corre cerca de Venezuela).
+[placement]
+region = "gcp:us-central1"
+
+# IA de Cloudflare (Workers AI) para leer comprobantes: no bloquea países
+[ai]
+binding = "AI"
+
+[triggers]
+# UTC: publicación automática (revisa cada hora, a los :30) · resumen mensual (día 1) · resumen diario 11:00 (7:00 VE) · respaldo domingo 12:00 · briefing lunes 12:00 (8:00 VE)
+crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN", "0 12 * * MON", "30 * * * *"]
+
+# Las claves secretas (TG_TOKEN, GROQ_API_KEY, EMAIL_WEBHOOK, EMAIL_CLAVE...) se guardan
+# en el panel de Cloudflare, NUNCA aquí.
