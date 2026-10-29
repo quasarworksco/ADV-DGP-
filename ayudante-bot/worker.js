@@ -1097,6 +1097,10 @@ async function handleTarea(request, env) {
       const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
       return json(request, { ok: true, actualizados: n });
     }
+    if (tarea === 'correo-pago') {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Factura no válida' }, 400);
+      return json(request, { ok: true, ...(await correoPagoCliente(env, v.token, cuerpo.id, Number(cuerpo.monto), v.email)) });
+    }
     if (tarea === 'briefing') { await briefingLunes(env); return json(request, { ok: true, mensaje: 'Altair te envió el briefing (texto y audio) a Telegram ✅' }); }
     if (tarea === 'semanal') { await resumenSemanal(env); return json(request, { ok: true, mensaje: 'Resumen semanal con análisis enviado a Telegram ✅' }); }
     if (tarea === 'diaria') {
@@ -1210,7 +1214,7 @@ function correoResenaHTML(nombre, link) {
     texto: 'Nos alegró mucho saber que tu experiencia con DGP Global Group fue excelente. ¿Nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.',
     boton: 'Dejar mi reseña en Google', link, nota: 'Solo toma un momento. ¡Gracias de corazón!' });
 }
-function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota = '', oferta = '' }) {
+function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota = '', oferta = '', resumen = [] }) {
   const f = "font-family:'Poppins','Segoe UI',Roboto,Arial,sans-serif;";
   const grad = 'background-color:#166baf;background-image:linear-gradient(135deg,#172b5e 0%,#166baf 58%,#3eaedd 100%);';
   const blanco = h => `<div class="gm-s"><div class="gm-d">${h}</div></div>`;
@@ -1241,6 +1245,10 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
     <div>${cabeza}</div>
     <div class="tx" style="${f}font-size:25px;font-weight:700;color:#1e293b;margin-top:18px;line-height:1.25;">${escHtmlR(titulo)}</div>
     <div class="tx2" style="font-size:15px;line-height:1.7;color:#475569;margin-top:14px;">${escHtmlR(texto).replace(/\n/g, '<br>')}</div>
+    ${resumen.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="soft" bgcolor="#f3f8fc" style="margin-top:24px;background-color:#f3f8fc;border:1px solid #e1ecf5;border-radius:16px;text-align:left;">
+      ${resumen.map(([l, v, color], i) => `<tr><td class="tx2" style="padding:12px 18px;${i ? 'border-top:1px solid #e1ecf5;' : ''}font-size:13.5px;color:#475569;">${escHtmlR(l)}</td>
+        <td class="tx" style="padding:12px 18px;${i ? 'border-top:1px solid #e1ecf5;' : ''}${f}font-size:${color ? 17 : 14}px;font-weight:${color ? 700 : 600};color:${color || '#1e293b'};text-align:right;white-space:nowrap;">${escHtmlR(v)}</td></tr>`).join('')}
+    </table>` : ''}
     ${oferta ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;"><tr><td class="soft" style="border:1.5px dashed #3eaedd;border-radius:16px;padding:16px 18px;background-color:#f3f8fc;text-align:center;">
       <div class="lb" style="${f}font-size:10.5px;font-weight:600;letter-spacing:2px;color:#1f8fc0;">TU REGALO</div>
       <div class="tx" style="${f}font-size:17px;font-weight:700;color:#1e293b;margin-top:6px;line-height:1.35;">${escHtmlR(oferta)}</div></td></tr></table>` : ''}
@@ -1255,6 +1263,77 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Recibo automático por correo al registrar un pago (panel o Telegram):
+   monto recibido, total pagado y, si fue un abono, lo que queda debiendo.
+   Interruptor "correoPago" en config/automatizaciones.
+══════════════════════════════════════════════════════════════ */
+async function correoDeCliente(env, token, nombre) {
+  const n = normNombre(nombre);
+  if (!n) return null;
+  const [clientes, portales] = await Promise.all(['clientes', 'portal'].map(c => fsList(env, c, token).catch(() => [])));
+  const c = clientes.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n);
+  const p = portales.find(x => normNombre(x.nombre) === n);
+  return c?.correo || p?.correo || null;
+}
+function correoPagoHTML(doc, fsId, monto) {
+  const en = doc.idioma === 'en';
+  const L = (es, eng) => en ? eng : es;
+  const nombre = String(doc.cli || '').split(' ')[0] || L('hola', 'there');
+  const total = Number(doc.total) || 0;
+  const completo = doc.pagado || doc.type === 'recibo';
+  const pagado = completo ? total : Number(doc.montoPagado) || 0;
+  const saldo = saldoDoc(doc);
+  const n = doc.docId || '';
+  const resumen = [
+    [L('Factura N°', 'Invoice #'), n],
+    [L('Monto recibido hoy', 'Amount received today'), dinero(monto), '#059669'],
+    [L('Total de la factura', 'Invoice total'), dinero(total)],
+    [L('Total pagado', 'Total paid'), dinero(pagado)],
+    completo ? [L('Saldo pendiente', 'Balance due'), L('$0.00 · Pagada ✓', '$0.00 · Paid ✓'), '#059669'] : [L('Saldo pendiente', 'Balance due'), dinero(saldo), '#d97706']
+  ];
+  const link = `${SITIO}/factura-publica.html?id=${fsId}`;
+  if (completo) return {
+    asunto: L(`Recibimos tu pago · Recibo ${n}`, `Payment received · Receipt ${n}`),
+    html: correoBotHTML({ icono: 'factura', titulo: L(`¡Gracias por tu pago, ${nombre}!`, `Thank you for your payment, ${nombre}!`),
+      texto: L(`Recibimos tu pago de ${dinero(monto)} y tu factura ${n} quedó pagada por completo. Aquí tienes el resumen; desde el botón puedes ver y descargar tu recibo.`,
+        `We received your payment of ${dinero(monto)} and invoice ${n} is now paid in full. Here is your summary; use the button to view and download your receipt.`),
+      resumen, boton: L('Ver mi recibo', 'View my receipt'), link, nota: L('Guarda este correo como comprobante. ¡Gracias por confiar en nosotros!', 'Keep this email for your records. Thank you for trusting us!') }),
+    texto: L(`¡Gracias por tu pago, ${nombre}! Recibimos ${dinero(monto)} y tu factura ${n} quedó pagada por completo (${dinero(total)}). Tu recibo: ${link}`,
+      `Thank you for your payment, ${nombre}! We received ${dinero(monto)} and invoice ${n} is paid in full (${dinero(total)}). Your receipt: ${link}`)
+  };
+  return {
+    asunto: L(`Recibimos tu abono de ${dinero(monto)} · Factura ${n}`, `We received your payment of ${dinero(monto)} · Invoice ${n}`),
+    html: correoBotHTML({ icono: 'factura', titulo: L(`Recibimos tu abono, ${nombre}`, `Payment received, ${nombre}`),
+      texto: L(`Recibimos tu pago de ${dinero(monto)} para la factura ${n}. Te queda un saldo pendiente de ${dinero(saldo)}. Puedes pagarlo cuando quieras desde el botón y subir tu comprobante.`,
+        `We received your payment of ${dinero(monto)} for invoice ${n}. The remaining balance is ${dinero(saldo)}. You can pay it anytime from the button and upload your receipt.`),
+      resumen, boton: L('Ver factura y pagar el saldo', 'View invoice and pay balance'), link, nota: L('¿Dudas sobre tu saldo? Responde este correo.', 'Questions about your balance? Reply to this email.') }),
+    texto: L(`Recibimos tu abono de ${dinero(monto)} para la factura ${n}. Total pagado: ${dinero(pagado)} de ${dinero(total)}. Saldo pendiente: ${dinero(saldo)}. Tu factura: ${link}`,
+      `We received your payment of ${dinero(monto)} for invoice ${n}. Paid so far: ${dinero(pagado)} of ${dinero(total)}. Balance due: ${dinero(saldo)}. Your invoice: ${link}`)
+  };
+}
+async function correoPagoCliente(env, token, fsId, monto, por) {
+  try {
+    if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return { enviado: false, motivo: 'el correo no está configurado en Cloudflare' };
+    if (!(await automatizaciones(env, token)).correoPago) return { enviado: false };
+    if (!(monto > 0.009)) return { enviado: false };
+    const doc = await fsGet(env, `documentos/${fsId}`, token);
+    if (!doc) return { enviado: false };
+    const correo = String(doc.clienteCorreo || await correoDeCliente(env, token, doc.cli) || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { enviado: false, motivo: `${doc.cli || 'el cliente'} no tiene correo guardado` };
+    const m = correoPagoHTML(doc, fsId, monto);
+    if (!(await enviarCorreoBot(env, correo, m.asunto, m.html, m.texto))) return { enviado: false, correo, motivo: 'Gmail no pudo enviarlo' };
+    // Queda en el historial de correos del documento, igual que los enviados a mano
+    const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+    await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ writes: [{ transform: { document: `${base}/documentos/${fsId}`, fieldTransforms: [{ fieldPath: 'correos', appendMissingElements: { values: [toValue({ para: correo, fecha: new Date().toISOString(), por: por || 'automático', asunto: m.asunto, auto: 'pago' })] } }] } }] })
+    }).catch(() => {});
+    return { enviado: true, correo };
+  } catch (e) { console.warn('Correo de pago', e); return { enviado: false, motivo: e.message || 'error' }; }
+}
+const lineaCorreoPago = r => r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '';
 
 async function recordarResenas(env, token, docs, correoDe) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
@@ -1487,6 +1566,7 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo) {
     extra = `\n🔁 Suscripción renovada · próximo pago ${escHtml(fechaCorta(nueva))}`;
   }
   extra += await crearHostingAliadoBot(env, token, fsId, doc).catch(e => { console.error('hosting aliado', e); return '\n⚠️ No se pudo crear el hosting del aliado: créalo en Suscripciones.'; });
+  extra += lineaCorreoPago(await correoPagoCliente(env, token, fsId, pagoNuevo ? pagoNuevo.monto : saldoDoc(doc), 'telegram'));
   const animo = ['¡Brutal! 💰', '¡Eso es! Un pago más 🔥', '¡Cha-ching! 💸', '¡Vamos con todo! 🚀', '¡Así se hace! 🙌'][Math.floor(Math.random() * 5)];
   return { aviso: 'Pago confirmado ✅', html: `${animo}\n✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
 }
@@ -1501,7 +1581,8 @@ async function botAbono(env, token, fsId, monto) {
   const revisados = [...new Set([...(doc.comprobantesRevisados || []), ...listaComprobantes(doc).map(c => c.url)])];
   await fsUpdate(env, `documentos/${fsId}`, { pagos: [...(doc.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true, pagoRechazado: null, comprobantesRevisados: revisados },
     ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado', 'comprobantesRevisados'], token);
-  return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>` };
+  const correo = lineaCorreoPago(await correoPagoCliente(env, token, fsId, pago.monto, 'telegram'));
+  return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>${correo}` };
 }
 async function botRechazar(env, token, fsId) {
   const doc = await fsGet(env, `documentos/${fsId}`, token);
@@ -2708,7 +2789,7 @@ async function handleSmm(request, env) {
 ══════════════════════════════════════════════════════════════ */
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
-  return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false };
+  return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════
