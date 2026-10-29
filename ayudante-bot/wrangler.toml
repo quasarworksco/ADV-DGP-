@@ -1,6 +1,8 @@
 name = "ayudante-dgp-bot"
 main = "worker.js"
 compatibility_date = "2024-09-23"
+# No borrar las variables guardadas en el panel de Cloudflare al publicar
+keep_vars = true
 
 # Ejecutar SIEMPRE en EE. UU. (junto a Firebase, us-central): Groq bloquea
 # algunas regiones (p. ej. cuando el Worker corre cerca de Venezuela).

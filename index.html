@@ -7700,6 +7700,7 @@ async function deshacerPago(fsId, sinConfirmar) {
       docId: String(doc.docId || '').replace(/^REC-/, 'FAC-'), pagos: [] };
   }
   upd.estadoAnterior = firebase.firestore.FieldValue.delete();
+  cancelarCorreoPago(fsId);
   try {
     await db.collection('documentos').doc(fsId).update(upd);
     // La suscripción vuelve al período que tenía
@@ -7726,6 +7727,7 @@ async function deshacerUltimoAbono(fsId, sinConfirmar) {
   const ult = pagos[pagos.length - 1];
   if (!sinConfirmar && !confirm(`¿Quitar el último abono de $${(Number(ult.monto) || 0).toFixed(2)}${ult.ref ? ' (' + ult.ref + ')' : ''}?`)) return;
   const resto = pagos.slice(0, -1);
+  cancelarCorreoPago(fsId);
   const monto = parseFloat(resto.reduce((a, x) => a + (Number(x.monto) || 0), 0).toFixed(2));
   try {
     await db.collection('documentos').doc(fsId).update({ pagos: resto, montoPagado: monto, pagadoParcial: monto > 0.009 });
@@ -7733,6 +7735,30 @@ async function deshacerUltimoAbono(fsId, sinConfirmar) {
     toast('Abono quitado ↩');
     if (document.getElementById('modalDoc').classList.contains('show')) openSheet({ ...doc, pagos: resto, montoPagado: monto, pagadoParcial: monto > 0.009, _fsId: fsId });
   } catch (e) { toast('No se pudo quitar el abono.', 'err'); }
+}
+
+/* Recibo automático por correo al cliente (monto pagado y lo que queda debiendo).
+   Se espera a que pase el "Deshacer" del aviso; el bot arma y envía el correo. */
+const _correoPagoPend = {};
+function programarCorreoPago(fsId, monto) {
+  if (_auto.correoPago === false || !(monto > 0.009)) return;
+  const prev = _correoPagoPend[fsId];
+  if (prev) clearTimeout(prev.t);
+  const total = parseFloat(((prev?.monto || 0) + monto).toFixed(2));
+  _correoPagoPend[fsId] = { monto: total, t: setTimeout(async () => {
+    delete _correoPagoPend[fsId];
+    try {
+      const tok = await currentUser.getIdToken();
+      const res = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'correo-pago', id: fsId, monto: total }) });
+      const d = await res.json().catch(() => ({}));
+      if (d.enviado) { toast(`📧 Recibo de pago enviado a ${d.correo}`); logActividad('Recibo de pago por correo', `${docsMap[fsId]?.docId || fsId} → ${d.correo}`); }
+      else if (d.motivo || d.error) toast(`No se envió el recibo por correo: ${d.motivo || d.error}`, 'err');
+    } catch (e) { console.warn('correo-pago', e); }
+  }, 9500) };
+}
+function cancelarCorreoPago(fsId) {
+  const p = _correoPagoPend[fsId];
+  if (p) { clearTimeout(p.t); delete _correoPagoPend[fsId]; }
 }
 
 /* Pago resuelto en el panel: los avisos de Telegram de esa factura quedan como "ya registrado" (sin botones) */
@@ -7829,6 +7855,7 @@ async function marcarPagado(fsId) {
     });
     logActividad('Factura pagada', newDocId || fsId);
     toastAccion('Marcado como pagado ✅', 'Deshacer', () => deshacerPago(fsId, true));
+    programarCorreoPago(fsId, _alSaldo(doc));
     alPagarFacturaSuscripcion(doc);
     crearHostingAliado(fsId);
     sincronizarPagoTelegram(fsId, 'pagado');
@@ -7899,6 +7926,7 @@ async function confirmarPagoParcial() {
         estadoAnterior: estadoAntesDePago(doc)
       });
       toastAccion('Pago completo registrado ✅', 'Deshacer', () => deshacerPago(fsId, true));
+      programarCorreoPago(fsId, monto);
       alPagarFacturaSuscripcion(doc);
       crearHostingAliado(fsId);
       sincronizarPagoTelegram(fsId, 'pagado');
@@ -7910,6 +7938,7 @@ async function confirmarPagoParcial() {
         pagos:         firebase.firestore.FieldValue.arrayUnion({ monto, ref, fecha: fmtDate() })
       });
       toastAccion('Pago parcial registrado 💰', 'Deshacer', () => deshacerUltimoAbono(fsId, true));
+      programarCorreoPago(fsId, monto);
       sincronizarPagoTelegram(fsId, 'abono');
     }
     document.getElementById('modalPagoParcial').classList.remove('show');
@@ -12014,7 +12043,7 @@ function celebrarPago(doc, prev) {
 }
 
 /* Panel de Altair: interruptores (config/automatizaciones) */
-let _auto = { cobrador: true, vendedor: true, briefing: true };
+let _auto = { cobrador: true, vendedor: true, briefing: true, correoPago: true };
 function abrirAltair() {
   const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
     <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
@@ -12028,6 +12057,7 @@ function abrirAltair() {
     ${fila('cobrador', 'Cobrador amable', 'Día 3 y día 8 de atraso le escribe al cliente por correo; el día 15 te avisa para que llames.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
+    ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}
     ${fila('chaching', 'Cha-ching al cobrar', 'Sonido de caja registradora y confeti en este panel cuando entra un pago.')}
     <div class="alt-acts">
       <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>
