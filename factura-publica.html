@@ -923,9 +923,9 @@
     const clientStyle = isRecibo ? 'blue' : 'dark';
     const totalClass  = isRecibo ? 'blue' : 'dark';
     const badgeClass  = isRecibo ? 'pagado' : (isParcial ? 'parcial' : 'pendiente');
-    const badgeText   = isRecibo ? L('PAGO CONFIRMADO', 'PAYMENT CONFIRMED') : (isParcial ? L('PAGO PARCIAL', 'PARTIAL PAYMENT') : L('PENDIENTE DE PAGO', 'PAYMENT DUE'));
+    const badgeText   = doc.cerrada ? L('CERRADA', 'CLOSED') : isRecibo ? L('PAGO CONFIRMADO', 'PAYMENT CONFIRMED') : (isParcial ? L('PAGO PARCIAL', 'PARTIAL PAYMENT') : L('PENDIENTE DE PAGO', 'PAYMENT DUE'));
     const docTitle    = isRecibo ? L('RECIBO DE PAGO', 'PAYMENT RECEIPT') : L('FACTURA', 'INVOICE');
-    const totalLabel  = isRecibo ? L('Total Pagado', 'Total Paid') : L('Total a Pagar', 'Total Due');
+    const totalLabel  = doc.cerrada ? L('Total Cobrado', 'Total Charged') : isRecibo ? L('Total Pagado', 'Total Paid') : L('Total a Pagar', 'Total Due');
 
     const items = (doc.items || []).map(it => `
       <tr>
@@ -979,6 +979,8 @@
           <tbody>${items}</tbody>
         </table>
         ${Math.abs(subtotal - (doc.total || 0)) > 0.009 || (doc.items || []).length > 1 ? `<div class="pub-sub"><span>${L('Subtotal', 'Subtotal')}</span><strong>$${subtotal.toFixed(2)}</strong></div>` : ''}
+        ${doc.cerrada && Number(doc.cerrada.perdonado) > 0.009 ? `<div class="pub-sub"><span>${L('Saldo no cobrado (servicio cerrado)', 'Balance waived (service closed)')}</span><strong>−$${Number(doc.cerrada.perdonado).toFixed(2)}</strong></div>` : ''}
+        ${(Array.isArray(doc.devoluciones) ? doc.devoluciones : []).map(x => `<div class="pub-sub"><span>${L('Devolución', 'Refund')}${x.fecha ? ' · ' + esc(x.fecha) : ''}</span><strong>−$${(Number(x.monto) || 0).toFixed(2)}</strong></div>`).join('')}
       </div>
       <div class="pub-total ${totalClass}">
         <span class="pub-total-label">${totalLabel}</span>

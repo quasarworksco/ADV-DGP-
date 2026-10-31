@@ -703,7 +703,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-26h';
+const WORKER_VERSION = '2026-10-31a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1944,6 +1944,8 @@ function cobrosDe(docs) {
     } else if (d.pagadoParcial && (Number(d.montoPagado) || 0) > suma + 0.009) {
       out.push({ f: fechaISO(d.createdAt) || fechaISO(d.fecha), m: (Number(d.montoPagado) || 0) - suma, d });
     }
+    // Devoluciones al cliente: restan en su fecha
+    (Array.isArray(d.devoluciones) ? d.devoluciones : []).forEach(x => { const f = fechaISO(x.fecha), m = Number(x.monto) || 0; if (f && m) out.push({ f, m: -m, d }); });
   }
   return out.filter(x => x.f);
 }

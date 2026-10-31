@@ -644,6 +644,11 @@
     .sheet-status-badge.parcial::before { content:''; width:6px; height:6px; border-radius:50%; background:#fb923c; display:block; }
 
     /* ─── PAYMENT BREAKDOWN BLOCK ─── */
+    .sheet-ajuste { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; }
+    .sheet-ajuste-row { display:flex; justify-content:space-between; gap:12px; padding:3px 0; color:#475569; }
+    .sheet-ajuste-row strong { color:#b45309; white-space:nowrap; }
+    .sheet-ajuste-row.dev strong { color:#b91c1c; }
+    .sheet-ajuste-nota { font-size:11px; color:#94a3b8; padding:2px 0 4px; }
     .sheet-payment-breakdown { display:flex; justify-content:space-between; background:#fff7ed; border:1px solid rgba(251,146,60,0.3); border-radius:10px; padding:12px 16px; margin-bottom:18px; font-size:12px; }
     .sheet-payment-col { display:flex; flex-direction:column; gap:2px; }
     .sheet-payment-label { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#9a3412; }
@@ -3717,6 +3722,37 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <div class="ff"><label>Referencia del pago</label><input type="text" id="pp-ref" placeholder="Ej. Zelle, transferencia..."></div>
       <button class="btn-edit-save" onclick="confirmarPagoParcial()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Registrar Pago</button>
       <button class="btn-edit-cancel" onclick="document.getElementById('modalPagoParcial').classList.remove('show')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCerrarFactura">
+  <div class="edit-sheet" style="max-width:400px;">
+    <div class="edit-sheet-header">
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> CERRAR CON LO PAGADO</h3>
+      <p id="cf-info"></p>
+    </div>
+    <div class="edit-sheet-body">
+      <p style="font-size:12px;color:var(--text-soft);margin:0 0 12px;line-height:1.5;">La factura queda cerrada con lo que el cliente ya pagó. El saldo no se cobra, deja de aparecer en "por cobrar" y lo pagado sigue contando en tus ingresos. Puedes reabrirla cuando quieras.</p>
+      <div class="ff"><label>Motivo (solo lo ves tú)</label><input type="text" id="cf-nota" placeholder="Ej. El servicio no llegó a la meta"></div>
+      <button class="btn-edit-save" onclick="confirmarCerrarFactura()">Cerrar factura</button>
+      <button class="btn-edit-cancel" onclick="document.getElementById('modalCerrarFactura').classList.remove('show')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalDevolucion">
+  <div class="edit-sheet" style="max-width:400px;">
+    <div class="edit-sheet-header">
+      <h3 style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg> REGISTRAR DEVOLUCIÓN</h3>
+      <p id="dv-info"></p>
+    </div>
+    <div class="edit-sheet-body">
+      <p style="font-size:12px;color:var(--text-soft);margin:0 0 12px;line-height:1.5;">Registra el dinero que le devolviste al cliente. Se resta de tus ingresos en la fecha de hoy y queda anotado en la factura.</p>
+      <div class="ff"><label>Monto devuelto ($)</label><input type="number" id="dv-monto" placeholder="0.00" step="0.01"></div>
+      <div class="ff"><label>Motivo</label><input type="text" id="dv-nota" placeholder="Ej. Servicio no completado, Zelle"></div>
+      <button class="btn-edit-save" onclick="confirmarDevolucion()">Registrar devolución</button>
+      <button class="btn-edit-cancel" onclick="document.getElementById('modalDevolucion').classList.remove('show')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -7498,7 +7534,11 @@ function openSheet(doc) {
 
   /* Determine header style, status class and text */
   let headerClass, statusClass, statusText;
-  if (isRecibo) {
+  if (doc.cerrada) {
+    headerClass = 'sheet-top-recibo';
+    statusClass = 'parcial';
+    statusText  = L('CERRADA', 'CLOSED');
+  } else if (isRecibo) {
     headerClass = 'sheet-top-recibo';
     statusClass = 'pagado';
     statusText  = L('PAGO CONFIRMADO', 'PAYMENT CONFIRMED');
@@ -7521,7 +7561,7 @@ function openSheet(doc) {
         <div><div class="inv-brand-name">DGP Global Group</div><div class="inv-brand-sub">dgpglobalgroup.com<br>${L('Diseño web y sistemas','Web design & systems')}</div></div>
       </div>
       <div class="inv-doc">
-        <div class="inv-type">${(isFactura || isParcial) ? L('FACTURA','INVOICE') : L('RECIBO','RECEIPT')}</div>
+        <div class="inv-type">${(isFactura || isParcial || doc.cerrada) ? L('FACTURA','INVOICE') : L('RECIBO','RECEIPT')}</div>
         <div class="inv-num">N° ${esc(doc.docId || '—')}</div>
         <div class="inv-num" style="margin-top:2px;">${L('Fecha','Date')}: ${esc(doc.fecha || '—')}</div>
         <span class="inv-status ${statusClass}">${statusText}</span>
@@ -7575,6 +7615,17 @@ function openSheet(doc) {
       </div>`;
     clientBlock.insertAdjacentElement('afterend', breakdownEl);
   }
+  let existingAjuste = document.getElementById('s-ajuste');
+  if (existingAjuste) existingAjuste.remove();
+  const devs = Array.isArray(doc.devoluciones) ? doc.devoluciones : [];
+  if (doc.cerrada || devs.length) {
+    const aj = document.createElement('div');
+    aj.id = 's-ajuste';
+    aj.className = 'sheet-ajuste';
+    aj.innerHTML = (doc.cerrada ? `<div class="sheet-ajuste-row"><span>${L('Factura cerrada con lo pagado','Invoice closed with amount paid')}${doc.cerrada.fecha ? ' · ' + esc(doc.cerrada.fecha) : ''}</span><strong>${L('No se cobró','Waived')} $${(Number(doc.cerrada.perdonado) || 0).toFixed(2)}</strong></div>${doc.cerrada.nota ? `<div class="sheet-ajuste-nota">${esc(doc.cerrada.nota)}</div>` : ''}` : '')
+      + devs.map(x => `<div class="sheet-ajuste-row dev"><span>${L('Devolución','Refund')} · ${esc(x.fecha || '')}${x.nota ? ' · ' + esc(x.nota) : ''}</span><strong>−$${(Number(x.monto) || 0).toFixed(2)}</strong></div>`).join('');
+    clientBlock.insertAdjacentElement('afterend', aj);
+  }
 
   const items = doc.items || [];
   let itemsHtml = '';
@@ -7596,7 +7647,7 @@ function openSheet(doc) {
 
   const totalBlock = document.getElementById('s-total-block');
   totalBlock.className = `sheet-total-block ${isRecibo ? 'recibo-style' : 'factura-style'}`;
-  document.getElementById('s-total-label').textContent = isRecibo ? L('Total Pagado','Total Paid') : L('Total a Pagar','Amount Due');
+  document.getElementById('s-total-label').textContent = doc.cerrada ? L('Total Cobrado','Total Charged') : isRecibo ? L('Total Pagado','Total Paid') : L('Total a Pagar','Amount Due');
   document.getElementById('s-total').textContent = (doc.total || 0).toFixed(2);
 
   document.getElementById('s-footer-text').innerHTML = isRecibo
@@ -7616,7 +7667,9 @@ function openSheet(doc) {
     link: ic('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'),
     print: ic('<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
     save: ic('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>'),
-    star: ic('<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>')
+    star: ic('<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>'),
+    lock: ic('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+    dev: ic('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>')
   };
   const B = (cls, fn, icon, txt) => `<button class="btn-sheet ${cls}" onclick="${fn}">${icon}<span>${txt}</span></button>`;
   const id = esc(fsId);
@@ -7636,9 +7689,15 @@ function openSheet(doc) {
       ${B('ghost', 'window.print()', I.print, 'Imprimir / PDF')}
       ${B('ghost', `guardarComoPlantilla('${id}')`, I.save, 'Guardar plantilla')}
       ${isRecibo ? B('ghost', `copiarLinkEncuesta('${id}')`, I.star, 'Link de encuesta') : ''}
+      ${isParcial && fsId ? B('ghost', `abrirCerrarFactura('${id}')`, I.lock, 'Cerrar con lo pagado') : ''}
+      ${fsId && ((doc.montoPagado || 0) > 0.009 || isRecibo) ? B('ghost', `abrirDevolucion('${id}')`, I.dev, 'Registrar devolución') : ''}
     </div>`;
   // 4) Deshacer (solo si aplica)
-  const deshacer = isParcial && fsId && (doc.pagos || []).length
+  const deshacer = doc.cerrada && fsId
+    ? `<button class="btn-sheet deshacer" onclick="reabrirFactura('${id}')">${SVG_DESHACER} Reabrir factura (volver a cobrar el saldo)</button>`
+    : devs.length && fsId && !isParcial && !isFactura
+    ? `<button class="btn-sheet deshacer" onclick="quitarUltimaDevolucion('${id}')">${SVG_DESHACER} Quitar la última devolución ($${(Number(devs[devs.length - 1].monto) || 0).toFixed(2)})</button>`
+    : isParcial && fsId && (doc.pagos || []).length
     ? `<button class="btn-sheet deshacer" onclick="deshacerUltimoAbono('${id}')">${SVG_DESHACER} Quitar el último abono ($${(Number(doc.pagos[doc.pagos.length - 1].monto) || 0).toFixed(2)})</button>`
     : (isRecibo && fsId ? `<button class="btn-sheet deshacer" onclick="deshacerPago('${id}')">${SVG_DESHACER} Volver a pendiente de pago</button>` : '');
   actions.innerHTML = cobrar + enviar + mas + deshacer + `<button class="btn-sheet close" onclick="closeModal()">Cerrar</button>`;
@@ -7868,6 +7927,87 @@ async function marcarPagado(fsId) {
   }
 }
 
+/* ─── Cerrar factura con lo pagado (servicio que no se completa) ─── */
+let _cerrarFsId = null, _devFsId = null;
+function abrirCerrarFactura(fsId) {
+  const doc = docsMap[fsId]; if (!doc) return;
+  _cerrarFsId = fsId;
+  const total = Number(doc.total) || 0, pagado = Number(doc.montoPagado) || 0;
+  document.getElementById('cf-info').innerHTML = `Total: <b>$${total.toFixed(2)}</b> · Pagado: <b>$${pagado.toFixed(2)}</b> · No se cobrará: <b>$${Math.max(total - pagado, 0).toFixed(2)}</b>`;
+  document.getElementById('cf-nota').value = '';
+  document.getElementById('modalCerrarFactura').classList.add('show');
+}
+async function confirmarCerrarFactura() {
+  const fsId = _cerrarFsId, doc = docsMap[fsId]; if (!doc) return;
+  const total = Number(doc.total) || 0, pagado = parseFloat((Number(doc.montoPagado) || 0).toFixed(2));
+  const pagos = Array.isArray(doc.pagos) ? doc.pagos : [];
+  const nota = document.getElementById('cf-nota').value.trim();
+  const upd = {
+    cerrada: { fecha: fmtDate(), nota, perdonado: parseFloat((total - pagado).toFixed(2)), totalOriginal: total, por: currentUser?.email || '' },
+    total: pagado, pagado: true, pagadoParcial: false,
+    fechaPago: (pagos.length && pagos[pagos.length - 1].fecha) || doc.fecha || fmtDate()
+  };
+  try {
+    await db.collection('documentos').doc(fsId).update(upd);
+    logActividad('Factura cerrada con lo pagado', `${doc.docId || fsId} · cobrado $${pagado.toFixed(2)} de $${total.toFixed(2)}`);
+    document.getElementById('modalCerrarFactura').classList.remove('show');
+    toastAccion('Factura cerrada con lo pagado', 'Deshacer', () => reabrirFactura(fsId, true));
+    openSheet({ ...doc, ...upd, _fsId: fsId });
+  } catch (e) { console.error(e); toast('No se pudo cerrar la factura.', 'err'); }
+}
+async function reabrirFactura(fsId, sinConfirmar) {
+  const doc = docsMap[fsId]; if (!doc || !doc.cerrada) return;
+  if (!sinConfirmar && !confirm(`¿Reabrir ${doc.docId || 'esta factura'}?\nVolverá a pago parcial con un saldo de $${(Number(doc.cerrada.perdonado) || 0).toFixed(2)}.`)) return;
+  const pagado = Number(doc.montoPagado) || 0;
+  const upd = { total: Number(doc.cerrada.totalOriginal) || doc.total, pagado: false, pagadoParcial: pagado > 0.009, fechaPago: null, cerrada: firebase.firestore.FieldValue.delete() };
+  try {
+    await db.collection('documentos').doc(fsId).update(upd);
+    logActividad('Factura reabierta', doc.docId || fsId);
+    toast('Factura reabierta ↩');
+    if (document.getElementById('modalDoc').classList.contains('show')) { const n = { ...doc, ...upd, _fsId: fsId }; delete n.cerrada; openSheet(n); }
+  } catch (e) { console.error(e); toast('No se pudo reabrir.', 'err'); }
+}
+/* ─── Devoluciones de dinero al cliente ─── */
+function abrirDevolucion(fsId) {
+  const doc = docsMap[fsId]; if (!doc) return;
+  _devFsId = fsId;
+  const cobrado = ((doc.pagado || doc.type === 'recibo') ? (Number(doc.total) || 0) : (Number(doc.montoPagado) || 0)) - cbDevuelto(doc);
+  document.getElementById('dv-info').innerHTML = `Cobrado en esta factura: <b>$${Math.max(cobrado, 0).toFixed(2)}</b>${cbDevuelto(doc) > 0.009 ? ` · Ya devuelto: <b>$${cbDevuelto(doc).toFixed(2)}</b>` : ''}`;
+  document.getElementById('dv-monto').value = '';
+  document.getElementById('dv-nota').value = '';
+  document.getElementById('modalDevolucion').classList.add('show');
+}
+async function confirmarDevolucion() {
+  const fsId = _devFsId, doc = docsMap[fsId]; if (!doc) return;
+  const monto = parseFloat(document.getElementById('dv-monto').value);
+  const nota = document.getElementById('dv-nota').value.trim();
+  const cobrado = ((doc.pagado || doc.type === 'recibo') ? (Number(doc.total) || 0) : (Number(doc.montoPagado) || 0)) - cbDevuelto(doc);
+  if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto válido.', 'err'); return; }
+  if (monto > cobrado + 0.001) { toast(`No puedes devolver más de lo cobrado ($${cobrado.toFixed(2)}).`, 'err'); return; }
+  const dev = { monto: parseFloat(monto.toFixed(2)), nota, fecha: fmtDate(), por: currentUser?.email || '' };
+  const devoluciones = [...(Array.isArray(doc.devoluciones) ? doc.devoluciones : []), dev];
+  try {
+    await db.collection('documentos').doc(fsId).update({ devoluciones });
+    logActividad('Devolución registrada', `${doc.docId || fsId} · $${dev.monto.toFixed(2)}${nota ? ' · ' + nota : ''}`);
+    document.getElementById('modalDevolucion').classList.remove('show');
+    toastAccion(`Devolución de $${dev.monto.toFixed(2)} registrada`, 'Deshacer', () => quitarUltimaDevolucion(fsId, true));
+    openSheet({ ...doc, devoluciones, _fsId: fsId });
+  } catch (e) { console.error(e); toast('No se pudo registrar la devolución.', 'err'); }
+}
+async function quitarUltimaDevolucion(fsId, sinConfirmar) {
+  const doc = docsMap[fsId]; const devs = Array.isArray(doc?.devoluciones) ? doc.devoluciones : [];
+  if (!devs.length) return;
+  const ult = devs[devs.length - 1];
+  if (!sinConfirmar && !confirm(`¿Quitar la devolución de $${(Number(ult.monto) || 0).toFixed(2)}?`)) return;
+  const resto = devs.slice(0, -1);
+  try {
+    await db.collection('documentos').doc(fsId).update({ devoluciones: resto });
+    logActividad('Devolución quitada', `${doc.docId || fsId} · $${(Number(ult.monto) || 0).toFixed(2)}`);
+    toast('Devolución quitada ↩');
+    if (document.getElementById('modalDoc').classList.contains('show')) openSheet({ ...doc, devoluciones: resto, _fsId: fsId });
+  } catch (e) { toast('No se pudo quitar la devolución.', 'err'); }
+}
+
 /* ─── Partial payment ─── */
 let pagoParcialFsId = null;
 
@@ -8023,7 +8163,7 @@ function renderHistorial() {
     const comps = compPendientes(d).length;
     const saldo = cbSaldo(d);
     const dias = grupo !== 'pagado' ? histDias(d) : 0;
-    const pill = grupo !== 'pagado' && dias > 15 ? ['Vencida', 'hr-p-venc'] : { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
+    const pill = grupo !== 'pagado' && dias > 15 ? ['Vencida', 'hr-p-venc'] : d.cerrada ? ['Cerrada', 'hr-p-parc'] : { pendiente: ['Pendiente', 'hr-p-pend'], parcial: ['Parcial', 'hr-p-parc'], pagado: ['Pagado', 'hr-p-ok'] }[grupo];
     const servicios = (d.items || []).map(i => i.s).join(', ');
     const principal = grupo === 'pendiente'
       ? `<button class="hr-btn ok" onclick="event.stopPropagation();marcarPagado('${id}')">${HR_ICON.check}<span>Pagado</span></button>`
@@ -8038,7 +8178,7 @@ function renderHistorial() {
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
       <span class="hr-fecha">${esc(d.fecha || '—')}${grupo !== 'pagado' && dias > 0 ? `<small class="${dias > 15 ? 'tarde' : ''}">hace ${dias} día${dias !== 1 ? 's' : ''}</small>` : ''}${d.aliado ? `<small>Aliado: ${esc(d.aliado)}</small>` : ''}</span>
-      <div class="hr-monto">$${(d.total || 0).toFixed(2)}${grupo === 'parcial' ? `<small>Debe $${saldo.toFixed(2)}</small>` : ''}</div>
+      <div class="hr-monto">$${(d.total || 0).toFixed(2)}${grupo === 'parcial' ? `<small>Debe $${saldo.toFixed(2)}</small>` : ''}${cbDevuelto(d) > 0.009 ? `<small>Devuelto $${cbDevuelto(d).toFixed(2)}</small>` : ''}</div>
       <div class="hr-acc">
         ${principal}
         <button class="hr-ico" title="Editar" onclick="event.stopPropagation();openEditModal('${id}')">${HR_ICON.edit}</button>
@@ -8049,7 +8189,7 @@ function renderHistorial() {
   const seccion = (titulo, color, docs, grupo, limite) => {
     if (!docs.length) return '';
     const visibles = limite && !_histVerTodo ? docs.slice(0, limite) : docs;
-    const total = docs.reduce((a, d) => a + (grupo === 'pagado' ? (d.total || 0) : cbSaldo(d)), 0);
+    const total = docs.reduce((a, d) => a + (grupo === 'pagado' ? (d.total || 0) - cbDevuelto(d) : cbSaldo(d)), 0);
     return `<div class="hr-sec">
       <div class="hr-sec-t"><span style="background:${color};"></span>${titulo}<em>${docs.length}</em><b>${cbMoney(total)}</b></div>
       <div class="hr-list">${visibles.map(d => fila(d, grupo)).join('')}</div>
@@ -8181,7 +8321,8 @@ async function saveEditDoc() {
     cli,
     ref,
     nota,
-    total,
+    // Factura cerrada: se mantiene lo que se dejó de cobrar
+    total: doc.cerrada ? Math.max(0, parseFloat((total - (Number(doc.cerrada.perdonado) || 0)).toFixed(2))) : total,
     items: [...editCart],
     pagado: type === 'recibo' ? true : (doc.pagado || false),
     metodoPago: document.getElementById('edit-mp').value || null,
@@ -8425,9 +8566,9 @@ function renderDashboard() {
   /* KPIs de FACTURAS — siempre totales, no filtran por período */
   const allDocs   = Object.values(docsMap);
   const cobrado   = allDocs.reduce((a, d) => {
-    if (d.pagado) return a + (d.total || 0);
-    if (d.pagadoParcial) return a + (d.montoPagado || 0);
-    return a;
+    if (d.pagado) return a + (d.total || 0) - cbDevuelto(d);
+    if (d.pagadoParcial) return a + (d.montoPagado || 0) - cbDevuelto(d);
+    return a - cbDevuelto(d);
   }, 0);
   const pendiente = allDocs.reduce((a, d) => {
     if (d.pagado) return a;
@@ -9080,7 +9221,7 @@ function clCalcularStats() {
     const k = ptNorm(d.cli); if (!k) return;
     const x = out[k] || (out[k] = { comprado: 0, debe: 0, n: 0, ultima: null, docs: [] });
     x.n++; x.docs.push(d);
-    x.comprado += (d.pagado || d.type === 'recibo') ? (d.total || 0) : (d.montoPagado || 0);
+    x.comprado += ((d.pagado || d.type === 'recibo') ? (d.total || 0) : (d.montoPagado || 0)) - cbDevuelto(d);
     x.debe += cbSaldo(d);
     const f = cbFecha(d.createdAt) || cbFecha(d.fecha);
     if (f && (!x.ultima || f > x.ultima)) x.ultima = f;
@@ -9100,7 +9241,7 @@ function abrirFichaCliente(id) {
   const nombre = clNombre(c), x = clStatsDe(c);
   const tel = String(c.telefono || '').replace(/[^0-9]/g, '');
   const docs = x.docs.slice().sort((a, b) => (cbFecha(b.createdAt)?.getTime() || 0) - (cbFecha(a.createdAt)?.getTime() || 0));
-  const est = d => d.pagado || d.type === 'recibo' ? ['Pagado', 'hr-p-ok'] : d.pagadoParcial ? ['Parcial', 'hr-p-parc'] : ['Pendiente', 'hr-p-pend'];
+  const est = d => d.cerrada ? ['Cerrada', 'hr-p-parc'] : d.pagado || d.type === 'recibo' ? ['Pagado', 'hr-p-ok'] : d.pagadoParcial ? ['Parcial', 'hr-p-parc'] : ['Pendiente', 'hr-p-pend'];
   ptModal(nombre, [c.empresa, c.telefono, c.correo].filter(Boolean).join(' · ') || 'Sin datos de contacto', `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
       <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Comprado</div><div class="cb-tile-v" style="font-size:22px;">${cbMoney(x.comprado)}</div></div>
@@ -10717,6 +10858,7 @@ function cbFecha(v) {
   if (typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) { const [d, m, y] = v.split('/'); return new Date(+y, +m - 1, +d, 12); }
   const d = new Date(v); return isNaN(d) ? null : d;
 }
+function cbDevuelto(d) { return (Array.isArray(d.devoluciones) ? d.devoluciones : []).reduce((a, x) => a + (Number(x.monto) || 0), 0); }
 function cbSaldo(d) { return (d.pagado || d.type === 'recibo') ? 0 : Math.max((d.total || 0) - (d.montoPagado || 0), 0); }
 function cbMoney(n) { return '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 /* Cada cobro con su fecha: pagos parciales registrados + saldo final al marcar pagada */
@@ -10732,6 +10874,8 @@ function cbCobros() {
     } else if (d.pagadoParcial && (d.montoPagado || 0) > sumaPagos + 0.009) {
       out.push({ f: cbFecha(d.createdAt) || cbFecha(d.fecha), m: (d.montoPagado || 0) - sumaPagos, d });
     }
+    // Devoluciones: restan en la fecha en que se devolvió el dinero
+    (Array.isArray(d.devoluciones) ? d.devoluciones : []).forEach(x => { const f = cbFecha(x.fecha); const m = Number(x.monto) || 0; if (f && m) out.push({ f, m: -m, d }); });
   });
   return out.filter(x => x.f);
 }
