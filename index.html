@@ -12187,7 +12187,7 @@ function celebrarPago(doc, prev) {
 }
 
 /* Panel de Altair: interruptores (config/automatizaciones) */
-let _auto = { cobrador: true, vendedor: true, briefing: true, correoPago: true };
+let _auto = { cobrador: true, vendedor: true, briefing: true, correoPago: true, smmAvisos: true, susCorreo: true, bienvenida: true, resenaAuto: true };
 function abrirAltair() {
   const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
     <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
@@ -12202,6 +12202,10 @@ function abrirAltair() {
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
     ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}
+    ${fila('smmAvisos', 'Seguidores que avisan solos', 'Cada 3 horas revisa tus pedidos en JustAnotherPanel. Al completarse te avisa por Telegram y le manda un correo al cliente; si queda parcial, se cancela o se traba 48 h, te avisa para decidir.')}
+    ${fila('susCorreo', 'Factura de suscripción por correo', '5 días antes del vencimiento se crea la factura y le llega al cliente por correo. Te queda el botón de WhatsApp en Telegram; a los 15 días sin pagar te avisa para pausar el servicio.')}
+    ${fila('bienvenida', 'Bienvenida al pagar', 'Quien paga una página web o un registro de empresa recibe un correo con los pasos, el enlace al brief y la fecha estimada de entrega.')}
+    ${fila('resenaAuto', 'Pedir reseña en Google', 'A los 3 días de marcar un proyecto como completado, el cliente recibe un correo con el enlace directo para dejar su reseña.')}
     ${fila('chaching', 'Cha-ching al cobrar', 'Sonido de caja registradora y confeti en este panel cuando entra un pago.')}
     <div class="alt-acts">
       <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>

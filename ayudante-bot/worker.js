@@ -194,7 +194,10 @@ export default {
       ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
       ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
     }
-    else if (event.cron === '30 * * * *') ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
+    else if (event.cron === '30 * * * *') {
+      ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
+      if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
+    }
     else ctx.waitUntil(enviarResumenMensual(env));
   },
 
@@ -703,7 +706,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-31a';
+const WORKER_VERSION = '2026-10-31b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -926,10 +929,36 @@ async function tareaDiaria(env) {
     creadas.push({ s, id, docData });
   }
 
+  const auto = await automatizaciones(env, token);
+  // 1b) La factura de la suscripción le llega al cliente por correo
+  if (auto.susCorreo) for (const c of creadas) {
+    const correo = c.docData.clienteCorreo;
+    if (!correo) { c.correo = null; continue; }
+    const m = correoFacturaSusHTML(c.s, c.id, c.docData);
+    c.correo = await enviarCorreoBot(env, correo, m.asunto, m.html, m.texto).catch(() => false) ? correo : null;
+  }
+  // 1c) Suscripciones con 15+ días de atraso: aviso para pausar el servicio (una vez por factura)
+  const pausar = [];
+  for (const d of docs) {
+    if (!d.suscripcionId || !d.periodo || saldoDoc(d) <= 0.009 || d.avisoPausa) continue;
+    const dias = diasEntre(String(d.periodo).slice(0, 10), hoy);
+    if (dias < 15) continue;
+    pausar.push({ d, dias });
+    await fsUpdate(env, `documentos/${d._id}`, { avisoPausa: new Date().toISOString() }, ['avisoPausa'], token).catch(() => {});
+  }
+  // 1d) Bienvenida a quien pagó una web o un registro de empresa y aún no la recibió
+  const bienvenidas = [];
+  if (auto.bienvenida) for (const d of docs) {
+    if (d.bienvenidaAt || !(d.pagado || d.type === 'recibo' || d.pagadoParcial)) continue;
+    const f = fechaISO(d.fechaPago) || fechaISO((d.pagos || []).slice(-1)[0]?.fecha) || fechaISO(d.fecha);
+    if (!f || diasEntre(f, hoy) > 3) continue;
+    const r = await bienvenidaCliente(env, token, d._id, d).catch(() => null);
+    if (r?.enviado) bienvenidas.push({ cliente: d.cli, correo: r.correo });
+  }
+
   // 2) Recordatorio por correo para dejar reseña en Google (clientes felices que no hicieron clic)
   const resenas = await recordarResenas(env, token, docs, correoDe).catch(e => { console.warn('Reseñas', e); return []; });
-  const automaticos = await correosAutomaticos(env, token, docs, clientes, correoDe).catch(e => { console.warn('Correos automáticos', e); return []; });
-  const auto = await automatizaciones(env, token);
+  const automaticos = await correosAutomaticos(env, token, docs, clientes, correoDe, auto).catch(e => { console.warn('Correos automáticos', e); return []; });
   const cobrador = auto.cobrador ? await cobradorAmable(env, token, docs, correoDe, telDe).catch(e => { console.warn('Cobrador', e); return { enviados: [], llamar: [] }; }) : { enviados: [], llamar: [] };
 
   // 3) Resumen de cobros
@@ -944,7 +973,7 @@ async function tareaDiaria(env) {
   L.push(`☀️ <b>Resumen de cobros</b> · ${escHtml(fechaCorta(hoy))}`);
   if (creadas.length) {
     L.push('', `🧾 <b>Facturas de suscripción creadas (${creadas.length})</b>`);
-    creadas.forEach(({ s, id, docData }) => L.push(`• ${escHtml(s.cliente)} — ${escHtml(docData.items[0].s)} · ${dinero(docData.total)} · <a href="${linkFac(id)}">ver</a> · <a href="${wa(s.cliente, `Hola ${String(s.cliente).split(' ')[0]}! Te comparto la factura de tu ${[s.servicio, s.dominio].filter(Boolean).join(' ')} (${dinero(docData.total)}):\n${linkFac(id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">enviar por WhatsApp</a>`));
+    creadas.forEach(({ s, id, docData, correo }) => L.push(`• ${escHtml(s.cliente)} — ${escHtml(docData.items[0].s)} · ${dinero(docData.total)}${correo ? ` · 📧 enviada a ${escHtml(correo)}` : auto.susCorreo ? ' · ⚠️ sin correo, mándala por WhatsApp' : ''} · <a href="${linkFac(id)}">ver</a> · <a href="${wa(s.cliente, `Hola ${String(s.cliente).split(' ')[0]}! Te comparto la factura de tu ${[s.servicio, s.dominio].filter(Boolean).join(' ')} (${dinero(docData.total)}):\n${linkFac(id)}\n\nDesde el enlace puedes pagar y subir tu comprobante. ¡Gracias!`)}">enviar por WhatsApp</a>`));
   }
   if (porRevisar.length) {
     L.push('', `📎 <b>Comprobantes por revisar (${porRevisar.length})</b>`);
@@ -960,6 +989,14 @@ async function tareaDiaria(env) {
     L.push('', `🔁 <b>Suscripciones</b>`);
     subsAtrasadas.forEach(s => L.push(`• 🔴 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · atrasada ${-diasEntre(hoy, s.proximoPago)} días`));
     subsPronto.forEach(s => L.push(`• 🟡 ${escHtml(s.cliente)} — ${escHtml([s.servicio, s.dominio].filter(Boolean).join(' · '))} · ${dinero(s.precio)} · vence ${escHtml(fechaCorta(s.proximoPago))}${s.ultimaFacturaPeriodo === s.proximoPago ? ' (factura enviada)' : ''}`));
+  }
+  if (pausar.length) {
+    L.push('', `⏸️ <b>Suscripciones sin pagar 15+ días — considera pausar el servicio</b>`);
+    pausar.forEach(({ d, dias }) => L.push(`• ${escHtml(d.cli)} · ${escHtml((d.items || [])[0]?.s || '')} · ${dinero(saldoDoc(d))} · ${dias} días de atraso · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Tu ${(d.items || [])[0]?.s || 'servicio'} tiene ${dias} días de atraso (${dinero(saldoDoc(d))}). Para no pausar el servicio, puedes pagar aquí:\n${linkFac(d._id)}\n\n¡Gracias!`)}">avisar por WhatsApp</a>`));
+  }
+  if (bienvenidas.length) {
+    L.push('', `🎉 <b>Bienvenida enviada (${bienvenidas.length})</b>`);
+    bienvenidas.forEach(r => L.push(`• ${escHtml(r.cliente)} → ${escHtml(r.correo)}`));
   }
   if (cobrador.enviados.length) {
     L.push('', `✉️ <b>Recordatorios de pago enviados (${cobrador.enviados.length})</b>`);
@@ -1173,6 +1210,11 @@ const promedioEnc = e => Number(e.promedio) || ((Number(e.estrellas_calidad) || 
 
 async function handleResena(request, env) {
   const id = new URL(request.url).searchParams.get('e') || '';
+  const docId = new URL(request.url).searchParams.get('d') || '';
+  if (/^[A-Za-z0-9_-]{1,64}$/.test(docId)) {
+    try { const token = await firebaseLogin(env); await fsUpdate(env, `documentos/${docId}`, { resenaClick: true, resenaClickAt: new Date() }, ['resenaClick', 'resenaClickAt'], token); }
+    catch (e) { console.warn('Reseña clic', e); }
+  }
   if (/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
     try {
       const token = await firebaseLogin(env);
@@ -1314,6 +1356,15 @@ function correoPagoHTML(doc, fsId, monto) {
   };
 }
 async function correoPagoCliente(env, token, fsId, monto, por) {
+  const r = await correoPagoCliente0(env, token, fsId, monto, por);
+  // Primer pago de una web o un registro de empresa: correo de bienvenida
+  if ((await automatizaciones(env, token)).bienvenida) {
+    const b = await bienvenidaCliente(env, token, fsId).catch(e => { console.warn('Bienvenida', e); return null; });
+    if (b?.enviado) r.bienvenida = b.correo;
+  }
+  return r;
+}
+async function correoPagoCliente0(env, token, fsId, monto, por) {
   try {
     if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return { enviado: false, motivo: 'el correo no está configurado en Cloudflare' };
     if (!(await automatizaciones(env, token)).correoPago) return { enviado: false };
@@ -1333,7 +1384,7 @@ async function correoPagoCliente(env, token, fsId, monto, por) {
     return { enviado: true, correo };
   } catch (e) { console.warn('Correo de pago', e); return { enviado: false, motivo: e.message || 'error' }; }
 }
-const lineaCorreoPago = r => r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '';
+const lineaCorreoPago = r => (r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '') + (r.bienvenida ? `\n🎉 Bienvenida enviada a ${escHtml(r.bienvenida)}` : '');
 
 async function recordarResenas(env, token, docs, correoDe) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
@@ -2056,7 +2107,7 @@ async function marcarEnviado(env, token, clave, datos) {
     body: JSON.stringify({ fields: toValue({ ...datos, fecha: new Date() }).mapValue.fields }) }).catch(() => {});
 }
 
-async function correosAutomaticos(env, token, docs, clientes, correoDe) {
+async function correosAutomaticos(env, token, docs, clientes, correoDe, auto = {}) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
   const hoy = hoyVE(), mmdd = hoy.slice(5), anio = hoy.slice(0, 4);
   const enviados = [];
@@ -2064,8 +2115,30 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe) {
   const bajas = new Set(clientes.filter(c => c.noCorreos).map(c => normNombre(nombreCli(c))));
   const reales = docs.filter(d => !String(d._id).startsWith('__diag'));
 
-  // 1) Encuesta unos días después de completar el proyecto
+  // 1) A los 3 días de entregar: pedido directo de reseña en Google (con la encuesta como opción privada)
   for (const d of reales) {
+    if (auto.resenaAuto === false || !d.proyectoCompletadoAt || d.resenaPedidaAt || d.encuestaCompletada || d.encuestaEnviadaAt || bajas.has(normNombre(d.cli))) continue;
+    const f = fechaISO(d.proyectoCompletadoAt);
+    if (!f || diasEntre(f, hoy) < DIAS_ENCUESTA || diasEntre(f, hoy) > 45) continue;
+    const correo = d.clienteCorreo || correoDe(d.cli);
+    if (!correo) continue;
+    const nombre = String(d.cli || '').split(' ')[0] || 'hola';
+    const servicio = (d.items || [])[0]?.s || 'tu proyecto';
+    const en = d.idioma === 'en';
+    const link = `${BOT_URL}/resena?d=${d._id}`;
+    const ok = await enviarCorreoBot(env, correo, en ? `${nombre}, would you leave us a Google review?` : `${nombre}, ¿nos dejas tu reseña en Google?`,
+      correoBotHTML(en
+        ? { icono: 'estrellas', titulo: `Thank you, ${nombre}!`, texto: `A few days ago we delivered ${servicio}. If you liked working with us, would you take 30 seconds to share it on Google? Your review helps other businesses find us.`, boton: 'Leave my Google review', link, nota: `Something we could improve? Tell us privately: ${SITIO}/encuesta.html?id=${d._id}` }
+        : { icono: 'estrellas', titulo: `¡Gracias, ${nombre}!`, texto: `Hace unos días te entregamos ${servicio}. Si te gustó trabajar con nosotros, ¿nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.`, boton: 'Dejar mi reseña en Google', link, nota: `¿Algo que podamos mejorar? Cuéntanos en privado: ${SITIO}/encuesta.html?id=${d._id}` }),
+      en ? `Thank you, ${nombre}! Would you leave us a Google review? ${link}` : `¡Gracias, ${nombre}! ¿Nos dejas tu reseña en Google? ${link}`);
+    if (ok) {
+      await fsUpdate(env, `documentos/${d._id}`, { resenaPedidaAt: new Date(), encuestaEnviadaAt: new Date() }, ['resenaPedidaAt', 'encuestaEnviadaAt'], token).catch(() => {});
+      enviados.push({ tipo: 'Reseña en Google', cliente: d.cli, correo });
+    }
+  }
+  // 1b) (si el pedido de reseña está apagado) encuesta unos días después de completar el proyecto
+  for (const d of reales) {
+    if (auto.resenaAuto !== false) break;
     if (!d.proyectoCompletadoAt || d.encuestaCompletada || d.encuestaEnviadaAt) continue;
     const f = fechaISO(d.proyectoCompletadoAt);
     if (!f || diasEntre(f, hoy) < DIAS_ENCUESTA || diasEntre(f, hoy) > 45) continue;
@@ -2791,7 +2864,132 @@ async function handleSmm(request, env) {
 ══════════════════════════════════════════════════════════════ */
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
-  return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false };
+  return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BIENVENIDA AL PAGAR (web o registro de empresa)
+   Pasos, enlace al brief y fecha estimada de entrega. Una sola vez por factura.
+══════════════════════════════════════════════════════════════ */
+const RE_WEB = /web|sitio|p[áa]gina|landing|tienda en l[ií]nea|e-?commerce/i;
+const RE_LLC = /\bllc\b|registro de (la )?empresa|formaci[oó]n de (la )?empresa|\bein\b|business registration|company registration/i;
+// Días hábiles de entrega, contados desde que llega la información del cliente
+function plazoEntrega(texto) {
+  if (RE_LLC.test(texto)) return { dias: 15, es: '7 a 15 días hábiles (depende del Estado y del IRS)', en: '7 to 15 business days (depends on the State and the IRS)' };
+  if (/landing|one ?page|una sola p[áa]gina/i.test(texto)) return { dias: 3, es: '2 a 3 días hábiles', en: '2 to 3 business days' };
+  if (/premium|tienda|e-?commerce|cat[áa]logo|reservas/i.test(texto)) return { dias: 15, es: '10 a 15 días hábiles', en: '10 to 15 business days' };
+  return { dias: 7, es: '5 a 7 días hábiles', en: '5 to 7 business days' };
+}
+function sumarHabiles(iso, n) {
+  const d = new Date(iso + 'T12:00:00Z');
+  while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); const w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; }
+  return d.toISOString().slice(0, 10);
+}
+async function bienvenidaCliente(env, token, fsId, docPrevio) {
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return { enviado: false };
+  const doc = docPrevio || await fsGet(env, `documentos/${fsId}`, token);
+  if (!doc || doc.bienvenidaAt || doc.suscripcionId || doc.aliado || doc.paqueteAliado) return { enviado: false };
+  if (!(doc.pagado || doc.type === 'recibo' || doc.pagadoParcial)) return { enviado: false };
+  const texto = (doc.items || []).map(i => i.s || '').join(' · ');
+  const esLlc = RE_LLC.test(texto), esWeb = RE_WEB.test(texto);
+  if (!esLlc && !esWeb) return { enviado: false };
+  const correo = String(doc.clienteCorreo || await correoDeCliente(env, token, doc.cli) || '').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { enviado: false };
+  const en = doc.idioma === 'en';
+  const nombre = String(doc.cli || '').split(' ')[0] || (en ? 'there' : 'hola');
+  const plazo = plazoEntrega(texto);
+  const fechaEst = sumarHabiles(hoyVE(), plazo.dias);
+  const fechaTxt = new Date(fechaEst + 'T12:00:00Z').toLocaleDateString(en ? 'en-US' : 'es-ES', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const link = `${SITIO}/factura-publica.html?id=${fsId}${en ? '&lang=en' : ''}`;
+  const premium = esWeb || /premium/i.test(texto);
+  const pasos = esLlc
+    ? (en ? [['1. Your details', 'We confirm name and info'], ['2. State filing', 'Formation document'], ['3. EIN', 'With the IRS'], ['4. Operating Agreement', 'Complete and notarized'], ...(premium ? [['5. Web and Google', 'Website, domain, hosting']] : [])]
+          : [['1. Tus datos', 'Confirmamos nombre e información'], ['2. Registro', 'Ante el Estado'], ['3. EIN', 'Ante el IRS'], ['4. Acuerdo Operativo', 'Completo y notariado'], ...(premium ? [['5. Web y Google', 'Página, dominio y hosting'] ] : [])])
+    : (en ? [['1. Brief', 'Fill it out from the button'], ['2. Logo and photos', 'Reply here or WhatsApp'], ['3. Design', 'One round of changes'], ['4. Launch', 'Your site goes live']]
+          : [['1. Brief', 'Llénalo desde el botón'], ['2. Logo y fotos', 'Respóndenos o por WhatsApp'], ['3. Diseño', 'Una ronda de cambios'], ['4. Publicación', 'Tu página en línea']]);
+  const servicio = (doc.items || [])[0]?.s || (esLlc ? (en ? 'your company registration' : 'el registro de tu empresa') : (en ? 'your website' : 'tu página web'));
+  const html = correoBotHTML(en
+    ? { icono: esLlc ? 'cohete' : 'web', titulo: `Welcome, ${nombre}!`, texto: `Thank you for trusting DGP Global Group with ${servicio}. Your payment is confirmed and we are getting started. Here is how it works:`, resumen: [...pasos, ['Estimated delivery', `Around ${fechaTxt}`, '#059669']],
+        boton: esWeb && !esLlc ? 'Fill out my brief' : 'View my invoice', link, nota: `Usual timeline: ${plazo.en}, starting once we receive your information. Questions? Just reply to this email.` }
+    : { icono: esLlc ? 'cohete' : 'web', titulo: `¡Bienvenido, ${nombre}!`, texto: `Gracias por confiar en DGP Global Group para ${servicio}. Tu pago está confirmado y ya empezamos. Así funciona:`, resumen: [...pasos, ['Entrega estimada', `Alrededor del ${fechaTxt}`, '#059669']],
+        boton: esWeb && !esLlc ? 'Llenar mi brief' : 'Ver mi factura', link, nota: `Plazo habitual: ${plazo.es}, contados desde que recibimos tu información. ¿Dudas? Responde este correo.` });
+  const asunto = en ? `Welcome to DGP Global Group, ${nombre}!` : `¡Bienvenido a DGP Global Group, ${nombre}!`;
+  const txt = (en ? `Welcome, ${nombre}! Your payment is confirmed. Next steps:\n` : `¡Bienvenido, ${nombre}! Tu pago está confirmado. Próximos pasos:\n`) + pasos.map(p => `${p[0]} (${p[1]})`).join('\n') + `\n\n${en ? 'Estimated delivery' : 'Entrega estimada'}: ${en ? plazo.en : plazo.es}\n${link}`;
+  if (!(await enviarCorreoBot(env, correo, asunto, html, txt))) return { enviado: false };
+  await fsUpdate(env, `documentos/${fsId}`, { bienvenidaAt: new Date().toISOString(), entregaEstimada: fechaEst }, ['bienvenidaAt', 'entregaEstimada'], token).catch(() => {});
+  return { enviado: true, correo };
+}
+
+/* Correo con la factura de la suscripción (5 días antes del vencimiento) */
+function correoFacturaSusHTML(s, id, d) {
+  const nombre = String(s.cliente || '').split(' ')[0] || 'hola';
+  const serv = [s.servicio, s.dominio].filter(Boolean).join(' · ') || 'tu suscripción';
+  const link = `${SITIO}/factura-publica.html?id=${id}`;
+  return {
+    asunto: `Tu factura de ${serv} · vence el ${fechaCorta(s.proximoPago)}`,
+    html: correoBotHTML({ icono: 'factura', titulo: `Hola, ${nombre}`, texto: `Tu ${serv} se renueva pronto. Te dejamos la factura para que la pagues antes del vencimiento y el servicio siga activo sin interrupciones.`,
+      resumen: [['Servicio', serv], ['Período', d.items[0].s.replace(/^.*\(/, '').replace(/\)$/, '')], ['Vence', fechaCorta(s.proximoPago)], ['Total', dinero(d.total), '#166baf']],
+      boton: 'Ver y pagar mi factura', link, nota: 'Desde el enlace puedes pagar y subir tu comprobante. ¡Gracias!' }),
+    texto: `Hola ${nombre}! Tu ${serv} se renueva el ${fechaCorta(s.proximoPago)}. Factura (${dinero(d.total)}): ${link}`
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PEDIDOS DE SEGUIDORES (JustAnotherPanel) — cada 3 horas
+   Completado → aviso a ti y correo al cliente · Parcial/cancelado o
+   trabado 48 h sin avanzar → aviso a ti para decidir (reposición, cerrar
+   la factura con lo pagado o devolución).
+══════════════════════════════════════════════════════════════ */
+const SMM_FINAL = ['Completed', 'Partial', 'Canceled'];
+async function revisarPedidosSmm(env) {
+  if (!env.JAP_API_KEY) return;
+  const token = await firebaseLogin(env);
+  const auto = await automatizaciones(env, token);
+  if (!auto.smmAvisos) return;
+  const pedidos = (await fsList(env, 'smmPedidos', token).catch(() => [])).filter(p => p.japOrder && !p.avisoFinal);
+  if (!pedidos.length) return;
+  const ahora = Date.now();
+  const L = [];
+  for (let i = 0; i < pedidos.length; i += 100) {
+    const lote = pedidos.slice(i, i + 100);
+    const est = await japLlamar(env, { action: 'status', orders: lote.map(p => p.japOrder).join(',') }).catch(() => ({}));
+    for (const p of lote) {
+      const x = est[p.japOrder]; if (!x || x.error) continue;
+      const estado = x.status || p.estado, remains = x.remains != null ? Number(x.remains) : null;
+      const cambio = estado !== p.estado || remains !== (p.remains != null ? Number(p.remains) : null);
+      const upd = { estado, remains, ...(cambio || !p.ultimoCambioAt ? { ultimoCambioAt: new Date().toISOString(), avisoTrabado: false } : {}) };
+      const cant = Number(p.cantidad) || 0, que = `${cant.toLocaleString('en-US')} ${p.tipo || 'seguidores'} · ${p.red || ''}`;
+      // Pedidos viejos que ya habían terminado antes de activar esto: se marcan sin avisar
+      const viejo = p.createdAt && ahora - new Date(p.createdAt).getTime() > 7 * 864e5;
+      if (SMM_FINAL.includes(estado) && viejo && SMM_FINAL.includes(p.estado)) { upd.avisoFinal = 'previo'; }
+      else if (SMM_FINAL.includes(estado)) {
+        upd.avisoFinal = new Date().toISOString();
+        if (estado === 'Completed') {
+          let correo = null;
+          if (p.facturaId) { const f = await fsGet(env, `documentos/${p.facturaId}`, token).catch(() => null); correo = f?.clienteCorreo || null; }
+          if (!correo && p.cliente) correo = await correoDeCliente(env, token, p.cliente).catch(() => null);
+          let enviado = false;
+          if (correo && !p.correoCompletado) {
+            const nombre = String(p.cliente || '').split(' ')[0] || 'hola';
+            enviado = await enviarCorreoBot(env, correo, `¡Listo, ${nombre}! Tu servicio de ${p.red || 'redes'} se completó`,
+              correoBotHTML({ icono: 'marketing', titulo: `¡Servicio completado, ${nombre}!`, texto: `Terminamos de entregar ${cant.toLocaleString('en-US')} ${p.tipo || 'seguidores'} en ${p.red || 'tu cuenta'}. Revisa tu perfil y cuéntanos qué tal. Si notas alguna baja en los próximos días, escríbenos y lo reponemos.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Crecimiento en redes' }),
+              `¡Servicio completado! Entregamos ${cant} ${p.tipo || 'seguidores'} en ${p.red || 'tu cuenta'}.`).catch(() => false);
+            if (enviado) upd.correoCompletado = new Date().toISOString();
+          }
+          L.push(`✅ <b>${escHtml(p.cliente || '—')}</b> · ${escHtml(que)} · completado${enviado ? ` · 📧 avisado a ${escHtml(correo)}` : ''}`);
+        } else {
+          const falta = remains != null ? ` · faltan ${remains.toLocaleString('en-US')} de ${cant.toLocaleString('en-US')}` : '';
+          L.push(`⚠️ <b>${escHtml(p.cliente || '—')}</b> · ${escHtml(que)} · <b>${estado === 'Partial' ? 'quedó parcial' : 'cancelado'}</b>${escHtml(falta)} · JAP #${escHtml(p.japOrder)}\n   → Puedes pedir de nuevo, o en la factura usar "Cerrar con lo pagado" o "Registrar devolución".`);
+        }
+      } else if (!upd.ultimoCambioAt && !p.avisoTrabado && p.ultimoCambioAt && ahora - new Date(p.ultimoCambioAt).getTime() > 48 * 3600e3) {
+        upd.avisoTrabado = true;
+        L.push(`🐢 <b>${escHtml(p.cliente || '—')}</b> · ${escHtml(que)} · <b>sin avanzar hace 48 h</b>${remains != null ? ` (faltan ${remains.toLocaleString('en-US')})` : ''} · JAP #${escHtml(p.japOrder)}\n   → Abre un ticket en JAP con ese número.`);
+      }
+      await fsUpdate(env, `smmPedidos/${p._id}`, upd, Object.keys(upd), token).catch(e => console.warn('smm upd', e));
+    }
+  }
+  if (L.length) await tgEnviar(env, ['📈 <b>Pedidos de seguidores</b>', '', ...L, '', `<a href="${SITIO}/">Abrir el panel</a>`].join('\n'));
 }
 
 /* ══════════════════════════════════════════════════════════════
