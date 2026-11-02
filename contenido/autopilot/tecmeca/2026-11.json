@@ -1,0 +1,47 @@
+{
+  "titulo": "Servicios Tecmeca · noviembre 2026",
+  "items": [
+    {
+      "titulo": "¿Tu diésel en modo de emergencia?",
+      "archivo": "01-diesel-def-egr-es.jpg",
+      "archivoEn": "01-diesel-def-egr-en.jpg",
+      "texto": "🚛 ¿Tu camioneta diésel entró en modo de emergencia o perdió potencia? Diagnosticamos y reparamos sistemas DEF/AdBlue, SCR y EGR: sensores NOx, inyector de DEF, válvula y enfriador EGR, y programación de módulos. Vamos a donde estés en todo Dallas–Fort Worth.\n📞 Llamada, texto o WhatsApp: (214) 930-7707\n👉 https://tecmecatx.com/\n\n🇺🇸 Diesel stuck in limp mode? We diagnose and repair DEF/AdBlue, SCR and EGR systems at your location anywhere in DFW. Call, text or WhatsApp (214) 930-7707.\n\n#DieselRepair #DEF #AdBlue #EGR #DallasFortWorth #ServicioMovil #Tecmeca",
+      "formato": "carrusel"
+    },
+    {
+      "titulo": "Más potencia. Más respuesta.",
+      "archivo": "02-chip-tuning-es.jpg",
+      "archivoEn": "02-chip-tuning-en.jpg",
+      "texto": "🏁 Más potencia, mejor respuesta y un motor que se siente como nuevo. Con chip tuning reprogramamos la computadora de tu vehículo con equipo profesional, y con eco tuner optimizamos el consumo de combustible sin perder desempeño.\n📞 (214) 930-7707 · Servicio móvil en todo DFW\n👉 https://tecmecatx.com/\n\n🇺🇸 More power, sharper response. Chip tuning and eco tuning with pro equipment, done at your location. Call or text (214) 930-7707.\n\n#ChipTuning #EcoTuner #ECUTune #DFW #Tecmeca",
+      "formato": "carrusel"
+    },
+    {
+      "titulo": "¿Cambiaste la computadora?",
+      "archivo": "03-computadoras-es.jpg",
+      "archivoEn": "03-computadoras-en.jpg",
+      "texto": "💻 ¿Cambiaste la computadora de tu carro y no enciende? Programamos y clonamos computadoras (ECU, TCM, BCM), instalamos y configuramos módulos y resolvemos problemas de inmovilizador y llaves. Todo en tu ubicación.\n📞 (214) 930-7707\n👉 https://tecmecatx.com/\n\n🇺🇸 Replaced your car's computer? We program and clone ECUs, set up modules and fix immobilizer and key issues, all at your location. (214) 930-7707.\n\n#ProgramacionECU #ECUProgramming #ECUCloning #ImmoOff #DallasFortWorth #Tecmeca",
+      "formato": "carrusel"
+    },
+    {
+      "titulo": "¿Se encendió esta luz?",
+      "archivo": "04-luces-airbag-es.jpg",
+      "archivoEn": "04-luces-airbag-en.jpg",
+      "texto": "🚨 ¿Se encendió el check engine o la luz del airbag? Leemos y eliminamos códigos de falla, reseteamos módulos de airbag después de un choque y te explicamos qué tiene tu vehículo. Ford, Chevrolet, Dodge · Ram, Jeep, Chrysler, Toyota, Honda, Nissan, Mitsubishi, Hyundai y Kia.\n📞 (214) 930-7707\n👉 https://tecmecatx.com/\n\n🇺🇸 Check engine or airbag light on? We read and clear fault codes and reset airbag modules at your location in DFW. (214) 930-7707.\n\n#CheckEngine #Airbag #Diagnostico #CarRepair #DFW #Tecmeca",
+      "formato": "carrusel"
+    },
+    {
+      "titulo": "Electrónica automotriz a domicilio",
+      "archivo": "05-flyer-servicios-es.jpg",
+      "archivoEn": "05-flyer-servicios-en.jpg",
+      "texto": "🔧 Electrónica automotriz a domicilio en todo Dallas–Fort Worth: diésel DEF/EGR, chip tuning, programación de ECU, clonación de computadoras, reset de airbag, immo off y llaves. Escanea el código o escríbenos y vamos a donde estés.\n📞 (214) 930-7707\n👉 https://tecmecatx.com/\n\n🇺🇸 Mobile auto electronics anywhere in DFW. Scan the code or message us and we'll come to you. (214) 930-7707.\n\n#Tecmeca #ServicioMovil #MobileMechanic #DallasFortWorth",
+      "formato": "carrusel"
+    },
+    {
+      "titulo": "Todos nuestros servicios",
+      "archivo": "06-flyer-completo-es.jpg",
+      "archivoEn": "06-flyer-completo-en.jpg",
+      "texto": "📋 Todos nuestros servicios en un solo lugar. Programación, diagnóstico y chip tuning con equipo profesional, en tu casa, tu trabajo o donde se quedó tu vehículo. Hablamos español e inglés.\n📞 Llamada, texto o WhatsApp: (214) 930-7707\n👉 https://tecmecatx.com/\n\n🇺🇸 All our services in one place: programming, diagnostics and chip tuning at your location. We speak English and Spanish. (214) 930-7707.\n\n#Tecmeca #AutoElectrical #ECU #DFW #NegociosHispanos",
+      "formato": "carrusel"
+    }
+  ]
+}
