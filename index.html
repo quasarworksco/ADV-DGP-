@@ -12323,11 +12323,17 @@ async function cambiarAuto(k, on) {
 ═══════════════════════════════════════════════════════ */
 let _wb = { lista: null, filtro: 'todas', hist: null };
 const wbHost = d => String(d || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+// Su plan: por la suscripción con la que se agregó, por el mismo dominio o por el mismo cliente
 function wbSubs(w) {
-  const h = wbHost(w.dominio);
-  const del = suscripcionesList.filter(s => s.estado !== 'cancelada' && wbHost(s.dominio) === h);
-  return { hosting: del.find(s => s.tipo !== 'dominio'), dominio: del.find(s => s.tipo === 'dominio') };
+  const h = wbHost(w.dominio), c = ptNorm(w.cliente);
+  const vivas = suscripcionesList.filter(s => s.estado !== 'cancelada');
+  const del = vivas.filter(s => s._id === w.suscripcionId || (h && wbHost(s.dominio) === h));
+  const delCli = vivas.filter(s => c && ptNorm(s.cliente) === c);
+  const hosting = del.find(s => s.tipo !== 'dominio') || delCli.find(s => s.tipo === 'hosting') || null;
+  const dominio = del.find(s => s.tipo === 'dominio') || delCli.find(s => s.tipo === 'dominio') || null;
+  return { hosting, dominio };
 }
+const wbEsDominio = d => /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(wbHost(d));
 function wbFecha(iso) { const d = ptDate(iso); return d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) }) : ''; }
 const wbPronto = iso => { const d = ptDate(iso); return d && (d - new Date()) / 864e5 <= 30; };
 async function renderWebs(fresco) {
@@ -12391,30 +12397,51 @@ function wbPintarHist() {
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-top:6px"><span>${esc(wbFecha(celdas[0][0]))}</span><span>${con.length ? `${con.length - malas} de ${con.length} días sin caídas${malas ? ' · ' + malas + ' día' + (malas > 1 ? 's' : '') + ' con caída' : ''}` : 'Aún sin datos: se llena con las revisiones de cada hora'}</span><span>Hoy</span></div></div>`;
 }
 function wbAgregar() {
-  const ya = new Set((_wb.lista || []).map(w => wbHost(w.dominio)));
-  const desdeSus = []; suscripcionesList.filter(s => s.estado === 'activa' && s.dominio && !ya.has(wbHost(s.dominio))).forEach(s => { if (!desdeSus.some(x => wbHost(x.dominio) === wbHost(s.dominio))) desdeSus.push(s); });
+  const yaDom = new Set((_wb.lista || []).map(w => wbHost(w.dominio)));
+  const yaSus = new Set((_wb.lista || []).map(w => w.suscripcionId).filter(Boolean));
+  const yaCli = new Set((_wb.lista || []).map(w => ptNorm(w.cliente)));
+  // Una fila por cliente con hosting activo que aún no está anotado
+  const pend = [];
+  suscripcionesList.filter(s => s.estado === 'activa' && (s.tipo === 'hosting' || s.dominio)).forEach(s => {
+    if (yaSus.has(s._id) || yaDom.has(wbHost(s.dominio)) || yaCli.has(ptNorm(s.cliente))) return;
+    if (pend.some(x => ptNorm(x.cliente) === ptNorm(s.cliente))) return;
+    pend.push(s);
+  });
+  _wb.pend = pend;
   ptModal('Agregar web', 'La revisamos cada hora y te avisamos si se cae', `<div class="rd-form">
     <div class="ff"><label>Cliente</label><input id="wb-cli" list="wb-cli-l" placeholder="Nombre del cliente"><datalist id="wb-cli-l">${clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('')}</datalist></div>
     <div class="ff"><label>Dominio de la web</label><input id="wb-dom" placeholder="ejemplo.com"></div>
     <button class="ll-btn" style="background:var(--blue)" onclick="wbGuardar()">Agregar</button>
-    ${desdeSus.length ? `<div class="ll-sub" style="margin-top:12px"><b>En Suscripciones hay ${desdeSus.length} dominio${desdeSus.length > 1 ? 's' : ''} sin anotar:</b> ${desdeSus.slice(0, 8).map(s => esc(wbHost(s.dominio))).join(', ')}${desdeSus.length > 8 ? '…' : ''}</div>
-      <button class="ll-btn" style="background:#059669;margin-top:6px" onclick="wbImportar()">Agregar los ${desdeSus.length} desde Suscripciones</button>` : ''}
+    ${pend.length ? `<div class="ll-sub" style="margin-top:14px"><b>Clientes con hosting en Suscripciones (${pend.length})</b><br>Revisa o escribe el dominio de cada uno. Los que dejes vacíos no se agregan.</div>
+      <div style="max-height:46vh;overflow:auto;margin-top:6px;display:flex;flex-direction:column;gap:6px">
+      ${pend.map((x, i) => `<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:8px;align-items:center">
+        <div style="font-size:12.5px;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.cliente || '—')}</b><span style="color:var(--text-soft);font-size:11px">${esc(x.servicio || x.tipo || '')}${x.dominio && !wbEsDominio(x.dominio) ? ' · ' + esc(x.dominio) : ''}</span></div>
+        <input id="wb-p-${i}" value="${wbEsDominio(x.dominio) ? esc(wbHost(x.dominio)) : ''}" placeholder="sudominio.com" style="padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:12.5px;background:var(--surface,#fff);color:inherit;min-width:0"></div>`).join('')}
+      </div>
+      <button class="ll-btn" style="background:#059669;margin-top:8px" onclick="wbImportar()">Agregar las que tienen dominio</button>` : ''}
   </div>`);
 }
 async function wbGuardar() {
   const cliente = document.getElementById('wb-cli').value.trim(), dominio = wbHost(document.getElementById('wb-dom').value);
-  if (!cliente || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) { toast('Escribe el cliente y un dominio válido (ejemplo.com)', 'err'); return; }
+  if (!cliente || !wbEsDominio(dominio)) { toast('Escribe el cliente y un dominio válido (ejemplo.com)', 'err'); return; }
   if ((_wb.lista || []).some(w => wbHost(w.dominio) === dominio)) { toast('Esa web ya está anotada', 'err'); return; }
   try { await db.collection('webs').add({ cliente, dominio, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); closePortalModal(); toast('Web agregada · revisándola…', 'ok'); await renderWebs(true); wbRevisar(document.getElementById('wb-btn'), true); }
   catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
 async function wbImportar() {
-  const ya = new Set((_wb.lista || []).map(w => wbHost(w.dominio))); let n = 0;
-  for (const s of suscripcionesList.filter(s => s.estado === 'activa' && s.dominio)) {
-    const d = wbHost(s.dominio); if (!d || ya.has(d) || !/\.[a-z]{2,}$/.test(d)) continue; ya.add(d);
-    try { await db.collection('webs').add({ cliente: s.cliente || '', dominio: d, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); n++; } catch (e) {}
+  const ya = new Set((_wb.lista || []).map(w => wbHost(w.dominio))); let n = 0, malos = 0;
+  for (const [i, s] of (_wb.pend || []).entries()) {
+    const v = document.getElementById('wb-p-' + i)?.value || '';
+    if (!v.trim()) continue;
+    const d = wbHost(v);
+    if (!wbEsDominio(d)) { malos++; continue; }
+    if (ya.has(d)) continue; ya.add(d);
+    try { await db.collection('webs').add({ cliente: s.cliente || '', dominio: d, suscripcionId: s._id, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); n++; } catch (e) {}
   }
-  closePortalModal(); toast(`${n} web${n !== 1 ? 's' : ''} agregada${n !== 1 ? 's' : ''} · revisándolas…`, 'ok'); await renderWebs(true); wbRevisar(document.getElementById('wb-btn'), true);
+  if (!n && !malos) { toast('Escribe el dominio de al menos un cliente', 'err'); return; }
+  closePortalModal();
+  toast(`${n} web${n !== 1 ? 's' : ''} agregada${n !== 1 ? 's' : ''}${malos ? ` · ${malos} con dominio no válido` : ''} · revisándolas…`, n ? 'ok' : 'err');
+  await renderWebs(true); if (n) wbRevisar(document.getElementById('wb-btn'), true);
 }
 async function wbQuitar(id) {
   const w = (_wb.lista || []).find(x => x._id === id); if (!w || !confirm(`¿Quitar ${wbHost(w.dominio)} del monitoreo?`)) return;
