@@ -2917,6 +2917,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-tab" onclick="switchPage('llamadas', this)">
     <i class="fa-solid fa-phone"></i> Llamadas<span id="ll-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
+  <button class="nav-tab" onclick="switchPage('respuestas', this)">
+    <i class="fa-solid fa-envelope-open-text"></i> Respuestas<span id="rc-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
   <button class="nav-tab" onclick="switchPage('aliados', this)">
     <i class="fa-solid fa-handshake"></i> Aliados
   </button>
@@ -3386,6 +3389,23 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-respuestas" class="page">
+  <div class="proy-main" style="max-width:900px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Respuestas de correo</div>
+        <div style="font-size:11px;color:var(--text-soft);">Lo que los clientes y prospectos responden a los correos que salen de info@dgpglobalgroup.com. Se revisa cada 3 horas y te avisa por Telegram. Puedes contestar desde aquí.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-logout" id="rc-btn" onclick="rcRevisar(this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Revisar ahora</button>
+      </div>
+    </div>
+    <div id="rc-aviso"></div>
+    <div id="rc-filtros" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
+    <div id="rc-lista"></div>
+  </div>
+</div>
+
 <div id="page-llamadas" class="page">
   <div class="proy-main" style="max-width:1000px;">
     <div class="proy-header">
@@ -4275,6 +4295,7 @@ function initPage() {
   initClientes();
   initClientesCRM();
   initPortales();
+  initRespuestas();
   initCuentasPago();
   initCotizaciones();
   initSuscripciones();
@@ -4333,6 +4354,7 @@ function switchPage(page, btn) {
   if (page === 'autopilot')  renderAutopilot();
   if (page === 'prospectos') renderProspectos();
   if (page === 'llamadas')   renderLlamadas();
+  if (page === 'respuestas') renderRespuestas();
   if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
   if (typeof navIndicador === 'function') requestAnimationFrame(navIndicador);
@@ -12271,6 +12293,102 @@ async function cambiarAuto(k, on) {
   try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
   catch (e) { toast('No se pudo guardar.', 'err'); }
 }
+/* ═══════════════════════════════════════════════════════
+   RESPUESTAS DE CORREO (Firestore: respuestas · las guarda el bot desde info@)
+═══════════════════════════════════════════════════════ */
+let _rc = { lista: null, filtro: 'nuevas', abierta: null };
+function initRespuestas() {
+  // Solo las no vistas, para el contador (pocas lecturas)
+  db.collection('respuestas').where('vista', '==', false).limit(30).onSnapshot(s => {
+    const n = s.size, b = document.getElementById('rc-badge');
+    if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
+    if (_rc.lista && s.docChanges().some(c => c.type === 'added')) renderRespuestas(true);
+  }, () => {});
+}
+async function renderRespuestas(fresco) {
+  const el = document.getElementById('rc-lista'); if (!el) return;
+  if (!_rc.lista || fresco) {
+    if (!_rc.lista) el.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
+    try { const s = await db.collection('respuestas').orderBy('fecha', 'desc').limit(60).get(); _rc.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); }
+    catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
+  }
+  rcPintar();
+}
+function rcPintar() {
+  const L = _rc.lista || [];
+  const nuevas = L.filter(x => !x.vista).length;
+  document.getElementById('rc-filtros').innerHTML = [['nuevas', `Sin leer${nuevas ? ' (' + nuevas + ')' : ''}`], ['todas', 'Todas'], ['respondidas', 'Respondidas']]
+    .map(([k, v]) => `<button class="dash-period-btn ${_rc.filtro === k ? 'active' : ''}" onclick="_rc.filtro='${k}';rcPintar()">${v}</button>`).join('');
+  const vis = L.filter(x => _rc.filtro === 'todas' || (_rc.filtro === 'nuevas' ? !x.vista : !!x.respondida));
+  const el = document.getElementById('rc-lista');
+  if (!vis.length) { el.innerHTML = vacioHTML('buscar', _rc.filtro === 'nuevas' ? 'Todo leído' : 'Sin respuestas', _rc.filtro === 'nuevas' ? 'No hay respuestas nuevas de clientes. Te avisamos por Telegram cuando llegue una.' : 'Cuando un cliente responda un correo del panel aparecerá aquí.', 'Revisar ahora', "rcRevisar(document.getElementById('rc-btn'))"); return; }
+  const fmt = f => { const d = new Date(f); return isNaN(d) ? '' : d.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+  el.innerHTML = vis.map(x => {
+    const ab = _rc.abierta === x._id, id = esc(x._id);
+    const gmail = `https://mail.google.com/mail/?authuser=info@dgpglobalgroup.com#all/${encodeURIComponent(x.hilo || '')}`;
+    return `<div class="cb-card rc-item${x.vista ? '' : ' nueva'}" style="margin-bottom:10px;padding:14px 16px;${x.vista ? '' : 'border-left:3px solid var(--blue);'}">
+      <div style="display:flex;gap:10px;align-items:flex-start;cursor:pointer" onclick="rcAbrir('${id}')">
+        <div class="pr-av" style="background:${clColor(x.cliente || x.de || '?')};flex-shrink:0">${esc(clIniciales(x.cliente || x.de || '?'))}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b style="font-size:13.5px">${esc(x.cliente || x.de)}</b><span style="font-size:11px;color:var(--text-soft)">${esc(fmt(x.fecha))}</span></div>
+          <div style="font-size:11.5px;color:var(--text-soft)">${esc(x.correo)}${x.docId ? ` · <span class="emisor-tag" style="margin:0">${esc(x.docId)}</span>` : ''}${x.respondida ? ' · <span style="color:var(--green-dark);font-weight:700">Respondida</span>' : ''}${x.adjuntos ? ` · ${x.adjuntos} adjunto${x.adjuntos > 1 ? 's' : ''}` : ''}</div>
+          <div style="font-size:12.5px;font-weight:700;margin-top:4px">${esc(x.asunto)}</div>
+          <div style="font-size:12.5px;color:var(--text-mid);margin-top:3px;white-space:pre-line;${ab ? '' : 'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;'}">${esc(x.texto || '(sin texto)')}</div>
+        </div>
+      </div>
+      ${ab ? `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        ${x.respondida ? `<div style="font-size:12px;background:var(--off,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;white-space:pre-line"><b>Tu respuesta · ${esc(fmt(x.respondida.fecha))}</b>\n${esc(x.respondida.texto)}</div>` : ''}
+        <textarea id="rc-txt-${id}" rows="4" placeholder="Escribe tu respuesta… (se envía desde info@ en el mismo hilo)" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;resize:vertical;background:var(--surface,#fff);color:inherit"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="hr-btn ok" onclick="rcResponder('${id}', this)"><i class="fa-solid fa-paper-plane"></i> Responder</button>
+          ${x.docFsId && x.docCol === 'documentos' ? `<button class="hr-btn" onclick="openSheetById('${esc(x.docFsId)}')"><i class="fa-solid fa-file-invoice"></i> Ver ${esc(x.docId || 'factura')}</button>` : ''}
+          <a class="hr-btn" href="${esc(gmail)}" target="_blank" rel="noopener" style="text-decoration:none"><i class="fa-regular fa-envelope"></i> Abrir en Gmail</a>
+          ${x.vista ? '' : `<button class="hr-btn" onclick="rcVista('${id}')"><i class="fa-solid fa-check"></i> Marcar leída</button>`}
+        </div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+function rcAbrir(id) {
+  _rc.abierta = _rc.abierta === id ? null : id;
+  rcPintar();
+  const x = (_rc.lista || []).find(r => r._id === id);
+  if (x && !x.vista && _rc.abierta === id) setTimeout(() => rcVista(id, true), 1500);
+}
+async function rcVista(id, silencioso) {
+  const x = (_rc.lista || []).find(r => r._id === id); if (!x || x.vista) return;
+  x.vista = true;
+  try { await db.collection('respuestas').doc(id).update({ vista: true }); } catch (e) {}
+  if (!silencioso || _rc.filtro !== 'nuevas') rcPintar();
+}
+async function rcRevisar(btn) {
+  const t = btn?.innerHTML; if (btn) { btn.disabled = true; btn.textContent = 'Revisando…'; }
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'respuestas' }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    document.getElementById('rc-aviso').innerHTML = d.actualizar ? `<div class="ll-card" style="margin-bottom:14px;border-left:3px solid #d97706"><b style="font-size:13px">Falta actualizar el Apps Script de correos</b><div style="font-size:12px;color:var(--text-mid);margin-top:4px">Abre el proyecto <b>advcorreos</b> con info@, pega el código nuevo, guarda y publica una <b>nueva versión</b> (Implementar → Administrar implementaciones → Editar). Acepta el permiso para leer Gmail.</div></div>` : '';
+    toast(d.actualizar ? 'Falta actualizar el Apps Script' : d.nuevas ? `${d.nuevas} respuesta${d.nuevas > 1 ? 's' : ''} nueva${d.nuevas > 1 ? 's' : ''}` : 'No hay respuestas nuevas', d.actualizar ? 'err' : 'ok');
+    await renderRespuestas(true);
+  } catch (e) { toast('No se pudo revisar: ' + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = t; } }
+}
+async function rcResponder(id, btn) {
+  const ta = document.getElementById('rc-txt-' + id), texto = (ta?.value || '').trim();
+  if (!texto) { toast('Escribe la respuesta', 'err'); return; }
+  btn.disabled = true;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'responder', id, texto }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || d.error) throw new Error(d.error || 'HTTP ' + res.status);
+    const x = _rc.lista.find(r => r._id === id); if (x) { x.vista = true; x.respondida = { texto, fecha: new Date().toISOString() }; }
+    logActividad('Respuesta de correo', `${x?.cliente || x?.correo || ''} · ${x?.asunto || ''}`);
+    toast('Respuesta enviada desde info@ ✅', 'ok');
+    rcPintar();
+  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); btn.disabled = false; }
+}
+
 function initAutomatizaciones() {
   db.collection('config').doc('automatizaciones').onSnapshot(s => { if (s.exists) _auto = { ..._auto, ...s.data() }; }, () => {});
 }

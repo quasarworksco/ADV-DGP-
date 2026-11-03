@@ -197,6 +197,7 @@ export default {
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
+      if (new Date().getUTCHours() % 3 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
     }
     else ctx.waitUntil(enviarResumenMensual(env));
   },
@@ -706,7 +707,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-10-31b';
+const WORKER_VERSION = '2026-11-03a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1133,6 +1134,12 @@ async function handleTarea(request, env) {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(b2.id || '')) return json(request, { error: 'Factura no válida' }, 400);
       const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
       return json(request, { ok: true, actualizados: n });
+    }
+    if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
+    if (tarea === 'responder') {
+      const b2 = cuerpo;
+      if (!/^[A-Za-z0-9_-]{6,40}$/.test(b2.id || '') || !String(b2.texto || '').trim()) return json(request, { error: 'Falta el mensaje' }, 400);
+      return json(request, await responderRespuesta(env, v.token, b2.id, String(b2.texto).slice(0, 5000), v.email));
     }
     if (tarea === 'correo-pago') {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Factura no válida' }, 400);
@@ -2866,6 +2873,62 @@ async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
     smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPUESTAS DE CORREO — el Apps Script de info@ lee las respuestas de los
+   clientes; se guardan en Firestore (respuestas) para el panel y te avisa por
+   Telegram. Desde el panel se contesta en el mismo hilo.
+══════════════════════════════════════════════════════════════ */
+async function revisarRespuestas(env, token, avisar) {
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return { nuevas: 0, motivo: 'El correo no está configurado' };
+  const cfg = await fsGet(env, 'config/correoRespuestas', token).catch(() => null) || {};
+  const desde = cfg.ultima || new Date(Date.now() - 7 * 864e5).toISOString();
+  const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, accion: 'respuestas', desde }) });
+  const r = await res.json().catch(() => ({}));
+  if (!r.ok || !Array.isArray(r.respuestas)) return { nuevas: 0, actualizar: true, motivo: 'Falta actualizar el Apps Script de correos (ver instrucciones)' };
+  const nuevas = [];
+  for (const m of r.respuestas) {
+    if (!/^[A-Za-z0-9_-]{6,40}$/.test(m.id || '')) continue;
+    if (await fsGet(env, `respuestas/${m.id}`, token).catch(() => null)) continue;
+    nuevas.push(m);
+  }
+  let ultima = desde;
+  r.respuestas.forEach(m => { if (m.fecha > ultima) ultima = m.fecha; });
+  if (nuevas.length) {
+    // Quién es: cliente, prospecto o documento relacionado (se busca solo cuando hay respuestas nuevas)
+    const [clientes, docs, cots] = await Promise.all(['clientes', 'documentos', 'cotizaciones'].map(c => fsList(env, c, token).catch(() => [])));
+    const nombreCli = c => [c.nombre, c.apellido].filter(Boolean).join(' ');
+    const L = [];
+    for (const m of nuevas) {
+      const correo = String(m.correo || '').toLowerCase();
+      const cli = clientes.find(c => String(c.correo || '').toLowerCase() === correo);
+      const ref = (String(m.asunto || '').match(/\b(FAC|REC|COT)-[A-Z0-9]{3,}\b/i) || [])[0];
+      const doc = (ref && [...docs, ...cots].find(d => String(d.docId || '').toUpperCase() === ref.toUpperCase()))
+        || docs.filter(d => String(d.clienteCorreo || '').toLowerCase() === correo).sort((a, b) => String(fechaISO(b.createdAt) || '').localeCompare(String(fechaISO(a.createdAt) || '')))[0];
+      const datos = { de: m.de || correo, correo, asunto: m.asunto || '', fecha: m.fecha, texto: m.texto || '', hilo: m.hilo || '', adjuntos: Number(m.adjuntos) || 0,
+        cliente: cli ? nombreCli(cli) : (doc?.cli || ''), clienteId: cli?._id || '', docFsId: doc?._id || '', docId: doc?.docId || '',
+        docCol: doc ? (cots.includes(doc) ? 'cotizaciones' : 'documentos') : '', vista: false, creado: new Date() };
+      await fsUpdate(env, `respuestas/${m.id}`, datos, Object.keys(datos), token).catch(e => console.warn('respuesta', e));
+      L.push(`• <b>${escHtml(datos.cliente || datos.de)}</b>${datos.docId ? ` · ${escHtml(datos.docId)}` : ''}\n   <i>${escHtml(datos.asunto)}</i>\n   ${escHtml(datos.texto.replace(/\s+/g, ' ').slice(0, 220))}${datos.texto.length > 220 ? '…' : ''}`);
+    }
+    if (avisar) await tgEnviar(env, [`📨 <b>Te respondieron por correo (${nuevas.length})</b>`, '', ...L, '', `<a href="${SITIO}/">Abrir el panel → Respuestas</a>`].join('\n')).catch(() => {});
+  }
+  if (ultima !== cfg.ultima) await fsUpdate(env, 'config/correoRespuestas', { ultima }, ['ultima'], token).catch(() => {});
+  return { nuevas: nuevas.length };
+}
+async function responderRespuesta(env, token, id, texto, por) {
+  const m = await fsGet(env, `respuestas/${id}`, token).catch(() => null);
+  if (!m) return { error: 'No encontré esa respuesta' };
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;">${escHtml(texto).replace(/\n/g, '<br>')}<br><br>—<br><b>DGP Global Group</b><br><a href="https://dgpglobalgroup.com" style="color:#166baf;">dgpglobalgroup.com</a> · WhatsApp +1 (239) 823-1738</div>`;
+  const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, accion: 'responder', id, texto: texto + '\n\n— DGP Global Group · dgpglobalgroup.com', html, nombre: 'DGP Global Group' }) });
+  const r = await res.json().catch(() => ({}));
+  if (!r.ok) return { error: r.error || 'No se pudo enviar' };
+  const resp = { texto, fecha: new Date().toISOString(), por: por || '' };
+  await fsUpdate(env, `respuestas/${id}`, { vista: true, respondida: resp }, ['vista', 'respondida'], token).catch(() => {});
+  return { ok: true };
 }
 
 /* ══════════════════════════════════════════════════════════════
