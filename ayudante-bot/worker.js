@@ -711,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03m';
+const WORKER_VERSION = '2026-11-03n';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2853,6 +2853,14 @@ async function contactoDelChat(request, env, msgs, tarjeta) {
   } catch (e) { console.warn('chat lead', e); }
   return c;
 }
+// Idioma de un texto (español / inglés) por palabras comunes; null si no se sabe
+function idiomaTexto(t) {
+  t = ' ' + String(t || '').toLowerCase() + ' ';
+  if (/[ñ¿¡áéíóú]/.test(t)) return 'es';
+  const en = (t.match(/\b(the|and|you|your|is|are|i|i'm|my|need|want|how|much|website|do|does|have|can|for|with|what|hi|hello|please|thanks|thank|price|cost|business|would|like|about|get|make)\b/g) || []).length;
+  const es = (t.match(/\b(el|la|los|las|que|de|y|quiero|necesito|cuanto|pagina|hola|gracias|por|para|con|mi|tu|es|un|una|como|precio|negocio|tienen|hacen|quisiera|buenas|buenos)\b/g) || []).length;
+  return en > es ? 'en' : es > en ? 'es' : null;
+}
 async function handleChatIA(request, env) {
   const h = corsContacto(request);
   const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: { 'Content-Type': 'application/json', ...h } });
@@ -2864,7 +2872,9 @@ async function handleChatIA(request, env) {
     .map(m => ({ role: m.rol === 'user' ? 'user' : 'assistant', content: String(m.texto || '').slice(0, 800).trim() })).filter(m => m.content);
   const ultimo = msgs[msgs.length - 1];
   if (!ultimo || ultimo.role !== 'user') return resp({ error: 'Mensaje vacío' }, 400);
-  const en = /^en/i.test(String(b.idioma || ''));
+  // Responde en el idioma en que escribe el cliente (no el de la página)
+  const idm = idiomaTexto(ultimo.content) || (/^en/i.test(String(b.idioma || '')) ? 'en' : 'es');
+  const en = idm === 'en';
   const WA = en ? 'please message us on WhatsApp at +1 (239) 823-1738' : 'escríbenos por WhatsApp al +1 (239) 823-1738';
   if (msgs.filter(m => m.role === 'user').length > CHAT_MAX_TURNOS)
     return resp({ respuesta: en ? `To keep helping you personally, ${WA} and our team will reply right away.` : `Para seguir ayudándote de forma personal, ${WA} y el equipo te responde enseguida.` });
@@ -2877,19 +2887,22 @@ async function handleChatIA(request, env) {
   // Si el visitante dejó su teléfono o correo en el chat, queda como prospecto en Clientes (una vez por conversación)
   const contacto = await contactoDelChat(request, env, msgs, b.contacto);
   const sistema = ALTAIR_WEB_SYSTEM + (contacto ? `\n\nCONTACT ALREADY RECEIVED: ${contacto.nombre ? 'name ' + contacto.nombre + ', ' : ''}${contacto.telefono ? 'phone ' + contacto.telefono : 'email ' + contacto.correo}. Do NOT ask for it again; a specialist will contact them.` : '');
+  const sistemaIdioma = sistema + (en
+    ? '\n\nIMPORTANT: The visitor is writing in ENGLISH. Your reply must be 100% in English, even if earlier messages in the conversation were in Spanish.'
+    : '\n\nIMPORTANTE: El visitante escribe en ESPAÑOL. Tu respuesta debe ser 100% en español, aunque mensajes anteriores estén en inglés.');
   let respuesta = '';
   if (env.GROQ_API_KEY) {
     try {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
         headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: sistema }, ...msgs], max_tokens: 350, temperature: 0.72 }) });
+        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: sistemaIdioma }, ...msgs], max_tokens: 350, temperature: 0.72 }) });
       const d = await r.json().catch(() => ({}));
       respuesta = String(d.choices?.[0]?.message?.content || '').trim();
     } catch (e) { console.warn('chat-ia groq', e); }
   }
   if (!respuesta) {
     const conv = msgs.map(m => `${m.role === 'user' ? 'Cliente' : 'Altair'}: ${m.content}`).join('\n');
-    respuesta = await aiTexto(env, sistema, `${conv}\n\nResponde el último mensaje del Cliente como Altair.`, 350).catch(() => '');
+    respuesta = await aiTexto(env, sistemaIdioma, `${conv}\n\n${en ? 'Reply to the last Cliente message as Altair, in English.' : 'Responde el último mensaje del Cliente como Altair, en español.'}`, 350).catch(() => '');
   }
   return resp({ respuesta: respuesta.slice(0, 2000) || (en ? 'Sorry, I had a technical issue. Please try again.' : 'Disculpa, tuve un problema técnico. Por favor intenta de nuevo.') });
 }
