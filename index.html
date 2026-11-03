@@ -1782,6 +1782,28 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   @media (max-width:600px) { .doc-sheet, .edit-sheet { max-height:93dvh; } }
   .pt-side { max-height:calc(100dvh - var(--hdr-h, 71px) - 24px); }
 }
+
+/* ─── Dashboard compacto en el celular: tarjetas de 2 en 2, sin espacio vacío ─── */
+@media (max-width:600px) {
+  .rg-grid { grid-template-columns:1fr 1fr !important; gap:8px; margin-bottom:16px; }
+  .rg-card { padding:11px 11px 10px; gap:2px; border-radius:12px; min-height:0; }
+  .rg-top { margin-bottom:2px; }
+  .rg-go { display:none; }
+  .rg-ico { width:26px !important; height:26px !important; border-radius:8px !important; }
+  .rg-ico svg { width:14px; height:14px; }
+  .rg-l { font-size:9px; letter-spacing:.6px; margin-top:2px; }
+  .rg-v { font-size:19px; }
+  .rg-n { font-size:10.5px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .rg-spark { height:22px !important; margin-top:4px; }
+  .rg-spark.vacia { display:none !important; }
+  .rg-card .sk-v { height:18px !important; } .rg-card .sk-n { height:9px !important; }
+  .db-head { margin:4px 0 8px !important; }
+  .dash-saludo { margin-bottom:12px !important; }
+  .cb-tile { padding:11px 12px !important; }
+  .cb-tile-v { font-size:20px !important; }
+  .cb-tile-n { font-size:10.5px !important; }
+  .cb-card { padding:12px !important; }
+}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -2656,6 +2678,12 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .av-head b { display:block; font:700 14px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
 .av-head small { font-size:11.5px; color:var(--text-soft); }
 .av-list { max-height:min(60vh,420px); overflow-y:auto; padding:6px; }
+.av-row { display:flex; align-items:center; gap:2px; }
+.av-row .av-it { flex:1; min-width:0; }
+.av-x { flex-shrink:0; width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.av-x:hover { background:var(--off); color:#dc2626; }
+.av-todo { display:block; width:calc(100% - 12px); margin:6px; padding:9px; border:1px dashed var(--border); border-radius:10px; background:transparent; color:var(--text-mid); font:600 12px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.av-todo:hover { color:var(--blue); border-color:var(--blue); }
 .av-it { display:flex; align-items:center; gap:12px; width:100%; padding:10px; border:0; background:transparent; border-radius:10px; cursor:pointer; text-align:left; }
 .av-it:hover { background:var(--off); }
 .av-menu.open .av-it { animation:avIn .3s var(--ease-out) both; animation-delay:var(--d); }
@@ -10530,11 +10558,26 @@ function avisosCalcular() {
     { n: _avBadge('resenasweb-badge'), t: 'Reseñas web por aprobar', d: 'Antes de que salgan en tu web', ir: 'resenasweb', c: '#db2777', ico: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
     { n: _avBadge('encuestas-badge'), t: 'Encuestas nuevas', d: 'Respuestas de clientes', ir: 'encuestas', c: '#059669', ico: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' }
   ];
-  return L.filter(x => x.n > 0);
+  // Los que descartaste no salen, salvo que llegue algo nuevo (el número sube)
+  const oc = _avOcultos();
+  return L.filter(x => x.n > 0 && !(oc[x.t] >= x.n));
+}
+function _avOcultos() { try { return JSON.parse(localStorage.getItem('dgp-av-ocultos') || '{}'); } catch (e) { return {}; } }
+function _avGuardarOcultos(o) { try { localStorage.setItem('dgp-av-ocultos', JSON.stringify(o)); } catch (e) {} }
+function avDescartar(i, e) {
+  e?.stopPropagation();
+  const x = (window._avLista || [])[i]; if (!x) return;
+  const o = _avOcultos(); o[x.t] = x.n; _avGuardarOcultos(o); pintarAvisos();
+}
+function avDescartarTodo(e) {
+  e?.stopPropagation();
+  const o = _avOcultos(); (window._avLista || []).forEach(x => { o[x.t] = x.n; }); _avGuardarOcultos(o); pintarAvisos();
+  toast('Avisos marcados como vistos', 'ok');
 }
 let _avUlt = -1;
 function pintarAvisos() {
   const L = avisosCalcular(), total = L.reduce((a, x) => a + x.n, 0);
+  window._avLista = L;
   const b = document.getElementById('av-count'); if (!b) return;
   b.textContent = total > 99 ? '99+' : total; b.hidden = !total;
   const btn = document.getElementById('av-btn');
@@ -10542,7 +10585,7 @@ function pintarAvisos() {
   const bn = document.getElementById('bnav-n'); if (bn) { bn.textContent = b.textContent; bn.hidden = !total; }
   _avUlt = total;
   const list = document.getElementById('av-list');
-  const html = L.length ? L.map((x, i) => `<button class="av-it" style="--c:${x.c};--d:${i * 35}ms" onclick="cerrarAvisos();${x.fn ? `_avFn[${i}]()` : `irASeccion('${x.ir}')`}"><span class="av-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${x.ico}</svg></span><span class="av-tx"><b>${esc(x.t)}</b><small>${esc(x.d || '')}</small></span><span class="av-n">${x.n}</span></button>`).join('')
+  const html = L.length ? L.map((x, i) => `<div class="av-row"><button class="av-it" style="--c:${x.c};--d:${i * 35}ms" onclick="cerrarAvisos();${x.fn ? `_avFn[${i}]()` : `irASeccion('${x.ir}')`}"><span class="av-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${x.ico}</svg></span><span class="av-tx"><b>${esc(x.t)}</b><small>${esc(x.d || '')}</small></span><span class="av-n">${x.n}</span></button><button class="av-x" title="Marcar como visto" aria-label="Marcar como visto" onclick="avDescartar(${i}, event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`).join('') + `<button class="av-todo" onclick="avDescartarTodo(event)">Marcar todo como visto</button>`
     : `<div class="av-vacio"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><b>Todo al día</b><small>No hay nada pendiente por ahora.</small></div>`;
   if (list && list._html !== html) { list.innerHTML = html; list._html = html; }
   window._avFn = L.map(x => x.fn);
