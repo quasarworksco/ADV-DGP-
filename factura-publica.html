@@ -588,6 +588,7 @@
         contratoFirmadoPor: nombre,
         contratoFechaFirma: firebase.firestore.FieldValue.serverTimestamp()
       });
+      try { await aviso('documentos', fsId, `✍️ CONTRATO FIRMADO\n\n👤 ${_currentDoc?.cli || nombre}\n🧾 ${_currentDoc?.docId || fsId}\nFirmó: ${nombre}`); } catch (e) {}
       location.reload();
     } catch(e) {
       errEl.style.display='block'; errEl.textContent='Error al guardar la firma. Intenta de nuevo.';
@@ -1780,6 +1781,7 @@
 
     try {
       await db.collection('documentos').doc(fsId).update({ brief });
+      aviso('documentos', fsId, `📝 BRIEF RECIBIDO\n\n👤 ${_currentDoc?.cli || ''}\n🧾 ${_currentDoc?.docId || fsId}\n\nRevísalo en el panel → Facturación (abre la factura).`).catch(() => {});
       document.getElementById('brief-section').innerHTML = `
         <div class="brief-done">
           <div class="bd-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>

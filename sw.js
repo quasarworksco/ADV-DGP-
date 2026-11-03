@@ -39,11 +39,21 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { titulo: 'DGP Global Group', cuerpo: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.titulo || 'DGP Global Group', {
+  e.waitUntil(Promise.all([sumarBadge(), self.registration.showNotification(d.titulo || 'DGP Global Group', {
     body: d.cuerpo || '', icon: '/icon-192.png', badge: '/icon-192.png', tag: d.tag || undefined,
     data: { pagina: d.pagina || '' }, vibrate: [120, 60, 120]
-  }));
+  })]));
 });
+// Número en el ícono de la app: el panel guarda lo pendiente; cada aviso nuevo suma 1 hasta que abras el panel
+async function sumarBadge() {
+  try {
+    const c = await caches.open('dgp-badge');
+    const r = await c.match('/__badge');
+    const n = (r ? Number(await r.text()) || 0 : 0) + 1;
+    await c.put('/__badge', new Response(String(n)));
+    if (self.navigator.setAppBadge) await self.navigator.setAppBadge(n);
+  } catch (e) {}
+}
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const pagina = (e.notification.data && e.notification.data.pagina) || '';

@@ -199,6 +199,7 @@ export default {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
       ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
+      if (new Date().getUTCHours() === 12) ctx.waitUntil(resumenMananaPush(env).catch(e => console.warn('Resumen de la mañana', e)));
       if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
     }
     else ctx.waitUntil(enviarResumenMensual(env));
@@ -710,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03k';
+const WORKER_VERSION = '2026-11-03l';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3052,16 +3053,45 @@ async function enviarPush(env, datos, token) {
   return { enviados };
 }
 // Título claro (lo que se ve en la notificación) a partir del aviso de Telegram
+// Momentos de venta que suenan aunque no sean de cobros (prospectos, firmas, brief, portal, llamadas)
+const PUSH_EVENTOS = [
+  [/Nuevo posible cliente|Cliente escribió de nuevo|Nueva postulación/i, '🙋 Nuevo prospecto', 'prospectos'],
+  [/COTIZACIÓN ACEPTADA/i, '✅ ¡Aceptó la cotización!', 'facturacion'],
+  [/CONTRATO FIRMADO/i, '✍️ Firmó el contrato', 'facturacion'],
+  [/BRIEF RECIBIDO/i, '📝 Envió el brief de su web', 'proyectos'],
+  [/Nueva solicitud de proyecto/i, '🆕 Nueva solicitud de proyecto', 'portal'],
+  [/NUEVA CONVERSACIÓN en el portal|Nuevo mensaje en el portal/i, '💬 Te escribió por el portal', 'portal'],
+  [/Llamada perdida/i, '📞 Llamada perdida', 'llamadas'],
+  [/Mensaje de voz/i, '📩 Te dejaron un mensaje de voz', 'llamadas'],
+  [/^💬\s*<b>SMS de|^💬 SMS de/i, '💬 Nuevo SMS', 'llamadas']
+];
 async function pushDesdeTelegram(env, texto) {
   if (!vapidJwk(env)) return;
+  const limpio = String(texto).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const lineas = limpio.split('\n').map(l => l.trim()).filter(Boolean);
+  const ev = PUSH_EVENTOS.find(([re]) => re.test(texto));
   const sec = seccionTG(texto);
-  if (!PUSH_SECCIONES.includes(sec)) return;
-  const lineas = String(texto).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').split('\n').map(l => l.trim()).filter(Boolean);
-  let titulo = lineas[0] || 'DGP Global Group', cuerpo = lineas.slice(1, 4).join(' · ');
-  const cli = (String(texto).match(/Cliente:\s*([^\n<]+)/) || [])[1];
-  if (/comprobante/i.test(titulo)) titulo = `💰 ¡Te pagaron!${cli ? ' ' + cli.trim() : ''}`, cuerpo = 'Subió su comprobante de pago. ' + cuerpo;
-  const pagina = { cobros: 'facturacion', correos: 'respuestas', webs: 'webs', alertas: 'dashboard' }[sec];
+  if (!ev && !PUSH_SECCIONES.includes(sec)) return;
+  let titulo = lineas[0] || 'DGP Global Group', cuerpo = lineas.slice(1, 4).join(' · '), pagina = { cobros: 'facturacion', correos: 'respuestas', webs: 'webs', alertas: 'dashboard' }[sec];
+  const cli = ((limpio.match(/(?:Cliente:|👤)\s*([^\n·(]+)/) || [])[1] || '').trim();
+  if (ev) { titulo = ev[1]; pagina = ev[2]; cuerpo = (cli ? cli + ' · ' : '') + lineas.slice(1).filter(l => !l.includes(cli) || !cli).slice(0, 2).join(' · '); }
+  else if (/comprobante/i.test(titulo)) titulo = `💰 ¡Te pagaron!${cli ? ' ' + cli : ''}`, cuerpo = 'Subió su comprobante de pago. ' + cuerpo;
   await enviarPush(env, { titulo: titulo.slice(0, 80), cuerpo: cuerpo.slice(0, 180), pagina });
+}
+/* Resumen de la mañana en una sola notificación (8:30 a. m.) */
+async function resumenMananaPush(env) {
+  if (!vapidJwk(env)) return;
+  const token = await firebaseLogin(env);
+  const [docs, subs, resp, webs] = await Promise.all(['documentos', 'suscripciones', 'respuestas', 'webs'].map(c => fsList(env, c, token).catch(() => [])));
+  const hoy = hoyVE();
+  const porCobrar = docs.filter(d => !String(d._id).startsWith('__diag') && saldoDoc(d) > 0.009);
+  const monto = porCobrar.reduce((a, d) => a + saldoDoc(d), 0);
+  const comps = porCobrar.filter(d => compPendientes(d).length).length;
+  const ren = subs.filter(x => x.estado === 'activa' && x.proximoPago && diasEntre(hoy, x.proximoPago) >= 0 && diasEntre(hoy, x.proximoPago) <= 7).length;
+  const correos = resp.filter(r => !r.respondida && !r.rebote && !r.vista).length;
+  const caidas = webs.filter(w => w.activo !== false && w.estado === 'caida').length;
+  const partes = [porCobrar.length ? `${porCobrar.length} por cobrar (${dinero(monto)})` : 'nada por cobrar', comps ? `${comps} comprobante${comps > 1 ? 's' : ''} por revisar` : '', ren ? `${ren} renovación${ren > 1 ? 'es' : ''} esta semana` : '', correos ? `${correos} correo${correos > 1 ? 's' : ''} sin responder` : '', caidas ? `${caidas} web${caidas > 1 ? 's' : ''} caída${caidas > 1 ? 's' : ''}` : ''].filter(Boolean);
+  await enviarPush(env, { titulo: '☀️ Buenos días, Andrés', cuerpo: 'Hoy: ' + partes.join(' · '), pagina: 'dashboard', tag: 'manana' }, token);
 }
 async function handlePush(request, env, ctx) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
@@ -3849,6 +3879,7 @@ async function handleLlamadas(request, env, ctx) {
     // Entrante: suena en el panel 20 segundos; si nadie contesta, buzón de voz
     const [contacto, cfgLl] = await Promise.all([nombrePorNumero(env, token, p.From), fsGet(env, 'config/llamadas', token).catch(() => null)]);
     ctx.waitUntil(llamadaGuardar(env, token, p.CallSid, { direccion: 'entrante', numero: p.From || '', contacto, estado: 'sonando', fecha: ahora }));
+    ctx.waitUntil(enviarPush(env, { titulo: '📞 Llamada entrante', cuerpo: `${contacto || p.From || 'Número privado'} · Toca para contestar en el panel`, pagina: 'llamadas', tag: 'llamada' }, token).catch(() => {}));
     // Si hay celular configurado, suena a la vez en el panel y en el celular (pide marcar 1 para que no conteste su buzón)
     const cel = cfgLl && /^\+\d{10,15}$/.test(cfgLl.celular || '') ? cfgLl.celular : '';
     const idLlamada = /^\+\d{8,15}$/.test(p.From || '') ? p.From : env.TWILIO_NUMERO;

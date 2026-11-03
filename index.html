@@ -4357,6 +4357,7 @@ function initPage() {
   onTypeChange();
   // El panel abre en el Dashboard (o en la sección de la notificación que tocaste)
   irAPagina(location.hash.slice(1) || 'dashboard');
+  setTimeout(actualizarBadgeApp, 4000);
   if (location.hash) history.replaceState(null, '', location.pathname);
 }
 function irAPagina(p) {
@@ -4365,6 +4366,18 @@ function irAPagina(p) {
   if (btn) btn.click();
 }
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.irA) irAPagina(e.data.irA); });
+// Número en el ícono de la app (como WhatsApp): comprobantes por revisar + respuestas sin leer + webs caídas
+async function actualizarBadgeApp() {
+  try {
+    const comps = Object.values(docsMap || {}).filter(d => cbSaldo(d) > 0.009 && compPendientes(d).length).length;
+    const num = id => Number(document.getElementById(id)?.textContent) || 0;
+    const n = comps + num('rc-badge') + num('wb-badge');
+    if (navigator.setAppBadge) { if (n) await navigator.setAppBadge(n); else await navigator.clearAppBadge(); }
+    if (window.caches) { const c = await caches.open('dgp-badge'); await c.put('/__badge', new Response(String(n))); }
+  } catch (e) {}
+}
+setInterval(actualizarBadgeApp, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(actualizarBadgeApp, 1500); });
 
 /* ═══════════════════════════════════════════════════════
    NOTIFICACIONES EN EL CELULAR (Web Push: el bot avisa de pagos, correos y webs caídas)
