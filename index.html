@@ -12380,7 +12380,7 @@ function wbPintar() {
         <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
@@ -12407,16 +12407,22 @@ function wbAgregar() {
     if (pend.some(x => ptNorm(x.cliente) === ptNorm(s.cliente))) return;
     pend.push(s);
   });
-  _wb.pend = pend;
+  // Los demás clientes (sin hosting registrado) también se pueden agregar
+  const otros = clientesList.filter(c => { const n = ptNorm(clNombre(c)); return n && !yaCli.has(n) && !pend.some(x => ptNorm(x.cliente) === n); })
+    .map(c => ({ cliente: clNombre(c), dominio: c.web || c.sitio || '', servicio: 'Sin hosting registrado', otro: true }))
+    .sort((a, b) => a.cliente.localeCompare(b.cliente));
+  _wb.pend = [...pend, ...otros];
+  const fila = (x, i) => `<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:8px;align-items:center">
+        <div style="font-size:12.5px;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.cliente || '—')}</b><span style="color:var(--text-soft);font-size:11px">${esc(x.servicio || x.tipo || '')}${x.dominio && !wbEsDominio(x.dominio) ? ' · ' + esc(x.dominio) : ''}</span></div>
+        <input id="wb-p-${i}" value="${wbEsDominio(x.dominio) ? esc(wbHost(x.dominio)) : ''}" placeholder="sudominio.com" style="padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:12.5px;background:var(--surface,#fff);color:inherit;min-width:0"></div>`;
   ptModal('Agregar web', 'La revisamos cada hora y te avisamos si se cae', `<div class="rd-form">
     <div class="ff"><label>Cliente</label><input id="wb-cli" list="wb-cli-l" placeholder="Nombre del cliente"><datalist id="wb-cli-l">${clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('')}</datalist></div>
     <div class="ff"><label>Dominio de la web</label><input id="wb-dom" placeholder="ejemplo.com"></div>
     <button class="ll-btn" style="background:var(--blue)" onclick="wbGuardar()">Agregar</button>
-    ${pend.length ? `<div class="ll-sub" style="margin-top:14px"><b>Clientes con hosting en Suscripciones (${pend.length})</b><br>Revisa o escribe el dominio de cada uno. Los que dejes vacíos no se agregan.</div>
+    ${_wb.pend.length ? `<div class="ll-sub" style="margin-top:14px">Escribe el dominio de cada cliente que quieras vigilar. Los que dejes vacíos no se agregan.</div>
       <div style="max-height:46vh;overflow:auto;margin-top:6px;display:flex;flex-direction:column;gap:6px">
-      ${pend.map((x, i) => `<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:8px;align-items:center">
-        <div style="font-size:12.5px;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.cliente || '—')}</b><span style="color:var(--text-soft);font-size:11px">${esc(x.servicio || x.tipo || '')}${x.dominio && !wbEsDominio(x.dominio) ? ' · ' + esc(x.dominio) : ''}</span></div>
-        <input id="wb-p-${i}" value="${wbEsDominio(x.dominio) ? esc(wbHost(x.dominio)) : ''}" placeholder="sudominio.com" style="padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:12.5px;background:var(--surface,#fff);color:inherit;min-width:0"></div>`).join('')}
+      ${pend.length ? `<div style="font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-soft)">Con hosting en Suscripciones (${pend.length})</div>${pend.map((x, i) => fila(x, i)).join('')}` : ''}
+      ${otros.length ? `<details ${pend.length ? '' : 'open'} style="margin-top:4px"><summary style="cursor:pointer;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-soft);padding:4px 0">Otros clientes (${otros.length})</summary><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${otros.map((x, j) => fila(x, pend.length + j)).join('')}</div></details>` : ''}
       </div>
       <button class="ll-btn" style="background:#059669;margin-top:8px" onclick="wbImportar()">Agregar las que tienen dominio</button>` : ''}
   </div>`);
@@ -12436,12 +12442,20 @@ async function wbImportar() {
     const d = wbHost(v);
     if (!wbEsDominio(d)) { malos++; continue; }
     if (ya.has(d)) continue; ya.add(d);
-    try { await db.collection('webs').add({ cliente: s.cliente || '', dominio: d, suscripcionId: s._id, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); n++; } catch (e) {}
+    try { await db.collection('webs').add({ cliente: s.cliente || '', dominio: d, ...(s._id ? { suscripcionId: s._id } : {}), activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); n++; } catch (e) {}
   }
   if (!n && !malos) { toast('Escribe el dominio de al menos un cliente', 'err'); return; }
   closePortalModal();
   toast(`${n} web${n !== 1 ? 's' : ''} agregada${n !== 1 ? 's' : ''}${malos ? ` · ${malos} con dominio no válido` : ''} · revisándolas…`, n ? 'ok' : 'err');
   await renderWebs(true); if (n) wbRevisar(document.getElementById('wb-btn'), true);
+}
+async function wbEditar(id) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  const v = prompt(`Dominio de ${w.cliente || 'esta web'}:`, wbHost(w.dominio)); if (v === null) return;
+  const d = wbHost(v);
+  if (!wbEsDominio(d)) { toast('Ese dominio no es válido (ejemplo.com)', 'err'); return; }
+  try { await db.collection('webs').doc(id).update({ dominio: d, estado: null, dias: {}, caidaDesde: null }); w.dominio = d; w.estado = null; w.dias = {}; toast('Dominio actualizado · revisándola…', 'ok'); wbPintar(); wbRevisar(document.getElementById('wb-btn'), true); }
+  catch (e) { toast(e.message, 'err'); }
 }
 async function wbQuitar(id) {
   const w = (_wb.lista || []).find(x => x._id === id); if (!w || !confirm(`¿Quitar ${wbHost(w.dominio)} del monitoreo?`)) return;
