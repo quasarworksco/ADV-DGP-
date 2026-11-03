@@ -12309,10 +12309,20 @@ async function renderRespuestas(fresco) {
   const el = document.getElementById('rc-lista'); if (!el) return;
   if (!_rc.lista || fresco) {
     if (!_rc.lista) el.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
-    try { const s = await db.collection('respuestas').orderBy('fecha', 'desc').limit(60).get(); _rc.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); }
+    try { const s = await db.collection('respuestas').orderBy('fecha', 'desc').limit(60).get(); _rc.lista = s.docs.map(d => rcNormalizar({ _id: d.id, ...d.data() })); }
     catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
   }
   rcPintar();
+}
+// Avisos de Gmail de correo no entregado (también los guardados antes de separarlos)
+function rcNormalizar(x) {
+  const re = /mailer-daemon|postmaster|mail delivery|delivery status/i;
+  if (!x.rebote && re.test(`${x.correo} ${x.de}`)) {
+    x.rebote = true;
+    x.correo = ((x.texto || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).find(m => !re.test(m) && !/dgpglobalgroup\.com$/i.test(m)) || '';
+    x.de = 'Correo no entregado';
+  }
+  return x;
 }
 function rcPintar() {
   const L = _rc.lista || [];
@@ -12326,21 +12336,21 @@ function rcPintar() {
   el.innerHTML = vis.map(x => {
     const ab = _rc.abierta === x._id, id = esc(x._id);
     const gmail = `https://mail.google.com/mail/?authuser=info@dgpglobalgroup.com#all/${encodeURIComponent(x.hilo || '')}`;
-    return `<div class="cb-card rc-item${x.vista ? '' : ' nueva'}" style="margin-bottom:10px;padding:14px 16px;${x.vista ? '' : 'border-left:3px solid var(--blue);'}">
+    return `<div class="cb-card rc-item${x.vista ? '' : ' nueva'}" style="margin-bottom:10px;padding:14px 16px;${x.vista ? '' : `border-left:3px solid ${x.rebote ? '#dc2626' : 'var(--blue)'};`}">
       <div style="display:flex;gap:10px;align-items:flex-start;cursor:pointer" onclick="rcAbrir('${id}')">
         <div class="pr-av" style="background:${clColor(x.cliente || x.de || '?')};flex-shrink:0">${esc(clIniciales(x.cliente || x.de || '?'))}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b style="font-size:13.5px">${esc(x.cliente || x.de)}</b><span style="font-size:11px;color:var(--text-soft)">${esc(fmt(x.fecha))}</span></div>
-          <div style="font-size:11.5px;color:var(--text-soft)">${esc(x.correo)}${x.docId ? ` · <span class="emisor-tag" style="margin:0">${esc(x.docId)}</span>` : ''}${x.respondida ? ' · <span style="color:var(--green-dark);font-weight:700">Respondida</span>' : ''}${x.adjuntos ? ` · ${x.adjuntos} adjunto${x.adjuntos > 1 ? 's' : ''}` : ''}</div>
+          <div style="font-size:11.5px;color:var(--text-soft)">${x.rebote ? `<span style="color:#b91c1c;font-weight:700">No se entregó a ${esc(x.correo || 'esta dirección')}</span> · revisa que esté bien escrito` : esc(x.correo)}${x.docId ? ` · <span class="emisor-tag" style="margin:0">${esc(x.docId)}</span>` : ''}${x.respondida ? ' · <span style="color:var(--green-dark);font-weight:700">Respondida</span>' : ''}${x.adjuntos ? ` · ${x.adjuntos} adjunto${x.adjuntos > 1 ? 's' : ''}` : ''}</div>
           <div style="font-size:12.5px;font-weight:700;margin-top:4px">${esc(x.asunto)}</div>
           <div style="font-size:12.5px;color:var(--text-mid);margin-top:3px;white-space:pre-line;${ab ? '' : 'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;'}">${esc(x.texto || '(sin texto)')}</div>
         </div>
       </div>
       ${ab ? `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
         ${x.respondida ? `<div style="font-size:12px;background:var(--off,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;white-space:pre-line"><b>Tu respuesta · ${esc(fmt(x.respondida.fecha))}</b>\n${esc(x.respondida.texto)}</div>` : ''}
-        <textarea id="rc-txt-${id}" rows="4" placeholder="Escribe tu respuesta… (se envía desde info@ en el mismo hilo)" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;resize:vertical;background:var(--surface,#fff);color:inherit"></textarea>
+        ${x.rebote ? '' : `<textarea id="rc-txt-${id}" rows="4" placeholder="Escribe tu respuesta… (se envía desde info@ en el mismo hilo)" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;resize:vertical;background:var(--surface,#fff);color:inherit"></textarea>`}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="hr-btn ok" onclick="rcResponder('${id}', this)"><i class="fa-solid fa-paper-plane"></i> Responder</button>
+          ${x.rebote ? '' : `<button class="hr-btn ok" onclick="rcResponder('${id}', this)"><i class="fa-solid fa-paper-plane"></i> Responder</button>`}
           ${x.docFsId && x.docCol === 'documentos' ? `<button class="hr-btn" onclick="openSheetById('${esc(x.docFsId)}')"><i class="fa-solid fa-file-invoice"></i> Ver ${esc(x.docId || 'factura')}</button>` : ''}
           <a class="hr-btn" href="${esc(gmail)}" target="_blank" rel="noopener" style="text-decoration:none"><i class="fa-regular fa-envelope"></i> Abrir en Gmail</a>
           ${x.vista ? '' : `<button class="hr-btn" onclick="rcVista('${id}')"><i class="fa-solid fa-check"></i> Marcar leída</button>`}
