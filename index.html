@@ -5603,6 +5603,8 @@ function _apFechas(a) {
   let f = a.ultimaFecha ? new Date(a.ultimaFecha + 'T12:00:00') : new Date(hoy);
   if (a.ultimaFecha) _apAvanzar(f, a, false); else if (hoy.getHours() >= Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
   while (f < new Date(hoy.toDateString())) f.setDate(f.getDate() + 1);
+  // Si ya pasó la hora de hoy, el bot no publica hasta el siguiente día válido
+  if (f.toDateString() === hoy.toDateString() && hoy.getHours() > Number(a.hora ?? 10)) f.setDate(f.getDate() + 1);
   _apAvanzar(f, a, true);
   for (let k = idx; k < cola.length; k++) { out[cola[k].archivo] = new Date(f); _apAvanzar(f, a, false); }
   return out;

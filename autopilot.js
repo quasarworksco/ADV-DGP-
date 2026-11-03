@@ -54,6 +54,8 @@
     else { f = new Date(hoy); if (hoy.getHours() >= d.hora) f.setDate(f.getDate() + 1); }
     var hoy0 = new Date(hoy.toDateString());
     while (f < hoy0) f.setDate(f.getDate() + 1);
+    // Si ya pasó la hora de hoy, la próxima es el siguiente día válido
+    if (f.toDateString() === hoy.toDateString() && hoy.getHours() > d.hora) f.setDate(f.getDate() + 1);
     sig(f, true);
     for (var k = d.indice; k < d.cola.length; k++) { out[k] = new Date(f); sig(f, false); }
     return out;
