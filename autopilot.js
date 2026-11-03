@@ -40,6 +40,10 @@
     '.lnk{background:none;border:none;color:var(--acc);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0}.cap{white-space:pre-line;font-size:12.5px;line-height:1.55;color:var(--fg);background:var(--off);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;overflow-wrap:anywhere}' +
     '.btn{border:1.5px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:9px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}' +
     '.btn:focus-visible,.lnk:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.conf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;background:var(--off);border:1px solid var(--line);border-radius:12px;padding:10px 12px}' +
+    '.img{cursor:zoom-in}.vis{position:fixed;inset:0;z-index:2147483000;background:rgba(2,6,23,.92);display:flex;align-items:center;justify-content:center;padding:56px 16px 40px;cursor:zoom-out}' +
+    '.vis img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default}' +
+    '.vis .x,.vis .nav{position:absolute;border:none;background:rgba(255,255,255,.14);color:#fff;width:42px;height:42px;border-radius:50%;font:700 20px/1 system-ui,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
+    '.vis .x{top:12px;right:12px}.vis .nav.a{left:12px}.vis .nav.b{right:12px}.vis .n{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:#cbd5e1;font-size:12px;font-weight:700}' +
     '.vac{font-size:13px;color:var(--soft);background:var(--off);border:1px dashed var(--line);border-radius:12px;padding:14px}.pie{font-size:11px;color:var(--soft)}.pie a{color:var(--soft)}' +
     '@media (max-width:480px){.box{padding:14px}.res{grid-template-columns:1fr}}';
 
@@ -70,7 +74,7 @@
     var L = el.getAttribute('data-lang') === 'en' ? 'en' : 'es', t = T[L], loc = L === 'es' ? 'es-US' : 'en-US';
     var c = el.getAttribute('data-cliente'), k = el.getAttribute('data-clave');
     var root = el.attachShadow ? el.attachShadow({ mode: 'open' }) : el;
-    var estado = { d: null, abiertos: {}, confirmar: false };
+    var estado = { d: null, abiertos: {}, confirmar: false, ver: null };
     function fd(f, o) { return f.toLocaleDateString(loc, o); }
     function pintar() {
       var d = estado.d, h = '<style>' + CSS + '</style><div class="box">';
@@ -82,10 +86,12 @@
       var sig = d.cola[d.indice];
       h += '<div class="res"><div><div class="num">' + hechos + ' <small>' + t.de + ' ' + total + ' ' + t.publicados + '</small></div><div class="bar"><i style="width:' + Math.round(hechos / total * 100) + '%"></i></div></div>' +
         '<div class="prox">' + (sig ? '<b>' + t.proxima + '</b>' + esc(fd(fs[d.indice], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hora(d.hora, L) + ' · ' + esc(sig.titulo) + '<br><span style="color:var(--soft)">' + frecuencia(d, t, L) + ' ' + t.a + ' ' + hora(d.hora, L) + '</span>' : t.fin) + '</div></div>';
+      estado.imgs = {};
       var fila = function (it, f, idx, hecho) {
+        estado.imgs[idx] = (it.imagenes && it.imagenes.filter(Boolean).length ? it.imagenes.filter(Boolean) : [it.imagen]);
         var ab = estado.abiertos[idx];
         return '<div class="fila' + (hecho ? ' hecho' : '') + '"><div class="dia"><b>' + f.getDate() + '</b><span>' + esc(fd(f, { month: 'short' })) + '</span></div>' +
-          '<img class="img" src="' + esc(it.imagen) + '" alt="" loading="lazy">' +
+          (it.imagen ? '<img class="img" src="' + esc(it.imagen) + '" alt="' + esc(it.titulo || '') + '" loading="lazy" data-ver="' + esc(String(idx)) + '" role="button" tabindex="0">' : '<span class="img"></span>') +
           '<div style="min-width:0"><div class="ti">' + esc(it.titulo) + '</div><div class="mt">' + (it.formato === 'carrusel' ? t.carrusel + ' · ' : '') +
           (hecho ? '<span class="ok">' + (hecho.facebook === 'publicado' ? '✓ ' + t.fb : '') + (hecho.instagram === 'publicado' ? ' ✓ ' + t.ig : '') + '</span>' : esc(fd(f, { weekday: 'long' }))) + '</div>' +
           (it.texto ? '<button class="lnk" data-tx="' + idx + '">' + (ab ? t.ocultar : t.texto) + '</button>' + (ab ? '<div class="cap">' + esc(it.texto) + '</div>' : '') : '') + '</div></div>';
@@ -104,9 +110,30 @@
         ? '<div class="conf"><span style="flex:1;min-width:180px">' + t.seguro + '</span><button class="btn" data-acc="no">' + t.no + '</button><button class="btn pri" data-acc="pausa">' + t.si + '</button></div>'
         : '<div><button class="btn' + (d.activo ? '' : ' pri') + '" data-acc="' + (d.activo ? 'pedir' : 'reanudar') + '">' + (d.activo ? t.pausar : t.reanudar) + '</button></div>';
       h += '<div class="pie">' + t.por + ' <a href="https://dgpglobalgroup.com" target="_blank" rel="noopener">DGP Global Group</a></div></div>';
+      if (estado.ver) {
+        var v = estado.ver, u = v.urls[v.i], varias = v.urls.length > 1;
+        h += '<div class="vis" data-acc="cerrar"><button class="x" data-acc="cerrar" aria-label="Cerrar">×</button>' +
+          (varias ? '<button class="nav a" data-acc="ant" aria-label="Anterior">‹</button><button class="nav b" data-acc="sig" aria-label="Siguiente">›</button>' : '') +
+          '<img src="' + esc(u) + '" alt="">' + (varias ? '<div class="n">' + (v.i + 1) + ' / ' + v.urls.length + '</div>' : '') + '</div>';
+      }
       root.innerHTML = h;
     }
+    function abrirVer(key) { var urls = (estado.imgs || {})[key]; if (!urls || !urls[0]) return; estado.ver = { urls: urls, i: 0 }; pintar(); }
+    document.addEventListener('keydown', function (e) {
+      if (!estado.ver) return;
+      if (e.key === 'Escape') { estado.ver = null; pintar(); }
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var v = estado.ver, n = v.urls.length; v.i = (v.i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n; pintar(); }
+    });
+    root.addEventListener('keydown', function (e) { var t = e.target; if ((e.key === 'Enter' || e.key === ' ') && t.hasAttribute && t.hasAttribute('data-ver')) { e.preventDefault(); abrirVer(t.getAttribute('data-ver')); } });
     root.addEventListener('click', function (e) {
+      var im = e.target.closest && e.target.closest('[data-ver]');
+      if (im) { abrirVer(im.getAttribute('data-ver')); return; }
+      if (estado.ver) {
+        var a = e.target.closest && e.target.closest('[data-acc]'), q = a && a.getAttribute('data-acc');
+        if (q === 'ant' || q === 'sig') { var v = estado.ver, n = v.urls.length; v.i = (v.i + (q === 'sig' ? 1 : n - 1)) % n; pintar(); return; }
+        if (q === 'cerrar' && (e.target === a || a.tagName === 'BUTTON')) { estado.ver = null; pintar(); }
+        return;
+      }
       var b = e.target.closest && e.target.closest('button'); if (!b) return;
       if (b.hasAttribute('data-tx')) { var x = b.getAttribute('data-tx'); estado.abiertos[x] = !estado.abiertos[x]; pintar(); return; }
       var acc = b.getAttribute('data-acc');

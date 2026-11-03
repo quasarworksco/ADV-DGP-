@@ -5851,7 +5851,7 @@ function saCalendario(id) {
   const fs = _apFechas(a), hechos = new Map((a.historial || []).map(x => [x.archivo, x]));
   const filas = (a.cola || []).map(c => {
     const h = hechos.get(c.archivo), f = h ? new Date(h.fecha + 'T12:00:00') : fs[c.archivo];
-    return `<div class="ap-item" style="cursor:default"><img src="${esc(c.url)}" alt=""><span><b>${esc(c.titulo)}</b><small>${f ? esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : 'Pausado'}${c.formato === 'carrusel' ? ' · Carrusel' : ''}</small></span>${h ? '<span class="ap-ok">✓ Publicado</span>' : ''}</div>`;
+    return `<div class="ap-item" style="cursor:default"><img src="${esc(c.url)}" alt="" style="cursor:zoom-in" onclick="verImagen(this.src)"><span><b>${esc(c.titulo)}</b><small>${f ? esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : 'Pausado'}${c.formato === 'carrusel' ? ' · Carrusel' : ''}</small></span>${h ? '<span class="ap-ok">✓ Publicado</span>' : ''}</div>`;
   }).join('');
   ptModal('Calendario', a.nombre + (a.plan ? ' · ' + a.plan : ''), `<div class="ap-lista" style="max-height:60vh">${filas || '<div class="ll-sub" style="padding:12px">Sin plan cargado.</div>'}</div>`);
 }
