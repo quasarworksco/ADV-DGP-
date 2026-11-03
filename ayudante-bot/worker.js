@@ -462,6 +462,17 @@ async function fsUpdate(env, path, fields, mask, token) {
   if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
 }
 
+// Crea el documento si no existe, o actualiza esos campos si ya existe
+async function fsGuardar(env, path, fields, token) {
+  const qs = Object.keys(fields).map(m => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
+  const res = await fetch(`${docUrl(env, path)}?${qs}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toValue(fields).mapValue.fields })
+  });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
+}
+
 /* ── Groq visión ── */
 function extraerJSON(texto) {
   const limpio = String(texto || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
@@ -707,7 +718,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03c';
+const WORKER_VERSION = '2026-11-03d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1511,6 +1522,8 @@ async function tgCallback(env, cq) {
     sp: () => botSeguimientoProspecto(env, token, id, 'es'),
     spe: () => botSeguimientoProspecto(env, token, id, 'en'),
     rq: () => botRecordarCotizacion(env, token, id),
+    ec: () => botEnviarBorradorCorreo(env, token, id),
+    ex: () => botDescartarBorradorCorreo(env, token, id),
     x: () => botCancelarBorrador(env, token, id),
     wa: () => botResenaWeb(env, token, id, 'aprobada'),
     wr: () => botResenaWeb(env, token, id, 'rechazada'),
@@ -1520,7 +1533,7 @@ async function tgCallback(env, cq) {
     n: async () => ({ aviso: 'Esto ya se resolvió', ya: true })
   };
   // Crear y enviar tarda unos segundos: se contesta al instante para que el botón no se quede "pensando"
-  const lento = ['c', 'ce', 'k', 'p', 'a', 'sp', 'spe', 'rq'].includes(acc);
+  const lento = ['c', 'ce', 'k', 'p', 'a', 'sp', 'spe', 'rq', 'ec'].includes(acc);
   if (lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: acc === 'ce' ? 'Creating…' : 'Un momento…' });
   let res;
   try { res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' }; }
@@ -1675,6 +1688,16 @@ async function tgMensaje(env, msg) {
     if (!dicho) return tgEnviar(env, '🎧 No logré entender el audio. Intenta de nuevo hablando un poco más despacio.');
   }
   if (!dicho) return tgEnviar(env, AYUDA_BOT);
+  // ¿Contesta a un aviso de correo o a un borrador? → armar el correo para el cliente
+  const respondeA = msg.reply_to_message?.message_id;
+  if (respondeA) {
+    const token = await firebaseLogin(env);
+    const map = await fsGet(env, `tgMap/${respondeA}`, token).catch(() => null);
+    if (map && (map.tipo === 'respuesta' || map.tipo === 'borrador')) {
+      await tgApi(env, 'sendChatAction', { chat_id: chat, action: 'typing' });
+      return borradorCorreoTG(env, token, map, dicho, porVoz);
+    }
+  }
   return altair(env, dicho, porVoz);
 }
 const AYUDA_BOT = `✨ <b>Hola, soy Altair</b>, el asistente de DGP Global Group.
@@ -2902,6 +2925,7 @@ async function revisarRespuestas(env, token, avisar) {
     const nombreCli = c => [c.nombre, c.apellido].filter(Boolean).join(' ');
     const L = [];
     const RE_REBOTE = /mailer-daemon|postmaster|mail delivery|delivery status/i;
+    let individuales = 0;
     for (const m of nuevas) {
       // Aviso de Gmail de que un correo no se entregó: se guarda como rebote, con la dirección que falló
       if (RE_REBOTE.test(`${m.correo} ${m.de}`)) {
@@ -2910,7 +2934,7 @@ async function revisarRespuestas(env, token, avisar) {
         const docR = fallo ? docs.filter(d => String(d.clienteCorreo || '').toLowerCase() === fallo)[0] : null;
         const datosR = { rebote: true, de: 'Correo no entregado', correo: fallo, asunto: m.asunto || '', fecha: m.fecha, texto: String(m.texto || '').slice(0, 1500), hilo: m.hilo || '', adjuntos: 0,
           cliente: cliR ? nombreCli(cliR) : (docR?.cli || ''), clienteId: cliR?._id || '', docFsId: docR?._id || '', docId: docR?.docId || '', docCol: docR ? 'documentos' : '', vista: false, creado: new Date() };
-        await fsUpdate(env, `respuestas/${m.id}`, datosR, Object.keys(datosR), token).catch(e => console.warn('rebote', e));
+        await fsGuardar(env, `respuestas/${m.id}`, datosR, token).catch(e => console.warn('rebote', e));
         L.push(`• ⚠️ <b>Correo rebotado</b>: no llegó a <b>${escHtml(fallo || 'una dirección')}</b>${datosR.cliente ? ` (${escHtml(datosR.cliente)})` : ''}\n   Revisa que el correo esté bien escrito.`);
         continue;
       }
@@ -2922,13 +2946,62 @@ async function revisarRespuestas(env, token, avisar) {
       const datos = { de: m.de || correo, correo, asunto: m.asunto || '', fecha: m.fecha, texto: m.texto || '', hilo: m.hilo || '', adjuntos: Number(m.adjuntos) || 0,
         cliente: cli ? nombreCli(cli) : (doc?.cli || ''), clienteId: cli?._id || '', docFsId: doc?._id || '', docId: doc?.docId || '',
         docCol: doc ? (cots.includes(doc) ? 'cotizaciones' : 'documentos') : '', vista: false, creado: new Date() };
-      await fsUpdate(env, `respuestas/${m.id}`, datos, Object.keys(datos), token).catch(e => console.warn('respuesta', e));
+      await fsGuardar(env, `respuestas/${m.id}`, datos, token).catch(e => console.warn('respuesta', e));
+      // Cada respuesta llega sola a Telegram: se le contesta respondiendo a ese mensaje (texto o voz)
+      if (avisar && individuales < 8) {
+        individuales++;
+        const html = `📨 <b>${escHtml(datos.cliente || datos.de)}</b> te respondió${datos.docId ? ` · ${escHtml(datos.docId)}` : ''}\n${escHtml(datos.correo)}\n<i>${escHtml(datos.asunto)}</i>\n\n${escHtml(datos.texto.slice(0, 1200))}${datos.texto.length > 1200 ? '…' : ''}${datos.adjuntos ? `\n\n📎 ${datos.adjuntos} adjunto${datos.adjuntos > 1 ? 's' : ''} (míralo en Gmail)` : ''}\n\n↩️ <i>Responde a este mensaje (escrito o con nota de voz) diciéndome qué contestarle, y te armo el correo.</i>`;
+        const enviado = await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: html, parse_mode: 'HTML', disable_web_page_preview: true }).catch(() => null);
+        if (enviado?.result?.message_id) await fsGuardar(env, `tgMap/${enviado.result.message_id}`, { tipo: 'respuesta', id: m.id }, token).catch(() => {});
+        continue;
+      }
       L.push(`• <b>${escHtml(datos.cliente || datos.de)}</b>${datos.docId ? ` · ${escHtml(datos.docId)}` : ''}\n   <i>${escHtml(datos.asunto)}</i>\n   ${escHtml(datos.texto.replace(/\s+/g, ' ').slice(0, 220))}${datos.texto.length > 220 ? '…' : ''}`);
     }
-    if (avisar) await tgEnviar(env, [`📨 <b>Correo de info@ (${nuevas.length})</b>`, '', ...L, '', `<a href="${SITIO}/">Abrir el panel → Respuestas</a>`].join('\n')).catch(() => {});
+    if (avisar && L.length) await tgEnviar(env, [`📨 <b>Correo de info@ (${L.length})</b>`, '', ...L, '', `<a href="${SITIO}/">Abrir el panel → Respuestas</a>`].join('\n')).catch(() => {});
   }
-  if (ultima !== cfg.ultima) await fsUpdate(env, 'config/correoRespuestas', { ultima }, ['ultima'], token).catch(() => {});
+  if (ultima !== cfg.ultima) await fsGuardar(env, 'config/correoRespuestas', { ultima }, token).catch(() => {});
   return { nuevas: nuevas.length };
+}
+/* Con una orden corta del dueño ("dile que cuesta 950 y ofrécele el premium") la IA redacta el correo completo */
+const PROMPT_CORREO_RESP = `Redactas la respuesta por correo de DGP Global Group (agencia de páginas web, marketing digital, sistemas y registro de empresas) a un cliente.
+Recibes: el correo del cliente, la ORDEN del dueño (Andrés) sobre qué contestar y, si existe, un BORRADOR anterior para corregir.
+REGLAS:
+- Escribe en el MISMO idioma del correo del cliente (español o inglés).
+- Sigue la ORDEN al pie de la letra: precios, planes y condiciones que diga el dueño son los que van. Si la orden trae cambios a un borrador, aplica solo esos cambios.
+- Usa la INFORMACIÓN DE REFERENCIA solo para detallar lo que incluye un plan que el dueño mencionó. Nunca inventes precios, plazos ni promesas que no estén en la orden o en la referencia.
+- Tono cercano y profesional, frases cortas, 4 a 10 líneas. Saluda por el nombre, responde lo que el cliente preguntó y cierra con un siguiente paso claro (por ejemplo, que responda para enviarle la factura).
+- Puedes usar viñetas "• " para listar lo que incluye un plan. Sin emojis, sin asteriscos, sin markdown.
+- No pongas firma: se agrega sola. No escribas el asunto.
+- Responde SOLO con el texto del correo.`;
+const REF_CORREO = `Registro de empresas (cualquier estado, fees del Estado incluidos): Paquete Básico $600 (registro de la empresa ante el Estado, EIN ante el IRS, Acuerdo Operativo completo y notariado). Paquete Premium $950 (todo lo del Básico + dominio empresarial, página web, hosting por 1 año, dirección virtual y perfil de Google Business). El branding (logo) es adicional. Con estos documentos se puede abrir la cuenta bancaria del negocio.
+Páginas web: Landing $280 (una página, entrega 24-48 h), Estándar $455 (hasta 5 secciones con formulario), Premium $950 (catálogo, reservas y kit social). CRM a medida $997 pago único. Social Media Autopilot $155/mes (20 publicaciones al mes en Facebook e Instagram). Identidad visual (logo y manual) $185. Pagos: Zelle, PayPal o tarjeta desde el link de la factura.`;
+async function borradorCorreoTG(env, token, map, orden, porVoz) {
+  const r = await fsGet(env, `respuestas/${map.id}`, token).catch(() => null);
+  if (!r) return tgEnviar(env, '⚠️ No encontré ese correo. Ábrelo en el panel → Respuestas.');
+  const previo = map.tipo === 'borrador' && r.borrador?.texto ? r.borrador.texto : '';
+  const nombre = String(r.cliente || r.de || '').split(' ')[0];
+  const user = `CORREO DEL CLIENTE (${r.de} <${r.correo}>, asunto "${r.asunto}"):\n${String(r.texto || '').slice(0, 2500)}\n\nNOMBRE PARA SALUDAR: ${nombre || '(sin nombre)'}\n\n${previo ? `BORRADOR ANTERIOR:\n${previo}\n\nCAMBIOS QUE PIDE EL DUEÑO: ${orden}` : `ORDEN DEL DUEÑO: ${orden}`}\n\nINFORMACIÓN DE REFERENCIA:\n${REF_CORREO}`;
+  let texto = await aiTexto(env, PROMPT_CORREO_RESP, user, 700).catch(e => { throw new Error('No pude redactar el correo: ' + e.message); });
+  texto = String(texto || '').replace(/\*\*/g, '').replace(/^(asunto|subject)\s*:.*\n+/i, '').trim();
+  if (!texto) return tgEnviar(env, '⚠️ No me salió el borrador. Intenta decirlo de otra forma.');
+  await fsUpdate(env, `respuestas/${map.id}`, { borrador: { texto, orden: String(orden).slice(0, 500), fecha: new Date().toISOString() } }, ['borrador'], token).catch(() => {});
+  const oido = porVoz ? `🎙 <i>"${escHtml(orden)}"</i>\n\n` : '';
+  const html = `${oido}✉️ <b>Borrador para ${escHtml(r.cliente || r.de)}</b> · ${escHtml(r.correo)}\n\n${escHtml(texto)}\n\n<i>— DGP Global Group (se agrega la firma)</i>\n\n↩️ <i>¿Algo que cambiar? Responde a este mensaje con los cambios.</i>`;
+  const env2 = await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: html, parse_mode: 'HTML', disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: [[{ text: '✅ Enviar desde info@', callback_data: `ec:${map.id}` }, { text: '✖️ Descartar', callback_data: `ex:${map.id}` }]] } });
+  if (env2?.result?.message_id) await fsGuardar(env, `tgMap/${env2.result.message_id}`, { tipo: 'borrador', id: map.id }, token).catch(() => {});
+}
+async function botEnviarBorradorCorreo(env, token, id) {
+  const r = await fsGet(env, `respuestas/${id}`, token);
+  if (!r?.borrador?.texto) return { aviso: 'Ese borrador ya no existe', ya: true };
+  if (r.respondida && r.respondida.texto === r.borrador.texto) return { aviso: 'Ya se envió', ya: true };
+  const out = await responderRespuesta(env, token, id, r.borrador.texto, 'Telegram');
+  if (out.error) return { aviso: 'No se pudo enviar', html: `⚠️ No se pudo enviar: ${escHtml(out.error)}` };
+  return { aviso: 'Enviado ✅', html: `✅ Correo enviado a <b>${escHtml(r.cliente || r.de)}</b> (${escHtml(r.correo)}) desde info@, en el mismo hilo.` };
+}
+async function botDescartarBorradorCorreo(env, token, id) {
+  await fsUpdate(env, `respuestas/${id}`, { borrador: null }, ['borrador'], token).catch(() => {});
+  return { aviso: 'Borrador descartado' };
 }
 async function responderRespuesta(env, token, id, texto, por) {
   const m = await fsGet(env, `respuestas/${id}`, token).catch(() => null);
