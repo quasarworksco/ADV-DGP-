@@ -3440,7 +3440,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <div class="proy-header">
       <div>
         <div class="panel-title-v" style="margin-bottom:2px;">Aliados</div>
-        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Paquetes para sus clientes (pago de contado): sitio web + 1 mes de hosting ($200, luego $25/mes), + 1 año de hosting ($250) o Despegue Total ($550 al cliente, tu parte $300).</div>
+        <div style="font-size:11px;color:var(--text-soft);">Empresas con las que se refieren clientes. Paquetes para sus clientes (pago de contado): sitio web + 1 mes de hosting ($200, luego $25/mes), + 1 año de hosting ($250) o Registro de empresa Premium ($950 al cliente, tu parte $300).</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-logout" onclick="renderAliados(true)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Actualizar</button>
@@ -3979,7 +3979,7 @@ const CATALOGO_BASE = [
   ['Likes', '1,000 Likes', 25, 23], ['Likes', '3,000 Likes', 65, 60], ['Likes', '5,000 Likes', 95, 88],
   ['Hosting y dominios', 'Hosting mensual', 25, 23], ['Hosting y dominios', 'Hosting anual', 145, 135],
   ['Redes sociales', 'Social Media Autopilot · 20 posts al mes en Facebook e Instagram', 155, 144],
-  ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233], ['Aliados', 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', 300, 279]
+  ['Aliados', 'Paquete Aliado · Sitio web completo + 1 mes de hosting', 200, 186], ['Aliados', 'Paquete Aliado · Sitio web completo + 1 año de hosting', 250, 233], ['Aliados', 'Registro de empresa Premium · Página web + dominio + hosting 1 año + Google Business', 300, 279]
 ].map(([categoria, nombre, precio, precioEur], i) => ({ categoria, nombre, precio, precioEur, orden: i, rapido: i < 3 || nombre === 'Hosting anual' }));
 let catalogoList = null;   // null = aún no carga (se usa la lista base)
 let _catSembrado = false;
@@ -4028,10 +4028,12 @@ function initCatalogo() {
       x.nombre = nombre;
       db.collection('catalogo').doc(x._id).update({ nombre, ...(/1 año/.test(nombre) ? { precio: 250, precioEur: 233 } : {}) }).catch(() => {});
     });
+    // Despegue Total ($550) pasó a Registro de empresa Premium ($950 al cliente, la parte de DGP sigue en $300)
+    catalogoList.filter(x => /^Despegue Total/.test(x.nombre || '')).forEach(x => { x.nombre = 'Registro de empresa Premium · Página web + dominio + hosting 1 año + Google Business'; db.collection('catalogo').doc(x._id).update({ nombre: x.nombre }).catch(() => {}); });
     catalogoList.filter(x => /^Social Media Autopilot · 15 posts/.test(x.nombre || '')).forEach(x => { x.nombre = x.nombre.replace('15 posts', '20 posts'); db.collection('catalogo').doc(x._id).update({ nombre: x.nombre }).catch(() => {}); });
     // Autopilot repetido (se creó dos veces al cambiar de 15 a 20 posts): se deja uno solo activo
     catalogoList.filter(x => /^Social Media Autopilot/.test(x.nombre || '') && x.activo !== false).slice(1).forEach(x => { x.activo = false; db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}); });
-    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|despegue|autopilot|crm a medida/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|registro de empresa premium|autopilot|crm a medida/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
@@ -4627,9 +4629,10 @@ async function renderMetaAds() {
 const AL_PAQUETES = {
   mes: { nombre: 'Paquete Aliado · Sitio web completo + 1 mes de hosting', precio: 200, hostingMeses: 1, ciclo: 'mensual', servicio: 'Hosting mensual', renov: 25 },
   anio: { nombre: 'Paquete Aliado · Sitio web completo + 1 año de hosting', precio: 250, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145 },
-  // Combo con el aliado: el cliente le paga $550 al aliado; $250 son del aliado (LLC + EIN) y solo $300 son de DGP (lo único que se factura aquí)
-  despegue: { nombre: 'Despegue Total · Landing page + dominio .com + hosting 1 año + Google Business', precio: 300, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145,
-    combo: { nombre: 'Despegue Total', total: 550, aliado: 250, aliadoIncluye: 'registro de LLC y EIN' }, dominioCom: true, renovDominio: 20 }
+  // Combo con el aliado: el cliente le paga $950 al aliado; $650 son del aliado (registro, EIN, Acuerdo Operativo, dirección virtual y fees del Estado)
+  // y solo $300 son de DGP (lo único que se factura aquí). El Paquete Básico ($600) es todo del aliado: no se factura aquí.
+  despegue: { nombre: 'Registro de empresa Premium · Página web + dominio + hosting 1 año + Google Business', precio: 300, hostingMeses: 12, ciclo: 'anual', servicio: 'Hosting anual', renov: 145,
+    combo: { nombre: 'Registro de empresa Premium', total: 950, aliado: 650, aliadoIncluye: 'registro de la empresa, EIN, Acuerdo Operativo notariado, dirección virtual y fees del Estado' }, dominioCom: true, renovDominio: 20 }
 };
 let _al = { lista: null, sel: null };
 
@@ -5459,7 +5462,7 @@ const CONTENIDO = [
   { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-13', lang: 'es', titulo: "Que te encuentren en el mapa", archivo: 'carrusel-10-google-maps-es.jpg', archivoEn: 'carrusel-10-google-maps-en.jpg',
     texto: "📍 Que te encuentren en Google Maps. Configuramos tu perfil de Google Business y lo conectamos con tu página web para que te llamen, te escriban y lleguen a tu negocio.\n👉 https://dgpglobalgroup.com/guias/como-aparecer-en-google-maps/\n\n🇺🇸 Get found on Google Maps. We set up your Google Business Profile and connect it to your website.\n👉 https://dgpglobalgroup.com/en/guides/how-to-show-up-on-google-maps/\n\n#GoogleMaps #GoogleBusiness #NegocioLocal #SEOLocal #Florida" },
   { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-15', lang: 'es', titulo: "Abre tu LLC y sal a vender", archivo: 'carrusel-11-llc-es.jpg', archivoEn: 'carrusel-11-llc-en.jpg',
-    texto: "🏢 Abre tu LLC y sal a vender. Con nuestros aliados especializados registramos tu LLC y tu EIN, y te dejamos lista tu página web, dominio .com, hosting por un año y tu perfil de Google Business.\nPaquete Despegue Total: $550 en honorarios (los costos del estado se cotizan aparte).\n👉 https://dgpglobalgroup.com/registro-de-empresas/\n\n🇺🇸 Open your LLC and start selling: LLC + EIN, website, .com domain, 1 year of hosting and Google Business. $550 in fees.\n👉 https://dgpglobalgroup.com/en/business-registration/\n\n#LLC #Emprendedores #NegociosEnUSA #EIN #EmpresaEnUSA" },
+    texto: "🏢 Abre tu LLC y sal a vender. Con nuestros aliados especializados registramos tu empresa en cualquier estado, con los fees del Estado incluidos.\nPaquete Básico $600: registro, EIN y Acuerdo Operativo notariado.\nPaquete Premium $950: además página web, dominio, hosting por un año, dirección virtual y tu perfil de Google Business.\n👉 https://dgpglobalgroup.com/registro-de-empresas/\n\n🇺🇸 Open your LLC and start selling, in any state with state fees included. Basic $600: filing, EIN and notarized Operating Agreement. Premium $950: plus website, domain, 1 year of hosting, virtual address and Google Business.\n👉 https://dgpglobalgroup.com/en/business-registration/\n\n#LLC #Emprendedores #NegociosEnUSA #EIN #EmpresaEnUSA" },
   { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-17', lang: 'es', titulo: "¿Tu web te trae clientes?", archivo: 'carrusel-12-auditoria-es.jpg', archivoEn: 'carrusel-12-auditoria-en.jpg',
     texto: "🔍 ¿Ya tienes página web pero no te llegan clientes? Te hacemos una auditoría GRATIS: revisamos cómo se ve en el celular, qué tan rápido carga y si aparece en Google, y te enviamos las mejoras concretas.\n👉 https://dgpglobalgroup.com/auditoria-gratis/\n\n🇺🇸 Is your website bringing in clients? Get a FREE audit of mobile, speed and Google, with the exact fixes.\n👉 https://dgpglobalgroup.com/en/free-audit/\n\n#AuditoriaWeb #SEO #PaginaWeb #MarketingDigital #Gratis" },
   { tipo: 'carrusel', plan: 'Plan oct–nov 2026', fecha: '2026-11-19', lang: 'es', titulo: "Habla el idioma de tus clientes", archivo: 'carrusel-13-bilingue-es.jpg', archivoEn: 'carrusel-13-bilingue-en.jpg',
@@ -6053,16 +6056,22 @@ ${_W}/sistemas/` },
   // ── Registro de empresas ──
   { s: 'llc', c: 'largo', lang: 'es', t: `🏢 ¿Quieres abrir tu empresa en EE. UU.?
 
-Con nuestros aliados especializados registramos tu LLC y tramitamos tu EIN, y nosotros te dejamos lista tu presencia digital para empezar a vender.
+Con nuestros aliados especializados registramos tu empresa en cualquier estado, y los fees del Estado ya están incluidos.
 
-📄 LLC + EIN: $300
-🚀 Despegue Total: $550 (LLC + EIN, página web, dominio .com y hosting por 1 año, y Google Business)
-📈 Perfil Empresarial: $650 (si ya tienes LLC: web, correo profesional, DUNS y crédito empresarial)
-🏆 LLC + Perfil Completo: $850 (todo incluido desde cero)
+📄 Paquete Básico: $600
+• Registro de la empresa ante el Estado
+• EIN ante el IRS
+• Acuerdo Operativo completo y notariado
 
-Son nuestros honorarios; los costos del estado se cotizan aparte según dónde la registres 👇
+🚀 Paquete Premium: $950
+• Todo lo del Básico
+• Dominio empresarial, página web y hosting por 1 año
+• Dirección virtual
+• Perfil de Google Business (para aparecer en Google y Google Maps)
+
+El branding (logo) es adicional. Con estos documentos puedes abrir la cuenta bancaria de tu negocio 👇
 ${_W}/registro-de-empresas/` },
-  { s: 'llc', c: 'corto', lang: 'es', t: `🏢 Abre tu LLC y sal a vender con página web y Google Business. Paquete Despegue Total $550: ${_W}/registro-de-empresas/` },
+  { s: 'llc', c: 'corto', lang: 'es', t: `🏢 Registra tu empresa en cualquier estado con los fees incluidos: Básico $600 o Premium $950 con página web y Google Business. ${_W}/registro-de-empresas/` },
 
   // ── Auditoría gratis ──
   { s: 'auditoria', c: 'largo', lang: 'es', t: `🔍 ¿Ya tienes página web pero no te llegan clientes?
