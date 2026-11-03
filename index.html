@@ -3,7 +3,7 @@
 <head>
 <script>try{var t=localStorage.getItem('dgp-theme');if(t==='dark'||(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <title>DGP Global Group | Sistema Completo</title>
   <meta name="robots" content="noindex, nofollow">
@@ -1756,6 +1756,32 @@ body { font-family:'Plus Jakarta Sans', 'Segoe UI', sans-serif; -webkit-font-smo
 .smm-tabla input:focus { outline:none; border-color:var(--blue); background:#fff; }
 .smm-est { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.5px; white-space:nowrap; }
 .smm-red { display:inline-flex; align-items:center; gap:6px; font-weight:600; }
+
+/* ─── Safari / iPhone: muesca y barra de estado, alto real de pantalla y que el header siempre quepa ─── */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+.header { -webkit-backdrop-filter:blur(16px); padding-top:max(10px, env(safe-area-inset-top)) !important; padding-left:max(12px, env(safe-area-inset-left)) !important; padding-right:max(12px, env(safe-area-inset-right)) !important; }
+@media (min-width:900px) { .header { padding-left:max(28px, env(safe-area-inset-left)) !important; padding-right:max(28px, env(safe-area-inset-right)) !important; } }
+.header > div:first-child { min-width:0; flex:1 1 auto; }
+.header > div:first-child > div { min-width:0; }
+.logo-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.header-right, .header-right > * { flex-shrink:0; }
+@media (max-width:600px) {
+  .av-btn, .header-right .user-avatar, .menu-movil, .hdr-search { -webkit-appearance:none; appearance:none; padding:0 !important; flex-shrink:0; }
+  .hdr-menu, .av-menu { top:calc(58px + env(safe-area-inset-top)) !important; }
+}
+@media (max-width:380px) {
+  .logo-text span { display:none; }
+  .header-right { gap:4px !important; }
+  .header-right .btn-logout, .hdr-search, .av-btn, .header-right .user-avatar { width:32px !important; height:32px !important; }
+  .menu-movil { width:36px; height:36px; }
+}
+@media (max-width:899px) { .nav-tabs { padding-top:calc(20px + env(safe-area-inset-top)) !important; padding-bottom:calc(32px + env(safe-area-inset-bottom)) !important; } }
+@supports (height:100dvh) {
+  .doc-sheet, .edit-sheet { max-height:92dvh; }
+  .modal-box { max-height:88dvh; }
+  @media (max-width:600px) { .doc-sheet, .edit-sheet { max-height:93dvh; } }
+  .pt-side { max-height:calc(100dvh - var(--hdr-h, 71px) - 24px); }
+}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
