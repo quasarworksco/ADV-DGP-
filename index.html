@@ -2258,6 +2258,7 @@ html.dark .hdr-mi.danger:hover { background:rgba(239,68,68,.12); color:#f87171; 
 /* ═══ Buscador rápido ═══ */
 .bs-over { position:fixed; inset:0; z-index:100000; display:flex; justify-content:center; align-items:flex-start; padding:12vh 16px 16px; background:rgba(8,12,24,.45); backdrop-filter:blur(6px); opacity:0; visibility:hidden; transition:opacity .18s ease, visibility 0s .18s; }
 .bs-over.open { opacity:1; visibility:visible; transition:opacity .18s ease; }
+body.bs-abierto { overflow:hidden; }
 .bs-box { width:100%; max-width:620px; background:var(--white); border:1px solid var(--border); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.3); overflow:hidden; transform:translateY(-8px) scale(.985); transition:transform .24s var(--ease-out); }
 .bs-over.open .bs-box { transform:none; }
 .bs-in { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); color:var(--text-soft); }
@@ -2283,7 +2284,9 @@ html.dark .hdr-mi.danger:hover { background:rgba(239,68,68,.12); color:#f87171; 
 .bs-vacio { padding:28px 16px; text-align:center; font-size:13px; color:var(--text-soft); }
 .bs-foot { display:flex; gap:16px; padding:10px 16px; border-top:1px solid var(--border); font-size:11px; color:var(--text-soft); background:var(--off); }
 .bs-foot kbd { margin-right:3px; }
-@media (max-width:600px) { .bs-over { padding-top:calc(env(safe-area-inset-top, 0px) + 64px) !important; } .bs-foot { display:none; } }
+@media (max-width:600px) { .bs-over { padding-top:calc(env(safe-area-inset-top, 0px) + 64px) !important; } .bs-foot { display:none; } .bs-in input { font-size:16px !important; } }
+/* iPhone: sin zoom al escribir en ningún campo (Safari hace zoom si la letra es menor de 16 px) */
+@media (max-width:600px) and (hover:none) { input, select, textarea { font-size:max(16px, 1em) !important; } }
 
 /* ═══ Ventanas (modales): encabezado claro, botón cerrar y entrada suave ═══ */
 .modal-overlay.show { animation:ovIn .2s ease both; }
@@ -10925,9 +10928,21 @@ function abrirBuscador() {
   cerrarMenuUsuario();
   o.classList.add('open');
   const q = o.querySelector('#bs-q'); q.value = ''; _bsSel = 0; _bsPintar('');
-  setTimeout(() => q.focus(), 30);
+  // iPhone: al abrir el teclado la pantalla visible se mueve; el buscador la sigue para no quedar debajo de la Dynamic Island
+  const vv = window.visualViewport;
+  if (vv && !o._vv) {
+    o._vv = () => { if (!o.classList.contains('open')) return; o.style.top = vv.offsetTop + 'px'; o.style.height = vv.height + 'px'; o.style.bottom = 'auto'; };
+    vv.addEventListener('resize', o._vv); vv.addEventListener('scroll', o._vv);
+  }
+  o._vv?.();
+  document.body.classList.add('bs-abierto');
+  setTimeout(() => q.focus({ preventScroll: true }), 30);
 }
-function cerrarBuscador() { document.getElementById('bs-over')?.classList.remove('open'); }
+function cerrarBuscador() {
+  const o = document.getElementById('bs-over'); if (!o) return;
+  o.classList.remove('open'); o.style.top = ''; o.style.height = ''; o.style.bottom = '';
+  document.body.classList.remove('bs-abierto');
+}
 function _bsPintar(texto) {
   const n = ptNorm(texto || ''), has = t => !n || ptNorm(t).includes(n);
   const secciones = [...document.querySelectorAll('.nav-tab')].map(b => { const m = (b.getAttribute('onclick') || '').match(/switchPage\('([a-z]+)'/); return m ? { t: [...b.childNodes].filter(n => !(n.nodeType === 1 && /badge/.test(n.id || ''))).map(n => n.textContent).join('').trim().replace(/\s+/g, ' '), d: 'Sección', tipo: 'seccion', fn: () => b.click() } : null; })
