@@ -709,7 +709,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03g';
+const WORKER_VERSION = '2026-11-03h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -895,7 +895,7 @@ function seccionTG(texto) {
 // Cambia el destino del chat privado al grupo, en el tema que corresponde
 async function tgDestino(env, texto) {
   const c = await tgCfg(env);
-  if (!c.grupo) return null;
+  if (!c.grupo || _tgCtx?.privado) return null;   // si me escribes por privado, te respondo por privado
   const hilo = _tgCtx?.hilo || (c.temas || {})[_tgCtx?.sec || seccionTG(texto)] || (c.temas || {}).altair || null;
   return { chat: String(c.grupo), hilo: hilo ? Number(hilo) : null };
 }
@@ -937,8 +937,11 @@ async function tgVincularGrupo(env, msg) {
   }
   await fsGuardar(env, 'config/telegram', { grupo: String(chat.id), nombreGrupo: chat.title || '', temas, vinculado: new Date().toISOString() }, token);
   _tgCfg = null;
+  // El tema "General" no se puede borrar, pero sí ocultar
+  const oculto = await tgApi(env, 'hideGeneralForumTopic', { chat_id: chat.id }).catch(() => ({}));
+  if (!nuevos.length) return tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas.altair, text: oculto.ok ? 'Listo: oculté el tema General. Los demás temas siguen igual.' : `No pude ocultar el tema General: ${oculto.description || 'error'}. Revisa que el bot tenga el permiso "Gestionar temas".` });
   await tgApi(env, 'sendMessage', { chat_id: chat.id, parse_mode: 'HTML', text: `✅ <b>Grupo vinculado</b>${nuevos.length ? `\nCreé los temas: ${nuevos.join(', ')}` : ''}\n\nDesde ahora cada aviso llega a su tema. Para hablar con Altair escribe en ✨ Altair (o en cualquier tema: te responde ahí mismo).` });
-  for (const [k, nombre] of TG_TEMAS) await tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas[k], text: { resumenes: 'Aquí llegan el resumen diario, el semanal, el mensual, el briefing y el respaldo.', cobros: 'Aquí llegan comprobantes, pagos, facturas, suscripciones y recordatorios de cobro.', correos: 'Aquí llegan las respuestas de clientes por correo. Responde a un aviso para contestarle.', redes: 'Aquí llegan Autopilot, pedidos de seguidores y reseñas.', webs: 'Aquí llegan las caídas y avisos de las webs de tus clientes.', alertas: 'Aquí llegan los errores del sistema.', altair: 'Háblame aquí: pregúntame cosas o pídeme facturas, escrito o con nota de voz.' }[k] }).catch(() => {});
+  for (const [k] of TG_TEMAS) await tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas[k], text: { resumenes: 'Aquí llegan el resumen diario, el semanal, el mensual, el briefing y el respaldo.', cobros: 'Aquí llegan comprobantes, pagos, facturas, suscripciones y recordatorios de cobro.', correos: 'Aquí llegan las respuestas de clientes por correo. Responde a un aviso para contestarle.', redes: 'Aquí llegan Autopilot, pedidos de seguidores y reseñas.', webs: 'Aquí llegan las caídas y avisos de las webs de tus clientes.', alertas: 'Aquí llegan los errores del sistema.', altair: 'Háblame aquí: pregúntame cosas o pídeme facturas, escrito o con nota de voz.' }[k] }).catch(() => {});
 }
 
 async function tgEnviar(env, html) {
@@ -1580,7 +1583,7 @@ function botonesPago(fsId, ev) {
 async function tgCallback(env, cq) {
   const chat = String(cq.message?.chat?.id || '');
   if (!(await tgEsDuenio(env, chat, cq.from?.id))) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'No autorizado' });
-  _tgCtx = chat !== TG_CHAT ? { hilo: cq.message?.message_thread_id || null } : null;
+  _tgCtx = chat !== TG_CHAT ? { hilo: cq.message?.message_thread_id || null } : { privado: true };
   const [acc, id, extra] = String(cq.data || '').split(':');
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id || '')) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Botón no válido' });
   const token = await firebaseLogin(env);
@@ -1746,7 +1749,7 @@ async function tgMensaje(env, msg) {
     return;
   }
   // Si escribes en un tema del grupo, la respuesta llega a ese mismo tema
-  _tgCtx = chat !== TG_CHAT ? { hilo: msg.message_thread_id || null } : null;
+  _tgCtx = chat !== TG_CHAT ? { hilo: msg.message_thread_id || null } : { privado: true };
   if (/^\/(start|ayuda|help)\b/i.test(texto)) return tgEnviar(env, AYUDA_BOT);
   if (/^\/meta\b/i.test(texto)) { const token = await firebaseLogin(env); return tgEnviar(env, (await lineaMeta(env, token)) || '🎯 Aún no tienes una meta del mes. Ponla en el panel → Dashboard.'); }
   if (/^\/briefing\b/i.test(texto)) return briefingLunes(env);
