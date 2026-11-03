@@ -209,6 +209,7 @@ export default {
     if (ruta === TG_RUTA) return handleTgNotif(request, env, ctx);
     if (ruta === '/contacto') return handleContacto(request, env);
     if (ruta === '/aviso') return handleAviso(request, env);
+    if (ruta.startsWith('/push')) return handlePush(request, env, ctx);
     if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
@@ -709,7 +710,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03j';
+const WORKER_VERSION = '2026-11-03k';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -900,6 +901,14 @@ async function tgDestino(env, texto) {
   return { chat: String(c.grupo), hilo: hilo ? Number(hilo) : null };
 }
 async function tgFetch(env, url, opts = {}) {
+  // Notificación al celular (panel instalado como app) para los avisos importantes
+  try {
+    if (!_tgCtx && /\/send(Message|Photo|Document|Audio)$/.test(url)) {
+      const fd = opts.body instanceof FormData, b = fd ? null : (typeof opts.body === 'string' ? JSON.parse(opts.body) : {});
+      const chat = fd ? String(opts.body.get('chat_id')) : String(b.chat_id);
+      if (chat === TG_CHAT) await pushDesdeTelegram(env, fd ? (opts.body.get('caption') || '') : (b.text || b.caption || '')).catch(e => console.warn('push', e));
+    }
+  } catch (e) {}
   try {
     if (opts.body instanceof FormData) {
       if (String(opts.body.get('chat_id')) === TG_CHAT) {
@@ -2976,6 +2985,98 @@ async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
     smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NOTIFICACIONES DEL PANEL EN EL CELULAR (Web Push, sin servicios externos)
+   · La clave privada vive en Cloudflare como secreto VAPID_PRIVADA (JWK).
+   · Cada celular que activa avisos queda en Firestore: pushSubs.
+   POST /push/clave   (equipo) → crea el par de claves una vez y devuelve la privada para guardarla en Cloudflare
+   GET  /push/publica           → clave pública para suscribirse
+   POST /push/prueba  (equipo) → manda una notificación de prueba
+══════════════════════════════════════════════════════════════ */
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const desB64u = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((String(s).length + 3) % 4)), c => c.charCodeAt(0));
+function vapidJwk(env) { try { return env.VAPID_PRIVADA ? JSON.parse(env.VAPID_PRIVADA) : null; } catch (e) { return null; } }
+const vapidPublica = jwk => b64u(new Uint8Array([4, ...desB64u(jwk.x), ...desB64u(jwk.y)]));
+const PUSH_SECCIONES = ['cobros', 'correos', 'webs', 'alertas'];
+let _pushSubs = null, _pushSubsAt = 0;
+async function pushSubs(env, token) {
+  if (_pushSubs && Date.now() - _pushSubsAt < 10 * 60e3) return _pushSubs;
+  _pushSubs = await fsList(env, 'pushSubs', token).catch(() => []); _pushSubsAt = Date.now();
+  return _pushSubs;
+}
+async function hkdf(salt, ikm, info, len) {
+  const k = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, k, len * 8));
+}
+const junta = (...a) => { const out = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let i = 0; a.forEach(x => { out.set(x, i); i += x.length; }); return out; };
+const txt = s => new TextEncoder().encode(s);
+// Cifrado aes128gcm (RFC 8291) del contenido para un celular
+async function cifrarPush(sub, datos) {
+  const uaPub = desB64u(sub.keys.p256dh), auth = desB64u(sub.keys.auth);
+  const efimera = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const asPub = new Uint8Array(await crypto.subtle.exportKey('raw', efimera.publicKey));
+  const uaKey = await crypto.subtle.importKey('raw', uaPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const secreto = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaKey }, efimera.privateKey, 256));
+  const ikm = await hkdf(auth, secreto, junta(txt('WebPush: info\0'), uaPub, asPub), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, txt('Content-Encoding: aes128gcm\0'), 16);
+  const nonce = await hkdf(salt, ikm, txt('Content-Encoding: nonce\0'), 12);
+  const clave = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+  const cifrado = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, clave, junta(txt(JSON.stringify(datos)), new Uint8Array([2]))));
+  return junta(salt, new Uint8Array([0, 0, 16, 0]), new Uint8Array([65]), asPub, cifrado);
+}
+async function firmaVapid(jwk, endpoint) {
+  const aud = new URL(endpoint).origin;
+  const cab = b64u(txt(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+  const cuerpo = b64u(txt(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: 'mailto:info@dgpglobalgroup.com' })));
+  const k = await crypto.subtle.importKey('jwk', { ...jwk, key_ops: ['sign'] }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const firma = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, k, txt(`${cab}.${cuerpo}`));
+  return `vapid t=${cab}.${cuerpo}.${b64u(firma)}, k=${vapidPublica(jwk)}`;
+}
+async function enviarPush(env, datos, token) {
+  const jwk = vapidJwk(env); if (!jwk) return { enviados: 0, motivo: 'Falta VAPID_PRIVADA' };
+  token = token || await firebaseLogin(env);
+  const subs = await pushSubs(env, token);
+  let enviados = 0;
+  for (const s of subs) {
+    if (!s.endpoint || !s.keys) continue;
+    try {
+      const res = await fetch(s.endpoint, { method: 'POST', headers: { Authorization: await firmaVapid(jwk, s.endpoint), 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '86400', Urgency: 'high' }, body: await cifrarPush(s, datos) });
+      if (res.status === 404 || res.status === 410) { await fetch(docUrl(env, `pushSubs/${s._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {}); _pushSubs = null; }
+      else if (res.ok) enviados++;
+      else console.warn('push', res.status, await res.text().catch(() => ''));
+    } catch (e) { console.warn('push', e); }
+  }
+  return { enviados };
+}
+// Título claro (lo que se ve en la notificación) a partir del aviso de Telegram
+async function pushDesdeTelegram(env, texto) {
+  if (!vapidJwk(env)) return;
+  const sec = seccionTG(texto);
+  if (!PUSH_SECCIONES.includes(sec)) return;
+  const lineas = String(texto).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').split('\n').map(l => l.trim()).filter(Boolean);
+  let titulo = lineas[0] || 'DGP Global Group', cuerpo = lineas.slice(1, 4).join(' · ');
+  const cli = (String(texto).match(/Cliente:\s*([^\n<]+)/) || [])[1];
+  if (/comprobante/i.test(titulo)) titulo = `💰 ¡Te pagaron!${cli ? ' ' + cli.trim() : ''}`, cuerpo = 'Subió su comprobante de pago. ' + cuerpo;
+  const pagina = { cobros: 'facturacion', correos: 'respuestas', webs: 'webs', alertas: 'dashboard' }[sec];
+  await enviarPush(env, { titulo: titulo.slice(0, 80), cuerpo: cuerpo.slice(0, 180), pagina });
+}
+async function handlePush(request, env, ctx) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  const ruta = new URL(request.url).pathname;
+  if (ruta === '/push/publica') { const jwk = vapidJwk(env); return json(request, jwk ? { publica: vapidPublica(jwk) } : { publica: null }); }
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+  if (ruta === '/push/clave') {
+    if (vapidJwk(env)) return json(request, { yaExiste: true, publica: vapidPublica(vapidJwk(env)) });
+    const par = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const jwk = await crypto.subtle.exportKey('jwk', par.privateKey);
+    return json(request, { privada: JSON.stringify({ kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y, d: jwk.d }), publica: vapidPublica(jwk) });
+  }
+  if (ruta === '/push/prueba') { _pushSubs = null; return json(request, await enviarPush(env, { titulo: '💰 ¡Te pagaron! (prueba)', cuerpo: 'Así te llegarán los avisos del panel de DGP Global Group.', pagina: 'dashboard' }, quien.token)); }
+  return json(request, { error: 'Ruta no válida' }, 404);
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -4329,9 +4329,95 @@ function initPage() {
   initCatalogo();
   initAutomatizaciones();
   onTypeChange();
-  // El panel abre en el Dashboard
-  const dashBtn = [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes("'dashboard'"));
-  if (dashBtn) switchPage('dashboard', dashBtn);
+  // El panel abre en el Dashboard (o en la sección de la notificación que tocaste)
+  irAPagina(location.hash.slice(1) || 'dashboard');
+  if (location.hash) history.replaceState(null, '', location.pathname);
+}
+function irAPagina(p) {
+  const btn = [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes(`'${p}'`))
+    || [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes("'dashboard'"));
+  if (btn) btn.click();
+}
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.irA) irAPagina(e.data.irA); });
+
+/* ═══════════════════════════════════════════════════════
+   NOTIFICACIONES EN EL CELULAR (Web Push: el bot avisa de pagos, correos y webs caídas)
+═══════════════════════════════════════════════════════ */
+const _esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const _instalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function pushB64(s) { const p = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); }
+async function pushFetch(ruta, metodo) {
+  const token = await auth.currentUser.getIdToken();
+  const r = await fetch(`${RW_WORKER}/push/${ruta}`, { method: metodo || 'POST', headers: { Authorization: `Bearer ${token}` } });
+  const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status); return d;
+}
+async function pushEstadoHTML() {
+  const caja = document.getElementById('push-caja'); if (!caja) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    caja.innerHTML = _esIOS && !_instalada()
+      ? `<b>En iPhone primero instala el panel:</b> ábrelo en <b>Safari</b> → botón <b>Compartir</b> → <b>Agregar a pantalla de inicio</b>. Luego ábrelo desde el ícono de DGP y vuelve aquí.`
+      : 'Este navegador no permite notificaciones. Usa Chrome (Android o computadora) o Safari en iPhone con el panel instalado.';
+    return;
+  }
+  let pub = null; try { pub = (await fetch(`${RW_WORKER}/push/publica`).then(r => r.json())).publica; } catch (e) {}
+  if (!pub) {
+    caja.innerHTML = `<b>Paso 1 (una sola vez):</b> crea la clave de las notificaciones y guárdala en Cloudflare.<div style="margin-top:8px"><button class="alt-act" style="width:auto" onclick="pushCrearClave(this)"><span><b>Crear clave</b></span></button></div><div id="push-clave"></div>`;
+    return;
+  }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  caja.innerHTML = sub && Notification.permission === 'granted'
+    ? `<span style="color:#059669;font-weight:700">✓ Activadas en este dispositivo.</span> Te llegan: pagos y comprobantes, respuestas de clientes por correo, webs caídas y alertas.
+       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="alt-act" style="width:auto" onclick="pushProbar(this)"><span><b>Enviar prueba</b></span></button><button class="alt-act" style="width:auto" onclick="pushDesactivar(this)"><span><b>Desactivar aquí</b></span></button></div>`
+    : `${_esIOS && !_instalada() ? '<b>En iPhone:</b> ábrelo desde el ícono de DGP en tu pantalla de inicio (Safari → Compartir → Agregar a pantalla de inicio) y activa desde ahí.<br>' : ''}Recibe en este dispositivo los avisos de pagos, correos de clientes y webs caídas, aunque el panel esté cerrado.
+       <div style="margin-top:8px"><button class="alt-act" style="width:auto;background:var(--blue);color:#fff" onclick="pushActivar(this)"><span><b>Activar en este dispositivo</b></span></button></div>`;
+}
+async function pushCrearClave(btn) {
+  btn.disabled = true;
+  try {
+    const d = await pushFetch('clave');
+    if (d.yaExiste) { pushEstadoHTML(); return; }
+    document.getElementById('push-clave').innerHTML = `<div style="margin-top:10px;font-size:12px;line-height:1.55">
+      Copia esta clave y guárdala en Cloudflare: <b>Workers → ayudante-dgp-bot → Settings → Variables and Secrets → Add</b> → Type: <b>Secret</b> → Name: <b>VAPID_PRIVADA</b> → Value: pega la clave → <b>Deploy</b>.<br>
+      No la compartas con nadie ni la pegues en chats. Después de guardarla, vuelve a abrir esta ventana.</div>
+      <textarea readonly rows="3" style="width:100%;margin-top:6px;font:11px monospace;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface,#fff);color:inherit" onclick="this.select()">${esc(d.privada)}</textarea>
+      <button class="alt-act" style="width:auto;margin-top:6px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value).then(()=>toast('Clave copiada','ok'))"><span><b>Copiar clave</b></span></button>`;
+  } catch (e) { toast('No se pudo crear: ' + e.message, 'err'); btn.disabled = false; }
+}
+async function pushActivar(btn) {
+  btn.disabled = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('No diste permiso para notificaciones. Actívalo en los ajustes del navegador o del celular.');
+    const { publica } = await fetch(`${RW_WORKER}/push/publica`).then(r => r.json());
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushB64(publica) });
+    const j = sub.toJSON();
+    const id = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(j.endpoint)))).slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+    const disp = _esIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : /mac/i.test(navigator.userAgent) ? 'Mac' : 'Computadora';
+    await db.collection('pushSubs').doc(id).set({ endpoint: j.endpoint, keys: j.keys, dispositivo: disp, por: currentUser?.email || '', creado: firebase.firestore.FieldValue.serverTimestamp() });
+    toast('Notificaciones activadas ✅', 'ok');
+    await pushEstadoHTML();
+    pushProbar(null);
+  } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
+}
+async function pushProbar(btn) {
+  if (btn) btn.disabled = true;
+  try { const d = await pushFetch('prueba'); if (btn) toast(d.enviados ? `Prueba enviada a ${d.enviados} dispositivo${d.enviados > 1 ? 's' : ''}` : (d.motivo || 'No hay dispositivos activados'), d.enviados ? 'ok' : 'err'); }
+  catch (e) { if (btn) toast('No se pudo enviar: ' + e.message, 'err'); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function pushDesactivar(btn) {
+  btn.disabled = true;
+  try {
+    const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const id = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sub.endpoint)))).slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+      await db.collection('pushSubs').doc(id).delete().catch(() => {}); await sub.unsubscribe();
+    }
+    toast('Desactivadas en este dispositivo', 'ok'); pushEstadoHTML();
+  } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
 }
 
 /* ─── Selector de emisor + filtros del historial ─── */
@@ -12302,6 +12388,8 @@ function abrirAltair() {
       <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz o un mensaje y te responde con su voz. Por ejemplo:</small>
         <div class="alt-ej"><span>¿Cuánto me debe Ana?</span><span>¿Quién vence esta semana?</span><span>Recuérdale a Luis que pague</span><span>Factura a Pedro de $200 por una web</span></div></div>
     </div>
+    <div class="alt-t">Notificaciones en el celular</div>
+    <div id="push-caja" style="font-size:12.5px;color:var(--text-mid);line-height:1.55;padding:2px 0 10px">Revisando…</div>
     <div class="alt-t">Automatizaciones</div>
     ${fila('cobrador', 'Cobrador amable', 'Día 3 y día 8 de atraso le escribe al cliente por correo; el día 15 te avisa para que llames.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
@@ -12316,6 +12404,7 @@ function abrirAltair() {
       <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>
       <button class="alt-act" onclick="sonarChaching();lanzarConfeti();"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
     </div>`);
+  pushEstadoHTML();
 }
 async function cambiarAuto(k, on) {
   if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) { sonarChaching(); lanzarConfeti(); } return; }
