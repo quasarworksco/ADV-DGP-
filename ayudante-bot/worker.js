@@ -709,7 +709,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03i';
+const WORKER_VERSION = '2026-11-03j';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3020,6 +3020,14 @@ async function revisarWebs(env, manual) {
     const ahora = new Date().toISOString();
     const upd = { estado: r.estado, ms: r.ms ?? null, codigo: r.codigo ?? null, error: r.error || '', candado: r.candado, revisado: ahora, dias };
     const quien = `<b>${escHtml(w.cliente || w.dominio)}</b> · ${escHtml(w.dominio)}`;
+    // Registro de incidentes para el panel (los últimos 20)
+    const ev = [];
+    if (r.estado === 'caida' && w.estado !== 'caida') ev.push({ tipo: 'caida', detalle: r.error || '' });
+    if (r.estado !== 'caida' && w.estado === 'caida') ev.push({ tipo: 'vuelve', detalle: '' });
+    if (r.estado === 'lenta' && w.estado === 'ok') ev.push({ tipo: 'lenta', detalle: r.ms ? (r.ms / 1000).toFixed(1) + ' s' : '' });
+    if (r.candado === false && w.candado !== false) ev.push({ tipo: 'candado', detalle: '' });
+    if (r.candado === true && w.candado === false) ev.push({ tipo: 'candadoOk', detalle: '' });
+    if (ev.length) upd.eventos = [...(Array.isArray(w.eventos) ? w.eventos : []), ...ev.map(e => ({ ...e, fecha: ahora }))].slice(-20);
     if (r.estado === 'caida' && w.estado !== 'caida') { upd.caidaDesde = ahora; L.push(`🔴 ${quien} <b>se cayó</b>${r.error ? ` (${escHtml(r.error)})` : ''}.`); }
     if (r.estado !== 'caida' && w.estado === 'caida') {
       const min = w.caidaDesde ? Math.round((Date.now() - new Date(w.caidaDesde).getTime()) / 60000) : null;

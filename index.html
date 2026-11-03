@@ -644,7 +644,9 @@
     .sheet-status-badge.parcial::before { content:''; width:6px; height:6px; border-radius:50%; background:#fb923c; display:block; }
 
     /* ─── PAYMENT BREAKDOWN BLOCK ─── */
-    @media (max-width:700px) { .wb-tiles { grid-template-columns:1fr 1fr !important; } .wb-t thead { display:none; } .wb-t tr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 14px; } .wb-t td { padding:2px 0 !important; } }
+    @media (max-width:1200px) { .wb-tiles { grid-template-columns:repeat(3,1fr) !important; } }
+    @media (max-width:900px) { .wb-resumen { grid-template-columns:1fr !important; } }
+    @media (max-width:700px) { .wb-tiles { grid-template-columns:1fr 1fr !important; } .wb-t thead { display:none; } .wb-t tr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 14px; } .wb-t td { padding:2px 0 !important; } .wb-t tr.wb-g { display:block; padding:0; } .wb-t tr.wb-g td { padding:12px 14px 6px !important; } }
     .sheet-ajuste { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; }
     .sheet-ajuste-row { display:flex; justify-content:space-between; gap:12px; padding:3px 0; color:#475569; }
     .sheet-ajuste-row strong { color:#b45309; white-space:nowrap; }
@@ -3405,7 +3407,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         <button class="btn-logout" onclick="wbAgregar()" style="background:var(--blue);color:#fff;border-color:var(--blue);">+ Agregar web</button>
       </div>
     </div>
-    <div id="wb-tiles" class="wb-tiles" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+    <div id="wb-tiles" class="wb-tiles" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px"></div>
+    <div id="wb-resumen" class="wb-resumen" style="display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:16px"></div>
     <div id="wb-filtros" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
     <div id="wb-lista"></div>
     <div id="wb-hist"></div>
@@ -4326,6 +4329,9 @@ function initPage() {
   initCatalogo();
   initAutomatizaciones();
   onTypeChange();
+  // El panel abre en el Dashboard
+  const dashBtn = [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes("'dashboard'"));
+  if (dashBtn) switchPage('dashboard', dashBtn);
 }
 
 /* ─── Selector de emisor + filtros del historial ─── */
@@ -12327,7 +12333,7 @@ const wbHost = d => String(d || '').trim().toLowerCase().replace(/^https?:\/\//,
 function wbSubs(w) {
   const h = wbHost(w.dominio), c = ptNorm(w.cliente);
   const vivas = suscripcionesList.filter(s => s.estado !== 'cancelada');
-  const del = vivas.filter(s => s._id === w.suscripcionId || (h && wbHost(s.dominio) === h));
+  const del = vivas.filter(s => (w.suscripcionId && s._id === w.suscripcionId) || (h && wbHost(s.dominio) === h));
   const delCli = vivas.filter(s => c && ptNorm(s.cliente) === c);
   const hosting = del.find(s => s.tipo !== 'dominio') || delCli.find(s => s.tipo === 'hosting') || null;
   const dominio = del.find(s => s.tipo === 'dominio') || delCli.find(s => s.tipo === 'dominio') || null;
@@ -12353,11 +12359,37 @@ function wbPintar() {
   L.forEach(w => { const x = wbSubs(w); [x.hosting, x.dominio].forEach(s => { if (s && s.proximoPago && wbPronto(s.proximoPago) && !ren.includes(s)) ren.push(s); }); });
   const prom = ok.filter(w => w.ms).reduce((a, w, _, arr) => a + w.ms / arr.length, 0);
   const b = document.getElementById('wb-badge'); const nc = L.filter(w => w.estado === 'caida').length; if (b) { b.textContent = nc; b.style.display = nc ? '' : 'none'; }
-  document.getElementById('wb-tiles').innerHTML = `
-    <div class="cb-tile"><div class="cb-tile-l">Webs activas</div><div class="cb-tile-v">${L.length}</div><div class="cb-tile-n">${new Set(L.map(w => ptNorm(w.cliente))).size} clientes</div></div>
-    <div class="cb-tile"><div class="cb-tile-l">En línea</div><div class="cb-tile-v" style="color:#059669">${ok.length}</div><div class="cb-tile-n">${prom ? 'Respuesta promedio ' + (prom / 1000).toFixed(1) + ' s' : 'Sin revisar aún'}</div></div>
-    <div class="cb-tile"><div class="cb-tile-l">Con problemas</div><div class="cb-tile-v" style="color:${prob.length ? '#dc2626' : 'inherit'}">${prob.length}</div><div class="cb-tile-n">${nc ? nc + ' caída' + (nc > 1 ? 's' : '') : 'Ninguna caída'}</div></div>
-    <div class="cb-tile"><div class="cb-tile-l">Renovaciones en 30 días</div><div class="cb-tile-v" style="color:${ren.length ? '#d97706' : 'inherit'}">${ren.length}</div><div class="cb-tile-n">${ren.length ? 'Hosting o dominio · ' + cbMoney(ren.reduce((a, s) => a + (Number(s.precio) || 0), 0)) : 'Nada por renovar'}</div></div>`;
+  // Estadísticas de los últimos 30 días (salen del historial diario y los incidentes que guarda el bot)
+  const k30 = []; for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); k30.push(d.toLocaleDateString('en-CA', { timeZone: 'America/Caracas' })); }
+  let diasCon = 0, diasCaida = 0; const caidasPor = {}, porDia = k30.map(() => ({ caida: 0, lenta: 0 }));
+  L.forEach(w => k30.forEach((k, i) => { const v = (w.dias || {})[k]; if (!v) return; diasCon++; if (v === 'caida') { diasCaida++; caidasPor[w._id] = (caidasPor[w._id] || 0) + 1; porDia[i].caida++; } else if (v === 'lenta') porDia[i].lenta++; }));
+  const disp = diasCon ? (100 * (diasCon - diasCaida) / diasCon) : null;
+  const peor = Object.entries(caidasPor).sort((a, b) => b[1] - a[1])[0], peorW = peor && L.find(w => w._id === peor[0]);
+  const conMs = L.filter(w => w.ms && w.estado !== 'caida'), lenta = conMs.slice().sort((a, b) => b.ms - a.ms)[0];
+  const msProm = conMs.length ? conMs.reduce((a, w) => a + w.ms, 0) / conMs.length : 0;
+  const revisadas = L.filter(w => w.candado != null), seguras = revisadas.filter(w => w.candado);
+  const tile = (l, v, n, col) => `<div class="cb-tile"><div class="cb-tile-l">${l}</div><div class="cb-tile-v" style="color:${col || 'inherit'}">${v}</div><div class="cb-tile-n">${n}</div></div>`;
+  document.getElementById('wb-tiles').innerHTML =
+    tile('Webs activas', L.length, `${ok.length} en línea${nc ? ` · <b style="color:#dc2626">${nc} caída${nc > 1 ? 's' : ''}</b>` : ''}`) +
+    tile('Disponibilidad 30 días', disp == null ? '—' : disp.toFixed(1) + '%', disp == null ? 'Se llena con cada revisión' : `${diasCon} días revisados`, disp == null ? '' : disp >= 99 ? '#059669' : disp >= 95 ? '#d97706' : '#dc2626') +
+    tile('Caídas 30 días', diasCaida, peorW ? `Más caídas: ${esc(peorW.cliente || wbHost(peorW.dominio))}` : 'Ninguna', diasCaida ? '#dc2626' : '#059669') +
+    tile('Velocidad promedio', msProm ? (msProm / 1000).toFixed(1) + ' s' : '—', lenta ? `Más lenta: ${esc(lenta.cliente || wbHost(lenta.dominio))} (${(lenta.ms / 1000).toFixed(1)} s)` : 'Sin datos aún', msProm > 3000 ? '#d97706' : '') +
+    tile('Seguridad', revisadas.length ? `${seguras.length}/${revisadas.length}` : '—', revisadas.length === seguras.length ? (revisadas.length ? 'Todas con candado activo' : 'Sin revisar aún') : `<b style="color:#dc2626">${revisadas.length - seguras.length} sin candado</b>`, revisadas.length && revisadas.length !== seguras.length ? '#dc2626' : '#059669') +
+    tile('Renovaciones 30 días', ren.length, ren.length ? 'Hosting o dominio · ' + cbMoney(ren.reduce((a, s) => a + (Number(s.precio) || 0), 0)) : 'Nada por renovar', ren.length ? '#d97706' : '');
+  // Problemas por día + últimos incidentes
+  const maxD = Math.max(1, ...porDia.map(d => d.caida + d.lenta));
+  const eventos = [];
+  L.forEach(w => (w.eventos || []).forEach(e => eventos.push({ ...e, w })));
+  eventos.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  const EV = { caida: ['#dc2626', 'Se cayó'], vuelve: ['#059669', 'Volvió a estar en línea'], lenta: ['#d97706', 'Empezó a cargar lento'], candado: ['#dc2626', 'Falla el candado'], candadoOk: ['#059669', 'El candado volvió a funcionar'] };
+  const hace2 = iso => { const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 60 ? `hace ${m} min` : m < 2880 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`; };
+  document.getElementById('wb-resumen').innerHTML = `
+    <div class="cb-card" style="padding:14px 16px"><b style="font-size:13px">Problemas por día · últimos 30 días</b>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:70px;margin-top:12px">${porDia.map((d, i) => { const t = d.caida + d.lenta; return `<div title="${esc(wbFecha(k30[i]))}: ${d.caida} caída${d.caida !== 1 ? 's' : ''}, ${d.lenta} lenta${d.lenta !== 1 ? 's' : ''}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">${t ? `<div style="height:${Math.round(d.lenta / maxD * 100)}%;background:#f59e0b;border-radius:${d.caida ? '0' : '3px 3px 0 0'}"></div><div style="height:${Math.round(d.caida / maxD * 100)}%;background:#dc2626;border-radius:${d.lenta ? '0' : '3px 3px'} ${d.lenta ? '0' : '3px 3px'} 0 0"></div>` : '<div style="height:3px;background:#22c55e;border-radius:2px"></div>'}</div>`; }).join('')}</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-top:6px"><span>${esc(wbFecha(k30[0]))}</span><span><span style="color:#dc2626">■</span> caídas &nbsp;<span style="color:#f59e0b">■</span> lentas &nbsp;<span style="color:#22c55e">■</span> todo bien</span><span>Hoy</span></div></div>
+    <div class="cb-card" style="padding:14px 16px"><b style="font-size:13px">Últimos incidentes</b>
+      ${eventos.length ? `<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">${eventos.slice(0, 6).map(e => { const t = EV[e.tipo] || ['#64748b', e.tipo]; return `<div style="display:flex;gap:8px;align-items:flex-start;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:${t[0]};margin-top:5px;flex-shrink:0"></span><div style="flex:1;min-width:0"><b>${esc(e.w.cliente || wbHost(e.w.dominio))}</b> · ${t[1]}${e.detalle ? ` <span style="color:var(--text-soft)">(${esc(e.detalle)})</span>` : ''}</div><span style="color:var(--text-soft);font-size:11px;white-space:nowrap">${hace2(e.fecha)}</span></div>`; }).join('')}</div>`
+        : '<div style="font-size:12px;color:var(--text-soft);margin-top:10px">Sin incidentes. Aquí verás cuándo se cae una web, cuándo vuelve y si falla el candado.</div>'}</div>`;
   document.getElementById('wb-filtros').innerHTML = [['todas', 'Todas'], ['prob', `Con problemas${prob.length ? ' (' + prob.length + ')' : ''}`], ['ok', 'En línea']]
     .map(([k, v]) => `<button class="dash-period-btn ${_wb.filtro === k ? 'active' : ''}" onclick="_wb.filtro='${k}';wbPintar()">${v}</button>`).join('');
   const vis = _wb.filtro === 'prob' ? prob : _wb.filtro === 'ok' ? ok : L;
@@ -12365,9 +12397,15 @@ function wbPintar() {
   if (!L.length) { el.innerHTML = vacioHTML('buscar', 'Agrega las webs de tus clientes', 'Anota cada página activa y el bot la revisa cada hora. Puedes traerlas de una vez desde Suscripciones.', 'Agregar web', 'wbAgregar()'); document.getElementById('wb-hist').innerHTML = ''; return; }
   const EST = { ok: ['En línea', '#ecfdf5', '#047857'], lenta: ['Lenta', '#fffbeb', '#b45309'], caida: ['Caída', '#fef2f2', '#b91c1c'] };
   const hace = iso => { const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 60 ? `hace ${m} min` : m < 2880 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`; };
+  // Separadas por plan (anual / mensual / sin plan) y en orden de renovación
+  const cicloDe = w => { const h = wbSubs(w).hosting; return h ? (h.ciclo === 'mensual' ? 'mensual' : h.ciclo === 'anual' ? 'anual' : 'otro') : 'sin'; };
+  const renov = w => wbSubs(w).hosting?.proximoPago || '9999';
+  const orden = arr => arr.slice().sort((a, b) => String(renov(a)).localeCompare(String(renov(b))) || String(a.cliente || '').localeCompare(String(b.cliente || '')));
+  const grupos = [['Planes anuales', orden(vis.filter(w => cicloDe(w) === 'anual'))], ['Planes mensuales', orden(vis.filter(w => cicloDe(w) === 'mensual'))],
+    ['Otros planes', orden(vis.filter(w => cicloDe(w) === 'otro'))], ['Sin plan en Suscripciones', orden(vis.filter(w => cicloDe(w) === 'sin'))]];
   el.innerHTML = `<div class="cb-card" style="padding:0;overflow:hidden"><table class="wb-t" style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead><tr style="text-align:left;color:var(--text-soft);font-size:10.5px;letter-spacing:1px;text-transform:uppercase"><th style="padding:12px 16px">Estado</th><th>Cliente y web</th><th>Respuesta</th><th>Seguridad</th><th>Plan de hosting</th><th>Dominio</th><th></th></tr></thead><tbody>
-    ${vis.map(w => {
+    ${grupos.map(([titulo, lista]) => lista.length ? `<tr class="wb-g"><td colspan="7" style="padding:14px 16px 6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);background:var(--off,#f8fafc)">${titulo} · ${lista.length}</td></tr>` + lista.map(w => {
       const e = EST[w.estado] || ['Sin revisar', '#f1f5f9', '#64748b'], x = wbSubs(w), id = esc(w._id);
       const hs = x.hosting, ds = x.dominio;
       const plan = hs ? `${hs.ciclo === 'mensual' ? 'Mensual' : hs.ciclo === 'anual' ? 'Anual' : esc(hs.ciclo || 'Plan')} · renueva ${esc(wbFecha(hs.proximoPago))}` : '<span style="color:var(--text-soft)">Sin plan en Suscripciones</span>';
@@ -12380,7 +12418,7 @@ function wbPintar() {
         <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
