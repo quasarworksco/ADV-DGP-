@@ -5770,7 +5770,7 @@ function rdBarra() {
   if (e.error) return `<div class="rd-bar"><span class="ll-dot err"></span><div style="flex:1">No se pudo revisar la conexión con Facebook: ${esc(e.error)}</div><button class="ll-mini" onclick="rdCargar(true)">Reintentar</button></div>`;
   if (!e.configurado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Publicar en Facebook e Instagram desde aquí</b><br><span class="ll-sub">Falta un paso único: crear la app de Meta y agregar sus claves en Cloudflare.</span></div><button class="ll-mini" onclick="rdAyuda()">Ver cómo</button></div>`;
   if (!e.conectado) return `<div class="rd-bar"><span class="ll-dot"></span><div style="flex:1"><b>Conecta tus redes</b><br><span class="ll-sub">Inicia sesión con Facebook una vez y podrás publicar cada diseño con un botón.</span></div><button class="btn-nuevo-cliente" onclick="rdConectar()">Conectar Facebook e Instagram</button></div>`;
-  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>${(() => { const l = apLinea(); return _cdVista === 'calendario' ? '' : l; })()}`;
+  return `<div class="rd-bar"><span class="ll-dot ok"></span><div style="flex:1">Conectado: ${_rdIco.fb} <b>${esc(e.pagina)}</b>${e.ig ? ` · ${_rdIco.ig} <b>@${esc(e.ig)}</b>` : ' · <span style="color:#b45309">sin Instagram vinculado</span>'}<br><span class="ll-sub">Pulsa <b>Publicar</b> en cualquier diseño o video.</span></div><button class="ll-mini" onclick="rdActualizar()">Actualizar páginas</button> <button class="ll-mini" onclick="rdDesconectar()">Desconectar</button></div>${(() => { const l = apLinea(); return _cdVista === 'calendario' ? '' : l; })()}`;
 }
 function rdAyuda() {
   ptModal('Conectar Facebook e Instagram', 'Se hace una sola vez', `<div class="rd-pasos">
@@ -5791,6 +5791,18 @@ async function rdConectar() {
   } catch (e) { if (w) w.close(); toast('No se pudo iniciar la conexión: ' + e.message, 'err'); }
 }
 window.addEventListener('message', ev => { if (ev.origin === new URL(DIAG_WORKER).origin && ev.data && 'dgpRedes' in ev.data) { rdCargar(true); if (ev.data.dgpRedes) toast('Facebook e Instagram conectados', 'ok'); } });
+async function rdActualizar() {
+  toast('Consultando a Facebook…', 'ok');
+  try {
+    const d = await rdApi('actualizar', {});
+    if (d.error) throw new Error(d.error);
+    _sa.paginas = null;
+    rdCargar(true);
+    if (document.getElementById('page-autopilot')?.classList.contains('active')) renderAutopilot(true); else _sa.lista = null;
+    const filas = (d.paginas || []).map(p => `<div class="ap-item" style="cursor:default"><span><b>${esc(p.nombre || p.id)}</b><small>${p.error ? `<span style="color:#b91c1c">${esc(p.error)}</span>` : p.ig ? `${_rdIco.ig} @${esc(p.ig)}` : `<span style="color:#b45309">${esc(p.aviso || 'Sin Instagram')}</span>`}</small></span>${!p.error && p.ig ? '<span class="ap-ok">✓</span>' : ''}</div>`).join('');
+    ptModal('Páginas actualizadas', 'Lo que Facebook respondió ahora mismo', `<div class="ap-lista">${filas || '<div class="ll-sub" style="padding:12px">No hay páginas autorizadas. Pulsa Conectar.</div>'}</div><div class="ll-sub" style="margin-top:10px">¿Falta una página o un Instagram? Pulsa <b>Desconectar</b> y <b>Conectar</b> y márcalos en la ventana de Facebook.</div>`);
+  } catch (e) { toast('No se pudo actualizar: ' + e.message, 'err'); }
+}
 async function rdDesconectar() {
   if (!confirm('¿Desconectar Facebook e Instagram del panel? Lo publicado no se borra.')) return;
   try { await rdApi('desconectar', {}); toast('Redes desconectadas', 'ok'); rdCargar(true); } catch (e) { toast(e.message, 'err'); }
@@ -6005,9 +6017,9 @@ function saCard(a) {
     </div></div>`;
 }
 async function _saPaginas() {
-  if (_sa.paginas) return _sa.paginas;
+  if (_sa.paginas && _sa.paginas.length) return _sa.paginas;
   const d = await rdApi('paginas').catch(e => ({ error: e.message }));
-  _sa.paginas = d.paginas || [];
+  _sa.paginas = d.paginas || [];  // vacía: se vuelve a pedir la próxima vez
   return _sa.paginas;
 }
 async function saEditar(id) {

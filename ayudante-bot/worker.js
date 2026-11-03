@@ -4248,6 +4248,44 @@ async function handleRedes(request, env, ctx) {
     const lista = await fsList(env, 'redes_paginas', quien.token).catch(() => []);
     return json(request, { paginas: lista.map(x => ({ id: x._id, nombre: x.nombre, ig: x.igUser || '' })) });
   }
+  // Vuelve a leer de Facebook el nombre y el Instagram de cada página ya autorizada, sin abrir la ventana de Facebook.
+  // Una página o un Instagram que nunca se autorizó solo se agrega con "Conectar" (regla de Meta).
+  if (paso === 'actualizar') {
+    if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
+    const lista = await fsList(env, 'redes_paginas', quien.token).catch(() => []);
+    const appTok = `${env.META_APP_ID}|${env.META_APP_SECRET}`;
+    const out = [];
+    for (const p of lista) {
+      const r = { id: p._id, nombre: p.nombre || '', ig: '', antes: p.igUser || '' };
+      try {
+        if (!p.tokenCifrado) throw new Error('No hay permiso guardado para esta página: pulsa Conectar');
+        const tok = await rdDescifrar(env, p.tokenCifrado);
+        const d = await rdGraph(p._id, { fields: 'name,instagram_business_account{id,username}', access_token: tok });
+        const igp = d.instagram_business_account || {};
+        r.nombre = d.name || r.nombre; r.ig = igp.username || '';
+        await fsUpdate(env, `redes_paginas/${p._id}`, { nombre: r.nombre, igId: igp.id || '', igUser: r.ig, actualizado: new Date() }, ['nombre', 'igId', 'igUser', 'actualizado'], quien.token);
+        if (!igp.id) {
+          // Para explicar el motivo: ¿el permiso de Instagram llegó a autorizarse?
+          const dbg = await rdGraph('debug_token', { input_token: tok, access_token: appTok }).catch(() => null);
+          const scopes = dbg?.data?.scopes || [];
+          r.aviso = scopes.includes('instagram_content_publish')
+            ? 'Facebook dice que esta página no tiene un Instagram profesional vinculado. Vincúlalo en la configuración de la página y vuelve a pulsar Actualizar.'
+            : 'Falta autorizar Instagram: pulsa Conectar y, en la ventana de Facebook, marca el Instagram de esta página.';
+        }
+      } catch (e) { r.error = e.message; }
+      out.push(r);
+    }
+    // Mantener al día la página principal y las tarjetas del Autopilot
+    const c = await fsGet(env, 'config/redes', quien.token).catch(() => null);
+    const pc = c && out.find(x => x.id === c.pageId && !x.error);
+    if (pc) await fsUpdate(env, 'config/redes', { pageName: pc.nombre, igId: (await fsGet(env, `redes_paginas/${pc.id}`, quien.token).catch(() => ({}))).igId || '', igUser: pc.ig }, ['pageName', 'igId', 'igUser'], quien.token).catch(() => {});
+    const clientes = await fsList(env, 'autopilot', quien.token).catch(() => []);
+    for (const a of clientes) {
+      const pg = out.find(x => x.id === a.pageId && !x.error);
+      if (pg && (pg.nombre !== a.pageName || pg.ig !== (a.igUser || ''))) await fsUpdate(env, `autopilot/${a._id}`, { pageName: pg.nombre, igUser: pg.ig }, ['pageName', 'igUser'], quien.token).catch(() => {});
+    }
+    return json(request, { paginas: out });
+  }
   if (paso === 'desconectar') {
     await fetch(docUrl(env, 'config/redes'), { method: 'DELETE', headers: { Authorization: `Bearer ${quien.token}` } });
     return json(request, { ok: true });
