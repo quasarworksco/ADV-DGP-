@@ -12481,7 +12481,9 @@ let _rc = { lista: null, filtro: 'nuevas', abierta: null };
 function initRespuestas() {
   // Solo las no vistas, para el contador (pocas lecturas)
   db.collection('respuestas').where('vista', '==', false).limit(30).onSnapshot(s => {
-    const n = s.size, b = document.getElementById('rc-badge');
+    const re = /mailer-daemon|postmaster|mail delivery|delivery status/i;
+    s.docs.filter(d => d.data().rebote || re.test(`${d.data().correo} ${d.data().de}`)).forEach(d => d.ref.update({ vista: true }).catch(() => {}));
+    const n = s.docs.filter(d => !(d.data().rebote || re.test(`${d.data().correo} ${d.data().de}`))).length, b = document.getElementById('rc-badge');
     if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
     if (_rc.lista && s.docChanges().some(c => c.type === 'added')) renderRespuestas(true);
   }, () => {});
@@ -12490,7 +12492,10 @@ async function renderRespuestas(fresco) {
   const el = document.getElementById('rc-lista'); if (!el) return;
   if (!_rc.lista || fresco) {
     if (!_rc.lista) el.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
-    try { const s = await db.collection('respuestas').orderBy('fecha', 'desc').limit(60).get(); _rc.lista = s.docs.map(d => rcNormalizar({ _id: d.id, ...d.data() })); }
+    try { const s = await db.collection('respuestas').orderBy('fecha', 'desc').limit(60).get(); _rc.lista = s.docs.map(d => rcNormalizar({ _id: d.id, ...d.data() }));
+      // Los avisos de correo no entregado no se muestran (los viejos se marcan leídos para el contador)
+      _rc.lista.filter(x => x.rebote && !x.vista).forEach(x => db.collection('respuestas').doc(x._id).update({ vista: true }).catch(() => {}));
+      _rc.lista = _rc.lista.filter(x => !x.rebote); }
     catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
   }
   rcPintar();

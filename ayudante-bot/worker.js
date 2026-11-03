@@ -709,7 +709,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03h';
+const WORKER_VERSION = '2026-11-03i';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3062,17 +3062,8 @@ async function revisarRespuestas(env, token, avisar) {
     const RE_REBOTE = /mailer-daemon|postmaster|mail delivery|delivery status/i;
     let individuales = 0;
     for (const m of nuevas) {
-      // Aviso de Gmail de que un correo no se entregó: se guarda como rebote, con la dirección que falló
-      if (RE_REBOTE.test(`${m.correo} ${m.de}`)) {
-        const fallo = ((String(m.texto || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).find(x => !RE_REBOTE.test(x) && !/dgpglobalgroup\.com$/i.test(x)) || '').toLowerCase();
-        const cliR = fallo ? clientes.find(c => String(c.correo || '').toLowerCase() === fallo) : null;
-        const docR = fallo ? docs.filter(d => String(d.clienteCorreo || '').toLowerCase() === fallo)[0] : null;
-        const datosR = { rebote: true, de: 'Correo no entregado', correo: fallo, asunto: m.asunto || '', fecha: m.fecha, texto: String(m.texto || '').slice(0, 1500), hilo: m.hilo || '', adjuntos: 0,
-          cliente: cliR ? nombreCli(cliR) : (docR?.cli || ''), clienteId: cliR?._id || '', docFsId: docR?._id || '', docId: docR?.docId || '', docCol: docR ? 'documentos' : '', vista: false, creado: new Date() };
-        await fsGuardar(env, `respuestas/${m.id}`, datosR, token).catch(e => console.warn('rebote', e));
-        L.push(`• ⚠️ <b>Correo rebotado</b>: no llegó a <b>${escHtml(fallo || 'una dirección')}</b>${datosR.cliente ? ` (${escHtml(datosR.cliente)})` : ''}\n   Revisa que el correo esté bien escrito.`);
-        continue;
-      }
+      // Avisos automáticos de Gmail (correo no entregado): no se guardan ni se avisan
+      if (RE_REBOTE.test(`${m.correo} ${m.de}`)) continue;
       const correo = String(m.correo || '').toLowerCase();
       const cli = clientes.find(c => String(c.correo || '').toLowerCase() === correo);
       const ref = (String(m.asunto || '').match(/\b(FAC|REC|COT)-[A-Z0-9]{3,}\b/i) || [])[0];
