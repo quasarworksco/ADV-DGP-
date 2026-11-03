@@ -5752,11 +5752,12 @@ async function renderAutopilot(fresco) {
       <li>En su Meta Business Suite, el cliente te da acceso a su página de Facebook (con su Instagram vinculado) con permiso de <b>Contenido</b>.</li>
       <li>Aquí pulsas <b>Agregar cliente</b> y eliges su página.</li>
       <li>Pides a Claude sus 20 posts del mes y los cargas con <b>Cargar plan</b>.</li>
-      <li>Copias el <b>código para su panel</b> y se pega en el panel de su web.</li>
+      <li>Si tiene portal de cliente, el calendario aparece solo en su portal. Si tiene web con panel, copias el <b>código</b> y se pega ahí.</li>
       <li>Creas su suscripción de $${SA_PRECIO}/mes en Suscripciones.</li></ol></div>`;
     return;
   }
   body.innerHTML = `<div class="sa-lista">${L.map(saCard).join('')}</div>`;
+  saVincularPortales();
 }
 function saCard(a) {
   const total = (a.cola || []).length, i = Math.min(Number(a.indice) || 0, total);
@@ -5768,10 +5769,11 @@ function saCard(a) {
       <div style="flex:1;min-width:0"><div class="pr-name">${esc(a.nombre || a._id)}</div><div class="pr-sub">${esc([a.pageName, a.igUser ? '@' + a.igUser : ''].filter(Boolean).join(' · ') || 'Sin página conectada')}</div></div>
       <span class="cal-pill ${estado[1]}">${estado[0]}</span></div>
     <div class="sa-mid"><div><b>${i}</b> de ${total || 0} publicados</div><div class="ll-sub">${sig ? `Próximo: ${esc(sig.titulo)}${f ? ' · ' + esc(f.toLocaleDateString('es-US', { weekday: 'short', day: 'numeric', month: 'short' })) : ''}` : total ? 'Prepara el plan del próximo mes' : 'Carga el primer plan'} · ${_apCada(Number(a.cadaDias) || 2, a.dias)} a las ${_apHora(Number(a.hora ?? 10))}</div></div>
+    <div class="ll-sub" style="margin:-2px 0 8px;">${saPortalDe(a) ? `Lo ve en su portal: <b>${esc(saPortalDe(a).nombre || saPortalDe(a)._id)}</b>` : 'Sin portal de cliente · elígelo en "Código / portal"'}</div>
     <div class="sa-acts">
       <button class="ll-mini" onclick="saPlan('${a._id}')">Cargar plan</button>
       <button class="ll-mini" onclick="saCalendario('${a._id}')">Calendario</button>
-      <button class="ll-mini" onclick="saCodigo('${a._id}')">Código para su panel</button>
+      <button class="ll-mini" onclick="saCodigo('${a._id}')">Código / portal</button>
       <button class="ll-mini" onclick="saEditar('${a._id}')">Ajustes</button>
       ${total ? `<button class="ll-mini" onclick="saActivar('${a._id}', ${!a.activo})">${a.activo ? 'Pausar' : 'Activar'}</button>` : ''}
     </div></div>`;
@@ -5851,6 +5853,39 @@ function saCalendario(id) {
   }).join('');
   ptModal('Calendario', a.nombre + (a.plan ? ' · ' + a.plan : ''), `<div class="ap-lista" style="max-height:60vh">${filas || '<div class="ll-sub" style="padding:12px">Sin plan cargado.</div>'}</div>`);
 }
+/* Portal del cliente: el calendario de Autopilot aparece solo en su portal.
+   Se busca por el portal elegido, por el nombre del cliente o por sus facturas de Autopilot. */
+function saPortalDe(a) {
+  if (a.portalCodigo) return portalesList.find(p => p._id === a.portalCodigo) || null;
+  const nombres = [a.nombre, a.cliente].filter(Boolean).map(ptNorm);
+  const porNombre = portalesList.find(p => nombres.includes(ptNorm(p.nombre)));
+  if (porNombre) return porNombre;
+  const fac = Object.values(docsMap).find(d => nombres.includes(ptNorm(d.cli)) && (d.items || []).some(i => /autopilot/i.test(i.s || '')));
+  if (fac) return portalesList.find(p => p._id === fac.portalCodigo || (p.facturaIds || []).includes(fac._fsId) || ptNorm(p.nombre) === ptNorm(fac.cli)) || null;
+  return null;
+}
+async function saVincularPortales() {
+  for (const a of _sa.lista || []) {
+    const p = saPortalDe(a);
+    if (!p || !a.clave || (p.autopilot && p.autopilot.c === a._id && p.autopilot.k === a.clave)) continue;
+    try {
+      await db.collection('portal').doc(p._id).update({ autopilot: { c: a._id, k: a.clave } });
+      if (a.portalCodigo !== p._id) { await db.collection('autopilot').doc(a._id).update({ portalCodigo: p._id }); a.portalCodigo = p._id; }
+    } catch (e) { console.warn('Autopilot → portal', e); }
+  }
+}
+async function saElegirPortal(id, codigo) {
+  const a = _sa.lista.find(x => x._id === id); if (!a) return;
+  try {
+    const antes = a.portalCodigo && portalesList.find(p => p._id === a.portalCodigo);
+    if (antes && antes._id !== codigo) await db.collection('portal').doc(antes._id).update({ autopilot: firebase.firestore.FieldValue.delete() });
+    if (codigo) await db.collection('portal').doc(codigo).update({ autopilot: { c: a._id, k: a.clave } });
+    await db.collection('autopilot').doc(id).update({ portalCodigo: codigo || firebase.firestore.FieldValue.delete() });
+    a.portalCodigo = codigo || null;
+    toast(codigo ? 'Ahora lo ve en su portal' : 'Quitado del portal', 'ok');
+    renderAutopilot();
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
 function saCodigo(id) {
   const a = _sa.lista.find(x => x._id === id); if (!a) return;
   const cod = `<div id="dgp-autopilot" data-cliente="${a._id}" data-clave="${a.clave}" data-lang="es"></div><script src="https://adv.dgp-link.com/autopilot.js" defer><\/script>`;
@@ -5858,7 +5893,12 @@ function saCodigo(id) {
     <div class="ll-sub">Pega esta línea en el panel de administración de su web, donde quieras que aparezca la sección de redes. Para inglés cambia <b>data-lang="es"</b> por <b>"en"</b>.</div>
     <textarea id="sa-cod" rows="5" readonly onclick="this.select()">${esc(cod)}</textarea>
     <button class="ll-btn" style="background:var(--blue)" onclick="const t=document.getElementById('sa-cod');navigator.clipboard.writeText(t.value).then(()=>toast('Código copiado','ok')).catch(()=>{t.select();toast('Selecciona y copia el código','err')})">Copiar código</button>
-    <div class="ll-sub">El cliente solo ve su calendario, lo publicado y un botón para pausar. No ve claves ni nada de otros clientes.</div></div>`);
+    <div class="ll-sub">El cliente solo ve su calendario, lo publicado y un botón para pausar. No ve claves ni nada de otros clientes.</div>
+    <div class="ll-sub" style="margin-top:6px;"><b>Portal del cliente</b> · también lo ve en la sección "Redes sociales" de su portal, sin pegar nada.</div>
+    <select onchange="saElegirPortal('${a._id}', this.value)" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--surface,#fff);color:inherit;">
+      <option value="">— Sin portal —</option>
+      ${portalesList.slice().sort((x, y) => String(x.nombre || '').localeCompare(String(y.nombre || ''))).map(p => `<option value="${esc(p._id)}" ${saPortalDe(a)?._id === p._id ? 'selected' : ''}>${esc(p.nombre || p._id)} · ${esc(p._id)}</option>`).join('')}
+    </select></div>`);
 }
 async function saActivar(id, activo) {
   try { await db.collection('autopilot').doc(id).update({ activo }); toast(activo ? 'Publicando de nuevo' : 'Pausado', 'ok'); renderAutopilot(true); }

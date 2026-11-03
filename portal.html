@@ -408,6 +408,7 @@
 
   /* ═════════ ICONOS ═════════ */
   const I = {
+    share:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
     home:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
     folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
     card:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
@@ -752,12 +753,13 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
     { id: 'proyectos',     label: 'Mis proyectos', short: 'Proyectos', icon: 'folder' },
     { id: 'facturacion',   label: 'Facturación',   short: 'Pagos',     icon: 'card' },
     { id: 'suscripciones', label: 'Suscripciones', short: null,        icon: 'repeat' },
+    { id: 'redes',         label: 'Redes sociales', short: null,       icon: 'share', si: () => !!(portal && portal.autopilot && portal.autopilot.c) },
     { id: 'archivos',      label: 'Documentos',    short: 'Docs',      icon: 'file' },
     { id: 'cuenta',        label: 'Mi cuenta',     short: 'Cuenta',    icon: 'user' }
   ];
   function buildNav() {
     const counts = navCounts();
-    document.getElementById('sidenav').innerHTML = PAGES.map(p => `
+    document.getElementById('sidenav').innerHTML = PAGES.filter(p => !p.si || p.si()).map(p => `
       <button class="nav-btn ${page === p.id ? 'active' : ''}" onclick="go('${p.id}')">
         ${I[p.icon]} ${p.label} ${counts[p.id] ? `<span class="nav-count">${counts[p.id]}</span>` : ''}
       </button>`).join('');
@@ -786,8 +788,9 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
       if (!portal) return;
       buildNav();
       const main = document.getElementById('main');
-      const views = { inicio: vInicio, proyectos: vProyectos, facturacion: vFacturacion, suscripciones: vSuscripciones, archivos: vArchivos, cuenta: vCuenta };
+      const views = { inicio: vInicio, proyectos: vProyectos, facturacion: vFacturacion, suscripciones: vSuscripciones, redes: vRedes, archivos: vArchivos, cuenta: vCuenta };
       main.innerHTML = (views[page] || vInicio)();
+      montarAutopilot();
     });
   }
 
@@ -822,6 +825,15 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
           <div class="alert-text">El equipo de DGP Global Group te respondió.</div>
         </div>
         <button class="alert-btn" onclick="toggleChat(true)">Abrir chat</button>
+      </div>`);
+    if (portal.autopilot && portal.autopilot.c) alerts.push(`
+      <div class="alert info">
+        <div class="alert-ico">${I.share}</div>
+        <div class="alert-body">
+          <div class="alert-title">Tus redes en piloto automático</div>
+          <div class="alert-text">Mira lo que se publicará en Facebook e Instagram y lo que ya salió.</div>
+        </div>
+        <button class="alert-btn" onclick="go('redes')">Ver publicaciones</button>
       </div>`);
     const cr = cotPorRevisar();
     if (cr.length) alerts.push(`
@@ -1129,6 +1141,34 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
 
   /* ── ARCHIVOS ── */
   const TIPOS_ARCHIVO = { reporte: 'Reporte', contrato: 'Contrato', entregable: 'Entregable', otro: 'Documento' };
+  /* ── REDES SOCIALES (Social Media Autopilot) ──
+     El widget se crea una sola vez y se vuelve a colocar en cada render, para no recargarlo. */
+  let apEl = null;
+  function vRedes() {
+    if (!(portal.autopilot && portal.autopilot.c)) return vInicio();
+    return `
+      <div class="page-title">Redes sociales</div>
+      <div class="page-sub">Tus publicaciones automáticas en Facebook e Instagram: lo que viene y lo que ya se publicó.</div>
+      <div id="ap-slot"></div>`;
+  }
+  function montarAutopilot() {
+    const slot = document.getElementById('ap-slot');
+    const ap = portal && portal.autopilot;
+    if (!slot || !ap || !ap.c) return;
+    if (!apEl || apEl.getAttribute('data-cliente') !== ap.c) {
+      apEl = document.createElement('div');
+      apEl.setAttribute('data-dgp-autopilot', '');
+      apEl.setAttribute('data-cliente', ap.c);
+      apEl.setAttribute('data-clave', ap.k || '');
+      apEl.setAttribute('data-lang', 'es');
+      apEl.setAttribute('data-tema', 'claro');
+      slot.appendChild(apEl);
+      const cargar = () => window.DGPAutopilot && window.DGPAutopilot.montar();
+      if (window.DGPAutopilot) cargar();
+      else if (!document.getElementById('ap-js')) { const sc = document.createElement('script'); sc.id = 'ap-js'; sc.src = '/autopilot.js'; sc.onload = cargar; document.head.appendChild(sc); }
+    } else slot.appendChild(apEl);
+  }
+
   function vArchivos() {
     return `
       <div class="page-title">Documentos</div>
