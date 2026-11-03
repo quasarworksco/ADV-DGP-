@@ -462,17 +462,6 @@ async function fsUpdate(env, path, fields, mask, token) {
   if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
 }
 
-// Crea el documento si no existe, o actualiza esos campos si ya existe
-async function fsGuardar(env, path, fields, token) {
-  const qs = Object.keys(fields).map(m => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
-  const res = await fetch(`${docUrl(env, path)}?${qs}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: toValue(fields).mapValue.fields })
-  });
-  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || res.status)); }
-}
-
 /* ── Groq visión ── */
 function extraerJSON(texto) {
   const limpio = String(texto || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
@@ -718,7 +707,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03d';
+const WORKER_VERSION = '2026-11-03e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
