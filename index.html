@@ -2678,6 +2678,8 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .av-head b { display:block; font:700 14px 'Plus Jakarta Sans',sans-serif; color:var(--black); }
 .av-head small { font-size:11.5px; color:var(--text-soft); }
 .av-list { max-height:min(60vh,420px); overflow-y:auto; padding:6px; }
+.user-avatar.con-foto { background-size:cover !important; background-position:center !important; }
+.user-avatar.con-foto > svg { visibility:hidden; }
 .av-row { display:flex; align-items:center; gap:2px; }
 .av-row .av-it { flex:1; min-width:0; }
 .av-x { flex-shrink:0; width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -10807,6 +10809,9 @@ function pintarPerfil(u) {
   if (mn) mn.textContent = n || 'Mi cuenta';
   try { if (n) localStorage.setItem('dgp-nombre', n); } catch (e) {}
   if (mc) mc.textContent = u?.email || '';
+  // Foto de perfil en el botón de arriba (si no hay foto, queda el ícono)
+  const av = document.getElementById('user-avatar-init');
+  if (av) { const f = u?.photoURL || ''; av.classList.toggle('con-foto', !!f); av.style.backgroundImage = f ? `url('${f}')` : ''; }
   pintarSaludo();
 }
 function pintarSaludo() {
@@ -10820,11 +10825,38 @@ function pintarSaludo() {
 }
 function abrirPerfil() {
   const u = currentUser;
+  const foto = u?.photoURL || '';
   ptModal('Configurar perfil', 'Así te saluda el panel y te ve tu equipo', `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div id="pf-foto" style="width:72px;height:72px;border-radius:18px;flex-shrink:0;background:${foto ? `center/cover url('${esc(foto)}')` : 'var(--blue)'};display:flex;align-items:center;justify-content:center;color:#fff;font:800 24px 'Plus Jakarta Sans',sans-serif">${foto ? '' : esc(clIniciales(nombrePerfil(u) || 'D'))}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="btn-logout" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;width:auto">Cambiar foto<input type="file" accept="image/*" hidden onchange="subirFotoPerfil(this)"></label>
+        ${foto ? '<button class="btn-logout" style="width:auto" onclick="quitarFotoPerfil()">Quitar foto</button>' : ''}
+      </div>
+    </div>
     <div class="ff"><label>Tu nombre</label><input id="pf-nom" value="${esc(nombrePerfil(u))}" placeholder="Ej. Andrés Espina" maxlength="60"></div>
     <div class="ff"><label>Correo de acceso</label><input value="${esc(u?.email || '')}" disabled></div>
     <button class="btn-edit-save" onclick="guardarPerfil()">Guardar</button>`);
   setTimeout(() => document.getElementById('pf-nom')?.focus(), 80);
+}
+async function subirFotoPerfil(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  if (!/^image\//.test(f.type) || f.size > 8e6) return toast('Elige una imagen de menos de 8 MB', 'err');
+  toast('Subiendo foto…');
+  try {
+    const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const d = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd }).then(r => r.json());
+    if (!d.secure_url) throw new Error('no se pudo subir');
+    const url = d.secure_url.replace('/upload/', '/upload/w_240,h_240,c_fill,g_face,q_auto,f_auto/');
+    await currentUser.updateProfile({ photoURL: url });
+    pintarPerfil(currentUser);
+    const pf = document.getElementById('pf-foto'); if (pf) { pf.style.background = `center/cover url('${url}')`; pf.textContent = ''; }
+    toast('¡Foto lista! 📸', 'ok');
+  } catch (e) { toast('No se pudo subir la foto: ' + e.message, 'err'); }
+}
+async function quitarFotoPerfil() {
+  try { await currentUser.updateProfile({ photoURL: null }); pintarPerfil(currentUser); closePortalModal(); toast('Foto quitada'); }
+  catch (e) { toast(e.message, 'err'); }
 }
 async function guardarPerfil() {
   const n = (document.getElementById('pf-nom')?.value || '').trim().replace(/\s+/g, ' ');
