@@ -2283,7 +2283,7 @@ html.dark .hdr-mi.danger:hover { background:rgba(239,68,68,.12); color:#f87171; 
 .bs-vacio { padding:28px 16px; text-align:center; font-size:13px; color:var(--text-soft); }
 .bs-foot { display:flex; gap:16px; padding:10px 16px; border-top:1px solid var(--border); font-size:11px; color:var(--text-soft); background:var(--off); }
 .bs-foot kbd { margin-right:3px; }
-@media (max-width:600px) { .bs-over { padding-top:10px; } .bs-foot { display:none; } }
+@media (max-width:600px) { .bs-over { padding-top:calc(env(safe-area-inset-top, 0px) + 64px) !important; } .bs-foot { display:none; } }
 
 /* ═══ Ventanas (modales): encabezado claro, botón cerrar y entrada suave ═══ */
 .modal-overlay.show { animation:ovIn .2s ease both; }
