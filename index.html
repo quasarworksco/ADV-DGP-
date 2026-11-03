@@ -9569,6 +9569,8 @@ function initPortales() {
     }
     _ptPrevUnread = unread;
     migrarSuscripcionesPortal();
+    // Autopilot ↔ portal: si la lista de Autopilot ya está cargada, se vincula apenas llegan los portales
+    if (_sa.lista) { saVincularPortales(); if (document.getElementById('page-autopilot')?.classList.contains('active')) renderAutopilot(); }
     if (!_ptLimpiezaHecha) { _ptLimpiezaHecha = true; limpiarChatsViejos(); }
     updatePortalBadge();
     renderPortalList();
