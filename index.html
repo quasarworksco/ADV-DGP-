@@ -644,6 +644,7 @@
     .sheet-status-badge.parcial::before { content:''; width:6px; height:6px; border-radius:50%; background:#fb923c; display:block; }
 
     /* ─── PAYMENT BREAKDOWN BLOCK ─── */
+    @media (max-width:700px) { .wb-tiles { grid-template-columns:1fr 1fr !important; } .wb-t thead { display:none; } .wb-t tr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 14px; } .wb-t td { padding:2px 0 !important; } }
     .sheet-ajuste { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; }
     .sheet-ajuste-row { display:flex; justify-content:space-between; gap:12px; padding:3px 0; color:#475569; }
     .sheet-ajuste-row strong { color:#b45309; white-space:nowrap; }
@@ -2930,6 +2931,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-tab" onclick="switchPage('proyectos', this)">
     <i class="fa-solid fa-layer-group"></i> Proyectos
   </button>
+  <button class="nav-tab" onclick="switchPage('webs', this)">
+    <i class="fa-solid fa-globe"></i> Webs de clientes<span id="wb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
   <button class="nav-tab" onclick="switchPage('portal', this)">
     <i class="fa-solid fa-user-shield"></i> Portal<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
@@ -3389,6 +3393,25 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-webs" class="page">
+  <div class="proy-main" style="max-width:1100px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Webs de clientes</div>
+        <div style="font-size:11px;color:var(--text-soft);">Las páginas activas de tus clientes. Se revisan cada hora: si una se cae o el candado de seguridad falla, te avisa por Telegram. El hosting y el dominio salen del plan registrado en Suscripciones.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-logout" id="wb-btn" onclick="wbRevisar(this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Revisar ahora</button>
+        <button class="btn-logout" onclick="wbAgregar()" style="background:var(--blue);color:#fff;border-color:var(--blue);">+ Agregar web</button>
+      </div>
+    </div>
+    <div id="wb-tiles" class="wb-tiles" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+    <div id="wb-filtros" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
+    <div id="wb-lista"></div>
+    <div id="wb-hist"></div>
+  </div>
+</div>
+
 <div id="page-respuestas" class="page">
   <div class="proy-main" style="max-width:900px;">
     <div class="proy-header">
@@ -4345,6 +4368,7 @@ function switchPage(page, btn) {
   if (page === 'proyectos')  renderProyectos();
   if (page === 'encuestas')  renderEncuestas();
   if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
+  if (page === 'webs')       renderWebs();
   if (page === 'suscripciones') renderSuscripciones();
   if (page === 'resenasweb') renderResenasWeb();
   if (page === 'metaads')    renderMetaAds();
@@ -12293,6 +12317,122 @@ async function cambiarAuto(k, on) {
   try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
   catch (e) { toast('No se pudo guardar.', 'err'); }
 }
+/* ═══════════════════════════════════════════════════════
+   WEBS DE CLIENTES (Firestore: webs · el bot las revisa cada hora)
+   El plan de hosting y el dominio salen de Suscripciones (mismo dominio).
+═══════════════════════════════════════════════════════ */
+let _wb = { lista: null, filtro: 'todas', hist: null };
+const wbHost = d => String(d || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+function wbSubs(w) {
+  const h = wbHost(w.dominio);
+  const del = suscripcionesList.filter(s => s.estado !== 'cancelada' && wbHost(s.dominio) === h);
+  return { hosting: del.find(s => s.tipo !== 'dominio'), dominio: del.find(s => s.tipo === 'dominio') };
+}
+function wbFecha(iso) { const d = ptDate(iso); return d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) }) : ''; }
+const wbPronto = iso => { const d = ptDate(iso); return d && (d - new Date()) / 864e5 <= 30; };
+async function renderWebs(fresco) {
+  const el = document.getElementById('wb-lista'); if (!el) return;
+  if (!_wb.lista || fresco) {
+    if (!_wb.lista) el.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
+    try { const s = await db.collection('webs').get(); _wb.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })).filter(w => w.activo !== false).sort((a, b) => String(a.cliente || '').localeCompare(String(b.cliente || ''))); }
+    catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
+  }
+  wbPintar();
+}
+function wbPintar() {
+  const L = _wb.lista || [];
+  const prob = L.filter(w => w.estado === 'caida' || w.estado === 'lenta' || w.candado === false);
+  const ok = L.filter(w => w.estado === 'ok');
+  const ren = [];
+  L.forEach(w => { const x = wbSubs(w); [x.hosting, x.dominio].forEach(s => { if (s && s.proximoPago && wbPronto(s.proximoPago) && !ren.includes(s)) ren.push(s); }); });
+  const prom = ok.filter(w => w.ms).reduce((a, w, _, arr) => a + w.ms / arr.length, 0);
+  const b = document.getElementById('wb-badge'); const nc = L.filter(w => w.estado === 'caida').length; if (b) { b.textContent = nc; b.style.display = nc ? '' : 'none'; }
+  document.getElementById('wb-tiles').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Webs activas</div><div class="cb-tile-v">${L.length}</div><div class="cb-tile-n">${new Set(L.map(w => ptNorm(w.cliente))).size} clientes</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">En línea</div><div class="cb-tile-v" style="color:#059669">${ok.length}</div><div class="cb-tile-n">${prom ? 'Respuesta promedio ' + (prom / 1000).toFixed(1) + ' s' : 'Sin revisar aún'}</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Con problemas</div><div class="cb-tile-v" style="color:${prob.length ? '#dc2626' : 'inherit'}">${prob.length}</div><div class="cb-tile-n">${nc ? nc + ' caída' + (nc > 1 ? 's' : '') : 'Ninguna caída'}</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Renovaciones en 30 días</div><div class="cb-tile-v" style="color:${ren.length ? '#d97706' : 'inherit'}">${ren.length}</div><div class="cb-tile-n">${ren.length ? 'Hosting o dominio · ' + cbMoney(ren.reduce((a, s) => a + (Number(s.precio) || 0), 0)) : 'Nada por renovar'}</div></div>`;
+  document.getElementById('wb-filtros').innerHTML = [['todas', 'Todas'], ['prob', `Con problemas${prob.length ? ' (' + prob.length + ')' : ''}`], ['ok', 'En línea']]
+    .map(([k, v]) => `<button class="dash-period-btn ${_wb.filtro === k ? 'active' : ''}" onclick="_wb.filtro='${k}';wbPintar()">${v}</button>`).join('');
+  const vis = _wb.filtro === 'prob' ? prob : _wb.filtro === 'ok' ? ok : L;
+  const el = document.getElementById('wb-lista');
+  if (!L.length) { el.innerHTML = vacioHTML('buscar', 'Agrega las webs de tus clientes', 'Anota cada página activa y el bot la revisa cada hora. Puedes traerlas de una vez desde Suscripciones.', 'Agregar web', 'wbAgregar()'); document.getElementById('wb-hist').innerHTML = ''; return; }
+  const EST = { ok: ['En línea', '#ecfdf5', '#047857'], lenta: ['Lenta', '#fffbeb', '#b45309'], caida: ['Caída', '#fef2f2', '#b91c1c'] };
+  const hace = iso => { const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 60 ? `hace ${m} min` : m < 2880 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`; };
+  el.innerHTML = `<div class="cb-card" style="padding:0;overflow:hidden"><table class="wb-t" style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr style="text-align:left;color:var(--text-soft);font-size:10.5px;letter-spacing:1px;text-transform:uppercase"><th style="padding:12px 16px">Estado</th><th>Cliente y web</th><th>Respuesta</th><th>Seguridad</th><th>Plan de hosting</th><th>Dominio</th><th></th></tr></thead><tbody>
+    ${vis.map(w => {
+      const e = EST[w.estado] || ['Sin revisar', '#f1f5f9', '#64748b'], x = wbSubs(w), id = esc(w._id);
+      const hs = x.hosting, ds = x.dominio;
+      const plan = hs ? `${hs.ciclo === 'mensual' ? 'Mensual' : hs.ciclo === 'anual' ? 'Anual' : esc(hs.ciclo || 'Plan')} · renueva ${esc(wbFecha(hs.proximoPago))}` : '<span style="color:var(--text-soft)">Sin plan en Suscripciones</span>';
+      const dom = ds ? `Renueva ${esc(wbFecha(ds.proximoPago))}` : hs ? '<span style="color:var(--text-soft)">Con el hosting</span>' : '—';
+      const nota = w.estado === 'caida' ? `${w.caidaDesde ? 'Caída ' + hace(w.caidaDesde) : 'Caída'}${w.error ? ' · ' + esc(w.error) : ''}` : w.estado === 'lenta' ? 'Tarda en cargar' : '';
+      return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:12px 16px"><span style="display:inline-flex;align-items:center;gap:6px;background:${e[1]};color:${e[2]};font-weight:700;font-size:11px;border-radius:20px;padding:4px 10px;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:${e[2]}"></span>${e[0]}</span></td>
+        <td><b>${esc(w.cliente || '—')}</b><div><a href="https://${esc(wbHost(w.dominio))}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11.5px;text-decoration:none">${esc(wbHost(w.dominio))}</a></div>${nota ? `<div style="color:${w.estado === 'caida' ? '#b91c1c' : '#b45309'};font-size:11px">${nota}</div>` : ''}${w.revisado ? `<div style="color:var(--text-soft);font-size:10.5px">Revisada ${hace(w.revisado)}</div>` : ''}</td>
+        <td>${w.ms ? (w.ms / 1000).toFixed(1) + ' s' : '—'}</td>
+        <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
+        <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
+        <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('')}
+    </tbody></table></div>`;
+  wbPintarHist();
+}
+function wbHist(id) { _wb.hist = _wb.hist === id ? null : id; wbPintarHist(); document.getElementById('wb-hist').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+function wbPintarHist() {
+  const box = document.getElementById('wb-hist'); const w = (_wb.lista || []).find(x => x._id === _wb.hist);
+  if (!w) { box.innerHTML = ''; return; }
+  const dias = w.dias || {}, hoy = new Date(), celdas = [];
+  for (let i = 29; i >= 0; i--) { const d = new Date(hoy); d.setDate(d.getDate() - i); const k = d.toLocaleDateString('en-CA', { timeZone: 'America/Caracas' }); celdas.push([k, dias[k]]); }
+  const con = celdas.filter(c => c[1]), malas = con.filter(c => c[1] === 'caida').length;
+  const col = { ok: '#22c55e', lenta: '#f59e0b', caida: '#dc2626' };
+  box.innerHTML = `<div class="cb-card" style="margin-top:14px;padding:14px 16px"><b style="font-size:13px">Historial de ${esc(w.cliente || w.dominio)} · últimos 30 días</b>
+    <div style="display:flex;gap:2px;margin-top:10px">${celdas.map(([k, v]) => `<span title="${k}: ${v ? { ok: 'en línea', lenta: 'lenta', caida: 'caída' }[v] : 'sin datos'}" style="flex:1;height:26px;border-radius:3px;background:${v ? col[v] : 'var(--border)'}"></span>`).join('')}</div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-top:6px"><span>${esc(wbFecha(celdas[0][0]))}</span><span>${con.length ? `${con.length - malas} de ${con.length} días sin caídas${malas ? ' · ' + malas + ' día' + (malas > 1 ? 's' : '') + ' con caída' : ''}` : 'Aún sin datos: se llena con las revisiones de cada hora'}</span><span>Hoy</span></div></div>`;
+}
+function wbAgregar() {
+  const ya = new Set((_wb.lista || []).map(w => wbHost(w.dominio)));
+  const desdeSus = []; suscripcionesList.filter(s => s.estado === 'activa' && s.dominio && !ya.has(wbHost(s.dominio))).forEach(s => { if (!desdeSus.some(x => wbHost(x.dominio) === wbHost(s.dominio))) desdeSus.push(s); });
+  ptModal('Agregar web', 'La revisamos cada hora y te avisamos si se cae', `<div class="rd-form">
+    <div class="ff"><label>Cliente</label><input id="wb-cli" list="wb-cli-l" placeholder="Nombre del cliente"><datalist id="wb-cli-l">${clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('')}</datalist></div>
+    <div class="ff"><label>Dominio de la web</label><input id="wb-dom" placeholder="ejemplo.com"></div>
+    <button class="ll-btn" style="background:var(--blue)" onclick="wbGuardar()">Agregar</button>
+    ${desdeSus.length ? `<div class="ll-sub" style="margin-top:12px"><b>En Suscripciones hay ${desdeSus.length} dominio${desdeSus.length > 1 ? 's' : ''} sin anotar:</b> ${desdeSus.slice(0, 8).map(s => esc(wbHost(s.dominio))).join(', ')}${desdeSus.length > 8 ? '…' : ''}</div>
+      <button class="ll-btn" style="background:#059669;margin-top:6px" onclick="wbImportar()">Agregar los ${desdeSus.length} desde Suscripciones</button>` : ''}
+  </div>`);
+}
+async function wbGuardar() {
+  const cliente = document.getElementById('wb-cli').value.trim(), dominio = wbHost(document.getElementById('wb-dom').value);
+  if (!cliente || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) { toast('Escribe el cliente y un dominio válido (ejemplo.com)', 'err'); return; }
+  if ((_wb.lista || []).some(w => wbHost(w.dominio) === dominio)) { toast('Esa web ya está anotada', 'err'); return; }
+  try { await db.collection('webs').add({ cliente, dominio, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); closePortalModal(); toast('Web agregada · revisándola…', 'ok'); await renderWebs(true); wbRevisar(document.getElementById('wb-btn'), true); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function wbImportar() {
+  const ya = new Set((_wb.lista || []).map(w => wbHost(w.dominio))); let n = 0;
+  for (const s of suscripcionesList.filter(s => s.estado === 'activa' && s.dominio)) {
+    const d = wbHost(s.dominio); if (!d || ya.has(d) || !/\.[a-z]{2,}$/.test(d)) continue; ya.add(d);
+    try { await db.collection('webs').add({ cliente: s.cliente || '', dominio: d, activo: true, creado: firebase.firestore.FieldValue.serverTimestamp(), por: currentUser?.email || '' }); n++; } catch (e) {}
+  }
+  closePortalModal(); toast(`${n} web${n !== 1 ? 's' : ''} agregada${n !== 1 ? 's' : ''} · revisándolas…`, 'ok'); await renderWebs(true); wbRevisar(document.getElementById('wb-btn'), true);
+}
+async function wbQuitar(id) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w || !confirm(`¿Quitar ${wbHost(w.dominio)} del monitoreo?`)) return;
+  try { await db.collection('webs').doc(id).delete(); _wb.lista = _wb.lista.filter(x => x._id !== id); if (_wb.hist === id) _wb.hist = null; wbPintar(); toast('Quitada', 'ok'); } catch (e) { toast(e.message, 'err'); }
+}
+async function wbRevisar(btn, silencioso) {
+  const t = btn?.innerHTML; if (btn) { btn.disabled = true; btn.textContent = 'Revisando…'; }
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'webs' }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    toast(d.caidas ? `${d.caidas} web${d.caidas > 1 ? 's' : ''} caída${d.caidas > 1 ? 's' : ''}` : `${d.revisadas || 0} web${d.revisadas === 1 ? '' : 's'} revisada${d.revisadas === 1 ? '' : 's'}: todo en línea`, d.caidas ? 'err' : 'ok');
+    await renderWebs(true);
+  } catch (e) { if (!silencioso) toast('No se pudo revisar: ' + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = t; } }
+}
+
 /* ═══════════════════════════════════════════════════════
    RESPUESTAS DE CORREO (Firestore: respuestas · las guarda el bot desde info@)
 ═══════════════════════════════════════════════════════ */

@@ -187,6 +187,7 @@ const MAX_HISTORIAL = 10; // últimos 10 turnos por chat
 
 export default {
   async scheduled(event, env, ctx) {
+    _tgCtx = null;
     // Cron (UTC): mensual el día 1 · diario 11:00 (7:00 Venezuela) · domingo 12:00 (8:00 Venezuela)
     if (event.cron === '0 11 * * *') ctx.waitUntil(tareaDiaria(env).catch(e => avisoError(env, 'Resumen diario', e)));
     else if (event.cron === '0 12 * * MON') ctx.waitUntil((async () => { const t = await firebaseLogin(env); if ((await automatizaciones(env, t)).briefing) await briefingLunes(env); })().catch(e => avisoError(env, 'Briefing del lunes', e)));
@@ -197,6 +198,7 @@ export default {
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
+      ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
       if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
     }
     else ctx.waitUntil(enviarResumenMensual(env));
@@ -680,7 +682,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 
     const icono = { coincide: '✅', menor: '⚠️', mayor: '⚠️', otra_moneda: '💱', ilegible: '❓', no_es_comprobante: '🚫' }[ev.estado] || '🤖';
     const tgTok = tgToken(env);
-    const enviado = await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
+    const enviado = await tgFetch(env, `https://api.telegram.org/bot${tgTok}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
         `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
@@ -707,7 +709,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03e';
+const WORKER_VERSION = '2026-11-03g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -786,7 +788,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   if (q.get('telegram')) {
     try {
       const tgTok = tgToken(env);
-      const res = await fetch(`https://api.telegram.org/bot${tgTok}/sendMessage`, {
+      const res = await tgFetch(env, `https://api.telegram.org/bot${tgTok}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: TG_CHAT, text: '✅ Prueba del sistema DGP Global Group: las notificaciones llegan correctamente.' })
       });
@@ -862,6 +864,83 @@ async function fsAgregarALista(env, docPath, campo, valor, token) {
 }
 
 /* ── Telegram (HTML, dividido si es largo) ── */
+/* ══════════════════════════════════════════════════════════════
+   GRUPO CON TEMAS — cada aviso va a su sección (Cobros, Correos, Redes…).
+   Si no hay grupo vinculado, todo sigue llegando al chat privado como antes.
+   Vincular: en el grupo (con Temas y el bot como admin) escribe /vincular.
+══════════════════════════════════════════════════════════════ */
+const TG_TEMAS = [
+  ['resumenes', '📊 Resúmenes', 0x6FB9F0], ['cobros', '💰 Cobros', 0xFFD67E], ['correos', '📨 Correos', 0xCB86DB],
+  ['redes', '📣 Redes', 0x8EEE98], ['webs', '🌐 Webs', 0x6FB9F0], ['alertas', '⚠️ Alertas', 0xFF93B2], ['altair', '✨ Altair', 0xFFD67E]
+];
+let _tgCfg = null, _tgCfgAt = 0;
+let _tgCtx = null;   // conversación en curso: las respuestas van al mismo tema donde escribiste
+async function tgCfg(env) {
+  if (_tgCfg && Date.now() - _tgCfgAt < 10 * 60e3) return _tgCfg;
+  try { const t = await firebaseLogin(env); _tgCfg = await fsGet(env, 'config/telegram', t).catch(() => null) || {}; }
+  catch (e) { _tgCfg = _tgCfg || {}; }
+  _tgCfgAt = Date.now();
+  return _tgCfg;
+}
+function seccionTG(texto) {
+  const t = String(texto || '');
+  if (/Resumen (de cobros|semanal|mensual)|Briefing|Respaldo semanal/i.test(t)) return 'resumenes';
+  if (/te respondió|Borrador para|Correo rebotado|Correo de info@|Correo enviado a/i.test(t)) return 'correos';
+  if (/Webs de clientes|se cayó|volvió a estar en línea|está lenta|candado/i.test(t)) return 'webs';
+  if (/Autopilot|Publicación automática|seguidores|JustAnotherPanel|Pedidos de seguidores|Reseña web|publicaci/i.test(t)) return 'redes';
+  if (/comprobante|Verificación IA|pag[oó]|abono|factura|cotizaci|suscripci|cobr|recordatorio/i.test(t)) return 'cobros';
+  if (/^⚠️|error|falló|No pude/i.test(t)) return 'alertas';
+  return 'altair';
+}
+// Cambia el destino del chat privado al grupo, en el tema que corresponde
+async function tgDestino(env, texto) {
+  const c = await tgCfg(env);
+  if (!c.grupo) return null;
+  const hilo = _tgCtx?.hilo || (c.temas || {})[_tgCtx?.sec || seccionTG(texto)] || (c.temas || {}).altair || null;
+  return { chat: String(c.grupo), hilo: hilo ? Number(hilo) : null };
+}
+async function tgFetch(env, url, opts = {}) {
+  try {
+    if (opts.body instanceof FormData) {
+      if (String(opts.body.get('chat_id')) === TG_CHAT) {
+        const d = await tgDestino(env, opts.body.get('caption') || opts.body.get('title') || '');
+        if (d) { opts.body.set('chat_id', d.chat); if (d.hilo && /\/send/.test(url)) opts.body.set('message_thread_id', String(d.hilo)); }
+      }
+    } else if (typeof opts.body === 'string' && opts.body.includes(`"chat_id":"${TG_CHAT}"`)) {
+      const b = JSON.parse(opts.body);
+      const d = await tgDestino(env, b.text || b.caption || '');
+      if (d) { b.chat_id = d.chat; if (d.hilo && /\/send/.test(url) && !b.message_thread_id) b.message_thread_id = d.hilo; opts = { ...opts, body: JSON.stringify(b) }; }
+    }
+  } catch (e) { console.warn('tg destino', e); }
+  return fetch(url, opts);
+}
+// ¿El mensaje viene de ti (chat privado, o el grupo vinculado escrito por ti)?
+async function tgEsDuenio(env, chat, deId) {
+  if (String(chat) === TG_CHAT) return true;
+  const c = await tgCfg(env);
+  return !!c.grupo && String(chat) === String(c.grupo) && String(deId) === TG_CHAT;
+}
+async function tgVincularGrupo(env, msg) {
+  const chat = msg.chat || {};
+  if (String(msg.from?.id) !== TG_CHAT) return;
+  if (!chat.is_forum) return tgApi(env, 'sendMessage', { chat_id: chat.id, text: 'Activa "Temas" en la configuración del grupo y vuelve a escribir /vincular.' });
+  const token = await firebaseLogin(env);
+  const previo = await fsGet(env, 'config/telegram', token).catch(() => null) || {};
+  const temas = String(previo.grupo) === String(chat.id) ? { ...(previo.temas || {}) } : {};
+  const nuevos = [];
+  for (const [k, nombre, color] of TG_TEMAS) {
+    if (temas[k]) continue;
+    const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/createForumTopic`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chat.id, name: nombre, icon_color: color }) }).then(x => x.json()).catch(() => ({}));
+    if (!r.ok) return tgApi(env, 'sendMessage', { chat_id: chat.id, text: `No pude crear los temas: ${r.description || 'error'}. Revisa que el bot sea administrador con permiso para "Gestionar temas".` });
+    temas[k] = r.result.message_thread_id; nuevos.push(nombre);
+  }
+  await fsGuardar(env, 'config/telegram', { grupo: String(chat.id), nombreGrupo: chat.title || '', temas, vinculado: new Date().toISOString() }, token);
+  _tgCfg = null;
+  await tgApi(env, 'sendMessage', { chat_id: chat.id, parse_mode: 'HTML', text: `✅ <b>Grupo vinculado</b>${nuevos.length ? `\nCreé los temas: ${nuevos.join(', ')}` : ''}\n\nDesde ahora cada aviso llega a su tema. Para hablar con Altair escribe en ✨ Altair (o en cualquier tema: te responde ahí mismo).` });
+  for (const [k, nombre] of TG_TEMAS) await tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas[k], text: { resumenes: 'Aquí llegan el resumen diario, el semanal, el mensual, el briefing y el respaldo.', cobros: 'Aquí llegan comprobantes, pagos, facturas, suscripciones y recordatorios de cobro.', correos: 'Aquí llegan las respuestas de clientes por correo. Responde a un aviso para contestarle.', redes: 'Aquí llegan Autopilot, pedidos de seguidores y reseñas.', webs: 'Aquí llegan las caídas y avisos de las webs de tus clientes.', alertas: 'Aquí llegan los errores del sistema.', altair: 'Háblame aquí: pregúntame cosas o pídeme facturas, escrito o con nota de voz.' }[k] }).catch(() => {});
+}
+
 async function tgEnviar(env, html) {
   const partes = []; let actual = '';
   for (const linea of html.split('\n')) {
@@ -869,7 +948,7 @@ async function tgEnviar(env, html) {
   }
   if (actual) partes.push(actual);
   for (const texto of partes) {
-    await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendMessage`, {
+    await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, text: texto, parse_mode: 'HTML', disable_web_page_preview: true })
     });
@@ -1039,7 +1118,7 @@ async function enviarRespaldo(env) {
   fd.append('chat_id', TG_CHAT);
   fd.append('caption', `🗄 Respaldo semanal de DGP Global Group · ${total} registros (${out.colecciones.documentos.length} facturas, ${out.colecciones.clientes.length} clientes).\nGuárdalo: si algo se borra, se restaura desde este archivo.`);
   fd.append('document', new Blob([JSON.stringify(out)], { type: 'application/json' }), `respaldo-dgp-${hoyVE()}.json`);
-  const res = await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendDocument`, { method: 'POST', body: fd });
+  const res = await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/sendDocument`, { method: 'POST', body: fd });
   const d = await res.json().catch(() => ({}));
   if (!d.ok) throw new Error('Telegram: ' + (d.description || res.status));
   return { registros: total };
@@ -1135,6 +1214,7 @@ async function handleTarea(request, env) {
       const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
       return json(request, { ok: true, actualizados: n });
     }
+    if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
     if (tarea === 'responder') {
       const b2 = cuerpo;
@@ -1431,7 +1511,7 @@ const TG_RUTA = '/tg-notif';
 const MODELOS_TEXTO = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/qwen/qwen3.8-27b'];
 
 async function tgApi(env, metodo, body) {
-  const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/${metodo}`, {
+  const r = await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/${metodo}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {})
   });
   return r.json().catch(() => ({}));
@@ -1470,7 +1550,7 @@ async function handleTgNotif(request, env, ctx) {
     } catch (e) {
       console.error('tg-notif', e);
       await tgEnviar(env, `⚠️ No pude completar eso: ${escHtml(e.message || e)}`).catch(() => {});
-    }
+    } finally { _tgCtx = null; }
   })();
   if (ctx?.waitUntil) ctx.waitUntil(tarea); else await tarea;
   return new Response('ok');
@@ -1482,7 +1562,8 @@ async function tgSincronizarPago(env, token, fsId, estado, exceptoMsg) {
   const msgs = (Array.isArray(doc?.tgPagoMsgs) ? doc.tgPagoMsgs : []).map(Number).filter(Boolean);
   if (!msgs.length) return 0;
   const texto = { pagado: '✅ Pagado · ya registrado', abono: '💰 Abono ya registrado', rechazado: '❌ Comprobante rechazado' }[estado] || '✅ Ya resuelto';
-  for (const id of msgs) if (id !== Number(exceptoMsg)) await tgApi(env, 'editMessageReplyMarkup', { chat_id: TG_CHAT, message_id: id, reply_markup: { inline_keyboard: [[{ text: texto, callback_data: `n:${fsId}` }]] } }).catch(() => {});
+  const grupoTG = (await tgCfg(env)).grupo;
+  for (const id of msgs) if (id !== Number(exceptoMsg)) await tgApi(env, 'editMessageReplyMarkup', { chat_id: grupoTG || TG_CHAT, message_id: id, reply_markup: { inline_keyboard: [[{ text: texto, callback_data: `n:${fsId}` }]] } }).catch(() => {});
   await fsUpdate(env, `documentos/${fsId}`, { tgPagoMsgs: [] }, ['tgPagoMsgs'], token);
   return msgs.length;
 }
@@ -1498,7 +1579,8 @@ function botonesPago(fsId, ev) {
 
 async function tgCallback(env, cq) {
   const chat = String(cq.message?.chat?.id || '');
-  if (chat !== TG_CHAT) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'No autorizado' });
+  if (!(await tgEsDuenio(env, chat, cq.from?.id))) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'No autorizado' });
+  _tgCtx = chat !== TG_CHAT ? { hilo: cq.message?.message_thread_id || null } : null;
   const [acc, id, extra] = String(cq.data || '').split(':');
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id || '')) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Botón no válido' });
   const token = await firebaseLogin(env);
@@ -1657,8 +1739,14 @@ async function botRechazar(env, token, fsId) {
 /* ── Mensajes: voz o texto → factura / cotización ── */
 async function tgMensaje(env, msg) {
   const chat = String(msg.chat?.id || '');
-  if (chat !== TG_CHAT) return tgApi(env, 'sendMessage', { chat_id: chat, text: 'Este bot es privado de DGP Global Group.' });
   const texto = String(msg.text || msg.caption || '').trim();
+  if (/^\/vincular\b/i.test(texto) && msg.chat?.type !== 'private') return tgVincularGrupo(env, msg);
+  if (!(await tgEsDuenio(env, chat, msg.from?.id))) {
+    if (msg.chat?.type === 'private') return tgApi(env, 'sendMessage', { chat_id: chat, text: 'Este bot es privado de DGP Global Group.' });
+    return;
+  }
+  // Si escribes en un tema del grupo, la respuesta llega a ese mismo tema
+  _tgCtx = chat !== TG_CHAT ? { hilo: msg.message_thread_id || null } : null;
   if (/^\/(start|ayuda|help)\b/i.test(texto)) return tgEnviar(env, AYUDA_BOT);
   if (/^\/meta\b/i.test(texto)) { const token = await firebaseLogin(env); return tgEnviar(env, (await lineaMeta(env, token)) || '🎯 Aún no tienes una meta del mes. Ponla en el panel → Dashboard.'); }
   if (/^\/briefing\b/i.test(texto)) return briefingLunes(env);
@@ -1745,10 +1833,10 @@ async function hablar(env, texto) {
   const fd = new FormData();
   fd.append('chat_id', TG_CHAT);
   fd.append('voice', new Blob([bin], { type: 'audio/mpeg' }), 'altair.mp3');
-  const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendVoice`, { method: 'POST', body: fd }).then(x => x.json()).catch(() => ({}));
+  const r = await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/sendVoice`, { method: 'POST', body: fd }).then(x => x.json()).catch(() => ({}));
   if (!r.ok) { // algunos móviles solo aceptan audio normal
     const fd2 = new FormData(); fd2.append('chat_id', TG_CHAT); fd2.append('title', 'Altair'); fd2.append('audio', new Blob([bin], { type: 'audio/mpeg' }), 'altair.mp3');
-    await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendAudio`, { method: 'POST', body: fd2 }).catch(() => {});
+    await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/sendAudio`, { method: 'POST', body: fd2 }).catch(() => {});
   }
 }
 
@@ -2888,6 +2976,61 @@ async function automatizaciones(env, token) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   WEBS DE CLIENTES (Firestore: webs) — cada hora se revisa que cada
+   página cargue, cuánto tarda y que el candado (https) funcione.
+   Te avisa solo cuando cambia algo: se cae, vuelve o falla el candado.
+══════════════════════════════════════════════════════════════ */
+const WEB_ORDEN = { ok: 0, lenta: 1, caida: 2 };
+async function chequearWeb(dominio) {
+  const host = String(dominio || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+  if (!host) return { estado: 'caida', error: 'Sin dominio' };
+  const prueba = async url => {
+    const t0 = Date.now();
+    const r = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DGPMonitor/1.0; +https://dgpglobalgroup.com)' } });
+    const ms = Date.now() - t0;
+    r.body?.cancel?.().catch?.(() => {});
+    return { codigo: r.status, ms };
+  };
+  let candado = true, r;
+  try { r = await prueba(`https://${host}/`); }
+  catch (e) {
+    try { r = await prueba(`http://${host}/`); candado = false; }
+    catch (e2) { return { estado: 'caida', candado: null, ms: null, codigo: null, error: String(e.message || e).slice(0, 120) }; }
+  }
+  // 401/403/429: la web responde pero no deja entrar a robots → está en línea
+  const caida = r.codigo >= 500 || (r.codigo >= 400 && ![401, 403, 429].includes(r.codigo));
+  return { estado: caida ? 'caida' : r.ms > 3000 ? 'lenta' : 'ok', candado, ms: r.ms, codigo: r.codigo, error: caida ? `Error ${r.codigo}` : '' };
+}
+async function revisarWebs(env, manual) {
+  const token = await firebaseLogin(env);
+  const webs = (await fsList(env, 'webs', token).catch(() => [])).filter(w => w.activo !== false && w.dominio);
+  if (!webs.length) return { revisadas: 0, caidas: 0 };
+  const hoy = hoyVE(), L = [];
+  let caidas = 0;
+  for (const w of webs) {
+    let r = await chequearWeb(w.dominio);
+    if (r.estado === 'caida') { await new Promise(x => setTimeout(x, 3000)); r = await chequearWeb(w.dominio); }   // segunda prueba antes de avisar
+    if (r.estado === 'caida') caidas++;
+    const dias = { ...(w.dias || {}) };
+    if (!(hoy in dias) || WEB_ORDEN[r.estado] > WEB_ORDEN[dias[hoy]]) dias[hoy] = r.estado;
+    Object.keys(dias).forEach(k => { if (diasEntre(k, hoy) > 31) delete dias[k]; });
+    const ahora = new Date().toISOString();
+    const upd = { estado: r.estado, ms: r.ms ?? null, codigo: r.codigo ?? null, error: r.error || '', candado: r.candado, revisado: ahora, dias };
+    const quien = `<b>${escHtml(w.cliente || w.dominio)}</b> · ${escHtml(w.dominio)}`;
+    if (r.estado === 'caida' && w.estado !== 'caida') { upd.caidaDesde = ahora; L.push(`🔴 ${quien} <b>se cayó</b>${r.error ? ` (${escHtml(r.error)})` : ''}.`); }
+    if (r.estado !== 'caida' && w.estado === 'caida') {
+      const min = w.caidaDesde ? Math.round((Date.now() - new Date(w.caidaDesde).getTime()) / 60000) : null;
+      upd.caidaDesde = null; L.push(`🟢 ${quien} <b>volvió a estar en línea</b>${min ? ` después de ${min >= 90 ? Math.round(min / 60) + ' h' : min + ' min'}` : ''}.`);
+    }
+    if (r.candado === false && w.candado !== false) L.push(`🔓 ${quien}: <b>el candado (https) falla</b>, la web abre sin seguridad. Revisa el certificado en el hosting.`);
+    if (r.candado === true && w.candado === false) L.push(`🔒 ${quien}: el candado volvió a funcionar.`);
+    await fsUpdate(env, `webs/${w._id}`, upd, Object.keys(upd), token).catch(e => console.warn('web', e));
+  }
+  if (L.length) await tgEnviar(env, ['🌐 <b>Webs de clientes</b>', '', ...L, '', `<a href="${SITIO}/">Abrir el panel → Webs de clientes</a>`].join('\n')).catch(() => {});
+  return { revisadas: webs.length, caidas };
+}
+
+/* ══════════════════════════════════════════════════════════════
    RESPUESTAS DE CORREO — el Apps Script de info@ lee las respuestas de los
    clientes; se guardan en Firestore (respuestas) para el panel y te avisa por
    Telegram. Desde el panel se contesta en el mismo hilo.
@@ -3683,7 +3826,7 @@ Formato: 2 a 5 líneas cortas, sin markdown, cada una empezando con "• ". Incl
       fd.append('chat_id', TG_CHAT);
       fd.append('caption', `Mensaje de voz de ${quien}`.slice(0, 1000));
       fd.append('audio', new Blob([buf], { type: 'audio/mpeg' }), 'mensaje-de-voz.mp3');
-      await fetch(`https://api.telegram.org/bot${tgToken(env)}/sendAudio`, { method: 'POST', body: fd }).catch(() => {});
+      await tgFetch(env, `https://api.telegram.org/bot${tgToken(env)}/sendAudio`, { method: 'POST', body: fd }).catch(() => {});
     }
   } catch (e) { console.warn('procesar grabación', e); }
   await llamadaGuardar(env, token, sid, { transcripcion: transcripcion.slice(0, 15000), resumen: resumen.slice(0, 2000), procesadoAt: new Date() });
