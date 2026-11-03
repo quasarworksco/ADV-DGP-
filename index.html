@@ -2263,6 +2263,13 @@ html.dark .hdr-mi.danger:hover { background:rgba(239,68,68,.12); color:#f87171; 
 .bs-in { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); color:var(--text-soft); }
 .bs-in input { flex:1; border:0 !important; outline:0; background:transparent !important; font:500 15px 'Plus Jakarta Sans',sans-serif; color:var(--black) !important; padding:0 !important; box-shadow:none !important; }
 .bs-list { max-height:min(56vh,440px); overflow-y:auto; padding:6px; }
+/* iPhone: el buscador baja de la Dynamic Island / muesca y usa el alto real visible */
+.bs-over { padding-top:max(12vh, calc(env(safe-area-inset-top) + 16px)); padding-left:max(16px, env(safe-area-inset-left)); padding-right:max(16px, env(safe-area-inset-right)); }
+@media (max-width:600px) {
+  .bs-over { padding-top:calc(env(safe-area-inset-top) + 64px); }
+  .bs-list { max-height:calc(100vh - env(safe-area-inset-top) - 200px); }
+  @supports (height:100dvh) { .bs-list { max-height:calc(100dvh - env(safe-area-inset-top) - 200px); } }
+}
 .bs-g { font:700 10px 'Plus Jakarta Sans',sans-serif; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-soft); padding:10px 10px 4px; }
 .bs-it { display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; border:0; background:transparent; border-radius:10px; cursor:pointer; text-align:left; color:var(--text-mid); }
 .bs-it.on { background:color-mix(in srgb,var(--blue) 9%,var(--white)); }

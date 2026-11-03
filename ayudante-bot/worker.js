@@ -711,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03l';
+const WORKER_VERSION = '2026-11-03m';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1225,6 +1225,7 @@ async function handleTarea(request, env) {
       const b2 = cuerpo;
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(b2.id || '')) return json(request, { error: 'Factura no válida' }, 400);
       const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
+      await metaCumplidaPush(env).catch(() => {});   // ¿con este pago se cumplió la meta del mes?
       return json(request, { ok: true, actualizados: n });
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
@@ -1598,8 +1599,8 @@ async function tgCallback(env, cq) {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id || '')) return tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Botón no válido' });
   const token = await firebaseLogin(env);
   const acciones = {
-    p: () => botMarcarPagado(env, token, id),
-    a: () => botAbono(env, token, id, Number(extra)),
+    p: () => botMarcarPagado(env, token, id).finally(() => metaCumplidaPush(env).catch(() => {})),
+    a: () => botAbono(env, token, id, Number(extra)).finally(() => metaCumplidaPush(env).catch(() => {})),
     r: () => botRechazar(env, token, id),
     c: () => botCrearDesdeBorrador(env, token, id),
     ce: () => botCrearDesdeBorrador(env, token, id, false, 'en'),
@@ -2120,18 +2121,22 @@ function cobrosDe(docs) {
   }
   return out.filter(x => x.f);
 }
-async function lineaMeta(env, token, docs) {
+async function datosMeta(env, token, docs) {
   const cfg = await fsGet(env, 'config/meta', token).catch(() => null);
   const meta = Number(cfg?.mensual) || 0;
-  if (!meta) return '';
+  if (!meta) return null;
   docs = docs || await fsList(env, 'documentos', token);
   const hoy = hoyVE(), mes = hoy.slice(0, 7);
   const llevas = cobrosDe(docs).filter(x => x.f.slice(0, 7) === mes).reduce((a, x) => a + x.m, 0);
   const [y, m] = mes.split('-').map(Number);
   const diasMes = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const quedan = diasMes - Number(hoy.slice(8, 10)) + 1;
-  const pct = Math.round(llevas / meta * 100);
-  const falta = Math.max(meta - llevas, 0);
+  return { meta, llevas, diasMes, quedan, pct: Math.round(llevas / meta * 100), falta: Math.max(meta - llevas, 0) };
+}
+async function lineaMeta(env, token, docs) {
+  const md = await datosMeta(env, token, docs);
+  if (!md) return '';
+  const { meta, llevas, diasMes, quedan, pct, falta } = md;
   const barra = '▰'.repeat(Math.min(10, Math.round(pct / 10))) + '▱'.repeat(Math.max(0, 10 - Math.round(pct / 10)));
   if (falta <= 0) return `🎯 <b>¡Meta del mes cumplida!</b> ${dinero(llevas)} de ${dinero(meta)} (${pct}%) 🎉`;
   // ¿Va a tiempo? Compara con lo esperado a esta altura del mes
@@ -3078,6 +3083,16 @@ async function pushDesdeTelegram(env, texto) {
   else if (/comprobante/i.test(titulo)) titulo = `💰 ¡Te pagaron!${cli ? ' ' + cli : ''}`, cuerpo = 'Subió su comprobante de pago. ' + cuerpo;
   await enviarPush(env, { titulo: titulo.slice(0, 80), cuerpo: cuerpo.slice(0, 180), pagina });
 }
+/* ¡Meta cumplida! Una sola notificación al mes, apenas los cobros la superan */
+async function metaCumplidaPush(env) {
+  const token = await firebaseLogin(env);
+  const md = await datosMeta(env, token); if (!md || md.falta > 0) return;
+  const mes = hoyVE().slice(0, 7);
+  const cfg = await fsGet(env, 'config/meta', token).catch(() => null) || {};
+  if (cfg.celebrada === mes) return;
+  await fsUpdate(env, 'config/meta', { celebrada: mes }, ['celebrada'], token).catch(() => {});
+  await enviarPush(env, { titulo: '🎉 ¡Meta del mes cumplida!', cuerpo: `Llevas ${dinero(md.llevas)} de ${dinero(md.meta)} (${md.pct}%). ¡Brutal, Andrés!`, pagina: 'dashboard', tag: 'meta' }, token);
+}
 /* Resumen de la mañana en una sola notificación (8:30 a. m.) */
 async function resumenMananaPush(env) {
   if (!vapidJwk(env)) return;
@@ -3090,8 +3105,11 @@ async function resumenMananaPush(env) {
   const ren = subs.filter(x => x.estado === 'activa' && x.proximoPago && diasEntre(hoy, x.proximoPago) >= 0 && diasEntre(hoy, x.proximoPago) <= 7).length;
   const correos = resp.filter(r => !r.respondida && !r.rebote && !r.vista).length;
   const caidas = webs.filter(w => w.activo !== false && w.estado === 'caida').length;
+  // Meta del mes en vivo: "Vas en $3,200 de $5,000 · faltan $1,800 en 12 días"
+  const md = await datosMeta(env, token, docs).catch(() => null);
+  const metaTxt = !md ? '' : md.falta <= 0 ? `🎯 ¡Meta cumplida! ${dinero(md.llevas)} de ${dinero(md.meta)}` : `🎯 Vas en ${dinero(md.llevas)} de ${dinero(md.meta)} (${md.pct}%) · faltan ${dinero(md.falta)} en ${md.quedan} día${md.quedan !== 1 ? 's' : ''}`;
   const partes = [porCobrar.length ? `${porCobrar.length} por cobrar (${dinero(monto)})` : 'nada por cobrar', comps ? `${comps} comprobante${comps > 1 ? 's' : ''} por revisar` : '', ren ? `${ren} renovación${ren > 1 ? 'es' : ''} esta semana` : '', correos ? `${correos} correo${correos > 1 ? 's' : ''} sin responder` : '', caidas ? `${caidas} web${caidas > 1 ? 's' : ''} caída${caidas > 1 ? 's' : ''}` : ''].filter(Boolean);
-  await enviarPush(env, { titulo: '☀️ Buenos días, Andrés', cuerpo: 'Hoy: ' + partes.join(' · '), pagina: 'dashboard', tag: 'manana' }, token);
+  await enviarPush(env, { titulo: '☀️ Buenos días, Andrés', cuerpo: (metaTxt ? metaTxt + '\n' : '') + 'Hoy: ' + partes.join(' · '), pagina: 'dashboard', tag: 'manana' }, token);
 }
 async function handlePush(request, env, ctx) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
