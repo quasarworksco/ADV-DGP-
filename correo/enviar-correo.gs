@@ -23,7 +23,7 @@
  *
  * Límite de Google Workspace: unos 1.500 destinatarios por día.
  *
- * TAMBIÉN LEE LAS RESPUESTAS: el bot pregunta cada 3 horas por los correos
+ * TAMBIÉN LEE LAS RESPUESTAS: el bot pregunta cada 2 horas por los correos
  * que los clientes respondieron (solo hilos que empezaron desde esta cuenta)
  * y los muestra en el panel → "Respuestas". Desde ahí se puede contestar.
  * Al actualizar, Google pide un permiso nuevo para leer Gmail: hay que aceptarlo.

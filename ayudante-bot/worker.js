@@ -197,7 +197,7 @@ export default {
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
-      if (new Date().getUTCHours() % 3 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
+      if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
     }
     else ctx.waitUntil(enviarResumenMensual(env));
   },
@@ -707,7 +707,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03b';
+const WORKER_VERSION = '2026-11-03c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
