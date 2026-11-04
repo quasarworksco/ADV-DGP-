@@ -12786,7 +12786,7 @@ async function waRevisar() {
 }
 async function waCargarChats(forzar) {
   if (_wa.estado !== 'WORKING') return;
-  try { const d = await waApi('chats', { limit: 150 }); _wa.chats = Array.isArray(d.chats) ? d.chats : []; waPintarLista(); } catch (e) { if (forzar) toast('No se pudieron cargar los chats: ' + e.message, 'err'); }
+  try { const d = await waApi('chats', { limit: 50 }); _wa.chats = Array.isArray(d.chats) ? d.chats : []; waPintarLista(); } catch (e) { if (forzar) toast('No se pudieron cargar los chats: ' + e.message, 'err'); }
 }
 const WA_AV_P = '<svg viewBox="0 0 212 212"><path fill="#fff" fill-opacity=".9" d="M106 45c-19 0-34 15-34 34s15 34 34 34 34-15 34-34-15-34-34-34zm0 84c-33 0-62 15-71 40 19 22 44 36 71 36s52-14 71-36c-9-25-38-40-71-40z"/></svg>';
 const WA_AV_G = '<svg viewBox="0 0 212 212"><path fill="#fff" fill-opacity=".9" d="M80 70a24 24 0 1 0 0 48 24 24 0 0 0 0-48zm56 6a20 20 0 1 0 0 40 20 20 0 0 0 0-40zM80 126c-26 0-46 12-50 30 13 16 31 26 50 28h50c-2-30-20-58-50-58zm56 2c-6 0-12 1-17 3 14 12 22 30 23 53h28c12-4 18-10 22-16-6-24-28-40-56-40z"/></svg>';
