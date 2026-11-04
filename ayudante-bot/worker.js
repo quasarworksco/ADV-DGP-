@@ -711,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-03n';
+const WORKER_VERSION = '2026-11-04a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1049,6 +1049,9 @@ async function tareaDiaria(env) {
     if (r?.enviado) bienvenidas.push({ cliente: d.cli, correo: r.correo });
   }
 
+  // 1e) Saldo a favor de clientes que pagaron de más → a sus facturas nuevas
+  const saldosAplicados = await aplicarSaldosFavor(env, token, docs).catch(e => { console.warn('Saldo a favor', e); return []; });
+
   // 2) Recordatorio por correo para dejar reseña en Google (clientes felices que no hicieron clic)
   const resenas = await recordarResenas(env, token, docs, correoDe).catch(e => { console.warn('Reseñas', e); return []; });
   const automaticos = await correosAutomaticos(env, token, docs, clientes, correoDe, auto).catch(e => { console.warn('Correos automáticos', e); return []; });
@@ -1087,6 +1090,7 @@ async function tareaDiaria(env) {
     L.push('', `⏸️ <b>Suscripciones sin pagar 15+ días — considera pausar el servicio</b>`);
     pausar.forEach(({ d, dias }) => L.push(`• ${escHtml(d.cli)} · ${escHtml((d.items || [])[0]?.s || '')} · ${dinero(saldoDoc(d))} · ${dias} días de atraso · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Tu ${(d.items || [])[0]?.s || 'servicio'} tiene ${dias} días de atraso (${dinero(saldoDoc(d))}). Para no pausar el servicio, puedes pagar aquí:\n${linkFac(d._id)}\n\n¡Gracias!`)}">avisar por WhatsApp</a>`));
   }
+  if (saldosAplicados.length) L.push('', '💵 <b>Saldo a favor aplicado</b>', ...saldosAplicados);
   if (bienvenidas.length) {
     L.push('', `🎉 <b>Bienvenida enviada (${bienvenidas.length})</b>`);
     bienvenidas.forEach(r => L.push(`• ${escHtml(r.cliente)} → ${escHtml(r.correo)}`));
@@ -1227,6 +1231,12 @@ async function handleTarea(request, env) {
       const n = await tgSincronizarPago(env, v.token, b2.id, b2.estado);
       await metaCumplidaPush(env).catch(() => {});   // ¿con este pago se cumplió la meta del mes?
       return json(request, { ok: true, actualizados: n });
+    }
+    if (tarea === 'excedente') {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '') || !(Number(cuerpo.monto) > 0)) return json(request, { error: 'Datos no válidos' }, 400);
+      const r = await aplicarExcedente(env, v.token, cuerpo.id, Number(cuerpo.monto), 'confirmado en el panel');
+      await metaCumplidaPush(env).catch(() => {});
+      return json(request, { ok: true, mensaje: String(r.html || r.aviso || '').replace(/<[^>]+>/g, '') });
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
@@ -1588,7 +1598,77 @@ function botonesPago(fsId, ev) {
   if (ev.estado === 'menor' && ev.monto > 0) return { inline_keyboard: [
     [{ text: `💰 Registrar abono de ${dinero(ev.monto)}`, callback_data: `a:${fsId}:${ev.monto}` }],
     [{ text: '✅ Pagado completo', callback_data: `p:${fsId}` }, rechazar]] };
+  // Pagó de más: el sobrante se abona a su factura pendiente más reciente (o queda a su favor)
+  if (ev.estado === 'mayor' && ev.monto > 0) return { inline_keyboard: [
+    [{ text: `✅ Pagado y abonar el sobrante a su otra factura`, callback_data: `pm:${fsId}:${ev.monto}` }],
+    [{ text: '✅ Solo marcar pagado', callback_data: `p:${fsId}` }, rechazar]] };
   return { inline_keyboard: [[{ text: ev.estado === 'coincide' ? '✅ Confirmar pago' : '✅ Marcar pagado', callback_data: `p:${fsId}` }, rechazar]] };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PAGO DE MÁS: la factura queda pagada y el sobrante se abona a la factura
+   pendiente más reciente del mismo cliente (y a la siguiente si sobra).
+   Si no tiene otra pendiente, queda como saldo a favor (Firestore: saldosFavor)
+   y se aplica solo a su próxima factura.
+══════════════════════════════════════════════════════════════ */
+const claveCliente = n => normNombre(n).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 80) || 'sin_nombre';
+const fechaOrden = d => String(fechaISO(d.createdAt) || fechaDoc(d) || '');
+async function abonarA(env, token, d, monto, ref) {
+  const pago = { monto: r2(monto), ref, fecha: isoADmy(hoyVE()) };
+  if (pago.monto >= saldoDoc(d) - 0.009) { await botMarcarPagado(env, token, d._id, pago); return 'pagada'; }
+  const nuevo = r2((Number(d.montoPagado) || 0) + pago.monto);
+  await fsUpdate(env, `documentos/${d._id}`, { pagos: [...(d.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true }, ['pagos', 'montoPagado', 'pagadoParcial'], token);
+  await correoPagoCliente(env, token, d._id, pago.monto, 'automático').catch(() => {});
+  return 'abono';
+}
+// Reparte un monto entre las facturas pendientes del cliente, de la más reciente a la más vieja
+async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs) {
+  docs = docs || await fsList(env, 'documentos', token);
+  const k = normNombre(cliente);
+  const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && normNombre(d.cli) === k && saldoDoc(d) > 0.009)
+    .sort((a, b) => fechaOrden(b).localeCompare(fechaOrden(a)));
+  let resto = r2(monto); const lineas = [];
+  for (const d of pendientes) {
+    if (resto <= 0.009) break;
+    const m = r2(Math.min(resto, saldoDoc(d)));
+    const r = await abonarA(env, token, d, m, `Sobrante del pago de ${origen}`);
+    lineas.push(`• ${dinero(m)} → ${escHtml(d.docId || d._id)}${r === 'pagada' ? ' (quedó pagada ✅)' : ` (debe ${dinero(saldoDoc(d) - m)})`}`);
+    resto = r2(resto - m);
+  }
+  return { resto, lineas };
+}
+async function sumarSaldoFavor(env, token, cliente, monto, origen) {
+  const key = claveCliente(cliente);
+  const prev = await fsGet(env, `saldosFavor/${key}`, token).catch(() => null) || {};
+  const total = r2((Number(prev.monto) || 0) + monto);
+  await fsGuardar(env, `saldosFavor/${key}`, { cliente, monto: total, actualizado: new Date().toISOString(),
+    historial: [...(Array.isArray(prev.historial) ? prev.historial : []), { monto: r2(monto), origen, fecha: hoyVE() }].slice(-20) }, token);
+  return total;
+}
+async function aplicarExcedente(env, token, fsId, recibido, por) {
+  const doc = await fsGet(env, `documentos/${fsId}`, token);
+  if (!doc) return { aviso: 'Esa factura ya no existe' };
+  if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada', html: `ℹ️ ${escHtml(doc.docId || fsId)} ya estaba marcada como pagada.` };
+  const saldo = saldoDoc(doc), sobra = r2(recibido - saldo);
+  const res = await botMarcarPagado(env, token, fsId, { monto: r2(saldo), ref: `Pago de ${dinero(recibido)} (${por || 'confirmado'})`, fecha: isoADmy(hoyVE()) });
+  if (sobra <= 0.009) return res;
+  const { resto, lineas } = await repartirSaldo(env, token, doc.cli, sobra, doc.docId || fsId, fsId);
+  let favor = 0;
+  if (resto > 0.009) favor = await sumarSaldoFavor(env, token, doc.cli, resto, doc.docId || fsId);
+  await fsUpdate(env, `documentos/${fsId}`, { excedente: { monto: sobra, recibido: r2(recibido), aplicado: r2(sobra - resto), aFavor: r2(resto), fecha: hoyVE() } }, ['excedente'], token).catch(() => {});
+  return { aviso: 'Pago y sobrante aplicados ✅', html: `${res.html || ''}\n\n💵 <b>Pagó ${dinero(sobra)} de más</b>${lineas.length ? `\nSe abonó a sus facturas pendientes:\n${lineas.join('\n')}` : ''}${resto > 0.009 ? `\n🟢 Quedan <b>${dinero(resto)} a su favor</b>${favor > resto + 0.009 ? ` (en total ${dinero(favor)})` : ''}: se descuentan solos de su próxima factura.` : ''}` };
+}
+// Saldo a favor pendiente → se aplica a las facturas nuevas del cliente (tarea diaria)
+async function aplicarSaldosFavor(env, token, docs) {
+  const saldos = (await fsList(env, 'saldosFavor', token).catch(() => [])).filter(x => Number(x.monto) > 0.009);
+  const L = [];
+  for (const sf of saldos) {
+    const { resto, lineas } = await repartirSaldo(env, token, sf.cliente, Number(sf.monto), 'saldo a favor', null, docs);
+    if (!lineas.length) continue;
+    await fsUpdate(env, `saldosFavor/${sf._id}`, { monto: resto, actualizado: new Date().toISOString() }, ['monto', 'actualizado'], token).catch(() => {});
+    L.push(`• <b>${escHtml(sf.cliente)}</b>: se aplicó su saldo a favor\n${lineas.join('\n')}${resto > 0.009 ? `\n  Le quedan ${dinero(resto)} a favor` : ''}`);
+  }
+  return L;
 }
 
 async function tgCallback(env, cq) {
@@ -1600,6 +1680,7 @@ async function tgCallback(env, cq) {
   const token = await firebaseLogin(env);
   const acciones = {
     p: () => botMarcarPagado(env, token, id).finally(() => metaCumplidaPush(env).catch(() => {})),
+    pm: () => aplicarExcedente(env, token, id, Number(extra), 'confirmado por Telegram').finally(() => metaCumplidaPush(env).catch(() => {})),
     a: () => botAbono(env, token, id, Number(extra)).finally(() => metaCumplidaPush(env).catch(() => {})),
     r: () => botRechazar(env, token, id),
     c: () => botCrearDesdeBorrador(env, token, id),
@@ -1618,7 +1699,7 @@ async function tgCallback(env, cq) {
     n: async () => ({ aviso: 'Esto ya se resolvió', ya: true })
   };
   // Crear y enviar tarda unos segundos: se contesta al instante para que el botón no se quede "pensando"
-  const lento = ['c', 'ce', 'k', 'p', 'a', 'sp', 'spe', 'rq', 'ec'].includes(acc);
+  const lento = ['c', 'ce', 'k', 'p', 'pm', 'a', 'sp', 'spe', 'rq', 'ec'].includes(acc);
   if (lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: acc === 'ce' ? 'Creating…' : 'Un momento…' });
   let res;
   try { res = acciones[acc] ? await acciones[acc]() : { aviso: 'Acción desconocida' }; }
@@ -1626,7 +1707,7 @@ async function tgCallback(env, cq) {
   if (!lento) await tgApi(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: String(res.aviso || 'Listo').slice(0, 190) });
   if (res.ya) return;
   // Otros avisos de la misma factura (varios comprobantes) también quedan como resueltos
-  if (['p', 'a', 'r'].includes(acc)) await tgSincronizarPago(env, token, id, { p: 'pagado', a: 'abono', r: 'rechazado' }[acc], cq.message.message_id).catch(() => {});
+  if (['p', 'pm', 'a', 'r'].includes(acc)) await tgSincronizarPago(env, token, id, { p: 'pagado', pm: 'pagado', a: 'abono', r: 'rechazado' }[acc], cq.message.message_id).catch(() => {});
   // Quita los botones para no repetir la acción
   const enlaces = (cq.message?.reply_markup?.inline_keyboard || []).map(f => f.filter(b => b.url)).filter(f => f.length);
   await tgApi(env, 'editMessageReplyMarkup', { chat_id: chat, message_id: cq.message.message_id, reply_markup: { inline_keyboard: enlaces } });
