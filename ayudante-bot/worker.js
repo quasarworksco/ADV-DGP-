@@ -688,7 +688,8 @@ async function handleVerificar(request, env, firebaseLogin) {
     const previa = (doc.verificaciones || {})[key] || (doc.verificacionIA && doc.verificacionIA.url === url ? doc.verificacionIA : null);
     if (previa) return json(request, previa);
 
-    const { lectura, modelo } = await leerComprobante(env, url);
+    const interno = env.WA_HMAC && body._interno === env.WA_HMAC;   // llamado desde el aviso de WhatsApp (lectura ya hecha)
+    const { lectura, modelo } = interno && body._lectura ? body._lectura : await leerComprobante(env, url);
     const ev = evaluar(doc, lectura, url);
     const verificacion = {
       ...ev,
@@ -711,7 +712,7 @@ async function handleVerificar(request, env, firebaseLogin) {
     const enviado = await tgFetch(env, `https://api.telegram.org/bot${tgTok}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, disable_web_page_preview: true, text:
-        `${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}\n\n` +
+        `${interno && body._origen ? body._origen + '\n' : ''}${icono} Verificación IA · ${doc.docId || fsId}\n👤 ${doc.cli || '—'}${doc.clienteFinal ? ' (' + doc.clienteFinal + ')' : ''}\n\n` +
         `Leído: ${ev.monto !== null ? '$' + ev.monto.toFixed(2) : '—'} ${lectura.moneda || ''}\n` +
         `Total factura: $${ev.total.toFixed(2)}${ev.acumulado !== null ? ` · Pagado según comprobantes: $${ev.acumulado.toFixed(2)}` : ''}\n` +
         `${lectura.plataforma ? 'Plataforma: ' + lectura.plataforma + '\n' : ''}` +
@@ -735,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04n';
+const WORKER_VERSION = '2026-11-04o';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1538,10 +1539,12 @@ async function waReciboPago(env, token, fsId, monto) {
   const en = doc.idioma === 'en', nombre = String(para || '').split(' ')[0], saldo = saldoDoc(doc), pagada = doc.pagado || doc.type === 'recibo' || saldo <= 0.009;
   const link = `${SITIO}/factura-publica.html?id=${fsId}${en ? '&lang=en' : ''}`;
   const ref = `${doc.docId || (en ? 'Invoice' : 'Factura')}${final ? ` (${final})` : ''}`;
+  // Reseña: solo clientes directos, pago completo, sin suscripción y si no la ha dejado antes
+  const resena = pagada && !esAliado(doc) && !doc.suscripcionId && !doc.resenaClick ? `https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/resena?d=${fsId}` : '';
   const texto = en
-    ? (pagada ? `Hi ${nombre}! *We received your payment of ${dinero(monto)}* ✅\n\n${ref}: *paid in full*\nYour receipt: ${link}\n\nThank you for trusting DGP Global Group!`
+    ? (pagada ? `Hi ${nombre}! *We received your payment of ${dinero(monto)}* ✅\n\n${ref}: *paid in full*\nYour receipt: ${link}\n\nThank you for trusting DGP Global Group!${resena ? `\n\n⭐ Would you give us 30 seconds to leave a Google review? It helps us a lot:\n${resena}` : ''}`
               : `Hi ${nombre}! We received your payment of ${dinero(monto)} ✅\n\n${ref}: *${dinero(saldo)} left* to pay.\nView your invoice: ${link}\n\nThank you!`)
-    : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!`
+    : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!${resena ? `\n\n⭐ ¿Nos regalas 30 segundos para dejar tu reseña en Google? Nos ayuda muchísimo:\n${resena}` : ''}`
               : `Hola ${nombre}! Recibimos tu abono de ${dinero(monto)} ✅\n\n${ref}: te quedan *${dinero(saldo)}* por pagar.\nVer tu factura: ${link}\n\n¡Gracias!`);
   await waEnviarTexto(env, t + '@c.us', texto);
   return { ok: true, tel: t, para };
@@ -1811,6 +1814,46 @@ async function handleWA(request, env) {
   } catch (e) { return json(request, { error: e.message || 'Error con WhatsApp' }, 502); }
 }
 // Avisos de WAHA: mensaje nuevo → Telegram y celular; desconexión → alerta
+/* Paso 4: el cliente (o aliado) manda la foto de un pago por WhatsApp → la IA la lee,
+   se guarda como comprobante en su factura pendiente más antigua y te llega el aviso con botones. */
+async function waComprobante(env, p, de) {
+  // Número real del remitente (si WhatsApp lo oculta con @lid, se busca en los datos del mensaje)
+  let num = /@c\.us$/.test(de) ? de.split('@')[0] : '';
+  if (!num) { const m = JSON.stringify(p._data || {}).match(/"(\d{8,15})(?::\d+)?@s\.whatsapp\.net"/); if (m) num = m[1]; }
+  if (!num) return false;
+  const token = await firebaseLogin(env);
+  const [clientes, portales, aliados] = await Promise.all(['clientes', 'portal', 'aliados'].map(c => fsList(env, c, token).catch(() => [])));
+  const igual = t => { const d = String(t || '').replace(/\D/g, ''); return d.length >= 7 && (num.endsWith(d.slice(-10)) || d.endsWith(num.slice(-10))); };
+  const al = aliados.find(a => igual(a.telefono));
+  const cl = !al && (clientes.find(c => igual(c.telefono)) || portales.find(x => igual(x.telefono)));
+  if (!al && !cl) return false;   // número desconocido: queda el aviso normal del mensaje
+  const nomCli = cl ? (cl.apellido !== undefined ? [cl.nombre, cl.apellido].filter(Boolean).join(' ') : cl.nombre) : '';
+  const docs = (await fsList(env, 'documentos', token)).filter(d => !d.pagado && d.type === 'factura' && deudaDoc(d) > 0.009 &&
+    (al ? (d.aliadoId === al._id || normNombre(d.aliado || d.cli) === normNombre(al.nombre)) : normNombre(d.cli) === normNombre(nomCli)))
+    .sort((a, b) => String(fechaDoc(a) || '').localeCompare(String(fechaDoc(b) || '')));
+  if (!docs.length) return false;
+  // Descargar la foto del servidor de WhatsApp y subirla a Cloudinary (igual que desde la factura)
+  const ruta = new URL(p.media.url, env.WA_URL).pathname + new URL(p.media.url, env.WA_URL).search;
+  const img = await fetch(env.WA_URL.replace(/\/$/, '') + ruta, { headers: { 'X-Api-Key': env.WA_KEY }, signal: AbortSignal.timeout(25000) });
+  if (!img.ok) return false;
+  const doc = docs[0];
+  const fd = new FormData();
+  fd.append('file', new Blob([await img.arrayBuffer()], { type: p.media.mimetype }), 'comprobante.jpg');
+  fd.append('upload_preset', 'm87e1jog'); fd.append('folder', 'comprobantes'); fd.append('public_id', `${doc._id}_wa_${Date.now()}`);
+  const up = await fetch('https://api.cloudinary.com/v1_1/dgden7fws/image/upload', { method: 'POST', body: fd }).then(r => r.json()).catch(() => ({}));
+  if (!up.secure_url) return false;
+  const url = up.secure_url;
+  const leido = await leerComprobante(env, url);
+  if (evaluar(doc, leido.lectura, url).estado === 'no_es_comprobante') return false;   // no es un pago: aviso normal
+  const nuevo = { url, fecha: new Date().toISOString(), origen: 'whatsapp' };
+  await fsUpdate(env, `documentos/${doc._id}`, { comprobante_url: url, comprobantes: [...listaComprobantes(doc).map(c => ({ url: c.url, fecha: c.fecha || null, origen: c.origen || 'anterior' })), nuevo] }, ['comprobante_url', 'comprobantes'], token);
+  const otras = docs.length > 1 ? ` · debe ${docs.length} facturas, lo asigné a la más antigua` : '';
+  await handleVerificar(new Request(SITIO + '/verificar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fsId: doc._id, url, _interno: env.WA_HMAC, _lectura: leido, _origen: `📲 Comprobante recibido por WhatsApp de ${al ? al.nombre : nomCli}${otras}` }) }), env, firebaseLogin);
+  const en = doc.idioma === 'en';
+  await waEnviarTexto(env, de, en ? 'We received your payment receipt, we are verifying it ✅' : 'Recibimos tu comprobante, lo estamos verificando ✅').catch(() => {});
+  return true;
+}
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
   if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
@@ -1826,6 +1869,7 @@ async function handleWAWebhook(request, env, ctx) {
       if (!/@(c\.us|lid)$/.test(de)) return;   // grupos, canales y estados no avisan (serían demasiados)
       const nombre = p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '';
       const numero = de.split('@')[0];
+      if (p.hasMedia && /^image\//.test(p.media?.mimetype || '') && await waComprobante(env, p, de).catch(e => { console.warn('WA comprobante', e); return false; })) return;
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
       // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
       // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
