@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría de sitio web · DGP Global Group</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+<style>
+:root { --azul:#1438cc; --navy:#0b1640; --txt:#0f172a; --suave:#64748b; --linea:#e2e8f0; --off:#f6f8fc; --ok:#059669; --med:#d97706; --mal:#dc2626; }
+* { box-sizing:border-box; margin:0; }
+body { font-family:'Plus Jakarta Sans',system-ui,sans-serif; background:#e8edf6; color:var(--txt); }
+.acciones { position:sticky; top:0; z-index:10; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding:12px 16px; background:rgba(11,22,64,.92); backdrop-filter:blur(8px); }
+.acciones button, .acciones a { border:0; border-radius:12px; padding:11px 18px; font:700 14px 'Plus Jakarta Sans',sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.b-pdf { background:#FFC93C; color:var(--navy); } .b-wa { background:#25d366; color:#fff; }
+.hoja { width:min(820px, calc(100% - 24px)); margin:22px auto 40px; background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(11,22,64,.15); }
+.cab { background:linear-gradient(135deg,#0b1640,#1438cc); color:#fff; padding:28px 36px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.marca { display:flex; align-items:center; gap:14px; } .marca img { width:52px; height:52px; background:#fff; border-radius:14px; padding:7px; }
+.marca b { font-family:'Bebas Neue'; font-size:30px; letter-spacing:4px; display:block; line-height:1; } .marca b span { color:#FFC93C; }
+.marca small { font-size:11px; letter-spacing:2px; text-transform:uppercase; opacity:.75; }
+.cab-d { text-align:right; } .cab-d b { font-family:'Bebas Neue'; font-size:26px; letter-spacing:2px; display:block; } .cab-d small { font-size:12px; opacity:.8; }
+.sec { padding:26px 36px; border-bottom:1px solid var(--linea); }
+.sec h2 { font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:var(--azul); margin-bottom:14px; }
+.hero { display:grid; grid-template-columns:auto 1fr auto; gap:26px; align-items:center; }
+.cel { width:150px; border-radius:22px; border:7px solid #1d2552; overflow:hidden; background:#0d1330; box-shadow:0 14px 30px rgba(11,22,64,.25); }
+.cel img { width:100%; display:block; }
+.sitio b { font-size:24px; font-weight:800; word-break:break-all; display:block; } .sitio p { color:var(--suave); font-size:13px; margin-top:4px; }
+.sitio .para { margin-top:10px; font-size:13px; } .sitio .para strong { color:var(--txt); }
+.anillo { text-align:center; font-weight:800; font-size:12px; color:var(--suave); }
+.etq { display:inline-block; margin-top:6px; font-size:11px; font-weight:800; border-radius:20px; padding:4px 12px; text-transform:uppercase; letter-spacing:.8px; }
+.anillos { display:flex; gap:22px; flex-wrap:wrap; justify-content:space-between; }
+.vit { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:16px; }
+.vit div { background:var(--off); border-radius:12px; padding:10px 12px; } .vit small { display:block; font-size:11px; color:var(--suave); } .vit b { font-size:17px; }
+.resumen { font-size:14px; line-height:1.7; color:#334155; white-space:pre-line; }
+.mej { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--linea); font-size:14px; line-height:1.5; }
+.mej:first-of-type { border-top:0; }
+.pri { flex-shrink:0; font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; border-radius:20px; padding:4px 10px; margin-top:2px; }
+.pri.alta { background:#fef2f2; color:#b91c1c; } .pri.media { background:#fffbeb; color:#b45309; } .pri.baja { background:#f1f5f9; color:#475569; }
+.checks { columns:2; column-gap:30px; } .grp { break-inside:avoid; margin-bottom:12px; }
+.grp h3 { font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--suave); margin-bottom:4px; }
+.ck { display:flex; gap:8px; font-size:13px; padding:3px 0; } .ck i { font-style:normal; font-weight:800; width:14px; } .ck.ok i { color:var(--ok); } .ck.no i { color:var(--mal); }
+.cta { background:linear-gradient(135deg,#0b1640,#1438cc); color:#fff; padding:30px 36px; text-align:center; }
+.cta h2 { font-family:'Bebas Neue'; font-size:40px; letter-spacing:1px; font-weight:400; } .cta h2 span { color:#FFC93C; }
+.cta p { opacity:.85; margin:6px 0 16px; font-size:14px; }
+.cta .datos { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; font-weight:700; font-size:14px; }
+.cta .datos span { background:rgba(255,255,255,.12); border-radius:12px; padding:9px 14px; }
+.pie { text-align:center; font-size:11px; color:var(--suave); padding:14px; }
+.estado { text-align:center; padding:80px 20px; color:var(--suave); font-weight:700; }
+@media (max-width:640px) {
+  .cab { padding:22px; flex-direction:column; align-items:flex-start; } .cab-d { text-align:left; }
+  .sec { padding:22px; } .hero { grid-template-columns:1fr; justify-items:center; text-align:center; } .checks { columns:1; }
+  .anillos { justify-content:center; }
+}
+@media print { body { background:#fff; } .acciones { display:none; } .hoja { margin:0; width:100%; box-shadow:none; border-radius:0; } .sec, .grp, .mej { break-inside:avoid; } }
+.pdf .acciones { display:none; }
+.pdf .hoja { width:820px; margin:0; border-radius:0; box-shadow:none; }
+</style>
+</head>
+<body>
+<div class="acciones" id="acc" hidden>
+  <button class="b-pdf" onclick="descargarPDF(this)">⬇ Descargar PDF</button>
+  <a class="b-wa" id="wa" target="_blank" rel="noopener">WhatsApp: quiero mejorarla</a>
+</div>
+<div id="hoja" class="hoja"><div class="estado">Cargando el informe…</div></div>
+<script>
+const API = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/auditoria';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const color = n => n == null ? '#94a3b8' : n >= 75 ? '#059669' : n >= 50 ? '#d97706' : '#dc2626';
+function anillo(n, titulo, r = 36) {
+  const w = r > 40 ? 11 : 8, t = (r + w) * 2, c = 2 * Math.PI * r;
+  return `<div class="anillo"><svg width="${t}" height="${t}" viewBox="0 0 ${t} ${t}"><circle cx="${t / 2}" cy="${t / 2}" r="${r}" stroke="#e2e8f0" stroke-width="${w}" fill="none"/>${n == null ? '' : `<circle cx="${t / 2}" cy="${t / 2}" r="${r}" stroke="${color(n)}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - n / 100)}" transform="rotate(-90 ${t / 2} ${t / 2})"/>`}<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="${r > 40 ? 34 : 20}" font-weight="800" fill="${color(n)}" font-family="Plus Jakarta Sans,sans-serif">${n == null ? '—' : n}</text></svg><div>${titulo}</div></div>`;
+}
+function pintar(a) {
+  const m = a.movil || {}, e = a.escritorio || {}, f = new Date(a.fecha);
+  const nivel = a.puntaje >= 85 ? ['Excelente', '#ecfdf5', '#047857'] : a.puntaje >= 70 ? ['Bien, con mejoras', '#ecfdf5', '#047857'] : a.puntaje >= 50 ? ['Necesita mejoras', '#fffbeb', '#b45309'] : ['Mejoras urgentes', '#fef2f2', '#b91c1c'];
+  const grupos = {}; (a.checks || []).forEach(c => (grupos[c.grupo] = grupos[c.grupo] || []).push(c));
+  const vit = [['Carga lo principal', m.lcp], ['Primer contenido', m.fcp], ['Movimiento al cargar', m.cls], ['Bloqueo', m.tbt], ['Peso de la página', m.peso ? (m.peso > 1024 ? (m.peso / 1024).toFixed(1) + ' MB' : m.peso + ' KB') : null]].filter(x => x[1]);
+  document.title = `Auditoría de ${a.host} · DGP Global Group`;
+  document.getElementById('wa').href = `https://wa.me/12398231738?text=${encodeURIComponent(`Hola DGP, vi la auditoría de ${a.host} y quiero mejorar mi página web.`)}`;
+  document.getElementById('acc').hidden = false;
+  document.getElementById('hoja').innerHTML = `
+  <div class="cab"><div class="marca"><img src="/logo.png" alt="DGP"><div><b>DGP <span>GLOBAL</span> GROUP</b><small>Diseño web y marketing digital</small></div></div>
+    <div class="cab-d"><b>Auditoría de sitio web</b><small>${esc(f.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }))}</small></div></div>
+  <div class="sec"><div class="hero">
+    ${a.captura ? `<div class="cel"><img src="${a.captura}" alt="Vista en celular"></div>` : ''}
+    <div class="sitio"><b>${esc(a.host)}</b><p>${esc(a.titulo || '')}</p>${a.cliente ? `<div class="para">Preparado para: <strong>${esc(a.cliente)}</strong></div>` : ''}</div>
+    <div class="anillo">${anillo(a.puntaje, 'Puntaje general', 56)}<span class="etq" style="background:${nivel[1]};color:${nivel[2]}">${nivel[0]}</span></div>
+  </div></div>
+  ${m.rendimiento != null ? `<div class="sec"><h2>Resultados de Google (celular)</h2><div class="anillos">${anillo(m.rendimiento, 'Velocidad')}${anillo(m.seo, 'SEO')}${anillo(m.accesibilidad, 'Accesibilidad')}${anillo(m.practicas, 'Buenas prácticas')}${e.rendimiento != null ? anillo(e.rendimiento, 'Velocidad en PC') : ''}</div>
+    ${vit.length ? `<div class="vit">${vit.map(v => `<div><small>${v[0]}</small><b>${esc(String(v[1]))}</b></div>`).join('')}</div>` : ''}</div>` : ''}
+  ${a.resumen ? `<div class="sec"><h2>Resumen</h2><div class="resumen">${esc(a.resumen)}</div></div>` : ''}
+  <div class="sec"><h2>Qué mejorar</h2>${(a.mejoras || []).length ? a.mejoras.map(x => `<div class="mej"><span class="pri ${x.prioridad}">${x.prioridad === 'alta' ? 'Urgente' : x.prioridad === 'media' ? 'Importante' : 'Detalle'}</span><span>${esc(x.texto)}</span></div>`).join('') : '<p class="resumen">¡Muy bien! No encontramos problemas importantes.</p>'}
+    ${(m.oportunidades || []).length ? `<h2 style="margin-top:18px">Para que cargue más rápido</h2>${m.oportunidades.map(o => `<div class="mej"><span class="pri media">−${(o.ahorro / 1000).toFixed(1)} s</span><span>${esc(o.titulo)}</span></div>`).join('')}` : ''}</div>
+  <div class="sec"><h2>Revisión completa</h2><div class="checks">${Object.entries(grupos).map(([g, cs]) => `<div class="grp"><h3>${esc(g)}</h3>${cs.map(c => `<div class="ck ${c.ok ? 'ok' : 'no'}"><i>${c.ok ? '✓' : '✕'}</i>${esc(c.nombre)}</div>`).join('')}</div>`).join('')}</div></div>
+  <div class="cta"><h2>¿TE AYUDAMOS A <span>MEJORARLA?</span></h2><p>Páginas web rápidas, en español e inglés, con WhatsApp y listas para aparecer en Google.</p>
+    <div class="datos"><span>WhatsApp +1 (239) 823-1738</span><span>info@dgpglobalgroup.com</span><span>dgpglobalgroup.com</span></div></div>
+  <div class="pie">Auditoría automática de DGP Global Group con datos de Google PageSpeed y una revisión de la página. Los resultados pueden variar según el momento de la medición.</div>`;
+}
+async function descargarPDF(btn) {
+  const a = window._a; if (!a) return;
+  if (!window.html2pdf) { window.print(); return; }
+  const t = btn.textContent; btn.textContent = 'Preparando PDF…'; btn.disabled = true;
+  document.body.classList.add('pdf');
+  try {
+    await html2pdf().set({ margin: 0, filename: `Auditoria-${a.host}.pdf`, image: { type: 'jpeg', quality: .95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'px', format: [820, 1160], hotfixes: ['px_scaling'] },
+      pagebreak: { mode: ['css', 'legacy'], avoid: ['.sec', '.mej', '.grp'] } }).from(document.getElementById('hoja')).save();
+  } catch (e) { window.print(); }
+  finally { document.body.classList.remove('pdf'); btn.textContent = t; btn.disabled = false; }
+}
+(async () => {
+  const id = new URLSearchParams(location.search).get('id') || '';
+  try {
+    const r = await fetch(`${API}?id=${encodeURIComponent(id)}`); const a = await r.json();
+    if (!r.ok || a.error) throw new Error(a.error || 'No se pudo cargar');
+    window._a = a; pintar(a);
+  } catch (e) { document.getElementById('hoja').innerHTML = `<div class="estado">${esc(e.message)}</div>`; }
+})();
+</script>
+</body>
+</html>

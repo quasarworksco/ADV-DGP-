@@ -2705,6 +2705,8 @@ html.dark .hr-p-pausa { background:#1e293b; color:#cbd5e1; border-color:#334155;
 .au-ck.ok span { color:#059669; } .au-ck.no span { color:#dc2626; } .au-ck.no { color:var(--black); }
 .au-h { display:flex; align-items:center; gap:12px; width:100%; padding:10px; border:0; background:transparent; border-radius:10px; cursor:pointer; color:inherit; font:inherit; }
 .au-h:hover { background:var(--off,#f8fafc); } .au-h b { display:block; font-size:13px; } .au-h small { font-size:11.5px; color:var(--text-soft); }
+.au-fav { width:38px; height:38px; border-radius:10px; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.au-fav img { width:24px; height:24px; } .au-fav b { font-weight:800; color:var(--text-mid); }
 .au-hp { width:38px; height:38px; border-radius:10px; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .au-spin { width:38px; height:38px; margin:0 auto; border:4px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:auGira 1s linear infinite; }
 @keyframes auGira { to { transform:rotate(360deg); } }
@@ -12695,7 +12697,7 @@ async function renderAuditorias(fresco) {
   }
   const h = document.getElementById('au-hist');
   h.innerHTML = _au.lista.length ? `<div class="db-head" style="margin:18px 0 8px"><div class="dash-section-label" style="margin:0">Auditorías anteriores</div></div>
-    <div class="cb-card" style="padding:6px">${_au.lista.map(a => `<button class="au-h" onclick="verAuditoria('${esc(a._id)}')"><span class="au-hp" style="background:${auColor(a.puntaje)}">${a.puntaje}</span><span style="flex:1;min-width:0;text-align:left"><b>${esc(a.host || a.url)}</b><small>${esc(a.cliente || '')}${a.cliente ? ' · ' : ''}${esc(new Date(a.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }))}${a.enviadaA ? ' · enviada a ' + esc(a.enviadaA) : ''}</small></span><span style="color:var(--text-soft)">›</span></button>`).join('')}</div>` : '';
+    <div class="cb-card" style="padding:6px">${_au.lista.map(a => `<button class="au-h" onclick="verAuditoria('${esc(a._id)}')"><span class="au-fav"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(a.host || '')}&sz=64" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'${esc((a.host || '?')[0].toUpperCase())}'}))"></span><span class="au-hp" style="background:${auColor(a.puntaje)}">${a.puntaje}</span><span style="flex:1;min-width:0;text-align:left"><b>${esc(a.host || a.url)}</b><small>${esc(a.cliente || '')}${a.cliente ? ' · ' : ''}${esc(new Date(a.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }))}${a.enviadaA ? ' · enviada a ' + esc(a.enviadaA) : ''}</small></span><span style="color:var(--text-soft)">›</span></button>`).join('')}</div>` : '';
 }
 const auColor = n => n == null ? '#94a3b8' : n >= 75 ? '#059669' : n >= 50 ? '#d97706' : '#dc2626';
 function auAnillo(n, titulo, grande) {
@@ -12730,10 +12732,11 @@ function pintarAuditoria(a) {
   <div class="cb-card" style="padding:18px;display:grid;grid-template-columns:${a.captura ? '170px ' : ''}auto 1fr;gap:22px;align-items:center" id="au-top">
     ${a.captura ? `<img src="${a.captura}" alt="" style="width:170px;border-radius:14px;border:1px solid var(--border)">` : ''}
     ${auAnillo(a.puntaje, 'Puntaje general', true)}
-    <div style="min-width:0"><a href="${esc(a.url)}" target="_blank" rel="noopener" style="font:800 20px 'Plus Jakarta Sans',sans-serif;color:var(--black);text-decoration:none;word-break:break-all">${esc(a.host || a.url)}</a>
+    <div style="min-width:0"><a href="${esc(a.url)}" target="_blank" rel="noopener" style="font:800 20px 'Plus Jakarta Sans',sans-serif;color:var(--black);text-decoration:none;word-break:break-all;display:inline-flex;align-items:center;gap:10px"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(a.host || '')}&sz=64" alt="" style="width:28px;height:28px;border-radius:7px" onerror="this.remove()">${esc(a.host || a.url)}</a>
       <div style="font-size:12.5px;color:var(--text-soft);margin-top:2px">${esc(a.titulo || '')}</div>
       <div style="font-size:12px;color:var(--text-mid);margin-top:6px">${a.cliente ? esc(a.cliente) + ' · ' : ''}${esc(new Date(a.fecha).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}${a.ms ? ` · responde en ${(a.ms / 1000).toFixed(1)} s` : ''}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        ${a._id ? `<a class="hr-btn" href="auditoria.html?id=${esc(a._id)}" target="_blank" rel="noopener" style="text-decoration:none;background:var(--blue);color:#fff;border-color:var(--blue)"><i class="fa-regular fa-file-pdf"></i> Informe para el cliente (PDF)</a>` : ''}
         <button class="hr-btn ok" onclick="auCopiar()"><i class="fa-brands fa-whatsapp"></i> Copiar para WhatsApp</button>
         <button class="hr-btn" onclick="auCorreo()"><i class="fa-regular fa-envelope"></i> Enviar por correo</button>
         <button class="hr-btn" onclick="document.getElementById('au-url').value='${esc(a.url)}';auditar()"><i class="fa-solid fa-rotate"></i> Volver a analizar</button>
@@ -12757,19 +12760,31 @@ function pintarAuditoria(a) {
   </div>`;
 }
 function auTextoWA(a) {
-  return `🔍 *Auditoría de ${a.host}* · DGP Global Group\n\nPuntaje general: *${a.puntaje}/100*${a.movil && a.movil.rendimiento != null ? `\nVelocidad en celular (Google): ${a.movil.rendimiento}/100 · SEO: ${a.movil.seo}/100` : ''}\n\n${a.resumen || ''}\n\n*Mejoras:*\n${(a.mejoras || []).slice(0, 6).map(x => `• ${x.texto}`).join('\n')}\n\n¿Te ayudamos a mejorarla? Respóndeme por aquí 🙌`;
+  return `🔍 *Auditoría de ${a.host}* · DGP Global Group\n\nPuntaje general: *${a.puntaje}/100*${a._id ? `\n📄 Informe completo (PDF): https://adv.dgp-link.com/auditoria.html?id=${a._id}` : ''}${a.movil && a.movil.rendimiento != null ? `\nVelocidad en celular (Google): ${a.movil.rendimiento}/100 · SEO: ${a.movil.seo}/100` : ''}\n\n${a.resumen || ''}\n\n*Mejoras:*\n${(a.mejoras || []).slice(0, 6).map(x => `• ${x.texto}`).join('\n')}\n\n¿Te ayudamos a mejorarla? Respóndeme por aquí 🙌`;
 }
 function auCopiar() { const a = _au.actual; if (!a) return; navigator.clipboard.writeText(auTextoWA(a)).then(() => toast('Resumen copiado: pégalo en WhatsApp', 'ok')).catch(() => toast('No se pudo copiar', 'err')); }
-async function auCorreo() {
+function auCorreo() {
   const a = _au.actual; if (!a || !a._id) return;
-  const cli = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(a.cliente || ''));
-  const correo = prompt('¿A qué correo le enviamos la auditoría?', cli?.correo || ''); if (!correo) return;
+  const n = ptNorm(a.cliente || '');
+  const cli = n && clientesList.find(c => ptNorm(clNombre(c)) === n || ptNorm(c.empresa || '') === n);
+  const doc = n && Object.values(docsMap).find(d => ptNorm(d.cli) === n && d.clienteCorreo);
+  const correo = cli?.correo || doc?.clienteCorreo || '';
+  ptModal('Enviar auditoría por correo', `${a.host}${a.cliente ? ' · ' + a.cliente : ''}`, `<div class="rd-form">
+    <div class="ff"><label>Correo del cliente</label><input id="au-mail" type="email" value="${esc(correo)}" placeholder="cliente@correo.com"></div>
+    <div class="ll-sub">${correo ? 'Es el correo que tiene guardado. Puedes cambiarlo.' : 'Este cliente no tiene correo guardado: escríbelo.'} Sale desde info@ con el resumen y el botón para ver y descargar el informe en PDF.</div>
+    <button class="ll-btn" style="background:var(--blue);margin-top:10px" id="au-mail-btn" onclick="auEnviarCorreo()">Enviar informe</button></div>`);
+  setTimeout(() => document.getElementById('au-mail')?.focus(), 80);
+}
+async function auEnviarCorreo() {
+  const a = _au.actual, correo = (document.getElementById('au-mail')?.value || '').trim(), btn = document.getElementById('au-mail-btn');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) { toast('Escribe un correo válido', 'err'); return; }
+  btn.disabled = true; btn.textContent = 'Enviando…';
   try {
     const token = await auth.currentUser.getIdToken();
     const r = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'auditoria-correo', id: a._id, correo }) });
     const d = await r.json().catch(() => ({})); if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
-    toast(`Auditoría enviada a ${correo} desde info@ ✅`, 'ok'); a.enviadaA = correo; renderAuditorias(true);
-  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); }
+    closePortalModal(); toast(`Informe enviado a ${correo} desde info@ ✅`, 'ok'); a.enviadaA = correo; renderAuditorias(true);
+  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); btn.disabled = false; btn.textContent = 'Enviar informe'; }
 }
 
 /* ═══════════════════════════════════════════════════════

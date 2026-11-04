@@ -211,6 +211,7 @@ export default {
     if (ruta === '/contacto') return handleContacto(request, env);
     if (ruta === '/aviso') return handleAviso(request, env);
     if (ruta.startsWith('/push')) return handlePush(request, env, ctx);
+    if (ruta === '/auditoria') return handleAuditoriaPublica(request, env);
     if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
@@ -711,7 +712,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04c';
+const WORKER_VERSION = '2026-11-04d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1716,9 +1717,21 @@ Sin markdown ni asteriscos. No inventes datos que no estén.`, datosIA, 500).cat
   const doc = { url: urlFinal, entrada, host, cliente, fecha: new Date().toISOString(), por: por || '', puntaje, codigo, ms,
     titulo: rev.titulo, descripcion: rev.descripcion, palabras: rev.palabras, imagenes: rev.imagenes, sinAlt: rev.sinAlt,
     checks: rev.checks.map(({ ok, grupo, nombre }) => ({ ok, grupo, nombre })), mejoras, resumen,
-    movil: { ...movil, captura: null }, escritorio: { ...escritorio, captura: null } };
+    movil: { ...movil, captura: null }, escritorio: { ...escritorio, captura: null },
+    captura: movil.captura && movil.captura.length < 400000 ? movil.captura : null };
   const id = await fsCreate(env, 'auditorias', doc, token).catch(e => { console.warn('auditoria', e); return null; });
-  return { id, ...doc, captura: movil.captura || null };
+  return { id, ...doc };
+}
+// Informe público (auditoria.html?id=…): solo lo necesario para el cliente, sin datos internos
+async function handleAuditoriaPublica(request, env) {
+  const h = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' };
+  const id = new URL(request.url).searchParams.get('id') || '';
+  if (!/^[A-Za-z0-9_-]{10,40}$/.test(id)) return new Response(JSON.stringify({ error: 'Informe no válido' }), { status: 400, headers: h });
+  const token = await firebaseLogin(env);
+  const a = await fsGet(env, `auditorias/${id}`, token).catch(() => null);
+  if (!a) return new Response(JSON.stringify({ error: 'No encontré este informe' }), { status: 404, headers: h });
+  const { por, enviadaA, enviadaAt, entrada, ...pub } = a;
+  return new Response(JSON.stringify(pub), { headers: h });
 }
 // Informe por correo al cliente
 async function enviarAuditoria(env, token, id, correo, en) {
@@ -1728,9 +1741,10 @@ async function enviarAuditoria(env, token, id, correo, en) {
   const resumen = [['Puntaje general', `${a.puntaje}/100`, a.puntaje >= 75 ? '#059669' : a.puntaje >= 50 ? '#d97706' : '#dc2626']];
   if (m.rendimiento != null) resumen.push(['Velocidad en celular (Google)', `${m.rendimiento}/100`], ['SEO (Google)', `${m.seo}/100`]);
   (a.mejoras || []).slice(0, 5).forEach((x, i) => resumen.push([`Mejora ${i + 1}${x.prioridad === 'alta' ? ' · urgente' : ''}`, x.texto.slice(0, 90)]));
+  const informe = `${SITIO}/auditoria.html?id=${id}`;
   const html = correoBotHTML({ icono: 'web', titulo: `Auditoría de ${a.host}`, texto: String(a.resumen || '').split('\n').filter(Boolean).slice(0, 3).join(' ').slice(0, 600) || `Revisamos ${a.host} y encontramos varias mejoras para conseguir más clientes.`,
-    resumen, boton: 'Quiero mejorar mi web', link: `https://wa.me/12398231738?text=${encodeURIComponent(`Hola, recibí la auditoría de ${a.host} y quiero mejorarla.`)}`, nota: 'Auditoría gratuita de DGP Global Group · dgpglobalgroup.com' });
-  const ok = await enviarCorreoBot(env, correo, `Auditoría gratis de tu página web · ${a.host}`, html, `${a.resumen || ''}\n\nPuntaje: ${a.puntaje}/100\n\nDGP Global Group · WhatsApp +1 (239) 823-1738`);
+    resumen, boton: 'Ver mi informe completo (PDF)', link: informe, nota: `¿Quieres mejorarla? Responde este correo o escríbenos por WhatsApp al +1 (239) 823-1738.` });
+  const ok = await enviarCorreoBot(env, correo, `Auditoría gratis de tu página web · ${a.host}`, html, `${a.resumen || ''}\n\nPuntaje: ${a.puntaje}/100\nInforme completo: ${informe}\n\nDGP Global Group · WhatsApp +1 (239) 823-1738`);
   if (!ok) return { error: 'No se pudo enviar el correo' };
   await fsUpdate(env, `auditorias/${id}`, { enviadaA: correo, enviadaAt: new Date().toISOString() }, ['enviadaA', 'enviadaAt'], token).catch(() => {});
   return { ok: true };
