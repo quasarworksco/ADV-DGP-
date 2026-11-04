@@ -13,14 +13,14 @@ BOT=https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev
 mkdir -p $DIR && cd $DIR
 
 echo "▶ 1/5 Preparando la máquina…"
-# Una máquina recién creada sigue instalando sus actualizaciones unos minutos: se espera a que termine
-command -v cloud-init >/dev/null && cloud-init status --wait >/dev/null 2>&1 || true
+# Una máquina recién creada sigue instalando actualizaciones unos minutos: se reintenta hasta que apt esté libre
 esperar_apt() {
-  for i in $(seq 1 120); do
-    if ! pgrep -x apt-get >/dev/null && ! pgrep -x apt >/dev/null && ! pgrep -x dpkg >/dev/null && ! pgrep -f unattended-upgrade >/dev/null; then return 0; fi
-    [ "$i" = "1" ] && echo "   Ubuntu está instalando sus actualizaciones; esperando a que termine…"
+  for i in $(seq 1 60); do
+    if apt-get update -qq >/dev/null 2>&1; then return 0; fi
+    [ "$i" = "1" ] && echo "   Ubuntu está terminando sus actualizaciones; reintentando (máximo 5 minutos)…"
     sleep 5
   done
+  echo "   ✗ Ubuntu sigue ocupado. Espera unos minutos y vuelve a correr el comando."; exit 1
 }
 esperar_apt
 # Memoria extra (la máquina gratis tiene 1 GB)
@@ -28,8 +28,7 @@ if ! swapon --show | grep -q /swapfile; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
   grep -q /swapfile /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
-apt-get update -qq || { esperar_apt; apt-get update -qq; }
-apt-get install -y -qq ca-certificates curl openssl >/dev/null
+for i in 1 2 3 4 5 6; do apt-get install -y -qq ca-certificates curl openssl >/dev/null 2>&1 && break; sleep 10; done
 
 echo "▶ 2/5 Instalando Docker…"
 if ! command -v docker >/dev/null; then
