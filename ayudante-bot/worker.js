@@ -735,7 +735,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04m';
+const WORKER_VERSION = '2026-11-04n';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1519,8 +1519,37 @@ function correoPagoHTML(doc, fsId, monto) {
       `We received your payment of ${dinero(monto)} for invoice ${n}. Paid so far: ${dinero(pagado)} of ${dinero(total)}. Balance due: ${dinero(saldo)}. Your invoice: ${link}`)
   };
 }
+// Al confirmar un pago o abono: recibo por WhatsApp (al aliado si es cliente de aliado)
+async function waReciboPago(env, token, fsId, monto) {
+  if (!env.WA_URL || !env.WA_KEY || !(monto > 0.009)) return null;
+  if (!(await automatizaciones(env, token)).waRecibo) return null;
+  const doc = await fsGet(env, `documentos/${fsId}`, token); if (!doc) return null;
+  let tel, para = doc.cli, final = '';
+  if (esAliado(doc)) {
+    const a = await aliadoDe(env, token, doc); if (!a) return null;
+    tel = a.telefono; para = a.nombre; final = doc.clienteFinal || (normNombre(doc.cli) !== normNombre(a.nombre) ? doc.cli : '');
+  } else {
+    const [cl, po] = await Promise.all(['clientes', 'portal'].map(c => fsList(env, c, token).catch(() => [])));
+    const n = normNombre(doc.cli);
+    const c = cl.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n), p = po.find(x => normNombre(x.nombre) === n);
+    tel = c?.telefono || p?.telefono;
+  }
+  const t = waTelIntl(tel); if (!t) return null;
+  const en = doc.idioma === 'en', nombre = String(para || '').split(' ')[0], saldo = saldoDoc(doc), pagada = doc.pagado || doc.type === 'recibo' || saldo <= 0.009;
+  const link = `${SITIO}/factura-publica.html?id=${fsId}${en ? '&lang=en' : ''}`;
+  const ref = `${doc.docId || (en ? 'Invoice' : 'Factura')}${final ? ` (${final})` : ''}`;
+  const texto = en
+    ? (pagada ? `Hi ${nombre}! *We received your payment of ${dinero(monto)}* ✅\n\n${ref}: *paid in full*\nYour receipt: ${link}\n\nThank you for trusting DGP Global Group!`
+              : `Hi ${nombre}! We received your payment of ${dinero(monto)} ✅\n\n${ref}: *${dinero(saldo)} left* to pay.\nView your invoice: ${link}\n\nThank you!`)
+    : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!`
+              : `Hola ${nombre}! Recibimos tu abono de ${dinero(monto)} ✅\n\n${ref}: te quedan *${dinero(saldo)}* por pagar.\nVer tu factura: ${link}\n\n¡Gracias!`);
+  await waEnviarTexto(env, t + '@c.us', texto);
+  return { ok: true, tel: t, para };
+}
 async function correoPagoCliente(env, token, fsId, monto, por) {
   const r = await correoPagoCliente0(env, token, fsId, monto, por);
+  const w = await waReciboPago(env, token, fsId, monto).catch(e => { console.warn('WA recibo', e); return null; });
+  if (w?.ok) r.wa = w.para || ('+' + w.tel);
   // Primer pago de una web o un registro de empresa: correo de bienvenida
   if ((await automatizaciones(env, token)).bienvenida) {
     const b = await bienvenidaCliente(env, token, fsId).catch(e => { console.warn('Bienvenida', e); return null; });
@@ -1550,7 +1579,7 @@ async function correoPagoCliente0(env, token, fsId, monto, por) {
     return { enviado: true, correo };
   } catch (e) { console.warn('Correo de pago', e); return { enviado: false, motivo: e.message || 'error' }; }
 }
-const lineaCorreoPago = r => (r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '') + (r.bienvenida ? `\n🎉 Bienvenida enviada a ${escHtml(r.bienvenida)}` : '');
+const lineaCorreoPago = r => (r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '') + (r.wa ? `\n💬 Recibo enviado por WhatsApp a ${escHtml(r.wa)}` : '') + (r.bienvenida ? `\n🎉 Bienvenida enviada a ${escHtml(r.bienvenida)}` : '');
 
 async function recordarResenas(env, token, docs, correoDe) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];
@@ -3435,7 +3464,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════
