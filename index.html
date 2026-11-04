@@ -9355,11 +9355,11 @@ async function waPanelListo() {
 }
 async function waFacturaAuto(fsId, docData) {
   if (_auto.waFactura === false || !docData || docData.pagado || docData.contrato) return;
-  if (docData.aliadoId || docData.aliado || docData.paqueteAliado || docData.hostingAliado || docData.clienteFinal) return;   // clientes de aliados: no se les escribe
-  const tel = waTelIntl(cotTelefono(docData.cli || ''));
-  if (!tel) { toast('Factura sin enviar por WhatsApp: el cliente no tiene teléfono guardado'); return; }
+  const deAliado = !!(docData.aliadoId || docData.aliado || docData.paqueteAliado || docData.hostingAliado || docData.clienteFinal);   // va al aliado (el bot busca su número)
+  const tel = deAliado ? '' : waTelIntl(cotTelefono(docData.cli || ''));
+  if (!tel && !deAliado) { toast('Factura sin enviar por WhatsApp: el cliente no tiene teléfono guardado'); return; }
   try { const d = await waApi('factura', { fsId, tel });
-    if (d.ok) toast('Factura enviada por WhatsApp ✅'); else if (d.error) toast('No se pudo enviar por WhatsApp: ' + d.error, 'err');
+    if (d.ok) toast(deAliado ? 'Factura enviada por WhatsApp al aliado ✅' : 'Factura enviada por WhatsApp ✅'); else if (d.omitido === 'sin teléfono' || d.omitido === 'aliado sin datos') toast('Factura sin enviar por WhatsApp: ' + (deAliado ? 'el aliado' : 'el cliente') + ' no tiene teléfono guardado'); else if (d.error) toast('No se pudo enviar por WhatsApp: ' + d.error, 'err');
     else if (d.omitido === 'WhatsApp no instalado') {} }
   catch (e) { toast('No se pudo enviar por WhatsApp: ' + e.message, 'err'); }
 }

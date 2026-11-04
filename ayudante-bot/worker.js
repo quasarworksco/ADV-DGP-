@@ -735,7 +735,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04l';
+const WORKER_VERSION = '2026-11-04m';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1004,6 +1004,7 @@ async function tareaDiaria(env) {
   const token = await firebaseLogin(env);
   await asegurarWebhook(env).catch(e => console.warn('Webhook', e));
   const [docs, subs, clientes, portales] = await Promise.all(['documentos', 'suscripciones', 'clientes', 'portal'].map(c => fsList(env, c, token)));
+  const aliadosL = await fsList(env, 'aliados', token).catch(() => []);
   const hoy = hoyVE();
   const telDe = nombre => {
     const n = normNombre(nombre);
@@ -1039,7 +1040,7 @@ async function tareaDiaria(env) {
       metodoPago: null, infoPago: {}, contrato: false,
       items: [{ s: `${nombre} (${periodoTxt})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: s._id, periodo: s.proximoPago,
-      clienteCorreo: correoDe(s.cliente),
+      clienteCorreo: s.aliadoId ? ((aliadosL.find(a => a._id === s.aliadoId) || {}).correo || null) : correoDe(s.cliente),
       portalCodigo: s.portalCodigo || null, createdBy: 'bot', createdAt: new Date(),
       ...(s.aliadoId ? { aliadoId: s.aliadoId, aliado: s.aliado || '' } : {})
     };
@@ -1048,14 +1049,14 @@ async function tareaDiaria(env) {
     await fsUpdate(env, `suscripciones/${s._id}`, { ultimaFacturaId: id, ultimaFacturaPeriodo: s.proximoPago }, ['ultimaFacturaId', 'ultimaFacturaPeriodo'], token);
     s.ultimaFacturaPeriodo = s.proximoPago;
     creadas.push({ s, id, docData });
-    if (!s.aliadoId) await waFacturaNueva(env, token, id, docData, telDe(s.cliente));
+    await waFacturaNueva(env, token, id, docData, telDe(s.cliente));
   }
 
   const auto = await automatizaciones(env, token);
   // 1b) La factura de la suscripción le llega al cliente por correo
   if (auto.susCorreo) for (const c of creadas) {
     const correo = c.docData.clienteCorreo;
-    if (!correo || c.s.aliadoId) { c.correo = null; continue; }
+    if (!correo) { c.correo = null; continue; }
     const m = correoFacturaSusHTML(c.s, c.id, c.docData);
     c.correo = await enviarCorreoBot(env, correo, m.asunto, m.html, m.texto).catch(() => false) ? correo : null;
   }
@@ -1533,8 +1534,10 @@ async function correoPagoCliente0(env, token, fsId, monto, por) {
     if (!(await automatizaciones(env, token)).correoPago) return { enviado: false };
     if (!(monto > 0.009)) return { enviado: false };
     const doc = await fsGet(env, `documentos/${fsId}`, token);
-    if (!doc || esAliado(doc)) return { enviado: false };
-    const correo = String(doc.clienteCorreo || await correoDeCliente(env, token, doc.cli) || '').trim();
+    if (!doc) return { enviado: false };
+    const al = esAliado(doc) ? await aliadoDe(env, token, doc) : null;
+    if (esAliado(doc) && !al) return { enviado: false };
+    const correo = String(al ? al.correo || '' : (doc.clienteCorreo || await correoDeCliente(env, token, doc.cli) || '')).trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { enviado: false, motivo: `${doc.cli || 'el cliente'} no tiene correo guardado` };
     const m = correoPagoHTML(doc, fsId, monto);
     if (!(await enviarCorreoBot(env, correo, m.asunto, m.html, m.texto))) return { enviado: false, correo, motivo: 'Gmail no pudo enviarlo' };
@@ -1680,27 +1683,38 @@ const waChat = id => encodeURIComponent(String(id || ''));
 async function waEnviarTexto(env, chatId, texto) {
   return waJSON(env, '/api/sendText', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId, text: String(texto).slice(0, 4000) }) });
 }
-// Clientes que vienen de un aliado: nunca se les escribe (ni correo ni WhatsApp)
+// Clientes que vienen de un aliado: nunca se les escribe al cliente final; todo va al ALIADO (su correo y WhatsApp)
+async function aliadoDe(env, token, d, aliados) {
+  if (!esAliado(d)) return null;
+  const L = aliados || await fsList(env, 'aliados', token).catch(() => []);
+  return L.find(a => a._id === d.aliadoId) || L.find(a => normNombre(a.nombre) === normNombre(d.aliado || d.cli)) || null;
+}
 const esAliado = d => !!(d && (d.aliadoId || d.aliado || d.paqueteAliado || d.hostingAliado || d.clienteFinal || d.origen === 'aliado' || (Array.isArray(d.tags) && d.tags.includes('aliado'))));
 function waTelIntl(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
 // Factura nueva → le llega sola al cliente por el WhatsApp del panel (interruptor waFactura)
 function textoFacturaWA(doc, id) {
   const en = doc.idioma === 'en', usd = n => '$' + (Number(n) || 0).toFixed(2);
   const items = (doc.items || []).map(it => `• ${it.s}${Number(it.c) > 1 ? ' x' + it.c : ''} — ${usd(it.t)}`).join('\n');
-  const nombre = String(doc.cli || '').split(' ')[0];
+  const nombre = String(doc._para || doc.cli || '').split(' ')[0];
   const link = `${SITIO}/factura-publica.html?id=${id}${en ? '&lang=en' : ''}`;
+  const fin = doc._final ? (en ? `*Client:* ${doc._final}\n` : `*Cliente:* ${doc._final}\n`) : '';
   return en
-    ? `Hi ${nombre}! Here is your invoice from *DGP Global Group*.\n\n*N°:* ${doc.docId || '—'}\n*Date:* ${doc.fecha || '—'}\n\n*Services:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nView and pay your invoice here:\n${link}\n\nFrom the link you can see the payment methods and upload your receipt. Thank you!`
-    : `Hola ${nombre}! Te comparto tu factura de *DGP Global Group*.\n\n*N°:* ${doc.docId || '—'}\n*Fecha:* ${doc.fecha || '—'}\n\n*Servicios:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nVer y pagar tu factura:\n${link}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. ¡Gracias!`;
+    ? `Hi ${nombre}! Here is your invoice from *DGP Global Group*.\n\n${fin}*N°:* ${doc.docId || '—'}\n*Date:* ${doc.fecha || '—'}\n\n*Services:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nView and pay your invoice here:\n${link}\n\nFrom the link you can see the payment methods and upload your receipt. Thank you!`
+    : `Hola ${nombre}! Te comparto tu factura de *DGP Global Group*.\n\n${fin}*N°:* ${doc.docId || '—'}\n*Fecha:* ${doc.fecha || '—'}\n\n*Servicios:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nVer y pagar tu factura:\n${link}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. ¡Gracias!`;
 }
 async function waFacturaNueva(env, token, id, doc, tel) {
   try {
     if (!env.WA_URL || !env.WA_KEY) return { omitido: 'WhatsApp no instalado' };
     if (!(await automatizaciones(env, token)).waFactura) return { omitido: 'apagado' };
-    if (doc.pagado || doc.type === 'contrato' || doc.contrato || esAliado(doc)) return { omitido: 'no aplica' };
+    if (doc.pagado || doc.type === 'contrato' || doc.contrato) return { omitido: 'no aplica' };
     if (doc.waEnviadaAt) return { omitido: 'ya enviada' };
+    let para = { ...doc };
+    if (esAliado(doc)) {   // factura de un cliente de aliado → le llega al aliado, nunca al cliente final
+      const a = await aliadoDe(env, token, doc); if (!a) return { omitido: 'aliado sin datos' };
+      tel = a.telefono; para = { ...doc, _para: a.nombre, _final: doc.clienteFinal || (normNombre(doc.cli) !== normNombre(a.nombre) ? doc.cli : '') };
+    }
     const t = waTelIntl(tel); if (!t) return { omitido: 'sin teléfono' };
-    await waEnviarTexto(env, t + '@c.us', textoFacturaWA(doc, id));
+    await waEnviarTexto(env, t + '@c.us', textoFacturaWA(para, id));
     await fsUpdate(env, `documentos/${id}`, { waEnviadaAt: new Date().toISOString(), waEnviadaA: t }, ['waEnviadaAt', 'waEnviadaA'], token).catch(() => {});
     return { ok: true, tel: t };
   } catch (e) { console.warn('WA factura', e); return { error: e.message }; }
@@ -3884,12 +3898,13 @@ function correoCobranzaHTML(doc, fsId, etapa) {
   });
 }
 async function cobradorAmable(env, token, docs, correoDe, telDe, waActivo) {
-  const hoy = hoyVE();
+  const hoy = hoyVE(); let aliadosC = null;
   const enviados = [], llamar = [];
   for (const d of docs) {
     if (String(d._id).startsWith('__diag') || d.pagado || d.type === 'recibo' || deudaDoc(d) <= 0.009 || d.cobranzaPausada) continue;
-    if (esAliado(d)) continue;
-    if (waActivo && waTelIntl(telDe(d.cli))) continue;   // tiene WhatsApp: lo cobra el recordatorio por WhatsApp
+    const al = esAliado(d) ? await aliadoDe(env, token, d, aliadosC || (aliadosC = await fsList(env, 'aliados', token).catch(() => []))) : null;
+    if (esAliado(d) && !al) continue;
+    if (waActivo && waTelIntl(al ? al.telefono : telDe(d.cli))) continue;   // tiene WhatsApp: lo cobra el recordatorio por WhatsApp
     const base = d.venceEl || fechaDoc(d);
     if (!base) continue;
     const dias = diasEntre(base, hoy);
@@ -3903,11 +3918,11 @@ async function cobradorAmable(env, token, docs, correoDe, telDe, waActivo) {
     const comps = listaComprobantes(d);
     if (comps.length && !(d.pagoRechazado && d.pagoRechazado.url === comps[comps.length - 1].url)) continue;
     if (etapa.n === 3) {
-      llamar.push({ d, dias, tel: telDe(d.cli) });
+      llamar.push({ d, dias, tel: al ? waTelIntl(al.telefono) : telDe(d.cli) });
       await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, e3: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
       continue;
     }
-    const correo = d.clienteCorreo || correoDe(d.cli);
+    const correo = al ? al.correo : (d.clienteCorreo || correoDe(d.cli));
     if (!correo || enviados.length >= 15) continue;
     const ok = await enviarCorreoBot(env, correo, etapa.n === 2 ? `¿Todo bien? Tu factura ${d.docId || ''} sigue pendiente` : `Recordatorio: factura ${d.docId || ''} · DGP Global Group`,
       correoCobranzaHTML(d, d._id, etapa.n), textoCobranza(d, d._id, etapa.n), { c: 'documentos', id: d._id });
@@ -3938,10 +3953,9 @@ async function recordatoriosWA(env) {
     const c = clientes.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n);
     const p = portales.find(x => normNombre(x.nombre) === n);
     return waTelIntl(c?.telefono || p?.telefono || ''); };
-  const deAliado = new Set(clientes.filter(esAliado).map(c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' '))));
+  const aliados = await fsList(env, 'aliados', token).catch(() => []);
   const grupos = {};
   for (const d of docs) {
-    if (esAliado(d) || deAliado.has(normNombre(d.cli))) continue;
     if (String(d._id).startsWith('__diag') || d.pagado || d.type !== 'factura' || d.contrato || d.cobranzaPausada || deudaDoc(d) <= 0.009) continue;
     // Comprobante subido sin revisar: no lo molestamos
     if (compPendientes(d).length) continue;
@@ -3955,17 +3969,20 @@ async function recordatoriosWA(env) {
     const dias = diasEntre(base, hoy);
     const toca = etapas.filter(e => dias >= e && !(w.enviados || []).includes(e)).pop();
     if (!toca) continue;
-    const tel = telDe(d.cli); if (!tel) continue;
-    (grupos[tel] = grupos[tel] || { tel, cli: d.cli, xs: [] }).xs.push({ d, w, toca, ultimo: toca === etapas[2], conAbono, dias });
+    const al = esAliado(d) ? await aliadoDe(env, token, d, aliados) : null;   // cliente de aliado → se le recuerda al aliado
+    if (esAliado(d) && !al) continue;
+    const tel = al ? waTelIntl(al.telefono) : telDe(d.cli); if (!tel) continue;
+    const final = al ? (d.clienteFinal || (normNombre(d.cli) !== normNombre(al.nombre) ? d.cli : '')) : '';
+    (grupos[tel] = grupos[tel] || { tel, cli: al ? al.nombre : d.cli, xs: [] }).xs.push({ d, w, toca, ultimo: toca === etapas[2], conAbono, dias, final });
   }
   const enviados = [], alertas = [];
   for (const g of Object.values(grupos).slice(0, 25)) {
     const en = g.xs.every(x => x.d.idioma === 'en'), nombre = String(g.cli || '').split(' ')[0];
-    const lineas = g.xs.map(({ d }) => {
+    const lineas = g.xs.map(({ d, final }) => {
       const pagado = Number(d.montoPagado) || 0, saldo = saldoDoc(d);
       const link = `${SITIO}/factura-publica.html?id=${d._id}${en ? '&lang=en' : ''}`;
-      return en ? `• ${d.docId || 'Invoice'}: ${dinero(saldo)}${pagado > 0 ? ` left (of ${dinero(d.total)})` : ''}\n${link}`
-                : `• ${d.docId || 'Factura'}: ${dinero(saldo)}${pagado > 0 ? ` por pagar (de ${dinero(d.total)})` : ''}\n${link}`;
+      return en ? `• ${d.docId || 'Invoice'}${final ? ` (${final})` : ''}: ${dinero(saldo)}${pagado > 0 ? ` left (of ${dinero(d.total)})` : ''}\n${link}`
+                : `• ${d.docId || 'Factura'}${final ? ` (${final})` : ''}: ${dinero(saldo)}${pagado > 0 ? ` por pagar (de ${dinero(d.total)})` : ''}\n${link}`;
     }).join('\n\n');
     const segundo = g.xs.some(x => x.toca !== (x.conAbono ? 5 : 3)), ultimo = g.xs.some(x => x.ultimo), varias = g.xs.length > 1;
     const texto = en
