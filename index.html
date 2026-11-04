@@ -2693,7 +2693,7 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .hr-p-pausa { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
 html.dark .hr-p-pausa { background:#1e293b; color:#cbd5e1; border-color:#334155; }
 .wa-app { --wa-pan:#fff; --wa-cab:#f0f2f5; --wa-hov:#f5f6f6; --wa-sel:#f0f2f5; --wa-lin:#e9edef; --wa-tx:#111b21; --wa-tx2:#667781; --wa-in:#f0f2f5; --wa-ver:#00a884; --wa-chip:#f0f2f5; --wa-chipon:#d9fdd3; --wa-chiptx:#008069; --wa-fondo:#efeae2; --wa-bin:#fff; --wa-bout:#d9fdd3; --wa-dia:#fff;
-  display:grid; grid-template-columns:minmax(300px,30%) 1fr; height:calc(100vh - 120px); min-height:520px; margin:-6px 0 0; background:var(--wa-pan); color:var(--wa-tx); border:1px solid var(--wa-lin); border-radius:14px; overflow:hidden; font-family:'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif; }
+  display:grid; grid-template-columns:minmax(300px,30%) 1fr; height:calc(100vh - 120px); min-height:340px; margin:-6px 0 0; box-sizing:border-box; background:var(--wa-pan); color:var(--wa-tx); border:1px solid var(--wa-lin); border-radius:14px; overflow:hidden; font-family:'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif; }
 html.dark .wa-app { --wa-pan:#111b21; --wa-cab:#202c33; --wa-hov:#202c33; --wa-sel:#2a3942; --wa-lin:#222d34; --wa-tx:#e9edef; --wa-tx2:#8696a0; --wa-in:#202c33; --wa-chip:#202c33; --wa-chipon:#0a332c; --wa-chiptx:#00a884; --wa-fondo:#0b141a; --wa-bin:#202c33; --wa-bout:#005c4b; --wa-dia:#182229; }
 @supports (height:100dvh) { .wa-app { height:calc(100dvh - 120px); } }
 .wa-izq { border-right:1px solid var(--wa-lin); display:flex; flex-direction:column; min-height:0; background:var(--wa-pan); }
@@ -12767,8 +12767,17 @@ async function waApi(accion, datos = {}) {
 const waNum = id => String(id || '').split('@')[0];
 const waNombre = c => c.name || (/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : waNum(c.id));
 const waHora = ts => { if (!ts) return ''; const d = new Date(ts * 1000), hoy = new Date(); return d.toDateString() === hoy.toDateString() ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }); };
+// El cuadro de WhatsApp ocupa exactamente el alto visible (la barra de escribir siempre se ve)
+function waAjustar() {
+  const a = document.getElementById('wa-app'); if (!a || !a.offsetParent) return;
+  const nav = document.querySelector('.bnav'); const navH = nav && getComputedStyle(nav).display !== 'none' ? nav.offsetHeight : 0;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const top = a.getBoundingClientRect().top + window.scrollY;
+  a.style.height = Math.max(340, Math.floor(vh - top - navH - (navH ? 6 : 14))) + 'px';
+}
+if (!window._waAjOn) { window._waAjOn = true; window.addEventListener('resize', waAjustar); window.visualViewport?.addEventListener('resize', waAjustar); }
 function waAbrir() {
-  clearInterval(_wa.timer); _wa.autoIni = true;
+  clearInterval(_wa.timer); _wa.autoIni = true; window.scrollTo(0, 0); waAjustar(); setTimeout(waAjustar, 300);
   waRevisar();
   _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
 }
