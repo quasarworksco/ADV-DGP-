@@ -482,8 +482,11 @@
     if (d.pagado || d.type === 'recibo') return 0;
     return Math.max((d.total || 0) - (d.montoPagado || 0), 0);
   }
+  // Factura en pausa: se ve, pero no cuenta como deuda
+  function deudaFactura(d) { return d.pausada ? 0 : saldoFactura(d); }
   function estadoFactura(d) {
     if (d.pagado || d.type === 'recibo') return ['pagado', 'Pagada'];
+    if (d.pausada) return ['pausada', 'En pausa'];
     if (d.pagadoParcial) return ['parcial', 'Pago parcial'];
     return ['porpagar', 'Por pagar'];
   }
@@ -769,7 +772,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
       </button>`).join('');
   }
   function navCounts() {
-    const pend = Object.values(facturas).filter(d => saldoFactura(d) > 0).length + cotPorRevisar().length;
+    const pend = Object.values(facturas).filter(d => deudaFactura(d) > 0).length + cotPorRevisar().length;
     return { facturacion: pend };
   }
   function go(p) {
@@ -799,7 +802,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
   /* ── INICIO ── */
   function vInicio() {
     const docs      = facturasOrdenadas();
-    const pendientes = docs.filter(d => saldoFactura(d) > 0);
+    const pendientes = docs.filter(d => deudaFactura(d) > 0);
     const deuda     = pendientes.reduce((a, d) => a + saldoFactura(d), 0);
     const activos   = proyectos.filter(p => p.estado !== 'completado');
     const suscAct   = suscripciones.filter(s => s.estado === 'activa');
@@ -1030,7 +1033,7 @@ ${estado === 'aceptada' ? 'Conviértela en factura desde Facturación → Cotiza
     const docs = facturasOrdenadas();
     const pend = docs.filter(d => saldoFactura(d) > 0);
     const pag  = docs.filter(d => saldoFactura(d) === 0);
-    const deuda = pend.reduce((a, d) => a + saldoFactura(d), 0);
+    const deuda = pend.reduce((a, d) => a + deudaFactura(d), 0);
     const pagado = docs.reduce((a, d) => a + (d.pagado || d.type === 'recibo' ? (d.total || 0) : (d.montoPagado || 0)), 0);
     const comps = docs.flatMap(d => listaComprobantes(d).map(c => ({ d, c })));
     return `

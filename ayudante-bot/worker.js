@@ -711,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04a';
+const WORKER_VERSION = '2026-11-04b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -834,6 +834,8 @@ function fechaDoc(d) {
   return null;
 }
 const saldoDoc = d => (d.pagado || d.type === 'recibo') ? 0 : Math.max((Number(d.total) || 0) - (Number(d.montoPagado) || 0), 0);
+// Lo que cuenta como deuda: una factura en pausa (stand by) no se cobra ni se cuenta
+const deudaDoc = d => d.pausada ? 0 : saldoDoc(d);
 
 /* ── Firestore REST: listar, crear, agregar a lista ── */
 async function fsList(env, path, token) {
@@ -1033,7 +1035,7 @@ async function tareaDiaria(env) {
   // 1c) Suscripciones con 15+ días de atraso: aviso para pausar el servicio (una vez por factura)
   const pausar = [];
   for (const d of docs) {
-    if (!d.suscripcionId || !d.periodo || saldoDoc(d) <= 0.009 || d.avisoPausa) continue;
+    if (!d.suscripcionId || !d.periodo || deudaDoc(d) <= 0.009 || d.avisoPausa) continue;
     const dias = diasEntre(String(d.periodo).slice(0, 10), hoy);
     if (dias < 15) continue;
     pausar.push({ d, dias });
@@ -1049,6 +1051,13 @@ async function tareaDiaria(env) {
     if (r?.enviado) bienvenidas.push({ cliente: d.cli, correo: r.correo });
   }
 
+  // 1d-bis) Facturas en pausa con fecha de regreso: vuelven a cobrarse solas
+  const reanudadas = [];
+  for (const d of docs) {
+    if (!d.pausada || !d.pausada.hasta || d.pausada.hasta > hoy || saldoDoc(d) <= 0.009) continue;
+    await fsUpdate(env, `documentos/${d._id}`, { pausada: null, cobranzaPausada: false, cobranza: {}, venceEl: hoy }, ['pausada', 'cobranzaPausada', 'cobranza', 'venceEl'], token).catch(() => {});
+    d.pausada = null; reanudadas.push(d);
+  }
   // 1e) Saldo a favor de clientes que pagaron de más → a sus facturas nuevas
   const saldosAplicados = await aplicarSaldosFavor(env, token, docs).catch(e => { console.warn('Saldo a favor', e); return []; });
 
@@ -1058,7 +1067,7 @@ async function tareaDiaria(env) {
   const cobrador = auto.cobrador ? await cobradorAmable(env, token, docs, correoDe, telDe).catch(e => { console.warn('Cobrador', e); return { enviados: [], llamar: [] }; }) : { enviados: [], llamar: [] };
 
   // 3) Resumen de cobros
-  const pendientes = docs.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
+  const pendientes = docs.filter(d => deudaDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
   const atrasadas = pendientes.filter(x => x.dias >= 7).sort((a, b) => b.dias - a.dias);
   const porRevisar = pendientes.filter(x => compPendientes(x.d).length);
   const activas = subs.filter(s => s.estado === 'activa' && s.proximoPago);
@@ -1090,6 +1099,7 @@ async function tareaDiaria(env) {
     L.push('', `⏸️ <b>Suscripciones sin pagar 15+ días — considera pausar el servicio</b>`);
     pausar.forEach(({ d, dias }) => L.push(`• ${escHtml(d.cli)} · ${escHtml((d.items || [])[0]?.s || '')} · ${dinero(saldoDoc(d))} · ${dias} días de atraso · <a href="${wa(d.cli, `Hola ${String(d.cli).split(' ')[0]}! Tu ${(d.items || [])[0]?.s || 'servicio'} tiene ${dias} días de atraso (${dinero(saldoDoc(d))}). Para no pausar el servicio, puedes pagar aquí:\n${linkFac(d._id)}\n\n¡Gracias!`)}">avisar por WhatsApp</a>`));
   }
+  if (reanudadas.length) { L.push('', `▶️ <b>Facturas que salieron de pausa (${reanudadas.length})</b>`); reanudadas.forEach(d => L.push(`• ${escHtml(d.cli)} · ${escHtml(d.docId || '')} · ${dinero(saldoDoc(d))} · vuelve a cobrarse desde hoy`)); }
   if (saldosAplicados.length) L.push('', '💵 <b>Saldo a favor aplicado</b>', ...saldosAplicados);
   if (bienvenidas.length) {
     L.push('', `🎉 <b>Bienvenida enviada (${bienvenidas.length})</b>`);
@@ -1625,7 +1635,7 @@ async function abonarA(env, token, d, monto, ref) {
 async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs) {
   docs = docs || await fsList(env, 'documentos', token);
   const k = normNombre(cliente);
-  const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && normNombre(d.cli) === k && saldoDoc(d) > 0.009)
+  const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && normNombre(d.cli) === k && deudaDoc(d) > 0.009)
     .sort((a, b) => fechaOrden(b).localeCompare(fechaOrden(a)));
   let resto = r2(monto); const lineas = [];
   for (const d of pendientes) {
@@ -1944,7 +1954,7 @@ async function datosNegocio(env, token) {
   const cobros = cobrosDe(reales);
   const suma = f => cobros.filter(f).reduce((a, x) => a + x.m, 0);
   const lunes = (() => { const d = new Date(hoy + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
-  const pendientes = reales.filter(d => saldoDoc(d) > 0.009).map(d => ({ d, saldo: saldoDoc(d), dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
+  const pendientes = reales.filter(d => deudaDoc(d) > 0.009).map(d => ({ d, saldo: saldoDoc(d), dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
   const porCliente = {};
   pendientes.forEach(x => { const k = x.d.cli || '—'; (porCliente[k] = porCliente[k] || []).push(x); });
   const deudas = Object.entries(porCliente).map(([c, xs]) => ({ c, total: xs.reduce((a, x) => a + x.saldo, 0), xs })).sort((a, b) => b.total - a.total);
@@ -2006,6 +2016,7 @@ async function botRecordatorioManual(env, token, fsId) {
   const doc = await fsGet(env, `documentos/${fsId}`, token);
   if (!doc) return { aviso: 'Esa factura ya no existe' };
   if (saldoDoc(doc) <= 0.009) return { aviso: 'Ya está pagada 🎉', html: `🎉 ${escHtml(doc.docId || '')} ya está pagada.` };
+  if (doc.pausada) return { aviso: 'Está en pausa', html: `⏸️ ${escHtml(doc.docId || '')} está en pausa: no se le cobra hasta que la reanudes en el panel.` };
   const datos = { clientes: await fsList(env, 'clientes', token).catch(() => []), portales: await fsList(env, 'portal', token).catch(() => []), docs: [] };
   const correo = doc.clienteCorreo || correoCliente(datos, doc.cli);
   if (!correo) return { aviso: 'No tengo su correo' };
@@ -2242,7 +2253,7 @@ async function resumenSemanal(env) {
   const porServicio = {};
   semana.forEach(x => { const s = (x.d.items || [])[0]?.s || 'Otro'; const k = s.replace(/\s*\(.*\)$/, '').trim(); porServicio[k] = (porServicio[k] || 0) + x.m; });
   const top = Object.entries(porServicio).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  const pendientes = reales.filter(d => saldoDoc(d) > 0.009);
+  const pendientes = reales.filter(d => deudaDoc(d) > 0.009);
   const deuda = pendientes.reduce((a, d) => a + saldoDoc(d), 0);
   const viejas = pendientes.filter(d => { const f = fechaDoc(d); return f && diasEntre(f, hoy) > 30; });
   const activas = subs.filter(s => s.estado === 'activa' && s.proximoPago);
@@ -3193,7 +3204,7 @@ async function resumenMananaPush(env) {
   const token = await firebaseLogin(env);
   const [docs, subs, resp, webs] = await Promise.all(['documentos', 'suscripciones', 'respuestas', 'webs'].map(c => fsList(env, c, token).catch(() => [])));
   const hoy = hoyVE();
-  const porCobrar = docs.filter(d => !String(d._id).startsWith('__diag') && saldoDoc(d) > 0.009);
+  const porCobrar = docs.filter(d => !String(d._id).startsWith('__diag') && deudaDoc(d) > 0.009);
   const monto = porCobrar.reduce((a, d) => a + saldoDoc(d), 0);
   const comps = porCobrar.filter(d => compPendientes(d).length).length;
   const ren = subs.filter(x => x.estado === 'activa' && x.proximoPago && diasEntre(hoy, x.proximoPago) >= 0 && diasEntre(hoy, x.proximoPago) <= 7).length;
@@ -3549,7 +3560,7 @@ async function cobradorAmable(env, token, docs, correoDe, telDe) {
   const hoy = hoyVE();
   const enviados = [], llamar = [];
   for (const d of docs) {
-    if (String(d._id).startsWith('__diag') || d.pagado || d.type === 'recibo' || saldoDoc(d) <= 0.009 || d.cobranzaPausada) continue;
+    if (String(d._id).startsWith('__diag') || d.pagado || d.type === 'recibo' || deudaDoc(d) <= 0.009 || d.cobranzaPausada) continue;
     const base = d.venceEl || fechaDoc(d);
     if (!base) continue;
     const dias = diasEntre(base, hoy);
@@ -3590,7 +3601,7 @@ function riesgoClientes(docs, subs, hoy) {
     const subsCli = subs.filter(s => s.estado === 'activa' && normNombre(s.cliente) === k);
     if (!subsCli.length && ds.length < 2) continue;
     let p = 0; const motivos = [];
-    const pend = ds.filter(d => saldoDoc(d) > 0.009).map(d => fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0);
+    const pend = ds.filter(d => deudaDoc(d) > 0.009).map(d => fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0);
     const maxAtraso = pend.length ? Math.max(...pend) : 0;
     if (maxAtraso > 15) { p += 35; motivos.push(`debe hace ${maxAtraso} días`); } else if (maxAtraso > 5) { p += 20; motivos.push('pago atrasado'); }
     const tardanzas = ds.filter(d => (d.pagado || d.type === 'recibo') && fechaISO(d.fechaPago) && fechaDoc(d)).map(d => diasEntre(fechaDoc(d), fechaISO(d.fechaPago)));
@@ -3725,7 +3736,7 @@ async function registrarApertura(env, c, id, t, r) {
   });
   // Aviso a Telegram: la primera apertura de cada envío de una factura o cotización pendiente
   if (c === 'campanas' || !t || (doc.aperturasEnvios || []).includes(t)) return;
-  const pendiente = c === 'cotizaciones' ? doc.estado === 'enviada' : saldoDoc(doc) > 0.009;
+  const pendiente = c === 'cotizaciones' ? doc.estado === 'enviada' : deudaDoc(doc) > 0.009;
   if (!pendiente) return;
   const enviado = (doc.correos || []).slice(-1)[0]?.fecha;
   const hace = enviado ? Math.max(0, Math.round((Date.now() - new Date(enviado).getTime()) / 60000)) : null;
