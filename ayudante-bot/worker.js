@@ -734,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04j';
+const WORKER_VERSION = '2026-11-04k';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1046,6 +1046,7 @@ async function tareaDiaria(env) {
     await fsUpdate(env, `suscripciones/${s._id}`, { ultimaFacturaId: id, ultimaFacturaPeriodo: s.proximoPago }, ['ultimaFacturaId', 'ultimaFacturaPeriodo'], token);
     s.ultimaFacturaPeriodo = s.proximoPago;
     creadas.push({ s, id, docData });
+    await waFacturaNueva(env, token, id, docData, telDe(s.cliente));
   }
 
   const auto = await automatizaciones(env, token);
@@ -1676,6 +1677,29 @@ const waChat = id => encodeURIComponent(String(id || ''));
 async function waEnviarTexto(env, chatId, texto) {
   return waJSON(env, '/api/sendText', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId, text: String(texto).slice(0, 4000) }) });
 }
+function waTelIntl(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
+// Factura nueva → le llega sola al cliente por el WhatsApp del panel (interruptor waFactura)
+function textoFacturaWA(doc, id) {
+  const en = doc.idioma === 'en', usd = n => '$' + (Number(n) || 0).toFixed(2);
+  const items = (doc.items || []).map(it => `• ${it.s}${Number(it.c) > 1 ? ' x' + it.c : ''} — ${usd(it.t)}`).join('\n');
+  const nombre = String(doc.cli || '').split(' ')[0];
+  const link = `${SITIO}/factura-publica.html?id=${id}${en ? '&lang=en' : ''}`;
+  return en
+    ? `Hi ${nombre}! Here is your invoice from *DGP Global Group*.\n\n*N°:* ${doc.docId || '—'}\n*Date:* ${doc.fecha || '—'}\n\n*Services:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nView and pay your invoice here:\n${link}\n\nFrom the link you can see the payment methods and upload your receipt. Thank you!`
+    : `Hola ${nombre}! Te comparto tu factura de *DGP Global Group*.\n\n*N°:* ${doc.docId || '—'}\n*Fecha:* ${doc.fecha || '—'}\n\n*Servicios:*\n${items}\n\n*Total: ${usd(doc.total)}*\n\nVer y pagar tu factura:\n${link}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. ¡Gracias!`;
+}
+async function waFacturaNueva(env, token, id, doc, tel) {
+  try {
+    if (!env.WA_URL || !env.WA_KEY) return { omitido: 'WhatsApp no instalado' };
+    if (!(await automatizaciones(env, token)).waFactura) return { omitido: 'apagado' };
+    if (doc.pagado || doc.type === 'contrato' || doc.contrato) return { omitido: 'no aplica' };
+    if (doc.waEnviadaAt) return { omitido: 'ya enviada' };
+    const t = waTelIntl(tel); if (!t) return { omitido: 'sin teléfono' };
+    await waEnviarTexto(env, t + '@c.us', textoFacturaWA(doc, id));
+    await fsUpdate(env, `documentos/${id}`, { waEnviadaAt: new Date().toISOString(), waEnviadaA: t }, ['waEnviadaAt', 'waEnviadaA'], token).catch(() => {});
+    return { ok: true, tel: t };
+  } catch (e) { console.warn('WA factura', e); return { error: e.message }; }
+}
 async function waEstado(env) {
   try { return await waJSON(env, `/api/sessions/${WA_SESION}`); }
   catch (e) {
@@ -1709,6 +1733,11 @@ async function handleWA(request, env) {
       }
       case 'chats': return json(request, { chats: await waJSON(env, `/api/${S}/chats/overview?limit=${Math.min(Number(b.limit) || 60, 200)}&offset=${Number(b.offset) || 0}`) });
       case 'mensajes': return json(request, { mensajes: await waJSON(env, `/api/${S}/chats/${waChat(chat)}/messages?limit=${Math.min(Number(b.limit) || 50, 200)}&downloadMedia=false`) });
+      case 'factura': {
+        const id = String(b.fsId || ''); if (!/^[A-Za-z0-9_-]{6,40}$/.test(id)) return json(request, { error: 'Factura no válida' }, 400);
+        const doc = await fsGet(env, `documentos/${id}`, quien.token); if (!doc) return json(request, { error: 'No encontré la factura' }, 404);
+        return json(request, await waFacturaNueva(env, quien.token, id, doc, b.tel));
+      }
       case 'enviar': {
         const texto = String(b.texto || '').trim(); if (!texto) return json(request, { error: 'Escribe el mensaje' }, 400);
         return json(request, { ok: true, mensaje: await waEnviarTexto(env, chat, texto) });
@@ -2437,6 +2466,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar, idioma = 'es') {
   } else {
     docId = 'FAC-' + sufijo;
     nuevoId = await fsCreate(env, 'documentos', { ...comun, docId, type: 'factura', contrato: false, pagado: false, fechaPago: null }, token);
+    if (!sinEnviar) await waFacturaNueva(env, token, nuevoId, { ...comun, docId, type: 'factura', pagado: false }, tel);
     if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'facturaIds', nuevoId, token).catch(() => {});
     link = `${SITIO}/factura-publica.html?id=${nuevoId}`;
   }
@@ -3386,7 +3416,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════

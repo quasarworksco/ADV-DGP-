@@ -7902,6 +7902,7 @@ async function saveDoc() {
       if (alH.combo) Object.assign(docData, { combo: alH.combo, comboTotal: alH.comboTotal, comboParteAliado: alH.comboParteAliado });
     }
     const added = await db.collection('documentos').add(docData);
+    if (docData.type === 'factura') waFacturaAuto(added.id, docData);
     guardarCuentaPago(docData.metodoPago, docData.infoPago);
     if (docData.pagado && docData.hostingAliado) crearHostingAliado(added.id, { ...docData, _fsId: added.id });
     if (portalCli) {
@@ -9351,6 +9352,15 @@ async function waPanelListo() {
   if (Date.now() - _waEnvio.at < 60000 && _waEnvio.ok !== null) return _waEnvio.ok;
   try { const d = await waApi('estado'); _waEnvio = { ok: d.estado === 'WORKING', at: Date.now() }; } catch (e) { _waEnvio = { ok: false, at: Date.now() }; }
   return _waEnvio.ok;
+}
+async function waFacturaAuto(fsId, docData) {
+  if (_auto.waFactura === false || !docData || docData.pagado || docData.contrato) return;
+  const tel = waTelIntl(cotTelefono(docData.cli || ''));
+  if (!tel) { toast('Factura sin enviar por WhatsApp: el cliente no tiene teléfono guardado'); return; }
+  try { const d = await waApi('factura', { fsId, tel });
+    if (d.ok) toast('Factura enviada por WhatsApp ✅'); else if (d.error) toast('No se pudo enviar por WhatsApp: ' + d.error, 'err');
+    else if (d.omitido === 'WhatsApp no instalado') {} }
+  catch (e) { toast('No se pudo enviar por WhatsApp: ' + e.message, 'err'); }
 }
 function waTelIntl(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
 async function waCompartir(telRaw, texto, nombre) {
@@ -11388,6 +11398,7 @@ async function convertirCotizacion(id) {
     const portalCli = (c.portalCodigo && portalesList.find(p => p._id === c.portalCodigo && p.activo !== false)) || portalParaCliente(c.cli);
     if (portalCli) docData.portalCodigo = portalCli._id;
     const added = await db.collection('documentos').add(docData);
+    waFacturaAuto(added.id, docData);
     if (portalCli) {
       registrarFacturaEnPortal(added.id, portalCli._id);
       crearProyectoDesdeFactura(portalCli._id, added.id, docData);
@@ -12166,6 +12177,7 @@ async function facturarSuscripcion(id) {
     const portal = s.portalCodigo ? portalesList.find(p => p._id === s.portalCodigo && p.activo !== false) : portalParaCliente(s.cliente);
     if (portal) docData.portalCodigo = portal._id;
     const added = await db.collection('documentos').add(docData);
+    waFacturaAuto(added.id, docData);
     if (portal) registrarFacturaEnPortal(added.id, portal._id);
     await db.collection('suscripciones').doc(id).update({ ultimaFacturaId: added.id, ultimaFacturaPeriodo: docData.periodo });
     logActividad('Factura de suscripción', `${docData.docId} · ${s.cliente} · $${precio.toFixed(2)}`);
@@ -12761,6 +12773,7 @@ function abrirAltair() {
     <div class="alt-t">Notificaciones en el celular</div>
     <div id="push-caja" style="font-size:12.5px;color:var(--text-mid);line-height:1.55;padding:2px 0 10px">Revisando…</div>
     <div class="alt-t">Automatizaciones</div>
+    ${fila('waFactura', 'Factura nueva por WhatsApp', 'Al crear una factura sin pagar, le llega sola al cliente por el WhatsApp del panel, con el resumen y el enlace para pagar. Solo si el cliente tiene teléfono guardado.')}
     ${fila('cobrador', 'Cobrador amable', 'Día 3 y día 8 de atraso le escribe al cliente por correo; el día 15 te avisa para que llames.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
