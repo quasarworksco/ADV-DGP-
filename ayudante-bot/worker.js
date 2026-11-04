@@ -734,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04g';
+const WORKER_VERSION = '2026-11-04h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1695,7 +1695,7 @@ async function handleWA(request, env) {
   try {
     switch (b.accion) {
       case 'estado': { const s = await waEstado(env); return json(request, { instalado: true, estado: s.status, yo: s.me || null }); }
-      case 'iniciar': { await waEstado(env); await waFetch(env, `/api/sessions/${S}/start`, { method: 'POST' }).catch(() => {}); return json(request, { ok: true }); }
+      case 'iniciar': { const e = await waEstado(env); await waFetch(env, `/api/sessions/${S}/${e.status === 'FAILED' ? 'restart' : 'start'}`, { method: 'POST' }).catch(() => {}); return json(request, { ok: true }); }
       case 'reiniciar': await waFetch(env, `/api/sessions/${S}/restart`, { method: 'POST' }); return json(request, { ok: true });
       case 'salir': await waFetch(env, `/api/sessions/${S}/logout`, { method: 'POST' }); return json(request, { ok: true });
       case 'qr': {

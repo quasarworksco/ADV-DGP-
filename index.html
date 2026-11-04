@@ -12753,10 +12753,11 @@ const waNum = id => String(id || '').split('@')[0];
 const waNombre = c => c.name || (/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : waNum(c.id));
 const waHora = ts => { if (!ts) return ''; const d = new Date(ts * 1000), hoy = new Date(); return d.toDateString() === hoy.toDateString() ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }); };
 function waAbrir() {
-  clearInterval(_wa.timer);
+  clearInterval(_wa.timer); _wa.autoIni = true;
   waRevisar();
   _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
 }
+function waNuevoQR() { const q = document.getElementById('wa-qr'); if (q) q.innerHTML = '<div class="au-spin"></div>'; waApi('iniciar').then(() => setTimeout(waRevisar, 4000)).catch(e => toast(e.message, 'err')); }
 function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; }
 async function waRevisar() {
   try {
@@ -12765,7 +12766,7 @@ async function waRevisar() {
     const antes = _wa.estado; _wa.estado = d.estado; _wa.yo = d.yo;
     document.getElementById('wa-yo').textContent = d.estado === 'WORKING' ? `Conectado${d.yo?.id ? ' · +' + waNum(d.yo.id) : ''}` : { SCAN_QR_CODE: 'Escanea el código QR', STARTING: 'Iniciando…', STOPPED: 'Detenido', FAILED: 'Falló la conexión' }[d.estado] || d.estado;
     if (d.estado === 'WORKING') { if (antes !== 'WORKING') { waCargarChats(true); waPintarDerecha(); } }
-    else { if (d.estado === 'STOPPED' || d.estado === 'FAILED') waApi('iniciar').catch(() => {}); waPintarDerecha(); }
+    else { if (d.estado === 'STOPPED' || (d.estado === 'FAILED' && _wa.autoIni)) { _wa.autoIni = false; waApi('iniciar').catch(() => {}); } waPintarDerecha(); }
   } catch (e) { document.getElementById('wa-yo').textContent = 'Sin conexión con el servidor'; _wa.estado = 'ERR'; _wa.err = e.message; waPintarDerecha(); }
 }
 async function waCargarChats(forzar) {
@@ -12810,7 +12811,7 @@ function waPintarDerecha() {
   if (_wa.estado === 'ERR') { der.innerHTML = `<div class="wa-centro"><i class="fa-solid fa-plug-circle-xmark" style="font-size:44px;color:#dc2626"></i><h3>No hay conexión con el servidor de WhatsApp</h3><p>${esc(_wa.err || '')}</p><p>Revisa que la máquina de Google Cloud esté encendida.</p><button class="hr-btn" onclick="waRevisar()">Reintentar</button></div>`; return; }
   if (_wa.estado && _wa.estado !== 'WORKING') {
     der.innerHTML = `<div class="wa-centro"><h3>Conecta tu WhatsApp</h3>
-      <div class="wa-qr" id="wa-qr">${_wa.estado === 'SCAN_QR_CODE' ? (_wa.qrImg ? `<img src="${_wa.qrImg}" alt="Código QR">` : '<div class="au-spin"></div>') : `<div style="color:var(--text-soft);font-size:13px">${_wa.estado === 'STARTING' ? 'Iniciando…' : 'Preparando…'}</div>`}</div>
+      <div class="wa-qr" id="wa-qr">${_wa.estado === 'FAILED' ? '<div style="color:var(--text-soft);font-size:13px;text-align:center;padding:12px">El código venció sin escanearse.<br><br><button class="hr-btn" onclick="waNuevoQR()">Generar código nuevo</button></div>' : _wa.estado === 'SCAN_QR_CODE' ? (_wa.qrImg ? `<img src="${_wa.qrImg}" alt="Código QR">` : '<div class="au-spin"></div>') : `<div style="color:var(--text-soft);font-size:13px">${_wa.estado === 'STARTING' ? 'Iniciando…' : 'Preparando…'}</div>`}</div>
       <ol class="wa-pasos"><li>Abre <b>WhatsApp Business</b> en el celular del número que vas a usar.</li><li>Toca <b>⋮ / Ajustes → Dispositivos vinculados → Vincular dispositivo</b>.</li><li>Apunta la cámara a este código. Se actualiza solo.</li></ol></div>`;
     if (_wa.estado === 'SCAN_QR_CODE' && Date.now() - _wa.qrAt > 15000) { _wa.qrAt = Date.now(); waApi('qr').then(d => { if (!d.qr) return; _wa.qrImg = d.qr; const q = document.getElementById('wa-qr'); if (q) q.innerHTML = `<img src="${d.qr}" alt="Código QR">`; }).catch(() => { _wa.qrAt = 0; }); }
     else if (_wa.estado !== 'SCAN_QR_CODE') _wa.qrImg = null;
