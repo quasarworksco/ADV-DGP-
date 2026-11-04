@@ -2692,42 +2692,57 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .user-avatar.con-foto > svg { visibility:hidden; }
 .hr-p-pausa { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
 html.dark .hr-p-pausa { background:#1e293b; color:#cbd5e1; border-color:#334155; }
-.wa-app { display:grid; grid-template-columns:340px 1fr; height:calc(100vh - 120px); min-height:520px; margin:-6px 0 0; background:var(--white); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.wa-app { --wa-pan:#fff; --wa-cab:#f0f2f5; --wa-hov:#f5f6f6; --wa-sel:#f0f2f5; --wa-lin:#e9edef; --wa-tx:#111b21; --wa-tx2:#667781; --wa-in:#f0f2f5; --wa-ver:#00a884; --wa-chip:#f0f2f5; --wa-chipon:#d9fdd3; --wa-chiptx:#008069; --wa-fondo:#efeae2; --wa-bin:#fff; --wa-bout:#d9fdd3; --wa-dia:#fff;
+  display:grid; grid-template-columns:minmax(300px,30%) 1fr; height:calc(100vh - 120px); min-height:520px; margin:-6px 0 0; background:var(--wa-pan); color:var(--wa-tx); border:1px solid var(--wa-lin); border-radius:14px; overflow:hidden; font-family:'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif; }
+html.dark .wa-app { --wa-pan:#111b21; --wa-cab:#202c33; --wa-hov:#202c33; --wa-sel:#2a3942; --wa-lin:#222d34; --wa-tx:#e9edef; --wa-tx2:#8696a0; --wa-in:#202c33; --wa-chip:#202c33; --wa-chipon:#0a332c; --wa-chiptx:#00a884; --wa-fondo:#0b141a; --wa-bin:#202c33; --wa-bout:#005c4b; --wa-dia:#182229; }
 @supports (height:100dvh) { .wa-app { height:calc(100dvh - 120px); } }
-.wa-izq { border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; }
-.wa-top { display:flex; justify-content:space-between; align-items:center; padding:14px 14px 8px; } .wa-top b { display:block; font:800 17px 'Plus Jakarta Sans',sans-serif; } .wa-top small { font-size:11.5px; color:var(--text-soft); }
-.wa-ico { width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--text-mid); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; } .wa-ico:hover { background:var(--off,#f1f5f9); }
-.wa-tabs { display:flex; gap:6px; padding:0 14px 8px; } .wa-tabs button { border:1px solid var(--border); background:transparent; border-radius:20px; padding:5px 14px; font:700 12px 'Plus Jakarta Sans',sans-serif; color:var(--text-mid); cursor:pointer; } .wa-tabs button.on { background:#dcfce7; color:#15803d; border-color:#86efac; }
-.wa-buscar { margin:0 14px 8px; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--off,#f8fafc); font:inherit; font-size:13px; color:inherit; }
+.wa-izq { border-right:1px solid var(--wa-lin); display:flex; flex-direction:column; min-height:0; background:var(--wa-pan); }
+.wa-top { display:flex; justify-content:space-between; align-items:center; padding:12px 12px 8px 16px; } .wa-top b { display:block; font-size:21px; font-weight:700; color:var(--wa-tx); } .wa-top small { font-size:12px; color:var(--wa-tx2); }
+.wa-ico { width:38px; height:38px; border-radius:50%; border:0; background:transparent; color:var(--wa-tx2); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:17px; } .wa-ico:hover { background:var(--wa-sel); }
+.wa-buscar-c { margin:2px 12px 8px; position:relative; } .wa-buscar-c i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--wa-tx2); font-size:13px; }
+.wa-buscar { width:100%; box-sizing:border-box; padding:9px 12px 9px 40px; border-radius:8px; border:0; background:var(--wa-in); font:inherit; font-size:14px; color:var(--wa-tx); outline:none; } .wa-buscar::placeholder { color:var(--wa-tx2); }
+.wa-tabs { display:flex; gap:8px; padding:0 12px 10px; flex-wrap:wrap; } .wa-tabs button { border:0; background:var(--wa-chip); border-radius:18px; padding:6px 13px; font-size:14px; font-weight:500; font-family:inherit; color:var(--wa-tx2); cursor:pointer; } .wa-tabs button.on { background:var(--wa-chipon); color:var(--wa-chiptx); } .wa-tabs button em { font-style:normal; margin-left:4px; font-size:12px; }
 .wa-lista { overflow-y:auto; flex:1; min-height:0; }
-.wa-it { display:flex; align-items:center; gap:12px; width:100%; padding:10px 14px; border:0; border-top:1px solid var(--border); background:transparent; cursor:pointer; text-align:left; color:inherit; font:inherit; }
-.wa-it:hover, .wa-it.on { background:var(--off,#f1f5f9); }
-.wa-av { width:44px; height:44px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:14px; position:relative; overflow:hidden; }
+.wa-it { display:flex; align-items:center; gap:13px; width:100%; padding:0 0 0 13px; border:0; background:transparent; cursor:pointer; text-align:left; color:inherit; font:inherit; height:72px; }
+.wa-it:hover { background:var(--wa-hov); } .wa-it.on { background:var(--wa-sel); }
+.wa-av { width:49px; height:49px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:17px; position:relative; overflow:hidden; background:#dfe5e7; }
+html.dark .wa-av { background:#6a7175; } .wa-av svg { width:100%; height:100%; }
 .wa-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.wa-tx { flex:1; min-width:0; } .wa-tx b { display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .wa-tx small { display:block; font-size:12.5px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.wa-h { font-size:11px; color:var(--text-soft); align-self:flex-start; margin-top:3px; }
-.wa-der { display:flex; flex-direction:column; min-height:0; background:#efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='2' cy='2' r='1.2' fill='%23d6cfc4'/%3E%3C/svg%3E"); }
-html.dark .wa-der { background:#0b141a; }
-.wa-cab { display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--white); border-bottom:1px solid var(--border); } .wa-cab b { display:block; font-size:15px; } .wa-cab small { font-size:12px; color:var(--text-soft); }
+.wa-tx { flex:1; min-width:0; align-self:stretch; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid var(--wa-lin); padding-right:15px; }
+.wa-l1, .wa-l2 { display:flex; align-items:center; gap:6px; } .wa-l1 b { flex:1; font-size:16.5px; font-weight:400; color:var(--wa-tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wa-l2 small { flex:1; font-size:14px; color:var(--wa-tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; } .wa-l2 small .fa-check-double.leido { color:#53bdeb; }
+.wa-h { font-size:12px; color:var(--wa-tx2); flex-shrink:0; } .wa-it.nl .wa-h { color:var(--wa-ver); } .wa-it.nl .wa-l1 b { font-weight:600; }
+.wa-nl { background:var(--wa-ver); color:#fff; border-radius:12px; min-width:20px; height:20px; padding:0 6px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; }
+html.dark .wa-nl { color:#111b21; }
+.wa-limpiar { margin:4px 12px 10px; padding:9px 12px; border-radius:8px; border:1px dashed var(--wa-lin); background:transparent; color:var(--wa-tx2); font:inherit; font-size:13px; cursor:pointer; width:calc(100% - 24px); } .wa-limpiar:hover { color:#ea0038; border-color:#ea0038; }
+.wa-der { display:flex; flex-direction:column; min-height:0; background-color:var(--wa-fondo); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' opacity='.06'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.2'%3E%3Ccircle cx='14' cy='14' r='5'/%3E%3Cpath d='M50 10l8 8m0-8l-8 8M30 50c4-6 10-6 14 0M64 56h10v10H64zM10 60l6-8 6 8z'/%3E%3C/g%3E%3C/svg%3E"); }
+html.dark .wa-der { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' opacity='.05'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.2'%3E%3Ccircle cx='14' cy='14' r='5'/%3E%3Cpath d='M50 10l8 8m0-8l-8 8M30 50c4-6 10-6 14 0M64 56h10v10H64zM10 60l6-8 6 8z'/%3E%3C/g%3E%3C/svg%3E"); }
+.wa-cab { display:flex; align-items:center; gap:13px; padding:10px 16px; background:var(--wa-cab); min-height:59px; box-sizing:border-box; } .wa-cab .wa-av { width:40px; height:40px; font-size:15px; } .wa-cab b { display:block; font-size:16px; font-weight:500; color:var(--wa-tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .wa-cab small { font-size:13px; color:var(--wa-tx2); }
 .wa-atras { display:none; }
-.wa-msgs { flex:1; overflow-y:auto; padding:16px 6%; display:flex; flex-direction:column; gap:4px; }
-.wa-m { align-self:flex-start; max-width:72%; background:#fff; color:#111b21; border-radius:10px; padding:7px 10px 18px; font-size:14px; line-height:1.4; position:relative; box-shadow:0 1px 1px rgba(0,0,0,.08); word-wrap:break-word; min-width:70px; }
-.wa-m.yo { align-self:flex-end; background:#d9fdd3; }
-html.dark .wa-m { background:#202c33; color:#e9edef; } html.dark .wa-m.yo { background:#005c4b; }
-.wa-m a { color:#027eb5; } .wa-mh { position:absolute; right:8px; bottom:3px; font-size:10.5px; color:#667781; } html.dark .wa-mh { color:#8696a0; }
-.wa-adj { font-size:13px; font-weight:600; margin-bottom:2px; } .wa-adj small { font-weight:400; color:#667781; }
-.wa-dia { align-self:center; background:#fff; color:#54656f; font-size:11.5px; border-radius:8px; padding:4px 10px; margin:8px 0; box-shadow:0 1px 1px rgba(0,0,0,.06); text-transform:capitalize; } html.dark .wa-dia { background:#182229; color:#8696a0; }
-.wa-escribir { display:flex; align-items:flex-end; gap:8px; padding:10px 12px; background:var(--white); border-top:1px solid var(--border); }
-.wa-escribir textarea { flex:1; resize:none; border:1px solid var(--border); border-radius:20px; padding:10px 14px; font:inherit; font-size:14px; background:var(--off,#f8fafc); color:inherit; max-height:140px; }
-.wa-enviar { width:42px; height:42px; border-radius:50%; border:0; background:#25d366; color:#fff; cursor:pointer; flex-shrink:0; }
-.wa-centro { margin:auto; text-align:center; max-width:420px; padding:30px; } .wa-centro h3 { font:800 18px 'Plus Jakarta Sans',sans-serif; margin:12px 0 6px; } .wa-centro p { font-size:13px; color:var(--text-mid); line-height:1.5; }
-.wa-qr { width:264px; height:264px; margin:14px auto; background:#fff; border-radius:16px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); } .wa-qr img { width:240px; height:240px; }
-.wa-pasos { text-align:left; font-size:13px; line-height:1.6; color:var(--text-mid); padding-left:20px; }
-.wa-vacio { padding:30px 16px; text-align:center; color:var(--text-soft); font-size:13px; }
+.wa-msgs { flex:1; overflow-y:auto; padding:18px 7%; display:flex; flex-direction:column; gap:2px; }
+.wa-m { align-self:flex-start; max-width:65%; background:var(--wa-bin); color:var(--wa-tx); border-radius:7.5px; padding:6px 7px 8px 9px; font-size:14.2px; line-height:19px; position:relative; box-shadow:0 1px .5px rgba(11,20,26,.13); word-wrap:break-word; margin-top:1px; }
+.wa-m.yo { align-self:flex-end; background:var(--wa-bout); }
+.wa-m.cola { margin-top:10px; } .wa-m.cola:not(.yo) { border-top-left-radius:0; } .wa-m.cola.yo { border-top-right-radius:0; }
+.wa-m.cola::before { content:''; position:absolute; top:0; width:8px; height:13px; } .wa-m.cola:not(.yo)::before { left:-8px; background:var(--wa-bin); clip-path:polygon(0 0,100% 0,100% 100%); } .wa-m.cola.yo::before { right:-8px; background:var(--wa-bout); clip-path:polygon(0 0,100% 0,0 100%); }
+.wa-m a { color:#027eb5; } html.dark .wa-m a { color:#53bdeb; }
+.wa-mh { float:right; margin:8px 0 -5px 10px; font-size:11px; color:var(--wa-tx2); white-space:nowrap; line-height:15px; } html.dark .wa-m.yo .wa-mh { color:#ffffff99; } .wa-mh .fa-check-double.leido { color:#53bdeb; }
+.wa-autor { font-size:12.8px; font-weight:500; margin-bottom:2px; }
+.wa-adj { font-size:13px; margin-bottom:2px; color:var(--wa-tx2); } .wa-adj i { margin-right:4px; }
+.wa-dia { align-self:center; background:var(--wa-dia); color:var(--wa-tx2); font-size:12.5px; border-radius:7.5px; padding:5px 12px; margin:10px 0 4px; box-shadow:0 1px .5px rgba(11,20,26,.13); text-transform:uppercase; }
+.wa-escribir { display:flex; align-items:flex-end; gap:6px; padding:8px 14px; background:var(--wa-cab); }
+.wa-escribir textarea { flex:1; resize:none; border:0; outline:none; border-radius:8px; padding:10px 12px; font:inherit; font-size:15px; background:var(--wa-pan); color:var(--wa-tx); max-height:140px; line-height:20px; } html.dark .wa-escribir textarea { background:#2a3942 !important; border:0 !important; }
+.wa-enviar { width:42px; height:42px; border-radius:50%; border:0; background:transparent; color:var(--wa-tx2); cursor:pointer; flex-shrink:0; font-size:19px; } .wa-enviar:hover { color:var(--wa-ver); }
+.wa-centro { margin:auto; text-align:center; max-width:460px; padding:30px; color:var(--wa-tx2); } .wa-centro h3 { font-size:28px; font-weight:300; color:var(--wa-tx); margin:16px 0 10px; } .wa-centro p { font-size:14px; line-height:20px; }
+.wa-portada { border-bottom:6px solid var(--wa-ver); }
+.wa-qr { width:264px; height:264px; margin:14px auto; background:#fff; border-radius:12px; display:flex; align-items:center; justify-content:center; } .wa-qr img { width:240px; height:240px; }
+.wa-pasos { text-align:left; font-size:14px; line-height:1.7; color:var(--wa-tx2); padding-left:20px; }
+.wa-vacio { padding:30px 16px; text-align:center; color:var(--wa-tx2); font-size:14px; }
+.wa-menu { position:relative; } .wa-pop { position:absolute; right:0; top:42px; background:var(--wa-pan); border-radius:6px; box-shadow:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16); padding:8px 0; z-index:20; min-width:210px; } .wa-pop button { display:block; width:100%; text-align:left; padding:11px 22px; border:0; background:transparent; color:var(--wa-tx); font:inherit; font-size:14.5px; cursor:pointer; } .wa-pop button:hover { background:var(--wa-hov); } .wa-pop button.rojo { color:#ea0038; }
+.wa-sel-l { max-height:52vh; overflow-y:auto; border:1px solid var(--border); border-radius:10px; } .wa-sel-l label { display:flex; gap:10px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13.5px; cursor:pointer; } .wa-sel-l label small { color:var(--text-soft); margin-left:auto; white-space:nowrap; }
 @media (max-width:800px) {
-  .wa-app { grid-template-columns:1fr; height:calc(100vh - 150px); } @supports (height:100dvh) { .wa-app { height:calc(100dvh - 150px); } }
+  .wa-app { grid-template-columns:1fr; height:calc(100vh - 150px); border-radius:10px; } @supports (height:100dvh) { .wa-app { height:calc(100dvh - 150px); } }
   .wa-app .wa-der { display:none; } .wa-app.con-chat .wa-izq { display:none; } .wa-app.con-chat .wa-der { display:flex; } .wa-atras { display:inline-flex; }
-  .wa-msgs { padding:12px 10px; } .wa-m { max-width:86%; }
+  .wa-msgs { padding:12px 14px; } .wa-m { max-width:85%; } .wa-escribir { padding:6px 8px; }
 }
 .au-ring { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--text-mid); text-align:center; }
 .au-rings { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; }
@@ -3530,8 +3545,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <aside class="wa-izq">
       <div class="wa-top"><div><b>WhatsApp</b><small id="wa-yo">Conectando…</small></div>
         <div style="display:flex;gap:6px"><button class="wa-ico" title="Actualizar" onclick="waCargarChats(true)"><i class="fa-solid fa-rotate"></i></button><button class="wa-ico" title="Opciones" onclick="waOpciones()"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
-      <div class="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="grupos" onclick="waTab('grupos',this)">Grupos</button></div>
-      <input class="wa-buscar" id="wa-buscar" placeholder="Buscar o empezar un chat (número con código de país)" oninput="waPintarLista()">
+      <div class="wa-buscar-c"><i class="fa-solid fa-magnifying-glass"></i><input class="wa-buscar" id="wa-buscar" placeholder="Buscar o escribir un número con código de país" oninput="waPintarLista()"></div>
+      <div class="wa-tabs" id="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="nl" onclick="waTab('nl',this)">No leídos</button><button data-t="grupos" onclick="waTab('grupos',this)">Grupos</button></div>
       <div class="wa-lista" id="wa-lista"></div>
     </aside>
     <section class="wa-der" id="wa-der"></section>
@@ -12771,24 +12786,38 @@ async function waRevisar() {
 }
 async function waCargarChats(forzar) {
   if (_wa.estado !== 'WORKING') return;
-  try { const d = await waApi('chats', { limit: 80 }); _wa.chats = Array.isArray(d.chats) ? d.chats : []; waPintarLista(); } catch (e) { if (forzar) toast('No se pudieron cargar los chats: ' + e.message, 'err'); }
+  try { const d = await waApi('chats', { limit: 150 }); _wa.chats = Array.isArray(d.chats) ? d.chats : []; waPintarLista(); } catch (e) { if (forzar) toast('No se pudieron cargar los chats: ' + e.message, 'err'); }
 }
+const WA_AV_P = '<svg viewBox="0 0 212 212"><path fill="#fff" fill-opacity=".9" d="M106 45c-19 0-34 15-34 34s15 34 34 34 34-15 34-34-15-34-34-34zm0 84c-33 0-62 15-71 40 19 22 44 36 71 36s52-14 71-36c-9-25-38-40-71-40z"/></svg>';
+const WA_AV_G = '<svg viewBox="0 0 212 212"><path fill="#fff" fill-opacity=".9" d="M80 70a24 24 0 1 0 0 48 24 24 0 0 0 0-48zm56 6a20 20 0 1 0 0 40 20 20 0 0 0 0-40zM80 126c-26 0-46 12-50 30 13 16 31 26 50 28h50c-2-30-20-58-50-58zm56 2c-6 0-12 1-17 3 14 12 22 30 23 53h28c12-4 18-10 22-16-6-24-28-40-56-40z"/></svg>';
+const waEsGrupo = id => /@g\.us$/.test(id || '');
+const waNoLeidos = c => Number(c.unreadCount ?? c._chat?.unreadCount ?? c._chat?.unread_count ?? 0) || 0;
+function waAvatar(c) { return `<span class="wa-av">${waEsGrupo(c.id) ? WA_AV_G : WA_AV_P}${c.picture ? `<img src="${esc(c.picture)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`; }
 function waTab(t, btn) {
-  _wa.tab = t; document.querySelectorAll('.wa-tabs button').forEach(b => b.classList.toggle('on', b === btn));
-  if (t === 'grupos' && !_wa.grupos && _wa.estado === 'WORKING') waApi('grupos').then(d => { _wa.grupos = Array.isArray(d.grupos) ? d.grupos : Object.values(d.grupos || {}); waPintarLista(); }).catch(e => toast(e.message, 'err'));
+  _wa.tab = t; document.querySelectorAll('#wa-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   waPintarLista();
 }
 function waPintarLista() {
   const el = document.getElementById('wa-lista'); if (!el) return;
-  const q = ptNorm(document.getElementById('wa-buscar').value || '');
+  const raw = document.getElementById('wa-buscar').value || '', q = ptNorm(raw);
   if (_wa.estado !== 'WORKING') { el.innerHTML = '<div class="wa-vacio">Conecta tu WhatsApp para ver los chats.</div>'; return; }
-  let L = _wa.tab === 'grupos' ? (_wa.grupos || []).map(g => ({ id: g.id?._serialized || g.id || g.JID, name: g.subject || g.name || g.Name || 'Grupo' })) : _wa.chats.filter(c => !/@g\.us$/.test(c.id) || _wa.tab === 'chats');
+  const visibles = _wa.chats.filter(c => /@(c\.us|lid|g\.us)$/.test(c.id || '') && !(_wa.borrados || []).includes(c.id));
+  const personas = visibles.filter(c => !waEsGrupo(c.id)), grupos = visibles.filter(c => waEsGrupo(c.id));
+  const nl = personas.filter(c => waNoLeidos(c) > 0).length, nlg = grupos.filter(c => waNoLeidos(c) > 0).length;
+  const tabs = document.querySelectorAll('#wa-tabs button');
+  if (tabs.length === 3) { tabs[0].innerHTML = 'Chats'; tabs[1].innerHTML = `No leídos${nl ? `<em>${nl}</em>` : ''}`; tabs[2].innerHTML = `Grupos${nlg ? `<em>${nlg}</em>` : ''}`; }
+  let L = _wa.tab === 'grupos' ? grupos : _wa.tab === 'nl' ? personas.filter(c => waNoLeidos(c) > 0) : personas;
   if (q) L = L.filter(c => ptNorm(waNombre(c)).includes(q) || waNum(c.id).includes(q.replace(/\D/g, '') || '¬'));
-  const num = (document.getElementById('wa-buscar').value || '').replace(/\D/g, '');
-  const nuevo = _wa.tab === 'chats' && num.length >= 10 && !L.some(c => waNum(c.id) === num) ? `<button class="wa-it" onclick="waAbrirChat('${num}@c.us')"><span class="wa-av" style="background:#25d366"><i class="fa-solid fa-plus"></i></span><span class="wa-tx"><b>Escribir a +${num}</b><small>Nuevo chat</small></span></button>` : '';
-  el.innerHTML = nuevo + (L.length ? L.map(c => { const lm = c.lastMessage || {}; const id = esc(c.id); const nom = waNombre(c);
-    return `<button class="wa-it${_wa.chat === c.id ? ' on' : ''}" onclick="waAbrirChat('${id}')"><span class="wa-av" style="background:${clColor(nom)}">${c.picture ? `<img src="${esc(c.picture)}" alt="" onerror="this.remove()">` : ''}${esc(clIniciales(nom.replace('+', '')))}</span>
-      <span class="wa-tx"><b>${esc(nom)}</b><small>${lm.fromMe ? '<i class="fa-solid fa-check-double"></i> ' : ''}${esc(String(lm.body || (lm.hasMedia ? '📎 Archivo' : '')).slice(0, 60))}</small></span><span class="wa-h">${waHora(lm.timestamp)}</span></button>`; }).join('') : `<div class="wa-vacio">${_wa.tab === 'grupos' && !_wa.grupos ? 'Cargando grupos…' : 'Sin chats'}</div>`);
+  const num = raw.replace(/\D/g, '');
+  const nuevo = _wa.tab !== 'grupos' && num.length >= 10 && !L.some(c => waNum(c.id) === num) ? `<button class="wa-it" onclick="waAbrirChat('${num}@c.us')"><span class="wa-av" style="background:#00a884"><i class="fa-solid fa-plus"></i></span><span class="wa-tx"><span class="wa-l1"><b>Escribir a +${num}</b></span><span class="wa-l2"><small>Nuevo chat</small></span></span></button>` : '';
+  const limpiar = _wa.tab === 'grupos' && grupos.length && !q ? `<button class="wa-limpiar" onclick="waLimpiarGrupos()"><i class="fa-solid fa-broom"></i> Limpiar grupos viejos</button>` : '';
+  el.innerHTML = nuevo + limpiar + (L.length ? L.map(c => { const lm = c.lastMessage || {}; const id = esc(c.id); const nom = waNombre(c); const n = waNoLeidos(c);
+    const quien = waEsGrupo(c.id) && !lm.fromMe && lm._data?.Info?.PushName ? esc(lm._data.Info.PushName) + ': ' : '';
+    const prev = lm.body || (lm.hasMedia ? 'Archivo' : '');
+    return `<button class="wa-it${_wa.chat === c.id ? ' on' : ''}${n ? ' nl' : ''}" onclick="waAbrirChat('${id}')">${waAvatar(c)}
+      <span class="wa-tx"><span class="wa-l1"><b>${esc(nom)}</b><span class="wa-h">${waHora(lm.timestamp)}</span></span>
+      <span class="wa-l2"><small>${lm.fromMe ? `<i class="fa-solid ${lm.ack >= 2 ? 'fa-check-double' : 'fa-check'}${lm.ack >= 3 ? ' leido' : ''}"></i> ` : quien}${lm.hasMedia && !lm.body ? '<i class="fa-solid fa-camera"></i> ' : ''}${esc(String(prev).slice(0, 80))}</small>${n ? `<span class="wa-nl">${n}</span>` : ''}</span></span></button>`; }).join('')
+    : `<div class="wa-vacio">${_wa.tab === 'grupos' ? 'No hay grupos.' : _wa.tab === 'nl' ? 'No tienes chats sin leer.' : 'Sin chats'}</div>`);
 }
 async function waAbrirChat(id) {
   _wa.chat = id; _wa.msgs = []; document.getElementById('wa-app').classList.add('con-chat');
@@ -12817,27 +12846,64 @@ function waPintarDerecha() {
     else if (_wa.estado !== 'SCAN_QR_CODE') _wa.qrImg = null;
     return;
   }
-  if (!_wa.chat) { der.innerHTML = `<div class="wa-centro"><i class="fa-brands fa-whatsapp" style="font-size:60px;color:#25d366"></i><h3>WhatsApp de DGP Global Group</h3><p>Elige un chat de la izquierda, o escribe un número con código de país para empezar uno nuevo.</p></div>`; return; }
-  const c = _wa.chats.find(x => x.id === _wa.chat) || (_wa.grupos || []).map(g => ({ id: g.id?._serialized || g.id, name: g.subject || g.name })).find(x => x.id === _wa.chat) || { id: _wa.chat };
+  if (!_wa.chat) { der.innerHTML = `<div class="wa-centro"><i class="fa-brands fa-whatsapp" style="font-size:72px;color:var(--wa-tx2);opacity:.5"></i><h3>WhatsApp de DGP Global Group</h3><p>Elige un chat de la izquierda, o escribe un número con código de país en el buscador para empezar uno nuevo.</p><p style="font-size:12.5px;margin-top:26px"><i class="fa-solid fa-lock"></i> Tus mensajes personales están cifrados de extremo a extremo.</p></div>`; der.classList.add('wa-portada'); return; }
+  der.classList.remove('wa-portada');
+  const c = _wa.chats.find(x => x.id === _wa.chat) || { id: _wa.chat };
   const nom = waNombre(c);
-  der.innerHTML = `<div class="wa-cab"><button class="wa-ico wa-atras" onclick="waVolver()"><i class="fa-solid fa-arrow-left"></i></button><span class="wa-av" style="background:${clColor(nom)}">${c.picture ? `<img src="${esc(c.picture)}" alt="" onerror="this.remove()">` : ''}${esc(clIniciales(nom.replace('+', '')))}</span><div style="min-width:0"><b>${esc(nom)}</b><small>${/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : /@g\.us$/.test(c.id) ? 'Grupo' : ''}</small></div></div>
+  der.innerHTML = `<div class="wa-cab"><button class="wa-ico wa-atras" onclick="waVolver()"><i class="fa-solid fa-arrow-left"></i></button>${waAvatar(c)}<div style="min-width:0;flex:1"><b>${esc(nom)}</b><small>${/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : waEsGrupo(c.id) ? 'Grupo' : ''}</small></div>
+    <div class="wa-menu"><button class="wa-ico" title="Más opciones" onclick="event.stopPropagation();waMenuChat(this)"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
     <div class="wa-msgs" id="wa-msgs"><div class="wa-vacio"><div class="au-spin"></div></div></div>
     <div class="wa-escribir"><label class="wa-ico" title="Adjuntar foto o archivo"><i class="fa-solid fa-paperclip"></i><input type="file" hidden onchange="waAdjuntar(this)"></label>
       <textarea id="wa-txt" rows="1" placeholder="Escribe un mensaje" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
-      <button class="wa-enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>`;
+      <button class="wa-enviar" title="Enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>`;
 }
 function waPintarMensajes(abajo) {
   const el = document.getElementById('wa-msgs'); if (!el) return;
   const estabaAbajo = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-  let dia = '';
+  const grupo = waEsGrupo(_wa.chat);
+  let dia = '', prevLado = null, prevAutor = null;
   el.innerHTML = _wa.msgs.length ? _wa.msgs.map(m => {
     const d = new Date((m.timestamp || 0) * 1000), k = d.toDateString(); let sep = '';
-    if (k !== dia) { dia = k; sep = `<div class="wa-dia">${esc(d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>`; }
-    const tick = m.fromMe ? `<i class="fa-solid ${m.ack >= 2 ? 'fa-check-double' : 'fa-check'}" style="color:${m.ack >= 3 ? '#53bdeb' : 'inherit'}"></i>` : '';
-    const cuerpo = m.body ? esc(m.body).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>') : '';
-    return `${sep}<div class="wa-m ${m.fromMe ? 'yo' : ''}">${m.hasMedia ? `<div class="wa-adj"><i class="fa-solid fa-paperclip"></i> ${m.media?.mimetype?.startsWith('image/') ? 'Foto' : m.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo adjunto'} <small>(ábrelo en el celular)</small></div>` : ''}${cuerpo}<span class="wa-mh">${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${tick}</span></div>`;
+    if (k !== dia) { dia = k; prevLado = null; const hoy = new Date(), ayer = new Date(Date.now() - 864e5);
+      sep = `<div class="wa-dia">${k === hoy.toDateString() ? 'Hoy' : k === ayer.toDateString() ? 'Ayer' : esc(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: d.getFullYear() === hoy.getFullYear() ? undefined : 'numeric' }))}</div>`; }
+    const autor = grupo && !m.fromMe ? (m._data?.Info?.PushName || waNum(m.participant || m.author || '')) : '';
+    const cola = prevLado !== !!m.fromMe || (grupo && autor !== prevAutor); prevLado = !!m.fromMe; prevAutor = autor;
+    const tick = m.fromMe ? ` <i class="fa-solid ${m.ack >= 2 ? 'fa-check-double' : m.ack === 0 ? 'fa-clock' : 'fa-check'}${m.ack >= 3 ? ' leido' : ''}"></i>` : '';
+    const cuerpo = m.body ? esc(m.body).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/_([^_\n]+)_/g, '<i>$1</i>').replace(/\n/g, '<br>') : '';
+    const mt = m.media?.mimetype || '';
+    const adj = m.hasMedia ? `<div class="wa-adj"><i class="fa-solid ${mt.startsWith('image/') ? 'fa-camera' : mt.startsWith('audio/') ? 'fa-microphone' : mt.startsWith('video/') ? 'fa-video' : 'fa-file'}"></i>${mt.startsWith('image/') ? 'Foto' : mt.startsWith('audio/') ? 'Nota de voz' : mt.startsWith('video/') ? 'Video' : 'Archivo'} (ábrelo en el celular)</div>` : '';
+    return `${sep}<div class="wa-m${m.fromMe ? ' yo' : ''}${cola ? ' cola' : ''}">${autor && cola ? `<div class="wa-autor" style="color:${clColor(autor)}">${esc(autor)}</div>` : ''}${adj}${cuerpo}<span class="wa-mh">${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}${tick}</span></div>`;
   }).join('') : '<div class="wa-vacio">Aún no hay mensajes en este chat.</div>';
   if (abajo || estabaAbajo) el.scrollTop = el.scrollHeight;
+}
+function waMenuChat(btn) {
+  const caja = btn.parentElement; const ya = caja.querySelector('.wa-pop'); if (ya) { ya.remove(); return; }
+  const g = waEsGrupo(_wa.chat);
+  caja.insertAdjacentHTML('beforeend', `<div class="wa-pop"><button onclick="waCargarMensajes(true);this.parentElement.remove()">Actualizar mensajes</button>${g ? '<button class="rojo" onclick="waBorrarChat(true)">Salir del grupo y borrarlo</button><button class="rojo" onclick="waBorrarChat(false)">Solo borrar de la lista</button>' : '<button class="rojo" onclick="waBorrarChat(false)">Borrar chat</button>'}</div>`);
+  setTimeout(() => document.addEventListener('click', function f(e) { if (!caja.contains(e.target)) { caja.querySelector('.wa-pop')?.remove(); document.removeEventListener('click', f); } }), 0);
+}
+async function waBorrarChat(salir) {
+  const id = _wa.chat; if (!id) return;
+  const c = _wa.chats.find(x => x.id === id) || { id };
+  if (!confirm(salir ? `¿Salir del grupo "${waNombre(c)}" y borrarlo? Ya no recibirás sus mensajes.` : `¿Borrar el chat "${waNombre(c)}"? Se borra también del celular.`)) return;
+  try { await waApi(salir ? 'salirGrupo' : 'borrar', { chatId: id }); _wa.borrados = [...(_wa.borrados || []), id]; _wa.chats = _wa.chats.filter(x => x.id !== id); toast('Listo, borrado'); waVolver(); }
+  catch (e) { toast('No se pudo borrar: ' + e.message, 'err'); }
+}
+function waLimpiarGrupos() {
+  const ahora = Date.now() / 1000;
+  const G = _wa.chats.filter(c => waEsGrupo(c.id) && !(_wa.borrados || []).includes(c.id)).map(c => ({ c, dias: c.lastMessage?.timestamp ? Math.floor((ahora - c.lastMessage.timestamp) / 86400) : 9999 })).sort((a, b) => b.dias - a.dias);
+  ptModal('Limpiar grupos viejos', 'Marcados: grupos sin mensajes hace más de 30 días. Revisa la lista antes de borrar.', `<div class="rd-form">
+    <div class="wa-sel-l" id="wa-sel-l">${G.map(({ c, dias }) => `<label><input type="checkbox" value="${esc(c.id)}"${dias > 30 ? ' checked' : ''}> ${esc(waNombre(c))}<small>${dias >= 9999 ? 'sin mensajes' : dias === 0 ? 'hoy' : 'hace ' + dias + ' días'}</small></label>`).join('')}</div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px"><input type="checkbox" id="wa-sel-salir" checked> Salir de los grupos (si no, solo se quitan de la lista)</label>
+    <button class="ll-btn" style="background:#dc2626;margin-top:10px" onclick="waLimpiarConfirmar(this)">Borrar los marcados</button></div>`);
+}
+async function waLimpiarConfirmar(btn) {
+  const ids = [...document.querySelectorAll('#wa-sel-l input:checked')].map(i => i.value); if (!ids.length) return toast('No marcaste ningún grupo', 'err');
+  const salir = document.getElementById('wa-sel-salir').checked;
+  if (!confirm(`¿${salir ? 'Salir y borrar' : 'Borrar'} ${ids.length} grupo${ids.length > 1 ? 's' : ''}?`)) return;
+  btn.disabled = true; let ok = 0;
+  for (const id of ids) { btn.textContent = `Borrando ${ok + 1} de ${ids.length}…`; try { await waApi(salir ? 'salirGrupo' : 'borrar', { chatId: id }); ok++; _wa.borrados = [...(_wa.borrados || []), id]; } catch (e) {} await new Promise(r => setTimeout(r, 1500)); }
+  _wa.chats = _wa.chats.filter(x => !_wa.borrados.includes(x.id)); closePortalModal(); waPintarLista(); toast(`${ok} grupo${ok === 1 ? '' : 's'} borrado${ok === 1 ? '' : 's'}`);
 }
 async function waEnviar() {
   const t = document.getElementById('wa-txt'), texto = (t?.value || '').trim(); if (!texto || !_wa.chat) return;

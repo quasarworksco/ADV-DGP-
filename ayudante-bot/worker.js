@@ -734,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04h';
+const WORKER_VERSION = '2026-11-04i';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1721,6 +1721,13 @@ async function handleWA(request, env) {
       }
       case 'visto': await waFetch(env, '/api/sendSeen', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat }) }).catch(() => {}); return json(request, { ok: true });
       case 'grupos': return json(request, { grupos: await waJSON(env, `/api/${S}/groups?limit=300&offset=0&sortBy=subject&sortOrder=asc&exclude=participants`) });
+      case 'borrar': await waFetch(env, `/api/${S}/chats/${waChat(chat)}`, { method: 'DELETE' }); return json(request, { ok: true });
+      case 'salirGrupo': {
+        if (!/@g\.us$/.test(chat)) return json(request, { error: 'No es un grupo' }, 400);
+        await waFetch(env, `/api/${S}/groups/${waChat(chat)}/leave`, { method: 'POST' }).catch(() => {});
+        await waFetch(env, `/api/${S}/chats/${waChat(chat)}`, { method: 'DELETE' }).catch(() => {});
+        return json(request, { ok: true });
+      }
       case 'foto': { const d = await waJSON(env, `/api/${S}/chats/${waChat(chat)}/picture`).catch(() => ({})); return json(request, { url: d.url || null }); }
       default: return json(request, { error: 'Acción no válida' }, 400);
     }
