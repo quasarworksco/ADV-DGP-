@@ -1465,7 +1465,7 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
     ${nota ? `<div class="tx2" style="font-size:12px;color:#94a3b8;margin-top:16px;">${escHtmlR(nota)}</div>` : ''}
   </td></tr>
   <tr><td align="center" class="tx2" style="padding-top:24px;font-size:12px;color:#64748b;line-height:1.7;">
-    <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
+    <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/13465372353" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (346) 537-2353</a><br>
     <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#94a3b8;font-weight:600;">DGP GLOBAL GROUP</span>
   </td></tr>
 </table></td></tr></table></body></html>`;
@@ -2163,8 +2163,8 @@ async function enviarAuditoria(env, token, id, correo, en) {
   (a.mejoras || []).slice(0, 5).forEach((x, i) => resumen.push([`Mejora ${i + 1}${x.prioridad === 'alta' ? ' · urgente' : ''}`, x.texto.slice(0, 90)]));
   const informe = `${SITIO}/auditoria.html?id=${id}`;
   const html = correoBotHTML({ icono: 'web', titulo: `Auditoría de ${a.host}`, texto: String(a.resumen || '').split('\n').filter(Boolean).slice(0, 3).join(' ').slice(0, 600) || `Revisamos ${a.host} y encontramos varias mejoras para conseguir más clientes.`,
-    resumen, boton: 'Ver mi informe completo (PDF)', link: informe, nota: `¿Quieres mejorarla? Responde este correo o escríbenos por WhatsApp al +1 (239) 823-1738.` });
-  const ok = await enviarCorreoBot(env, correo, `Auditoría gratis de tu página web · ${a.host}`, html, `${a.resumen || ''}\n\nPuntaje: ${a.puntaje}/100\nInforme completo: ${informe}\n\nDGP Global Group · WhatsApp +1 (239) 823-1738`);
+    resumen, boton: 'Ver mi informe completo (PDF)', link: informe, nota: `¿Quieres mejorarla? Responde este correo o escríbenos por WhatsApp al +1 (346) 537-2353.` });
+  const ok = await enviarCorreoBot(env, correo, `Auditoría gratis de tu página web · ${a.host}`, html, `${a.resumen || ''}\n\nPuntaje: ${a.puntaje}/100\nInforme completo: ${informe}\n\nDGP Global Group · WhatsApp +1 (346) 537-2353`);
   if (!ok) return { error: 'No se pudo enviar el correo' };
   await fsUpdate(env, `auditorias/${id}`, { enviadaA: correo, enviadaAt: new Date().toISOString() }, ['enviadaA', 'enviadaAt'], token).catch(() => {});
   return { ok: true };
@@ -2292,11 +2292,11 @@ async function botSeguimientoProspecto(env, token, id, idioma) {
   const serv = p.servicio && !/chat|web/i.test(p.servicio) ? p.servicio : '';
   const ok = EN
     ? await enviarCorreoBot(env, p.correo, `${nombre}, a quick question · DGP Global Group`,
-      correoBotHTML({ icono: 'encuesta', titulo: `Hi ${nombre}!`, texto: `Thank you for reaching out to DGP Global Group${serv ? ` about ${serv}` : ''}. We would love to help you, and it is much faster to talk directly. Do you have a phone or WhatsApp number where we can reach you? Just reply to this email with it, or message us on WhatsApp using the button below.`, boton: 'Message us on WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Web design & systems' }),
-      `Hi ${nombre}! Thank you for reaching out to DGP Global Group. Do you have a phone or WhatsApp number where we can reach you? Reply to this email or message us: https://wa.me/12398231738`, { c: 'prospectos', id })
+      correoBotHTML({ icono: 'encuesta', titulo: `Hi ${nombre}!`, texto: `Thank you for reaching out to DGP Global Group${serv ? ` about ${serv}` : ''}. We would love to help you, and it is much faster to talk directly. Do you have a phone or WhatsApp number where we can reach you? Just reply to this email with it, or message us on WhatsApp using the button below.`, boton: 'Message us on WhatsApp', link: 'https://wa.me/13465372353', nota: 'DGP Global Group · Web design & systems' }),
+      `Hi ${nombre}! Thank you for reaching out to DGP Global Group. Do you have a phone or WhatsApp number where we can reach you? Reply to this email or message us: https://wa.me/13465372353`, { c: 'prospectos', id })
     : await enviarCorreoBot(env, p.correo, `${nombre ? nombre + ', ' : ''}una pregunta rápida · DGP Global Group`,
-      correoBotHTML({ icono: 'encuesta', titulo: `¡Saludos${nombre ? ', ' + nombre : ''}!`, texto: `Gracias por escribirnos a DGP Global Group${serv ? ` sobre ${serv}` : ''}. Queremos ayudarte y es mucho más rápido conversar directo. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Puedes respondernos este correo con tu número o escribirnos por WhatsApp desde el botón.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Diseño web y sistemas' }),
-      `¡Saludos${nombre ? ', ' + nombre : ''}! Gracias por escribirnos a DGP Global Group. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Respóndenos este correo o escríbenos: https://wa.me/12398231738`, { c: 'prospectos', id });
+      correoBotHTML({ icono: 'encuesta', titulo: `¡Saludos${nombre ? ', ' + nombre : ''}!`, texto: `Gracias por escribirnos a DGP Global Group${serv ? ` sobre ${serv}` : ''}. Queremos ayudarte y es mucho más rápido conversar directo. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Puedes respondernos este correo con tu número o escribirnos por WhatsApp desde el botón.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/13465372353', nota: 'DGP Global Group · Diseño web y sistemas' }),
+      `¡Saludos${nombre ? ', ' + nombre : ''}! Gracias por escribirnos a DGP Global Group. ¿Tienes algún número de teléfono o WhatsApp donde podamos escribirte? Respóndenos este correo o escríbenos: https://wa.me/13465372353`, { c: 'prospectos', id });
   if (!ok) return { aviso: 'No se pudo enviar', html: `⚠️ No pude enviar el correo a ${escHtml(p.correo)}. Revisa que el correo esté configurado (Probar sistema).` };
   const seg = [...(Array.isArray(p.seguimientos) ? p.seguimientos : []), { tipo: 'pedir-whatsapp', idioma: EN ? 'en' : 'es', fecha: new Date().toISOString(), por: 'telegram' }].slice(-20);
   await fsUpdate(env, `prospectos/${id}`, { seguimientos: seg, estado: p.estado === 'nuevo' ? 'contactado' : (p.estado || 'contactado'), ultimoSeguimiento: new Date() }, ['seguimientos', 'estado', 'ultimoSeguimiento'], token).catch(() => {});
@@ -3143,8 +3143,8 @@ async function registrarLead(env, token, d, opciones = {}) {
       acuse = esNHD ? await enviarCorreoBot(env, correo, `${primer}, recibimos tu postulación · Negocio Hispano Digital`,
         correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por postular, ${primer}!`, texto: `Recibimos la postulación de ${negocio || 'tu negocio'} al programa Negocio Hispano Digital. Las postulaciones cierran el 15 de diciembre de 2026 y anunciamos a los 10 ganadores el 8 de enero de 2027. Si tu negocio es seleccionado, te escribimos por WhatsApp. ¡Mucha suerte!`, boton: 'Ver el programa', link: 'https://dgpglobalgroup.com/negocio-hispano-digital/', nota: 'DGP Global Group · Negocio Hispano Digital' }),
         `¡Gracias por postular, ${primer}! Recibimos tu postulación al programa Negocio Hispano Digital. Anunciamos a los ganadores el 8 de enero de 2027.`).catch(() => false) : await enviarCorreoBot(env, correo, `${primer}, recibimos tu mensaje · DGP Global Group`,
-        correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Servicios Digitales Profesionales' }),
-        `¡Gracias por escribirnos, ${primer}! Recibimos tu mensaje y te responderemos en menos de 24 horas. WhatsApp: +1 (239) 823-1738`).catch(() => false);
+        correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias por escribirnos, ${primer}!`, texto: `Recibimos tu mensaje${servicio ? ` sobre ${servicio}` : ''} y ya lo estamos revisando. Te responderemos con una propuesta en menos de 24 horas. Si es urgente, escríbenos por WhatsApp y te atendemos de inmediato.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/13465372353', nota: 'DGP Global Group · Servicios Digitales Profesionales' }),
+        `¡Gracias por escribirnos, ${primer}! Recibimos tu mensaje y te responderemos en menos de 24 horas. WhatsApp: +1 (346) 537-2353`).catch(() => false);
       // 2) Borrador de cotización SOLO con servicios y precios de tu catálogo; tú lo apruebas
       if (!esNHD) borrador = await borradorDesdeContacto(env, token, { nombre, correo, servicio, mensaje, negocio }).catch(e => { console.warn('Vendedor', e); return null; });
     }
@@ -3455,7 +3455,7 @@ WEB DESIGN: Landing Page from $280 one-time (24-48h delivery) | Standard Site up
 GRAPHIC DESIGN: Visual Identity (logo + brand guidelines) from $185 | Business Card from $26 | Social Media Posts/Flyers from $15 each.
 PACKAGES (one-time): Basic $320 (logo, brand guidelines, social media review, 1,000 followers, business card; 48h) | Intermediate $480 (adds 3,000 followers and 10 Instagram posts; 72h) | Advanced $840 (5,000 followers, 10 posts, invoice and business card design, One Page website, admin panel with CRM; 72h).
 CUSTOM SYSTEMS: CRM, admin panels, inventory, custom software — custom quote.
-CONTACT: WhatsApp +1 (239) 823-1738 | Email info@dgpglobalgroup.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
+CONTACT: WhatsApp +1 (346) 537-2353 | Email info@dgpglobalgroup.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
 
 GUIDELINES:
 1. Always end with a question or call to action that moves toward a consultation or quote.
@@ -3536,7 +3536,7 @@ async function handleChatIA(request, env) {
   // Responde en el idioma en que escribe el cliente (no el de la página)
   const idm = idiomaTexto(ultimo.content) || (/^en/i.test(String(b.idioma || '')) ? 'en' : 'es');
   const en = idm === 'en';
-  const WA = en ? 'please message us on WhatsApp at +1 (239) 823-1738' : 'escríbenos por WhatsApp al +1 (239) 823-1738';
+  const WA = en ? 'please message us on WhatsApp at +1 (346) 537-2353' : 'escríbenos por WhatsApp al +1 (346) 537-2353';
   if (msgs.filter(m => m.role === 'user').length > CHAT_MAX_TURNOS)
     return resp({ respuesta: en ? `To keep helping you personally, ${WA} and our team will reply right away.` : `Para seguir ayudándote de forma personal, ${WA} y el equipo te responde enseguida.` });
   if (await superaLimite(request, 'chat-ia', 40, 3600))
@@ -3964,7 +3964,7 @@ async function botDescartarBorradorCorreo(env, token, id) {
 async function responderRespuesta(env, token, id, texto, por) {
   const m = await fsGet(env, `respuestas/${id}`, token).catch(() => null);
   if (!m) return { error: 'No encontré esa respuesta' };
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;">${escHtml(texto).replace(/\n/g, '<br>')}<br><br>—<br><b>DGP Global Group</b><br><a href="https://dgpglobalgroup.com" style="color:#166baf;">dgpglobalgroup.com</a> · WhatsApp +1 (239) 823-1738</div>`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;">${escHtml(texto).replace(/\n/g, '<br>')}<br><br>—<br><b>DGP Global Group</b><br><a href="https://dgpglobalgroup.com" style="color:#166baf;">dgpglobalgroup.com</a> · WhatsApp +1 (346) 537-2353</div>`;
   const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
     body: JSON.stringify({ clave: env.EMAIL_CLAVE, accion: 'responder', id, texto: texto + '\n\n— DGP Global Group · dgpglobalgroup.com', html, nombre: 'DGP Global Group' }) });
   const r = await res.json().catch(() => ({}));
@@ -4079,7 +4079,7 @@ async function revisarPedidosSmm(env) {
           if (correo && !p.correoCompletado) {
             const nombre = String(p.cliente || '').split(' ')[0] || 'hola';
             enviado = await enviarCorreoBot(env, correo, `¡Listo, ${nombre}! Tu servicio de ${p.red || 'redes'} se completó`,
-              correoBotHTML({ icono: 'marketing', titulo: `¡Servicio completado, ${nombre}!`, texto: `Terminamos de entregar ${cant.toLocaleString('en-US')} ${p.tipo || 'seguidores'} en ${p.red || 'tu cuenta'}. Revisa tu perfil y cuéntanos qué tal. Si notas alguna baja en los próximos días, escríbenos y lo reponemos.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · Crecimiento en redes' }),
+              correoBotHTML({ icono: 'marketing', titulo: `¡Servicio completado, ${nombre}!`, texto: `Terminamos de entregar ${cant.toLocaleString('en-US')} ${p.tipo || 'seguidores'} en ${p.red || 'tu cuenta'}. Revisa tu perfil y cuéntanos qué tal. Si notas alguna baja en los próximos días, escríbenos y lo reponemos.`, boton: 'Escribir por WhatsApp', link: 'https://wa.me/13465372353', nota: 'DGP Global Group · Crecimiento en redes' }),
               `¡Servicio completado! Entregamos ${cant} ${p.tipo || 'seguidores'} en ${p.red || 'tu cuenta'}.`).catch(() => false);
             if (enviado) upd.correoCompletado = new Date().toISOString();
           }
