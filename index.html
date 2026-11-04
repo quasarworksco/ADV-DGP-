@@ -12755,7 +12755,7 @@ const waHora = ts => { if (!ts) return ''; const d = new Date(ts * 1000), hoy = 
 function waAbrir() {
   clearInterval(_wa.timer);
   waRevisar();
-  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') waRevisar(); else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
+  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
 }
 function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; }
 async function waRevisar() {

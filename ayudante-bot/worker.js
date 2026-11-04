@@ -734,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04f';
+const WORKER_VERSION = '2026-11-04g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1303,10 +1303,14 @@ async function handleTarea(request, env) {
 }
 
 /* Comprueba que la llamada viene de alguien del equipo (sesión de Firebase + correo en /accesos) */
+const _equipoMemo = new Map();
 async function verificarEquipo(request, env) {
   const idToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   if (!idToken) return { error: 'Falta la sesión', status: 401 };
   const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
+  // Se recuerda 10 min quién es el dueño de cada sesión (la pantalla de WhatsApp pregunta seguido)
+  const memo = _equipoMemo.get(idToken);
+  if (memo && memo.exp > Date.now()) return { email: memo.email, token: await firebaseLogin(env) };
   const look = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken })
   }).then(r => r.json()).catch(() => ({}));
@@ -1315,6 +1319,8 @@ async function verificarEquipo(request, env) {
   const token = await firebaseLogin(env);
   const acceso = await fsGet(env, `accesos/${email}`, token);
   if (!acceso) return { error: 'Sin acceso', status: 403 };
+  if (_equipoMemo.size > 200) _equipoMemo.clear();
+  _equipoMemo.set(idToken, { email, exp: Date.now() + 600000 });
   return { email, token };
 }
 
