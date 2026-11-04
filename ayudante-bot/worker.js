@@ -199,6 +199,7 @@ export default {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
       ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
+      if (new Date().getUTCHours() === 15) ctx.waitUntil(recordatoriosWA(env).catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
       if (new Date().getUTCHours() === 12) ctx.waitUntil(resumenMananaPush(env).catch(e => console.warn('Resumen de la mañana', e)));
       if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
     }
@@ -734,7 +735,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04k';
+const WORKER_VERSION = '2026-11-04l';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1039,21 +1040,22 @@ async function tareaDiaria(env) {
       items: [{ s: `${nombre} (${periodoTxt})`, p: precio, c: 1, t: precio }],
       pagado: false, fechaPago: null, suscripcionId: s._id, periodo: s.proximoPago,
       clienteCorreo: correoDe(s.cliente),
-      portalCodigo: s.portalCodigo || null, createdBy: 'bot', createdAt: new Date()
+      portalCodigo: s.portalCodigo || null, createdBy: 'bot', createdAt: new Date(),
+      ...(s.aliadoId ? { aliadoId: s.aliadoId, aliado: s.aliado || '' } : {})
     };
     const id = await fsCreate(env, 'documentos', docData, token);
     if (s.portalCodigo) await fsAgregarALista(env, `portal/${s.portalCodigo}`, 'facturaIds', id, token).catch(e => console.warn(e));
     await fsUpdate(env, `suscripciones/${s._id}`, { ultimaFacturaId: id, ultimaFacturaPeriodo: s.proximoPago }, ['ultimaFacturaId', 'ultimaFacturaPeriodo'], token);
     s.ultimaFacturaPeriodo = s.proximoPago;
     creadas.push({ s, id, docData });
-    await waFacturaNueva(env, token, id, docData, telDe(s.cliente));
+    if (!s.aliadoId) await waFacturaNueva(env, token, id, docData, telDe(s.cliente));
   }
 
   const auto = await automatizaciones(env, token);
   // 1b) La factura de la suscripción le llega al cliente por correo
   if (auto.susCorreo) for (const c of creadas) {
     const correo = c.docData.clienteCorreo;
-    if (!correo) { c.correo = null; continue; }
+    if (!correo || c.s.aliadoId) { c.correo = null; continue; }
     const m = correoFacturaSusHTML(c.s, c.id, c.docData);
     c.correo = await enviarCorreoBot(env, correo, m.asunto, m.html, m.texto).catch(() => false) ? correo : null;
   }
@@ -1089,7 +1091,7 @@ async function tareaDiaria(env) {
   // 2) Recordatorio por correo para dejar reseña en Google (clientes felices que no hicieron clic)
   const resenas = await recordarResenas(env, token, docs, correoDe).catch(e => { console.warn('Reseñas', e); return []; });
   const automaticos = await correosAutomaticos(env, token, docs, clientes, correoDe, auto).catch(e => { console.warn('Correos automáticos', e); return []; });
-  const cobrador = auto.cobrador ? await cobradorAmable(env, token, docs, correoDe, telDe).catch(e => { console.warn('Cobrador', e); return { enviados: [], llamar: [] }; }) : { enviados: [], llamar: [] };
+  const cobrador = auto.cobrador ? await cobradorAmable(env, token, docs, correoDe, telDe, auto.waCobro && !!(env.WA_URL && env.WA_KEY)).catch(e => { console.warn('Cobrador', e); return { enviados: [], llamar: [] }; }) : { enviados: [], llamar: [] };
 
   // 3) Resumen de cobros
   const pendientes = docs.filter(d => deudaDoc(d) > 0.009).map(d => ({ d, dias: fechaDoc(d) ? diasEntre(fechaDoc(d), hoy) : 0 }));
@@ -1531,7 +1533,7 @@ async function correoPagoCliente0(env, token, fsId, monto, por) {
     if (!(await automatizaciones(env, token)).correoPago) return { enviado: false };
     if (!(monto > 0.009)) return { enviado: false };
     const doc = await fsGet(env, `documentos/${fsId}`, token);
-    if (!doc) return { enviado: false };
+    if (!doc || esAliado(doc)) return { enviado: false };
     const correo = String(doc.clienteCorreo || await correoDeCliente(env, token, doc.cli) || '').trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { enviado: false, motivo: `${doc.cli || 'el cliente'} no tiene correo guardado` };
     const m = correoPagoHTML(doc, fsId, monto);
@@ -1556,6 +1558,7 @@ async function recordarResenas(env, token, docs, correoDe) {
     if (e.googleClick || e.resenaRecordada || promedioEnc(e) < 4) continue;
     if (!e.fecha || new Date(e.fecha).getTime() > limite) continue;
     const doc = docs.find(d => d._id === e.docId);
+    if (esAliado(doc)) continue;
     const correo = doc?.clienteCorreo || correoDe(e.cliente || doc?.cli || '');
     if (!correo) continue;
     const nombre = String(e.cliente || doc?.cli || '').split(' ')[0] || 'hola';
@@ -1677,6 +1680,8 @@ const waChat = id => encodeURIComponent(String(id || ''));
 async function waEnviarTexto(env, chatId, texto) {
   return waJSON(env, '/api/sendText', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId, text: String(texto).slice(0, 4000) }) });
 }
+// Clientes que vienen de un aliado: nunca se les escribe (ni correo ni WhatsApp)
+const esAliado = d => !!(d && (d.aliadoId || d.aliado || d.paqueteAliado || d.hostingAliado || d.clienteFinal || d.origen === 'aliado' || (Array.isArray(d.tags) && d.tags.includes('aliado'))));
 function waTelIntl(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
 // Factura nueva → le llega sola al cliente por el WhatsApp del panel (interruptor waFactura)
 function textoFacturaWA(doc, id) {
@@ -1692,7 +1697,7 @@ async function waFacturaNueva(env, token, id, doc, tel) {
   try {
     if (!env.WA_URL || !env.WA_KEY) return { omitido: 'WhatsApp no instalado' };
     if (!(await automatizaciones(env, token)).waFactura) return { omitido: 'apagado' };
-    if (doc.pagado || doc.type === 'contrato' || doc.contrato) return { omitido: 'no aplica' };
+    if (doc.pagado || doc.type === 'contrato' || doc.contrato || esAliado(doc)) return { omitido: 'no aplica' };
     if (doc.waEnviadaAt) return { omitido: 'ya enviada' };
     const t = waTelIntl(tel); if (!t) return { omitido: 'sin teléfono' };
     await waEnviarTexto(env, t + '@c.us', textoFacturaWA(doc, id));
@@ -2650,8 +2655,8 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe, auto = {
   const hoy = hoyVE(), mmdd = hoy.slice(5), anio = hoy.slice(0, 4);
   const enviados = [];
   const nombreCli = c => [c.nombre, c.apellido].filter(Boolean).join(' ');
-  const bajas = new Set(clientes.filter(c => c.noCorreos).map(c => normNombre(nombreCli(c))));
-  const reales = docs.filter(d => !String(d._id).startsWith('__diag'));
+  const bajas = new Set(clientes.filter(c => c.noCorreos || esAliado(c)).map(c => normNombre(nombreCli(c))));
+  const reales = docs.filter(d => !String(d._id).startsWith('__diag') && !esAliado(d));
 
   // 1) A los 3 días de entregar: pedido directo de reseña en Google (con la encuesta como opción privada)
   for (const d of reales) {
@@ -3416,7 +3421,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3878,11 +3883,13 @@ function correoCobranzaHTML(doc, fsId, etapa) {
     boton: 'Ver y pagar factura', link: `${SITIO}/factura-publica.html?id=${fsId}`, nota: 'Si ya pagaste, ignora este mensaje. ¡Gracias!'
   });
 }
-async function cobradorAmable(env, token, docs, correoDe, telDe) {
+async function cobradorAmable(env, token, docs, correoDe, telDe, waActivo) {
   const hoy = hoyVE();
   const enviados = [], llamar = [];
   for (const d of docs) {
     if (String(d._id).startsWith('__diag') || d.pagado || d.type === 'recibo' || deudaDoc(d) <= 0.009 || d.cobranzaPausada) continue;
+    if (esAliado(d)) continue;
+    if (waActivo && waTelIntl(telDe(d.cli))) continue;   // tiene WhatsApp: lo cobra el recordatorio por WhatsApp
     const base = d.venceEl || fechaDoc(d);
     if (!base) continue;
     const dias = diasEntre(base, hoy);
@@ -3910,6 +3917,71 @@ async function cobradorAmable(env, token, docs, correoDe, telDe) {
     }
   }
   return { enviados, llamar };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RECORDATORIOS DE PAGO POR WHATSAPP (interruptor waCobro) · 10am Miami
+   Sin abonos: días 3, 7 y 14 desde que se creó la factura.
+   Con abono: se reinicia desde el último abono → días 5, 10 y 15.
+   Un solo mensaje por cliente con todas sus facturas. Después del último
+   recordatorio ya no le escribe y te avisa por Telegram para llamar o pausar.
+══════════════════════════════════════════════════════════════ */
+const dmyAIsoF = f => /^\d{2}\/\d{2}\/\d{4}$/.test(f || '') ? `${f.slice(6)}-${f.slice(3, 5)}-${f.slice(0, 2)}` : (fechaISO(f) || null);
+async function recordatoriosWA(env) {
+  if (!env.WA_URL || !env.WA_KEY) return;
+  const token = await firebaseLogin(env);
+  if (!(await automatizaciones(env, token)).waCobro) return;
+  if ((await waEstado(env).catch(() => ({}))).status !== 'WORKING') return;
+  const [docs, clientes, portales] = await Promise.all(['documentos', 'clientes', 'portal'].map(c => fsList(env, c, token)));
+  const hoy = hoyVE();
+  const telDe = nombre => { const n = normNombre(nombre);
+    const c = clientes.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === n);
+    const p = portales.find(x => normNombre(x.nombre) === n);
+    return waTelIntl(c?.telefono || p?.telefono || ''); };
+  const deAliado = new Set(clientes.filter(esAliado).map(c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' '))));
+  const grupos = {};
+  for (const d of docs) {
+    if (esAliado(d) || deAliado.has(normNombre(d.cli))) continue;
+    if (String(d._id).startsWith('__diag') || d.pagado || d.type !== 'factura' || d.contrato || d.cobranzaPausada || deudaDoc(d) <= 0.009) continue;
+    // Comprobante subido sin revisar: no lo molestamos
+    if (compPendientes(d).length) continue;
+    // Cada abono o comprobante registrado reinicia la cuenta (cada 5 días)
+    const abonos = [...(d.pagos || []).map(x => dmyAIsoF(x.fecha)), ...listaComprobantes(d).filter(c => compEstado(d, c) === 'registrado').map(c => _fechaIso(c.fecha))].filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f || '')).sort();
+    const conAbono = abonos.length > 0;
+    const base = conAbono ? abonos[abonos.length - 1] : fechaDoc(d);
+    if (!base) continue;
+    const etapas = conAbono ? [5, 10, 15] : [3, 7, 14];
+    const w = d.waCobro && d.waCobro.base === base ? d.waCobro : { base, enviados: [] };
+    const dias = diasEntre(base, hoy);
+    const toca = etapas.filter(e => dias >= e && !(w.enviados || []).includes(e)).pop();
+    if (!toca) continue;
+    const tel = telDe(d.cli); if (!tel) continue;
+    (grupos[tel] = grupos[tel] || { tel, cli: d.cli, xs: [] }).xs.push({ d, w, toca, ultimo: toca === etapas[2], conAbono, dias });
+  }
+  const enviados = [], alertas = [];
+  for (const g of Object.values(grupos).slice(0, 25)) {
+    const en = g.xs.every(x => x.d.idioma === 'en'), nombre = String(g.cli || '').split(' ')[0];
+    const lineas = g.xs.map(({ d }) => {
+      const pagado = Number(d.montoPagado) || 0, saldo = saldoDoc(d);
+      const link = `${SITIO}/factura-publica.html?id=${d._id}${en ? '&lang=en' : ''}`;
+      return en ? `• ${d.docId || 'Invoice'}: ${dinero(saldo)}${pagado > 0 ? ` left (of ${dinero(d.total)})` : ''}\n${link}`
+                : `• ${d.docId || 'Factura'}: ${dinero(saldo)}${pagado > 0 ? ` por pagar (de ${dinero(d.total)})` : ''}\n${link}`;
+    }).join('\n\n');
+    const segundo = g.xs.some(x => x.toca !== (x.conAbono ? 5 : 3)), ultimo = g.xs.some(x => x.ultimo), varias = g.xs.length > 1;
+    const texto = en
+      ? `Hi ${nombre}! ${ultimo ? 'This is a friendly last reminder from DGP Global Group about' : segundo ? 'Just following up from DGP Global Group on' : 'A friendly reminder from DGP Global Group about'} your pending ${varias ? 'invoices' : 'invoice'}:\n\n${lineas}\n\nFrom the link you can see the payment methods and upload your receipt. If you already paid, just send us the receipt here. Thank you!`
+      : `Hola ${nombre}! ${ultimo ? 'Te escribimos de DGP Global Group con un último recordatorio amable de' : segundo ? 'Te escribimos de DGP Global Group para dar seguimiento a' : 'Te recordamos amablemente de DGP Global Group'} tu${varias ? 's facturas pendientes' : ' factura pendiente'}:\n\n${lineas}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. Si ya pagaste, envíanos el comprobante por aquí. ¡Gracias!`;
+    try { await waEnviarTexto(env, g.tel + '@c.us', texto); } catch (e) { console.warn('WA cobro', g.cli, e); continue; }
+    for (const x of g.xs) await fsUpdate(env, `documentos/${x.d._id}`, { waCobro: { base: x.w.base, enviados: [...(x.w.enviados || []), x.toca], ultimoAt: new Date().toISOString() } }, ['waCobro'], token).catch(() => {});
+    const total = g.xs.reduce((a, x) => a + saldoDoc(x.d), 0);
+    enviados.push({ cli: g.cli, total, ultimo });
+    if (ultimo) alertas.push({ cli: g.cli, total, tel: g.tel, dias: Math.max(...g.xs.map(x => x.dias)) });
+    await new Promise(r => setTimeout(r, 4000 + Math.random() * 4000));
+  }
+  if (!enviados.length) return;
+  const L = [`💬 <b>Recordatorios de pago por WhatsApp (${enviados.length})</b>`, ...enviados.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)}${x.ultimo ? ' · <i>último aviso</i>' : ''}`)];
+  if (alertas.length) L.push('', '📞 <b>Ya no les escribo más, te toca a ti</b> (llamar o pausar la factura en el panel):', ...alertas.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)} · ${x.dias} días · <a href="tel:+${x.tel}">llamar</a>`));
+  await tgEnviar(env, L.join('\n')).catch(() => {});
 }
 
 /* ══════════════════════════════════════════════════════════════
