@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04o';
+const WORKER_VERSION = '2026-11-04p';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2283,9 +2283,17 @@ async function tgMensaje(env, msg) {
     const token = await firebaseLogin(env);
     const map = await fsGet(env, `tgMap/${respondeA}`, token).catch(() => null);
     if (map && map.tipo === 'wa' && map.chatId) {
-      const r = await waEnviarTexto(env, map.chatId, dicho).catch(e => ({ error: e.message }));
+      // Respuestas rápidas: "/zelle" → el texto guardado en el panel (config/respuestasRapidas)
+      let enviar = dicho;
+      const rr = String(dicho).trim().match(/^\/([\wáéíóúñ-]+)$/i);
+      if (rr) {
+        const cfg = await fsGet(env, 'config/respuestasRapidas', token).catch(() => null);
+        const hit = (cfg?.lista || []).find(x => String(x.atajo || '').replace(/^\//, '').toLowerCase() === rr[1].toLowerCase());
+        if (hit) enviar = String(hit.texto || '').replace(/\{nombre\}/g, String(map.nombre || '').replace(/^\+.*/, '').split(' ')[0] || '').replace(/  +/g, ' ');
+      }
+      const r = await waEnviarTexto(env, map.chatId, enviar).catch(e => ({ error: e.message }));
       return tgApi(env, 'sendMessage', { chat_id: chat, ...(msg.message_thread_id ? { message_thread_id: msg.message_thread_id } : {}), reply_to_message_id: msg.message_id, parse_mode: 'HTML',
-        text: r.error ? `⚠️ No se pudo enviar por WhatsApp: ${escHtml(r.error)}` : `✅ Enviado por WhatsApp a <b>${escHtml(map.nombre || map.chatId)}</b>${porVoz ? `\n🎙 <i>"${escHtml(dicho)}"</i>` : ''}` });
+        text: r.error ? `⚠️ No se pudo enviar por WhatsApp: ${escHtml(r.error)}` : `✅ Enviado por WhatsApp a <b>${escHtml(map.nombre || map.chatId)}</b>${enviar !== dicho ? `\n📋 <i>${escHtml(enviar.slice(0, 300))}</i>` : ''}${porVoz ? `\n🎙 <i>"${escHtml(dicho)}"</i>` : ''}` });
     }
     if (map && (map.tipo === 'respuesta' || map.tipo === 'borrador')) {
       await tgApi(env, 'sendChatAction', { chat_id: chat, action: 'typing' });

@@ -2749,6 +2749,11 @@ html.dark .wa-der { background-image:url("data:image/svg+xml,%3Csvg xmlns='http:
 .wa-f-btn i { width:16px; text-align:center; }
 .wa-ficha-tog.on { color:var(--wa-ver); }
 @media (max-width:1100px) { .wa-ficha { width:250px; } }
+.wa-escribir { position:relative; }
+.wa-rr { position:absolute; left:12px; right:12px; bottom:calc(100% + 6px); background:var(--wa-pan); border-radius:10px; box-shadow:0 4px 18px rgba(11,20,26,.28); max-height:260px; overflow-y:auto; z-index:30; padding:6px 0; }
+.wa-rr button { display:block; width:100%; text-align:left; border:0; background:transparent; padding:9px 16px; cursor:pointer; color:var(--wa-tx); font:inherit; } .wa-rr button.sel, .wa-rr button:hover { background:var(--wa-hov); }
+.wa-rr button b { font-size:14px; color:var(--wa-chiptx); } .wa-rr button small { display:block; font-size:12.5px; color:var(--wa-tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rr-it { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; } .rr-it input, .rr-it textarea { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px; background:var(--off,#f8fafc); color:inherit; } .rr-it textarea { margin-top:6px; resize:vertical; }
 .wa-menu { position:relative; } .wa-pop { position:absolute; right:0; top:42px; background:var(--wa-pan); border-radius:6px; box-shadow:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16); padding:8px 0; z-index:20; min-width:210px; } .wa-pop button { display:block; width:100%; text-align:left; padding:11px 22px; border:0; background:transparent; color:var(--wa-tx); font:inherit; font-size:14.5px; cursor:pointer; } .wa-pop button:hover { background:var(--wa-hov); } .wa-pop button.rojo { color:#ea0038; }
 .wa-sel-l { max-height:52vh; overflow-y:auto; border:1px solid var(--border); border-radius:10px; } .wa-sel-l label { display:flex; gap:10px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13.5px; cursor:pointer; } .wa-sel-l label small { color:var(--text-soft); margin-left:auto; white-space:nowrap; }
 @media (max-width:800px) {
@@ -12926,7 +12931,7 @@ function waPintarDerecha() {
     <div class="wa-cuerpo"><div class="wa-colchat">
     <div class="wa-msgs" id="wa-msgs"><div class="wa-vacio"><div class="au-spin"></div></div></div>
     <div class="wa-escribir"><label class="wa-ico" title="Adjuntar foto o archivo"><i class="fa-solid fa-paperclip"></i><input type="file" hidden onchange="waAdjuntar(this)"></label>
-      <textarea id="wa-txt" rows="1" placeholder="Escribe un mensaje" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
+      <textarea id="wa-txt" rows="1" placeholder="Escribe un mensaje o / para respuestas rápidas" onkeydown="if(waRRTecla(event))return;if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px';waRRMostrar()"></textarea>
       <button class="wa-enviar" title="Enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>
     </div><aside class="wa-ficha" id="wa-ficha"></aside></div>`;
   waPintarFicha();
@@ -12949,6 +12954,62 @@ function waPintarMensajes(abajo) {
     return `${sep}<div class="wa-m${m.fromMe ? ' yo' : ''}${cola ? ' cola' : ''}">${autor && cola ? `<div class="wa-autor" style="color:${clColor(autor)}">${esc(autor)}</div>` : ''}${adj}${cuerpo}<span class="wa-mh">${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}${tick}</span></div>`;
   }).join('') : '<div class="wa-vacio">Aún no hay mensajes en este chat.</div>';
   if (abajo || estabaAbajo) el.scrollTop = el.scrollHeight;
+}
+/* ── Respuestas rápidas (paso 6): escribe "/" en el chat. Firestore: config/respuestasRapidas ── */
+const WA_RR_BASE = [
+  { atajo: 'zelle', texto: 'Hola {nombre}! Puedes pagar por Zelle a:\n(tu correo o número de Zelle)\nA nombre de: DGP Global Group LLC\n\nCuando pagues, envíanos la captura por aquí y lo confirmamos. ¡Gracias!' },
+  { atajo: 'precios', texto: 'Hola {nombre}! Estos son nuestros servicios principales:\n\n• Página web: Básico desde $280, Estándar desde $455, Premium desde $950 (pago único)\n• Registro de empresa (LLC) en cualquier estado: Básico $600 y Premium $950, con fees del estado incluidos\n• Logo y marca: paquetes desde $320\n• Sistemas a la medida y CRM: te cotizamos según lo que necesites\n\n¿Cuál te interesa? Te explico con gusto.' },
+  { atajo: 'llc', texto: 'Hola {nombre}! Registramos tu empresa (LLC) en cualquier estado de EE. UU., con los fees del estado incluidos:\n\n• Básico: $600\n• Premium: $950\n\nAquí tienes todos los detalles: https://dgpglobalgroup.com/registro-de-empresas/\n\n¿En qué estado quieres registrarla?' },
+  { atajo: 'web', texto: 'Hola {nombre}! Tenemos tres planes de página web con pago único:\n\n• Básico desde $280: landing page + código QR\n• Estándar desde $455: hasta 5 páginas con WhatsApp y formulario\n• Premium desde $950: catálogo o reservas, SEO, Google Analytics y 12 meses de hosting\n\nMira los detalles: https://dgpglobalgroup.com/diseno-web/' },
+  { atajo: 'gracias', texto: '¡Gracias por tu pago, {nombre}! Ya quedó registrado. Cualquier cosa que necesites, aquí estamos.' },
+  { atajo: 'horario', texto: 'Nuestro horario de atención es de lunes a viernes de 9:00 a. m. a 6:00 p. m. (hora de Miami). Si nos escribes fuera de ese horario, te respondemos apenas abramos. ¡Gracias!' }
+];
+let _waRR = null;
+async function waRRCargar() {
+  if (_waRR) return _waRR;
+  try { const s = await db.collection('config').doc('respuestasRapidas').get();
+    if (s.exists && Array.isArray(s.data().lista)) _waRR = s.data().lista;
+    else { _waRR = WA_RR_BASE.slice(); await db.collection('config').doc('respuestasRapidas').set({ lista: _waRR }); } }
+  catch (e) { _waRR = WA_RR_BASE.slice(); }
+  return _waRR;
+}
+function waRRNombre() { const q = waQuien(_wa.chat), c = _wa.chats.find(x => x.id === _wa.chat) || {}; const n = q.nombre || ((c.name && !/^\+?\d+$/.test(c.name)) ? c.name : ''); return String(n || '').split(' ')[0]; }
+function waRRMostrar() {
+  const t = document.getElementById('wa-txt'), caja = t?.parentElement; if (!caja) return;
+  let pop = caja.querySelector('.wa-rr'); const v = t.value;
+  if (!/^\/[^\s]*$/.test(v)) { pop?.remove(); return; }
+  if (!_waRR) { waRRCargar().then(waRRMostrar); return; }
+  const q = ptNorm(v.slice(1)), L = _waRR.filter(x => ptNorm(x.atajo).startsWith(q) || (q.length > 1 && ptNorm(x.texto).includes(q)));
+  if (!pop) { pop = document.createElement('div'); pop.className = 'wa-rr'; caja.appendChild(pop); }
+  pop.innerHTML = L.length ? L.map((x, i) => `<button class="${i === 0 ? 'sel' : ''}" onmousedown="event.preventDefault();waRRUsar(${_waRR.indexOf(x)})"><b>/${esc(x.atajo)}</b><small>${esc(String(x.texto).replace(/\n/g, ' '))}</small></button>`).join('')
+    : `<div class="wa-vacio" style="padding:12px">Sin respuestas con "${esc(v)}". <a href="#" onclick="event.preventDefault();waRREditar()">Agregar</a></div>`;
+}
+function waRRTecla(e) {
+  const pop = document.querySelector('.wa-escribir .wa-rr'); if (!pop) return false;
+  const bs = [...pop.querySelectorAll('button')]; let i = bs.findIndex(b => b.classList.contains('sel'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!bs.length) return true; i = (i + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length; bs.forEach((b, k) => b.classList.toggle('sel', k === i)); bs[i].scrollIntoView({ block: 'nearest' }); return true; }
+  if ((e.key === 'Enter' || e.key === 'Tab') && bs.length) { e.preventDefault(); bs[Math.max(0, i)].dispatchEvent(new MouseEvent('mousedown')); return true; }
+  if (e.key === 'Escape') { pop.remove(); return true; }
+  return false;
+}
+function waRRUsar(k) {
+  const x = _waRR[k], t = document.getElementById('wa-txt'); if (!x || !t) return;
+  t.value = String(x.texto).replace(/\{nombre\}/g, waRRNombre()).replace(/ !/g, '!').replace(/Hola !/g, '¡Hola!');
+  document.querySelector('.wa-escribir .wa-rr')?.remove();
+  t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; t.focus();
+}
+async function waRREditar() {
+  await waRRCargar();
+  const fila = (x, i) => `<div class="rr-it"><div style="display:flex;gap:6px;align-items:center"><b style="color:#00a884">/</b><input class="rr-a" value="${esc(x.atajo)}" placeholder="atajo"><button class="hr-ico" title="Borrar" onclick="this.closest('.rr-it').remove()" style="color:#dc2626"><i class="fa-solid fa-trash"></i></button></div><textarea class="rr-t" rows="4" placeholder="Texto. Usa {nombre} para el nombre del contacto.">${esc(x.texto)}</textarea></div>`;
+  ptModal('Respuestas rápidas', 'Escribe / en el chat (o al responder en Telegram) para usarlas. {nombre} se cambia por el nombre del contacto.', `<div class="rd-form">
+    <div id="rr-lista">${_waRR.map(fila).join('')}</div>
+    <button class="ll-btn" style="background:transparent;color:#00a884;border:1px dashed #00a884" onclick="document.getElementById('rr-lista').insertAdjacentHTML('beforeend', \`${fila({ atajo: '', texto: '' }).replace(/`/g, '\\`')}\`)">+ Agregar respuesta</button>
+    <button class="ll-btn" style="background:#00a884;margin-top:8px" onclick="waRRGuardar()">Guardar</button></div>`);
+}
+async function waRRGuardar() {
+  const L = [...document.querySelectorAll('#rr-lista .rr-it')].map(d => ({ atajo: d.querySelector('.rr-a').value.trim().replace(/^\/+/, '').replace(/\s+/g, '-').toLowerCase(), texto: d.querySelector('.rr-t').value.trim() })).filter(x => x.atajo && x.texto);
+  try { await db.collection('config').doc('respuestasRapidas').set({ lista: L }); _waRR = L; closePortalModal(); toast('Respuestas rápidas guardadas ✅'); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
 /* ── Ficha del cliente al lado del chat (paso 5) ── */
 function waFichaToggle(btn) {
@@ -13066,6 +13127,7 @@ async function waAdjuntar(input) {
 }
 function waOpciones() {
   ptModal('WhatsApp', _wa.yo?.id ? 'Conectado como +' + waNum(_wa.yo.id) : 'Opciones de conexión', `<div class="rd-form">
+    <button class="ll-btn" style="background:#00a884;margin-bottom:8px" onclick="waRREditar()">Respuestas rápidas (/)</button>
     <button class="ll-btn" style="background:var(--blue)" onclick="closePortalModal();waApi('reiniciar').then(()=>{toast('Reiniciando…');setTimeout(waRevisar,4000)}).catch(e=>toast(e.message,'err'))">Reiniciar conexión</button>
     <button class="ll-btn" style="background:#dc2626;margin-top:8px" onclick="if(confirm('¿Desconectar este WhatsApp del panel? Tendrás que volver a escanear el QR.')){closePortalModal();waApi('salir').then(()=>{toast('Desconectado');_wa.estado=null;setTimeout(waRevisar,3000)}).catch(e=>toast(e.message,'err'))}">Desconectar (cerrar sesión)</button>
     <div class="ll-sub" style="margin-top:10px">Los mensajes que te lleguen también te avisan por Telegram (tema 💬 WhatsApp) y en tu celular. Responde al aviso en Telegram para contestar por WhatsApp.</div></div>`);
