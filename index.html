@@ -2737,13 +2737,29 @@ html.dark .wa-der { background-image:url("data:image/svg+xml,%3Csvg xmlns='http:
 .wa-qr { width:264px; height:264px; margin:14px auto; background:#fff; border-radius:12px; display:flex; align-items:center; justify-content:center; } .wa-qr img { width:240px; height:240px; }
 .wa-pasos { text-align:left; font-size:14px; line-height:1.7; color:var(--wa-tx2); padding-left:20px; }
 .wa-vacio { padding:30px 16px; text-align:center; color:var(--wa-tx2); font-size:14px; }
+.wa-cuerpo { flex:1; display:flex; min-height:0; } .wa-colchat { flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; }
+.wa-ficha { width:290px; flex-shrink:0; background:var(--wa-pan); border-left:1px solid var(--wa-lin); overflow-y:auto; padding:16px 16px 20px; box-sizing:border-box; font-size:13.5px; color:var(--wa-tx); }
+.wa-app.sin-ficha .wa-ficha { display:none; }
+.wa-f-nom { font-size:16px; font-weight:600; } .wa-f-tag { display:inline-block; margin-top:4px; font-size:11.5px; padding:2px 9px; border-radius:10px; background:var(--wa-chip); color:var(--wa-tx2); }
+.wa-f-saldo { margin:14px 0 6px; padding:12px 14px; border-radius:10px; background:var(--wa-chip); } .wa-f-saldo small { display:block; font-size:12px; color:var(--wa-tx2); } .wa-f-saldo b { font-size:22px; font-weight:700; } .wa-f-saldo b.ok { color:var(--wa-ver); }
+.wa-f-t { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--wa-tx2); margin:14px 0 6px; font-weight:600; }
+.wa-f-fac { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--wa-lin); } .wa-f-fac span { flex:1; min-width:0; } .wa-f-fac span b { display:block; font-size:13px; font-weight:600; } .wa-f-fac span small { display:block; font-size:12px; color:var(--wa-tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wa-f-mini { border:1px solid var(--wa-lin); background:transparent; color:var(--wa-chiptx); border-radius:14px; padding:4px 10px; font:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; } .wa-f-mini:hover { background:var(--wa-chip); }
+.wa-f-btn { display:flex; align-items:center; gap:8px; width:100%; margin-top:8px; padding:10px 12px; border-radius:8px; border:1px solid var(--wa-lin); background:transparent; color:var(--wa-tx); font:inherit; font-size:13.5px; cursor:pointer; text-align:left; } .wa-f-btn:hover { background:var(--wa-hov); } .wa-f-btn.pri { background:var(--wa-ver); border-color:var(--wa-ver); color:#fff; } html.dark .wa-f-btn.pri { color:#111b21; }
+.wa-f-btn i { width:16px; text-align:center; }
+.wa-ficha-tog.on { color:var(--wa-ver); }
+@media (max-width:1100px) { .wa-ficha { width:250px; } }
 .wa-menu { position:relative; } .wa-pop { position:absolute; right:0; top:42px; background:var(--wa-pan); border-radius:6px; box-shadow:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16); padding:8px 0; z-index:20; min-width:210px; } .wa-pop button { display:block; width:100%; text-align:left; padding:11px 22px; border:0; background:transparent; color:var(--wa-tx); font:inherit; font-size:14.5px; cursor:pointer; } .wa-pop button:hover { background:var(--wa-hov); } .wa-pop button.rojo { color:#ea0038; }
 .wa-sel-l { max-height:52vh; overflow-y:auto; border:1px solid var(--border); border-radius:10px; } .wa-sel-l label { display:flex; gap:10px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13.5px; cursor:pointer; } .wa-sel-l label small { color:var(--text-soft); margin-left:auto; white-space:nowrap; }
 @media (max-width:800px) {
   .wa-app { grid-template-columns:1fr; height:calc(100vh - 150px); border-radius:10px; } @supports (height:100dvh) { .wa-app { height:calc(100dvh - 150px); } }
   .wa-app .wa-der { display:none; } .wa-app.con-chat .wa-izq { display:none; } .wa-app.con-chat .wa-der { display:flex; } .wa-atras { display:inline-flex; }
   .wa-msgs { padding:12px 14px; } .wa-m { max-width:85%; } .wa-escribir { padding:6px 8px; }
+  .wa-cuerpo { flex-direction:column; } .wa-ficha { width:auto; max-height:46%; border-left:0; border-bottom:1px solid var(--wa-lin); order:-1; padding:12px 14px; }
+  .wa-ficha:not(.abierta) { max-height:none; overflow:hidden; } .wa-ficha:not(.abierta) .wa-f-mas { display:none; }
+  .wa-f-saldo { margin:8px 0 0; padding:8px 12px; } .wa-f-saldo b { font-size:18px; }
 }
+@media (min-width:801px) { .wa-f-res { display:none; } }
 .au-ring { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--text-mid); text-align:center; }
 .au-rings { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; }
 .au-vit { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-top:14px; }
@@ -12821,7 +12837,8 @@ function waAjustar() {
 }
 if (!window._waAjOn) { window._waAjOn = true; window.addEventListener('resize', waAjustar); window.visualViewport?.addEventListener('resize', waAjustar); }
 function waAbrir() {
-  clearInterval(_wa.timer); _wa.autoIni = true; window.scrollTo(0, 0); waAjustar(); setTimeout(waAjustar, 300);
+  clearInterval(_wa.timer); _wa.autoIni = true; window.scrollTo(0, 0);
+  try { document.getElementById('wa-app').classList.toggle('sin-ficha', localStorage.getItem('dgp-wa-ficha') === '0'); } catch (e) {} waAjustar(); setTimeout(waAjustar, 300);
   waRevisar();
   _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
 }
@@ -12904,11 +12921,15 @@ function waPintarDerecha() {
   const c = _wa.chats.find(x => x.id === _wa.chat) || { id: _wa.chat };
   const nom = waNombre(c);
   der.innerHTML = `<div class="wa-cab"><button class="wa-ico wa-atras" onclick="waVolver()"><i class="fa-solid fa-arrow-left"></i></button>${waAvatar(c)}<div style="min-width:0;flex:1"><b>${esc(nom)}</b><small>${/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : waEsGrupo(c.id) ? 'Grupo' : ''}</small></div>
+    <button class="wa-ico wa-ficha-tog${document.getElementById('wa-app').classList.contains('sin-ficha') ? '' : ' on'}" title="Ficha del cliente" onclick="waFichaToggle(this)"><i class="fa-solid fa-address-card"></i></button>
     <div class="wa-menu"><button class="wa-ico" title="Más opciones" onclick="event.stopPropagation();waMenuChat(this)"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
+    <div class="wa-cuerpo"><div class="wa-colchat">
     <div class="wa-msgs" id="wa-msgs"><div class="wa-vacio"><div class="au-spin"></div></div></div>
     <div class="wa-escribir"><label class="wa-ico" title="Adjuntar foto o archivo"><i class="fa-solid fa-paperclip"></i><input type="file" hidden onchange="waAdjuntar(this)"></label>
       <textarea id="wa-txt" rows="1" placeholder="Escribe un mensaje" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
-      <button class="wa-enviar" title="Enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>`;
+      <button class="wa-enviar" title="Enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>
+    </div><aside class="wa-ficha" id="wa-ficha"></aside></div>`;
+  waPintarFicha();
 }
 function waPintarMensajes(abajo) {
   const el = document.getElementById('wa-msgs'); if (!el) return;
@@ -12928,6 +12949,69 @@ function waPintarMensajes(abajo) {
     return `${sep}<div class="wa-m${m.fromMe ? ' yo' : ''}${cola ? ' cola' : ''}">${autor && cola ? `<div class="wa-autor" style="color:${clColor(autor)}">${esc(autor)}</div>` : ''}${adj}${cuerpo}<span class="wa-mh">${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}${tick}</span></div>`;
   }).join('') : '<div class="wa-vacio">Aún no hay mensajes en este chat.</div>';
   if (abajo || estabaAbajo) el.scrollTop = el.scrollHeight;
+}
+/* ── Ficha del cliente al lado del chat (paso 5) ── */
+function waFichaToggle(btn) {
+  const a = document.getElementById('wa-app'); const oculta = a.classList.toggle('sin-ficha'); btn.classList.toggle('on', !oculta);
+  try { localStorage.setItem('dgp-wa-ficha', oculta ? '0' : '1'); } catch (e) {}
+}
+function waQuien(chatId) {
+  const num = /@c\.us$/.test(chatId || '') ? waNum(chatId) : '';
+  const igual = t => { const d = String(t || '').replace(/\D/g, ''); return num && d.length >= 7 && (num.endsWith(d.slice(-10)) || d.endsWith(num.slice(-10))); };
+  if (!num) return { num: '' };
+  const al = (_al.lista || []).find(a => igual(a.telefono)); if (al) return { num, aliado: al, nombre: al.nombre };
+  const c = clientesList.find(x => igual(x.telefono)); if (c) return { num, cliente: c, nombre: clNombre(c) };
+  const p = portalesList.find(x => igual(x.telefono)); if (p) return { num, cliente: clientesList.find(x => ptNorm(clNombre(x)) === ptNorm(p.nombre)) || null, nombre: p.nombre };
+  return { num };
+}
+function waDeudas(q) {
+  return Object.entries(docsMap).map(([id, d]) => ({ ...d, _fsId: id })).filter(d => d.type === 'factura' && saldoReal(d) > 0.009 && (q.aliado
+    ? (d.aliadoId === q.aliado._id || ptNorm(d.aliado || d.cli) === ptNorm(q.aliado.nombre))
+    : ptNorm(d.cli) === ptNorm(q.nombre))).sort((a, b) => (cbFecha(a.createdAt)?.getTime() || 0) - (cbFecha(b.createdAt)?.getTime() || 0));
+}
+async function waPintarFicha() {
+  const el = document.getElementById('wa-ficha'); if (!el || !_wa.chat) return;
+  if (waEsGrupo(_wa.chat)) { el.innerHTML = '<div class="wa-f-nom">Grupo</div><div class="wa-f-tag">Sin ficha</div>'; return; }
+  if (!_al.lista) { await aliadoParaFactura('').catch(() => {}); }
+  const q = waQuien(_wa.chat), c = _wa.chats.find(x => x.id === _wa.chat) || {};
+  if (!q.nombre) {
+    const nom = (c.name && !/^\+?\d+$/.test(c.name)) ? c.name : '';
+    el.innerHTML = `<div class="wa-f-nom">${esc(nom || (q.num ? '+' + q.num : 'Contacto'))}</div><div class="wa-f-tag">No está registrado</div>
+      ${q.num ? `<div class="wa-f-mas"><button class="wa-f-btn pri" onclick="waGuardarComo('cliente')"><i class="fa-solid fa-user-plus"></i> Guardar como cliente</button>
+      <button class="wa-f-btn" onclick="waGuardarComo('prospecto')"><i class="fa-solid fa-bullseye"></i> Guardar como prospecto</button></div>` : '<p style="font-size:12.5px;color:var(--wa-tx2)">WhatsApp oculta el número de este contacto; no se puede buscar en tus clientes.</p>'}`;
+    return;
+  }
+  const D = waDeudas(q), total = D.reduce((a, d) => a + saldoReal(d), 0);
+  const dias = d => { const f = cbFecha(d.createdAt); return f ? Math.floor((Date.now() - f.getTime()) / 864e5) : null; };
+  el.innerHTML = `<div class="wa-f-nom">${esc(q.nombre)}</div><div class="wa-f-tag">${q.aliado ? 'Aliado' : 'Cliente'}</div>
+    <div class="wa-f-saldo"><small>Saldo pendiente${D.length ? ` · ${D.length} factura${D.length > 1 ? 's' : ''}` : ''}</small><b class="${total > 0.009 ? '' : 'ok'}">${total > 0.009 ? cbMoney(total) : 'Al día'}</b></div>
+    <div class="wa-f-mas">
+    ${D.length ? `<div class="wa-f-t">Facturas pendientes</div>${D.map(d => { const n = dias(d); return `<div class="wa-f-fac"><span><b>${esc(d.docId || 'Factura')} · ${cbMoney(saldoReal(d))}</b><small>${q.aliado && (d.clienteFinal || d.cli !== q.aliado.nombre) ? esc(d.clienteFinal || d.cli) + ' · ' : ''}${d.pausada ? 'en pausa' : (d.montoPagado > 0 ? 'abonó ' + cbMoney(d.montoPagado) + ' · ' : '') + (n !== null ? (n === 0 ? 'hoy' : 'hace ' + n + ' día' + (n > 1 ? 's' : '')) : '')}</small></span><button class="wa-f-mini" onclick="waFichaEnviar('${d._fsId}')">Enviar</button></div>`; }).join('')}
+      <button class="wa-f-btn pri" onclick="waFichaEnviar()"><i class="fa-solid fa-link"></i> Enviar link de pago${D.length > 1 ? ' (todas)' : ''}</button>` : ''}
+    ${q.cliente ? `<button class="wa-f-btn" onclick="nuevaFacturaPara('${q.cliente._id}')"><i class="fa-solid fa-file-invoice-dollar"></i> Nueva factura</button>
+      <button class="wa-f-btn" onclick="abrirFichaCliente('${q.cliente._id}')"><i class="fa-solid fa-user"></i> Ver cliente</button>` : ''}
+    ${q.aliado ? `<button class="wa-f-btn" onclick="irAPagina('aliados')"><i class="fa-solid fa-handshake"></i> Ver aliados</button>` : ''}</div>
+    ${D.length ? '<button class="wa-f-btn wa-f-res" onclick="this.parentElement.classList.toggle(\'abierta\');this.innerHTML=this.parentElement.classList.contains(\'abierta\')?\'Ocultar\':\'Ver facturas y opciones\'">Ver facturas y opciones</button>' : ''}`;
+}
+async function waFichaEnviar(fsId) {
+  const q = waQuien(_wa.chat); if (!q.nombre) return;
+  const D = waDeudas(q).filter(d => !fsId || d._fsId === fsId); if (!D.length) return;
+  const nombre = String(q.nombre).split(' ')[0], en = D.every(d => d.idioma === 'en');
+  const L = D.map(d => `• ${d.docId || 'Factura'}${q.aliado && (d.clienteFinal || d.cli !== q.aliado.nombre) ? ` (${d.clienteFinal || d.cli})` : ''}: ${cbMoney(saldoReal(d))}${d.montoPagado > 0 ? (en ? ` left (of ${cbMoney(d.total)})` : ` por pagar (de ${cbMoney(d.total)})`) : ''}\n${location.origin}/factura-publica.html?id=${d._fsId}${en ? '&lang=en' : ''}`).join('\n\n');
+  const texto = en ? `Hi ${nombre}! Here ${D.length > 1 ? 'are your invoices' : 'is your invoice'} from DGP Global Group:\n\n${L}\n\nFrom the link you can see the payment methods and upload your receipt. Thank you!`
+    : `Hola ${nombre}! Te comparto ${D.length > 1 ? 'tus facturas' : 'tu factura'} de DGP Global Group:\n\n${L}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. ¡Gracias!`;
+  const t = document.getElementById('wa-txt'); if (t) { t.value = texto; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; t.focus(); }
+  toast('Mensaje listo: revísalo y toca enviar');
+}
+async function waGuardarComo(tipo) {
+  const q = waQuien(_wa.chat), c = _wa.chats.find(x => x.id === _wa.chat) || {};
+  const nombre = prompt('Nombre:', (c.name && !/^\+?\d+$/.test(c.name)) ? c.name : ''); if (!nombre) return;
+  const tel = '+' + q.num;
+  try {
+    if (tipo === 'prospecto') { await prImportar([{ nombre: nombre.trim(), telefono: tel, servicio: '', mensaje: 'Escribió por WhatsApp' }]); }
+    else { const p = nombre.trim().split(/\s+/); await db.collection('clientes').add({ nombre: p[0], apellido: p.slice(1).join(' '), telefono: tel, correo: '', origen: 'whatsapp', createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); toast('Cliente guardado ✅'); }
+    setTimeout(waPintarFicha, 1500);
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
 function waMenuChat(btn) {
   const caja = btn.parentElement; const ya = caja.querySelector('.wa-pop'); if (ya) { ya.remove(); return; }
