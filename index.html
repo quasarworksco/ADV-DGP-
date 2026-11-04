@@ -5273,7 +5273,7 @@ function alEstadoCuenta(id) {
     `Proyectos: ${r.docs.length}\nFacturado: ${_alUsd(r.facturado)}\nPagado: ${_alUsd(r.cobrado)}\nPendiente: ${_alUsd(r.pendiente)}\nHosting activos de tus clientes: ${r.hosting}` +
     (lineas.length ? `\n\nFacturas pendientes:\n${lineas.join('\n')}` : '\n\nTodo al día. ¡Gracias!') + `\n\nDGP Global Group`;
   const tel = String(a.telefono || '').replace(/\D/g, ''); const t = tel.length === 10 ? '1' + tel : tel;
-  window.open(`https://wa.me/${t}?text=${encodeURIComponent(msg)}`, '_blank');
+  waCompartir(t, msg, a.nombre);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -5399,7 +5399,7 @@ function prWhatsApp(id, lang) {
   const p = _pr.lista.find(x => x._id === id); if (!p) return;
   const tel = _prTel(p.telefono);
   if (!tel) return toast('Este prospecto no tiene un teléfono válido', 'err');
-  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(prMensaje(p, lang))}`, '_blank');
+  waCompartir(tel, prMensaje(p, lang), p.nombre);
   const cambios = { intentos: (p.intentos || 0) + 1, contactadoAt: firebase.firestore.Timestamp.now() };
   if (!p.estado || p.estado === 'nuevo') cambios.estado = 'contactado';
   prGuardar(id, cambios);
@@ -9344,6 +9344,32 @@ function descargarPDF(fsId) {
   });
 }
 
+
+/* ═══ Enviar al WhatsApp del cliente: directo desde el WhatsApp del panel si está conectado; si no, abre WhatsApp ═══ */
+let _waEnvio = { ok: null, at: 0 };
+async function waPanelListo() {
+  if (Date.now() - _waEnvio.at < 60000 && _waEnvio.ok !== null) return _waEnvio.ok;
+  try { const d = await waApi('estado'); _waEnvio = { ok: d.estado === 'WORKING', at: Date.now() }; } catch (e) { _waEnvio = { ok: false, at: Date.now() }; }
+  return _waEnvio.ok;
+}
+function waTelIntl(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d.length >= 11 ? d : ''; }
+async function waCompartir(telRaw, texto, nombre) {
+  const tel = waTelIntl(telRaw);
+  const abrir = () => window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, '_blank');
+  if (!tel || !(await waPanelListo())) { if (!tel) toast('Este cliente no tiene teléfono guardado: elige el chat en WhatsApp'); return abrir(); }
+  window._waCompAbrir = abrir;
+  ptModal('Enviar por WhatsApp', `${nombre ? esc(nombre) + ' · ' : ''}+${tel}`, `<div class="rd-form">
+    <textarea id="wa-comp-txt" rows="9" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:13.5px;line-height:1.45;background:var(--off,#f8fafc);color:inherit;resize:vertical">${esc(texto)}</textarea>
+    <button class="ll-btn" id="wa-comp-btn" style="background:#00a884;margin-top:10px" onclick="waCompartirEnviar('${tel}')"><i class="fa-brands fa-whatsapp"></i> Enviar ahora desde el WhatsApp del panel</button>
+    <button class="ll-btn" style="background:#fff;color:#334155;border:1px solid #cbd5e1;margin-top:8px" onclick="closePortalModal();window._waCompAbrir()">Abrir en mi WhatsApp</button></div>`);
+}
+async function waCompartirEnviar(tel) {
+  const b = document.getElementById('wa-comp-btn'), texto = (document.getElementById('wa-comp-txt')?.value || '').trim(); if (!texto) return;
+  b.disabled = true; b.textContent = 'Enviando…';
+  try { await waApi('enviar', { chatId: tel + '@c.us', texto }); closePortalModal(); toast('Enviado por WhatsApp ✅'); }
+  catch (e) { b.disabled = false; b.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Reintentar'; toast('No se pudo enviar: ' + e.message, 'err'); }
+}
+
 function enviarWhatsApp(fsId) {
   facturaVuela();
   const doc = docsMap[fsId];
@@ -9363,8 +9389,9 @@ function enviarWhatsApp(fsId) {
     `*Servicios:*\n${items}\n\n` +
     `💰 *Total: $${(doc.total || 0).toFixed(2)}*\n` +
     `${estado}\n\n` +
+    `${doc.pagado ? 'Ver tu recibo' : 'Ver y pagar tu factura'}: https://adv.dgp-link.com/factura-publica.html?id=${fsId}\n\n` +
     `_DGP Global Group — dgpglobalgroup.com_`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  waCompartir(cotTelefono(doc.cli || ''), msg, doc.cli);
 }
 
 function enviarEmail(fsId) {
@@ -10162,7 +10189,7 @@ function renderPortalDetail() {
       <div class="pt-head-actions">
         <button class="pt-hbtn" onclick="navigator.clipboard.writeText('${esc(p._id)}');toast('Código copiado')">${PT_ICON.copy} Copiar código</button>
         <button class="pt-hbtn" onclick="navigator.clipboard.writeText('${esc(acceso)}');toast('Link de acceso copiado')">${PT_ICON.link} Copiar link directo</button>
-        <a class="pt-hbtn" href="https://wa.me/${tel}?text=${waMsg}" target="_blank" rel="noopener">${PT_ICON.wa} Enviar por WhatsApp</a>
+        <button class="pt-hbtn" onclick="waCompartir('${tel}', decodeURIComponent('${waMsg.replace(/'/g, '%27')}'), '${esc(p.nombre || '').replace(/'/g, '')}')">${PT_ICON.wa} Enviar por WhatsApp</button>
         <a class="pt-hbtn" href="${esc(acceso)}" target="_blank" rel="noopener">${PT_ICON.ext} Ver como cliente</a>
       </div>
     </div>
@@ -11288,7 +11315,7 @@ function cotTelefono(nombre) {
 function enviarCotizacionWA(id) {
   const c = cotizacionesList.find(x => x._id === id) || { _id: id };
   const txt = encodeURIComponent(`Hola${c.cli ? ' ' + c.cli.split(' ')[0] : ''}! Aquí está tu cotización de DGP Global Group por $${(c.total || 0).toFixed(2)}:\n${COT_URL}${id}\n\nPuedes revisarla y aceptarla directamente desde el enlace.`);
-  window.open(`https://wa.me/${cotTelefono(c.cli)}?text=${txt}`, '_blank');
+  waCompartir(cotTelefono(c.cli || ''), decodeURIComponent(txt), c.cli);
 }
 async function guardarCotizacion() {
   const cli  = document.getElementById('cli-nom').value.trim();
@@ -11538,7 +11565,7 @@ function recordarPago(i) {
   if (!x) return;
   const links = x.docs.slice(0, 5).map(d => `• ${d.docId || ''}: ${cbMoney(cbSaldo(d))}\n  https://adv.dgp-link.com/factura-publica.html?id=${d._fsId}`).join('\n');
   const txt = `Hola ${x.nombre.split(' ')[0]}! Te escribimos de DGP Global Group para recordarte que tienes un saldo pendiente de ${cbMoney(x.saldo)}:\n\n${links}\n\nDesde cada enlace puedes ver los métodos de pago y subir tu comprobante. ¡Gracias!`;
-  window.open(`https://wa.me/${cotTelefono(x.nombre)}?text=${encodeURIComponent(txt)}`, '_blank');
+  waCompartir(cotTelefono(x.nombre), txt, x.nombre);
 }
 
 /* ═══════════════════════════════════════════════════════
