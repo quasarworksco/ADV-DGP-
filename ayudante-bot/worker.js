@@ -734,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04i';
+const WORKER_VERSION = '2026-11-04j';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1750,7 +1750,17 @@ async function handleWAWebhook(request, env, ctx) {
       const nombre = p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '';
       const numero = de.split('@')[0];
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
-      const html = `💬 <b>WhatsApp de ${escHtml(nombre || '+' + numero)}</b>${nombre && /^\d+$/.test(numero) ? ` · +${escHtml(numero)}` : ''}\n\n${escHtml(String(texto).slice(0, 1500))}\n\n↩️ <i>Responde a este mensaje para contestarle por WhatsApp.</i>`;
+      // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
+      // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
+      const clave = 'waAviso:' + de;
+      if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
+      if (env.CACHE) await env.CACHE.put(clave, '1', { expirationTtl: 180 }).catch(() => {});
+      const t = String(texto).trim(), enlaces = (t.match(/https?:\/\/\S+/g) || []).length;
+      const spam = enlaces >= 3 || /chat\.whatsapp\.com\//i.test(t) && enlaces >= 2;
+      const cuerpoAviso = spam ? `🔗 <i>Mensaje con ${enlaces} enlaces (parece spam o difusión). Revísalo en el panel si te interesa.</i>`
+        : t.length > 280 ? `${escHtml(t.slice(0, 160).replace(/\s+\S*$/, ''))}… <i>(mensaje largo · ${t.length} caracteres, léelo completo en el panel)</i>`
+        : escHtml(t);
+      const html = `💬 <b>WhatsApp de ${escHtml(nombre || '+' + numero)}</b>${nombre && /^\d+$/.test(numero) ? ` · +${escHtml(numero)}` : ''}\n\n${cuerpoAviso}\n\n↩️ <i>Responde a este mensaje para contestarle por WhatsApp. Si sigue escribiendo, no te aviso de nuevo por 3 minutos.</i>`;
       const env2 = await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: html, parse_mode: 'HTML', disable_web_page_preview: true }).catch(() => null);
       if (env2?.result?.message_id) { const token = await firebaseLogin(env); await fsGuardar(env, `tgMap/${env2.result.message_id}`, { tipo: 'wa', chatId: de, nombre: nombre || '+' + numero }, token).catch(() => {}); }
     } else if (ev.event === 'session.status') {
