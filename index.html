@@ -12774,7 +12774,7 @@ async function waCargarChats(forzar) {
 }
 function waTab(t, btn) {
   _wa.tab = t; document.querySelectorAll('.wa-tabs button').forEach(b => b.classList.toggle('on', b === btn));
-  if (t === 'grupos' && !_wa.grupos) waApi('grupos').then(d => { _wa.grupos = Array.isArray(d.grupos) ? d.grupos : Object.values(d.grupos || {}); waPintarLista(); }).catch(e => toast(e.message, 'err'));
+  if (t === 'grupos' && !_wa.grupos && _wa.estado === 'WORKING') waApi('grupos').then(d => { _wa.grupos = Array.isArray(d.grupos) ? d.grupos : Object.values(d.grupos || {}); waPintarLista(); }).catch(e => toast(e.message, 'err'));
   waPintarLista();
 }
 function waPintarLista() {
@@ -12810,9 +12810,10 @@ function waPintarDerecha() {
   if (_wa.estado === 'ERR') { der.innerHTML = `<div class="wa-centro"><i class="fa-solid fa-plug-circle-xmark" style="font-size:44px;color:#dc2626"></i><h3>No hay conexión con el servidor de WhatsApp</h3><p>${esc(_wa.err || '')}</p><p>Revisa que la máquina de Google Cloud esté encendida.</p><button class="hr-btn" onclick="waRevisar()">Reintentar</button></div>`; return; }
   if (_wa.estado && _wa.estado !== 'WORKING') {
     der.innerHTML = `<div class="wa-centro"><h3>Conecta tu WhatsApp</h3>
-      <div class="wa-qr" id="wa-qr">${_wa.estado === 'SCAN_QR_CODE' ? '<div class="au-spin"></div>' : `<div style="color:var(--text-soft);font-size:13px">${_wa.estado === 'STARTING' ? 'Iniciando…' : 'Preparando…'}</div>`}</div>
+      <div class="wa-qr" id="wa-qr">${_wa.estado === 'SCAN_QR_CODE' ? (_wa.qrImg ? `<img src="${_wa.qrImg}" alt="Código QR">` : '<div class="au-spin"></div>') : `<div style="color:var(--text-soft);font-size:13px">${_wa.estado === 'STARTING' ? 'Iniciando…' : 'Preparando…'}</div>`}</div>
       <ol class="wa-pasos"><li>Abre <b>WhatsApp Business</b> en el celular del número que vas a usar.</li><li>Toca <b>⋮ / Ajustes → Dispositivos vinculados → Vincular dispositivo</b>.</li><li>Apunta la cámara a este código. Se actualiza solo.</li></ol></div>`;
-    if (_wa.estado === 'SCAN_QR_CODE' && Date.now() - _wa.qrAt > 15000) { _wa.qrAt = Date.now(); waApi('qr').then(d => { const q = document.getElementById('wa-qr'); if (q && d.qr) q.innerHTML = `<img src="${d.qr}" alt="Código QR">`; }).catch(() => {}); }
+    if (_wa.estado === 'SCAN_QR_CODE' && Date.now() - _wa.qrAt > 15000) { _wa.qrAt = Date.now(); waApi('qr').then(d => { if (!d.qr) return; _wa.qrImg = d.qr; const q = document.getElementById('wa-qr'); if (q) q.innerHTML = `<img src="${d.qr}" alt="Código QR">`; }).catch(() => { _wa.qrAt = 0; }); }
+    else if (_wa.estado !== 'SCAN_QR_CODE') _wa.qrImg = null;
     return;
   }
   if (!_wa.chat) { der.innerHTML = `<div class="wa-centro"><i class="fa-brands fa-whatsapp" style="font-size:60px;color:#25d366"></i><h3>WhatsApp de DGP Global Group</h3><p>Elige un chat de la izquierda, o escribe un número con código de país para empezar uno nuevo.</p></div>`; return; }
