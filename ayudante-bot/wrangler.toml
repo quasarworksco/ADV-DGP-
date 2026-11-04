@@ -13,6 +13,11 @@ region = "gcp:us-central1"
 [ai]
 binding = "AI"
 
+# Guarda la sesión de Firebase para no iniciar sesión en cada aviso
+[[kv_namespaces]]
+binding = "CACHE"
+id = "ad3517fe9c134a0db50c33e33c81e875"
+
 [triggers]
 # UTC: publicación automática (revisa cada hora, a los :30) · resumen mensual (día 1) · resumen diario 11:00 (7:00 VE) · respaldo domingo 12:00 · briefing lunes 12:00 (8:00 VE)
 crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN", "0 12 * * MON", "30 * * * *"]

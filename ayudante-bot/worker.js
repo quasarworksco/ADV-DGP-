@@ -370,9 +370,29 @@ async function enviarResumenMensual(env) {
 // Las reglas de Firestore solo dejan listar facturas al equipo: el bot inicia
 // sesión con una cuenta del equipo (registrada en /accesos).
 // Secretos en Cloudflare: FB_EMAIL y FB_PASSWORD.
+// La sesión se guarda ~50 min (memoria + KV) y se renueva con el refreshToken:
+// así no se pide la contraseña en cada aviso (Google limita esos inicios de sesión).
+let _fbSes = null;
 async function firebaseLogin(env) {
   if (!env.FB_EMAIL || !env.FB_PASSWORD) throw new Error('Faltan los secretos FB_EMAIL / FB_PASSWORD');
   const apiKey = env.FB_API_KEY || 'AIzaSyAFI1WRnS5VvFKp8sAuYiIsiT_wXdnNMKc';
+  const ahora = Date.now();
+  if (_fbSes && _fbSes.exp > ahora) return _fbSes.idToken;
+  if (!_fbSes && env.CACHE) _fbSes = await env.CACHE.get('fbSesion', 'json').catch(() => null);
+  if (_fbSes && _fbSes.exp > ahora) return _fbSes.idToken;
+  const guardar = async (idToken, refreshToken, segs) => {
+    _fbSes = { idToken, refreshToken, exp: ahora + Math.max(60, (Number(segs) || 3600) - 600) * 1000 };
+    if (env.CACHE) await env.CACHE.put('fbSesion', JSON.stringify(_fbSes), { expirationTtl: 30 * 86400 }).catch(() => {});
+    return idToken;
+  };
+  if (_fbSes?.refreshToken) {
+    const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(_fbSes.refreshToken)
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok && d.id_token) return guardar(d.id_token, d.refresh_token, d.expires_in);
+  }
   const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -380,7 +400,7 @@ async function firebaseLogin(env) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error('Login Firebase: ' + (data.error?.message || res.status));
-  return data.idToken;
+  return guardar(data.idToken, data.refreshToken, data.expiresIn);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -714,7 +734,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04e';
+const WORKER_VERSION = '2026-11-04f';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
