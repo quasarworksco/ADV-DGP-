@@ -2692,6 +2692,23 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .user-avatar.con-foto > svg { visibility:hidden; }
 .hr-p-pausa { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
 html.dark .hr-p-pausa { background:#1e293b; color:#cbd5e1; border-color:#334155; }
+.au-ring { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--text-mid); text-align:center; }
+.au-rings { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; }
+.au-vit { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-top:14px; }
+.au-vit div { background:var(--off,#f8fafc); border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
+.au-vit small { display:block; font-size:10.5px; color:var(--text-soft); } .au-vit b { font-size:15px; }
+.au-mej { display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.45; padding:7px 0; border-top:1px solid var(--border); color:var(--text-mid); }
+.au-mej:first-of-type { border-top:0; }
+.au-pri { flex-shrink:0; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; border-radius:20px; padding:3px 8px; margin-top:1px; }
+.au-pri.alta { background:#fef2f2; color:#b91c1c; } .au-pri.media { background:#fffbeb; color:#b45309; } .au-pri.baja { background:#f1f5f9; color:#475569; }
+.au-ck { display:flex; gap:8px; font-size:12.5px; padding:3px 0; color:var(--text-mid); } .au-ck span { font-weight:800; width:14px; }
+.au-ck.ok span { color:#059669; } .au-ck.no span { color:#dc2626; } .au-ck.no { color:var(--black); }
+.au-h { display:flex; align-items:center; gap:12px; width:100%; padding:10px; border:0; background:transparent; border-radius:10px; cursor:pointer; color:inherit; font:inherit; }
+.au-h:hover { background:var(--off,#f8fafc); } .au-h b { display:block; font-size:13px; } .au-h small { font-size:11.5px; color:var(--text-soft); }
+.au-hp { width:38px; height:38px; border-radius:10px; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.au-spin { width:38px; height:38px; margin:0 auto; border:4px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:auGira 1s linear infinite; }
+@keyframes auGira { to { transform:rotate(360deg); } }
+@media (max-width:800px) { .au-form { grid-template-columns:1fr !important; } .au-grid { grid-template-columns:1fr !important; } #au-top { grid-template-columns:1fr !important; justify-items:center; text-align:center; } }
 .av-row { display:flex; align-items:center; gap:2px; }
 .av-row .av-it { flex:1; min-width:0; }
 .av-x { flex-shrink:0; width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -3011,7 +3028,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-tab" onclick="switchPage('resenasweb', this)">
     <i class="fa-solid fa-star"></i> Reseñas web<span id="resenasweb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
-  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)">
+  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)" hidden style="display:none">
     <i class="fa-solid fa-square-poll-vertical"></i> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('smm', this)">
@@ -3019,6 +3036,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   </button>
   <button class="nav-tab" onclick="switchPage('metaads', this)">
     <i class="fa-brands fa-meta"></i> Meta Ads
+  </button>
+  <button class="nav-tab" onclick="switchPage('auditoria', this)">
+    <i class="fa-solid fa-magnifying-glass-chart"></i> Auditoría de sitios
   </button>
   <button class="nav-tab" onclick="switchPage('miweb', this)">
     <i class="fa-solid fa-globe"></i> Mi web
@@ -3202,7 +3222,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
             <button class="hist-filter-btn" data-filter="mes" onclick="setHistFilter('mes',this)">Pagadas este mes</button>
             <button class="hist-filter-btn" data-filter="aliados" onclick="setHistFilter('aliados',this)">De aliados</button>
           </div>
-          <div class="hist-filters" id="hist-emisor-filters" style="margin-top:6px;"></div>
+          <div class="hist-filters" id="hist-emisor-filters" style="display:none"></div>
         </div>
         <div id="hist-list"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:24px 0;">Sin documentos registrados aún</div></div>
       </div>
@@ -3463,6 +3483,24 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-auditoria" class="page">
+  <div class="proy-main" style="max-width:1100px;">
+    <div class="proy-header">
+      <div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Auditoría de sitios</div>
+        <div style="font-size:11px;color:var(--text-soft);">Pega el enlace de cualquier página web y en unos 30 segundos ves su velocidad, cómo está en Google y en el celular, y qué mejorar. Ideal para mostrarle al cliente y venderle la mejora.</div>
+      </div>
+    </div>
+    <div class="cb-card au-form" style="padding:16px;display:grid;grid-template-columns:2fr 1.2fr auto;gap:10px;align-items:end;margin-bottom:16px">
+      <div class="ff" style="margin:0"><label>Página web</label><input id="au-url" placeholder="ejemplo.com" onkeydown="if(event.key==='Enter')auditar()"></div>
+      <div class="ff" style="margin:0"><label>Cliente o prospecto (opcional)</label><input id="au-cli" list="au-cli-l" placeholder="Nombre"><datalist id="au-cli-l"></datalist></div>
+      <button class="btn-logout" id="au-btn" onclick="auditar()" style="background:var(--blue);color:#fff;border-color:var(--blue);height:42px;padding:0 22px">Analizar</button>
+    </div>
+    <div id="au-res"></div>
+    <div id="au-hist"></div>
+  </div>
+</div>
+
 <div id="page-webs" class="page">
   <div class="proy-main" style="max-width:1100px;">
     <div class="proy-header">
@@ -4563,6 +4601,7 @@ function switchPage(page, btn) {
   if (page === 'metaads')    renderMetaAds();
   if (page === 'smm')        renderSmm();
   if (page === 'miweb')      renderMiWeb();
+  if (page === 'auditoria')  renderAuditorias();
   if (page === 'contenido')  renderContenido();
   if (page === 'autopilot')  renderAutopilot();
   if (page === 'prospectos') renderProspectos();
@@ -7591,7 +7630,7 @@ function initDocs() {
             toast(`Contrato firmado — ${doc.cliente || doc.docId || ''}`, 'ok');
             _addNotifBadge();
           }
-          if (doc.encuestaCompletada && !prev.encuestaCompletada) {
+          if (false && doc.encuestaCompletada && !prev.encuestaCompletada) {   // encuestas desactivadas
             const b = document.getElementById('encuestas-badge');
             if (b) { b.textContent = '+1'; b.style.display = 'inline'; }
             toast(`Nueva encuesta completada — ${doc.cliente || doc.docId || ''}`, 'ok');
@@ -7995,7 +8034,6 @@ function openSheet(doc) {
   const mas = `<div class="sa-row sa-more">
       ${B('ghost', 'window.print()', I.print, 'Imprimir / PDF')}
       ${B('ghost', `guardarComoPlantilla('${id}')`, I.save, 'Guardar plantilla')}
-      ${isRecibo ? B('ghost', `copiarLinkEncuesta('${id}')`, I.star, 'Link de encuesta') : ''}
       ${isParcial && fsId ? B('ghost', `abrirCerrarFactura('${id}')`, I.lock, 'Cerrar con lo pagado') : ''}
       ${(isFactura || isParcial) && fsId && !doc.pausada ? B('ghost', `abrirPausaFactura('${id}')`, I.pausa, 'Pausar factura') : ''}
       ${fsId && ((doc.montoPagado || 0) > 0.009 || isRecibo) ? B('ghost', `abrirDevolucion('${id}')`, I.dev, 'Registrar devolución') : ''}
@@ -8504,7 +8542,7 @@ function renderHistorial() {
   else if (histFilter === 'vencidas') allDocs = allDocs.filter(d => !d.pagado && d.type !== 'recibo' && histDias(d) > 15);
   else if (histFilter === 'mes') { const ym = new Date().toISOString().slice(0, 7); allDocs = allDocs.filter(d => (d.pagado || d.type === 'recibo') && _fechaIso(d.fechaPago || d.fecha).startsWith(ym)); }
   else if (histFilter === 'aliados') allDocs = allDocs.filter(d => !!d.aliadoId);
-  if (histEmisorFilter !== 'todos') allDocs = allDocs.filter(d => d.emisor === histEmisorFilter);
+  histEmisorFilter = 'todos';   // ya no se filtra por emisor: todas las facturas salen a nombre de Andrés
 
   if (!allDocs.length) {
     container.innerHTML = q || histFilter !== 'todos' || histEmisorFilter !== 'todos'
@@ -8535,7 +8573,7 @@ function renderHistorial() {
     return `<div class="hr-row" onclick="openSheetById('${id}')" title="Abrir ${esc(d.docId || '')}">
       <span class="hr-pill ${pill[1]}">${pill[0]}</span>
       <div class="hr-main">
-        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.emisor ? `<span class="emisor-tag" style="margin:0;">${esc(d.emisor.split(' ')[0])}</span>` : ''}${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Enviada</span>` : ''}${etiquetaApertura(d)}</div>
+        <div class="hr-top"><span class="hr-id">${esc(d.docId || d._fsId)}</span>${d.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${comps && grupo !== 'pagado' ? `<span class="hr-clip" title="${comps} comprobante(s) subido(s)">${HR_ICON.clip}${comps}</span>` : ''}${(d.correos || []).length ? `<span class="emisor-tag" style="margin:0;background:#f0fdf4;color:#047857;border-color:rgba(5,150,105,.2);" title="Enviada por correo a ${esc(d.correos[d.correos.length - 1].para)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Enviada</span>` : ''}${etiquetaApertura(d)}</div>
         <div class="hr-cli">${esc(d.cli || '—')}</div>
         <div class="hr-srv">${esc(servicios)}</div>
       </div>
@@ -10664,7 +10702,6 @@ function avisosCalcular() {
     { n: susPronto.length, t: 'Suscripciones por vencer', d: 'En los próximos 7 días', ir: 'suscripciones', c: '#ca8a04', ico: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
     { n: vencidas.length, t: 'Facturas con más de 15 días', d: 'Pendientes de cobro', ir: 'facturacion', c: '#ea580c', ico: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
     { n: _avBadge('resenasweb-badge'), t: 'Reseñas web por aprobar', d: 'Antes de que salgan en tu web', ir: 'resenasweb', c: '#db2777', ico: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
-    { n: _avBadge('encuestas-badge'), t: 'Encuestas nuevas', d: 'Respuestas de clientes', ir: 'encuestas', c: '#059669', ico: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' }
   ];
   // Los que descartaste no salen, salvo que llegue algo nuevo (el número sube)
   const oc = _avOcultos();
@@ -11041,7 +11078,7 @@ function cerrarBuscador() {
 }
 function _bsPintar(texto) {
   const n = ptNorm(texto || ''), has = t => !n || ptNorm(t).includes(n);
-  const secciones = [...document.querySelectorAll('.nav-tab')].map(b => { const m = (b.getAttribute('onclick') || '').match(/switchPage\('([a-z]+)'/); return m ? { t: [...b.childNodes].filter(n => !(n.nodeType === 1 && /badge/.test(n.id || ''))).map(n => n.textContent).join('').trim().replace(/\s+/g, ' '), d: 'Sección', tipo: 'seccion', fn: () => b.click() } : null; })
+  const secciones = [...document.querySelectorAll('.nav-tab')].filter(b => !b.hidden).map(b => { const m = (b.getAttribute('onclick') || '').match(/switchPage\('([a-z]+)'/); return m ? { t: [...b.childNodes].filter(n => !(n.nodeType === 1 && /badge/.test(n.id || ''))).map(n => n.textContent).join('').trim().replace(/\s+/g, ' '), d: 'Sección', tipo: 'seccion', fn: () => b.click() } : null; })
     .filter(Boolean).filter((x, i, a) => a.findIndex(y => y.t === x.t) === i);
   const acciones = _bsAcciones().map(a => ({ ...a, tipo: 'accion' }));
   const grupos = [];
@@ -12646,6 +12683,94 @@ async function cambiarAuto(k, on) {
   try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
   catch (e) { toast('No se pudo guardar.', 'err'); }
 }
+/* ═══════════════════════════════════════════════════════
+   AUDITORÍA DE SITIOS (el bot analiza; Firestore: auditorias)
+═══════════════════════════════════════════════════════ */
+let _au = { lista: null, actual: null };
+async function renderAuditorias(fresco) {
+  const dl = document.getElementById('au-cli-l'); if (dl && !dl.children.length) dl.innerHTML = clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('');
+  if (!_au.lista || fresco) {
+    try { const s = await db.collection('auditorias').orderBy('fecha', 'desc').limit(25).get(); _au.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) { _au.lista = []; }
+  }
+  const h = document.getElementById('au-hist');
+  h.innerHTML = _au.lista.length ? `<div class="db-head" style="margin:18px 0 8px"><div class="dash-section-label" style="margin:0">Auditorías anteriores</div></div>
+    <div class="cb-card" style="padding:6px">${_au.lista.map(a => `<button class="au-h" onclick="verAuditoria('${esc(a._id)}')"><span class="au-hp" style="background:${auColor(a.puntaje)}">${a.puntaje}</span><span style="flex:1;min-width:0;text-align:left"><b>${esc(a.host || a.url)}</b><small>${esc(a.cliente || '')}${a.cliente ? ' · ' : ''}${esc(new Date(a.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }))}${a.enviadaA ? ' · enviada a ' + esc(a.enviadaA) : ''}</small></span><span style="color:var(--text-soft)">›</span></button>`).join('')}</div>` : '';
+}
+const auColor = n => n == null ? '#94a3b8' : n >= 75 ? '#059669' : n >= 50 ? '#d97706' : '#dc2626';
+function auAnillo(n, titulo, grande) {
+  const r = grande ? 54 : 34, w = grande ? 10 : 7, c = 2 * Math.PI * r, tam = (r + w) * 2;
+  return `<div class="au-ring"><svg width="${tam}" height="${tam}" viewBox="0 0 ${tam} ${tam}"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" stroke="var(--border)" stroke-width="${w}" fill="none"/>${n == null ? '' : `<circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" stroke="${auColor(n)}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - n / 100)}" transform="rotate(-90 ${tam / 2} ${tam / 2})"/>`}<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="${grande ? 30 : 18}" font-weight="800" fill="${auColor(n)}" font-family="Plus Jakarta Sans,sans-serif">${n == null ? '—' : n}</text></svg><span>${titulo}</span></div>`;
+}
+async function auditar() {
+  const url = document.getElementById('au-url').value.trim(), cliente = document.getElementById('au-cli').value.trim();
+  if (!url) { toast('Escribe la dirección de la web', 'err'); return; }
+  const btn = document.getElementById('au-btn'); btn.disabled = true; btn.textContent = 'Analizando…';
+  const res = document.getElementById('au-res');
+  const pasos = ['Abriendo la página…', 'Midiendo la velocidad con Google…', 'Revisando cómo se ve en el celular…', 'Revisando Google, WhatsApp y contacto…', 'Escribiendo el resumen…'];
+  let k = 0; res.innerHTML = `<div class="cb-card" style="padding:28px;text-align:center"><div class="au-spin"></div><div id="au-paso" style="margin-top:12px;font-weight:700">${pasos[0]}</div><div style="font-size:12px;color:var(--text-soft);margin-top:4px">Tarda entre 20 y 60 segundos</div></div>`;
+  const iv = setInterval(() => { k = Math.min(k + 1, pasos.length - 1); const p = document.getElementById('au-paso'); if (p) p.textContent = pasos[k]; }, 8000);
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const r = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'auditar', url, cliente }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
+    _au.actual = { _id: d.id, ...d }; pintarAuditoria(_au.actual);
+    logActividad('Auditoría de sitio', `${d.host} · ${d.puntaje}/100`);
+    renderAuditorias(true);
+  } catch (e) { res.innerHTML = `<div class="cb-card" style="padding:18px;color:#b91c1c">No se pudo analizar: ${esc(e.message)}</div>`; }
+  finally { clearInterval(iv); btn.disabled = false; btn.textContent = 'Analizar'; }
+}
+function verAuditoria(id) { const a = (_au.lista || []).find(x => x._id === id); if (!a) return; _au.actual = a; pintarAuditoria(a); document.getElementById('au-res').scrollIntoView({ behavior: 'smooth' }); }
+function pintarAuditoria(a) {
+  const m = a.movil || {}, e = a.escritorio || {};
+  const grupos = {}; (a.checks || []).forEach(c => (grupos[c.grupo] = grupos[c.grupo] || []).push(c));
+  const vit = [['Carga lo principal', m.lcp], ['Primer contenido', m.fcp], ['Movimiento al cargar', m.cls], ['Bloqueo', m.tbt], ['Peso', m.peso ? (m.peso > 1024 ? (m.peso / 1024).toFixed(1) + ' MB' : m.peso + ' KB') : null]].filter(x => x[1]);
+  document.getElementById('au-res').innerHTML = `
+  <div class="cb-card" style="padding:18px;display:grid;grid-template-columns:${a.captura ? '170px ' : ''}auto 1fr;gap:22px;align-items:center" id="au-top">
+    ${a.captura ? `<img src="${a.captura}" alt="" style="width:170px;border-radius:14px;border:1px solid var(--border)">` : ''}
+    ${auAnillo(a.puntaje, 'Puntaje general', true)}
+    <div style="min-width:0"><a href="${esc(a.url)}" target="_blank" rel="noopener" style="font:800 20px 'Plus Jakarta Sans',sans-serif;color:var(--black);text-decoration:none;word-break:break-all">${esc(a.host || a.url)}</a>
+      <div style="font-size:12.5px;color:var(--text-soft);margin-top:2px">${esc(a.titulo || '')}</div>
+      <div style="font-size:12px;color:var(--text-mid);margin-top:6px">${a.cliente ? esc(a.cliente) + ' · ' : ''}${esc(new Date(a.fecha).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}${a.ms ? ` · responde en ${(a.ms / 1000).toFixed(1)} s` : ''}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="hr-btn ok" onclick="auCopiar()"><i class="fa-brands fa-whatsapp"></i> Copiar para WhatsApp</button>
+        <button class="hr-btn" onclick="auCorreo()"><i class="fa-regular fa-envelope"></i> Enviar por correo</button>
+        <button class="hr-btn" onclick="document.getElementById('au-url').value='${esc(a.url)}';auditar()"><i class="fa-solid fa-rotate"></i> Volver a analizar</button>
+      </div></div>
+  </div>
+  <div class="cb-card" style="padding:16px;margin-top:12px">
+    <b style="font-size:13px">Google PageSpeed · celular</b>
+    ${m.error ? `<div style="font-size:12.5px;color:#b45309;margin-top:8px">${esc(m.error)}. ${/PSI_KEY/.test(m.error) ? 'Guarda la clave gratis de Google en Cloudflare como <b>PSI_KEY</b> para ver velocidad y SEO de Google.' : ''}</div>`
+      : `<div class="au-rings">${auAnillo(m.rendimiento, 'Velocidad')}${auAnillo(m.seo, 'SEO')}${auAnillo(m.accesibilidad, 'Accesibilidad')}${auAnillo(m.practicas, 'Buenas prácticas')}${e.rendimiento != null ? auAnillo(e.rendimiento, 'Velocidad en PC') : ''}</div>
+         ${vit.length ? `<div class="au-vit">${vit.map(v => `<div><small>${v[0]}</small><b>${esc(String(v[1]))}</b></div>`).join('')}</div>` : ''}`}
+  </div>
+  ${a.resumen ? `<div class="cb-card" style="padding:16px;margin-top:12px;border-left:3px solid var(--blue)"><b style="font-size:13px">Resumen para el cliente</b><div style="font-size:13px;line-height:1.6;white-space:pre-line;margin-top:6px;color:var(--text-mid)">${esc(a.resumen)}</div></div>` : ''}
+  <div class="au-grid" style="display:grid;grid-template-columns:1.1fr 1fr;gap:12px;margin-top:12px">
+    <div class="cb-card" style="padding:16px"><b style="font-size:13px">Qué mejorar · ${(a.mejoras || []).length}</b>
+      ${(a.mejoras || []).length ? (a.mejoras || []).map(x => `<div class="au-mej"><span class="au-pri ${x.prioridad}">${x.prioridad === 'alta' ? 'Urgente' : x.prioridad === 'media' ? 'Importante' : 'Detalle'}</span><span>${esc(x.texto)}</span></div>`).join('') : '<div style="font-size:12.5px;color:var(--text-soft);margin-top:8px">¡Todo bien! No encontramos problemas.</div>'}
+      ${(m.oportunidades || []).length ? `<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-soft);margin:14px 0 6px">Para que cargue más rápido (Google)</div>${m.oportunidades.map(o => `<div class="au-mej"><span class="au-pri media">−${(o.ahorro / 1000).toFixed(1)} s</span><span>${esc(o.titulo)}</span></div>`).join('')}` : ''}
+    </div>
+    <div class="cb-card" style="padding:16px"><b style="font-size:13px">Revisión completa</b>
+      ${Object.entries(grupos).map(([g, cs]) => `<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-soft);margin:12px 0 4px">${esc(g)}</div>${cs.map(c => `<div class="au-ck ${c.ok ? 'ok' : 'no'}"><span>${c.ok ? '✓' : '✕'}</span>${esc(c.nombre)}</div>`).join('')}`).join('')}
+    </div>
+  </div>`;
+}
+function auTextoWA(a) {
+  return `🔍 *Auditoría de ${a.host}* · DGP Global Group\n\nPuntaje general: *${a.puntaje}/100*${a.movil && a.movil.rendimiento != null ? `\nVelocidad en celular (Google): ${a.movil.rendimiento}/100 · SEO: ${a.movil.seo}/100` : ''}\n\n${a.resumen || ''}\n\n*Mejoras:*\n${(a.mejoras || []).slice(0, 6).map(x => `• ${x.texto}`).join('\n')}\n\n¿Te ayudamos a mejorarla? Respóndeme por aquí 🙌`;
+}
+function auCopiar() { const a = _au.actual; if (!a) return; navigator.clipboard.writeText(auTextoWA(a)).then(() => toast('Resumen copiado: pégalo en WhatsApp', 'ok')).catch(() => toast('No se pudo copiar', 'err')); }
+async function auCorreo() {
+  const a = _au.actual; if (!a || !a._id) return;
+  const cli = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(a.cliente || ''));
+  const correo = prompt('¿A qué correo le enviamos la auditoría?', cli?.correo || ''); if (!correo) return;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const r = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tarea: 'auditoria-correo', id: a._id, correo }) });
+    const d = await r.json().catch(() => ({})); if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
+    toast(`Auditoría enviada a ${correo} desde info@ ✅`, 'ok'); a.enviadaA = correo; renderAuditorias(true);
+  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); }
+}
+
 /* ═══════════════════════════════════════════════════════
    WEBS DE CLIENTES (Firestore: webs · el bot las revisa cada hora)
    El plan de hosting y el dominio salen de Suscripciones (mismo dominio).

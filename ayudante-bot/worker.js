@@ -711,7 +711,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04b';
+const WORKER_VERSION = '2026-11-04c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1242,6 +1242,15 @@ async function handleTarea(request, env) {
       await metaCumplidaPush(env).catch(() => {});   // ¿con este pago se cumplió la meta del mes?
       return json(request, { ok: true, actualizados: n });
     }
+    if (tarea === 'auditar') {
+      const url = String(cuerpo.url || '').trim().slice(0, 300);
+      if (!url) return json(request, { error: 'Escribe la dirección de la web' }, 400);
+      return json(request, { ok: true, ...(await auditarSitio(env, v.token, url, String(cuerpo.cliente || '').slice(0, 120), v.email)) });
+    }
+    if (tarea === 'auditoria-correo') {
+      if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cuerpo.correo || '')) return json(request, { error: 'Datos no válidos' }, 400);
+      return json(request, await enviarAuditoria(env, v.token, cuerpo.id, String(cuerpo.correo).trim(), cuerpo.idioma === 'en'));
+    }
     if (tarea === 'excedente') {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '') || !(Number(cuerpo.monto) > 0)) return json(request, { error: 'Datos no válidos' }, 400);
       const r = await aplicarExcedente(env, v.token, cuerpo.id, Number(cuerpo.monto), 'confirmado en el panel');
@@ -1613,6 +1622,118 @@ function botonesPago(fsId, ev) {
     [{ text: `✅ Pagado y abonar el sobrante a su otra factura`, callback_data: `pm:${fsId}:${ev.monto}` }],
     [{ text: '✅ Solo marcar pagado', callback_data: `p:${fsId}` }, rechazar]] };
   return { inline_keyboard: [[{ text: ev.estado === 'coincide' ? '✅ Confirmar pago' : '✅ Marcar pagado', callback_data: `p:${fsId}` }, rechazar]] };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUDITORÍA DE SITIOS WEB (panel → Auditoría de sitios)
+   · Google PageSpeed (velocidad, SEO, accesibilidad, buenas prácticas) con PSI_KEY si existe
+   · Revisión propia del HTML: lo que le importa a un negocio (WhatsApp, teléfono, Google, celular…)
+   · Resumen en lenguaje simple con IA y propuesta de DGP. Se guarda en Firestore: auditorias
+══════════════════════════════════════════════════════════════ */
+async function pageSpeed(env, url, estrategia) {
+  const q = new URLSearchParams({ url, strategy: estrategia, locale: 'es' });
+  ['performance', 'seo', 'accessibility', 'best-practices'].forEach(c => q.append('category', c));
+  if (env.PSI_KEY) q.set('key', env.PSI_KEY);
+  const r = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${q}`, { signal: AbortSignal.timeout(60000) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) return { error: r.status === 429 ? 'Google PageSpeed está al límite (falta la clave PSI_KEY)' : (d.error?.message || 'PageSpeed no respondió') };
+  const lh = d.lighthouseResult || {}, A = lh.audits || {}, C = lh.categories || {};
+  const pts = k => C[k] ? Math.round((C[k].score || 0) * 100) : null;
+  const val = k => A[k]?.displayValue || null;
+  const oport = Object.values(A).filter(a => a.details?.type === 'opportunity' && (a.score ?? 1) < 0.9 && (a.details.overallSavingsMs || 0) > 150)
+    .sort((a, b) => (b.details.overallSavingsMs || 0) - (a.details.overallSavingsMs || 0)).slice(0, 6)
+    .map(a => ({ titulo: a.title, ahorro: Math.round(a.details.overallSavingsMs) }));
+  return { rendimiento: pts('performance'), seo: pts('seo'), accesibilidad: pts('accessibility'), practicas: pts('best-practices'),
+    lcp: val('largest-contentful-paint'), fcp: val('first-contentful-paint'), cls: val('cumulative-layout-shift'), tbt: val('total-blocking-time'), si: val('speed-index'),
+    peso: A['total-byte-weight']?.numericValue ? Math.round(A['total-byte-weight'].numericValue / 1024) : null,
+    captura: estrategia === 'mobile' ? (A['final-screenshot']?.details?.data || null) : null, oportunidades: oport };
+}
+function revisarHTML(html, urlFinal, ms, codigo) {
+  const h = String(html || ''), low = h.toLowerCase();
+  const tag = re => (h.match(re) || [])[1]?.replace(/\s+/g, ' ').trim() || '';
+  const titulo = tag(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const desc = tag(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)/i) || tag(/<meta[^>]+content=["']([^"']*)["'][^>]*name=["']description["']/i);
+  const h1 = (h.match(/<h1[\s>]/gi) || []).length;
+  const imgs = h.match(/<img\b[^>]*>/gi) || [];
+  const sinAlt = imgs.filter(i => !/\balt=["'][^"']+["']/i.test(i)).length;
+  const texto = h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const palabras = texto.split(' ').filter(w => w.length > 2).length;
+  const anios = (texto.match(/(?:©|copyright)\s*(?:\d{4}\s*[-–]\s*)?(\d{4})/i) || [])[1];
+  const c = (ok, grupo, nombre, mal, peso = 2) => ({ ok: !!ok, grupo, nombre, mal, peso });
+  return {
+    titulo, descripcion: desc, palabras, imagenes: imgs.length, sinAlt,
+    checks: [
+      c(String(urlFinal).startsWith('https://'), 'Seguridad', 'Candado de seguridad (https)', 'La web no tiene candado: Google y los navegadores la marcan como "No segura".', 3),
+      c(codigo && codigo < 400, 'Seguridad', 'La web responde bien', `La web responde con error ${codigo}.`, 3),
+      c(ms && ms < 2500, 'Velocidad', `Responde rápido (${ms ? (ms / 1000).toFixed(1) + ' s' : '—'})`, 'El servidor tarda mucho en responder: la gente se va antes de que cargue.', 2),
+      c(/<meta[^>]+name=["']viewport/i.test(h), 'Celular', 'Adaptada al celular', 'No está preparada para celular: se ve pequeña o desordenada en el teléfono.', 3),
+      c(titulo.length >= 15 && titulo.length <= 70, 'Google', `Título de la página${titulo ? ': "' + titulo.slice(0, 60) + '"' : ''}`, titulo ? 'El título es muy corto o muy largo para Google.' : 'La página no tiene título para Google.', 2),
+      c(desc.length >= 50, 'Google', 'Descripción para Google', 'Le falta la descripción que aparece en los resultados de Google.', 2),
+      c(h1 === 1, 'Google', 'Un título principal (H1)', h1 ? `Tiene ${h1} títulos principales; Google espera uno solo.` : 'No tiene un título principal claro para Google.', 1),
+      c(/application\/ld\+json/i.test(h), 'Google', 'Datos estructurados (negocio en Google)', 'No le dice a Google qué negocio es (dirección, horario, teléfono): pierde visibilidad en búsquedas locales.', 2),
+      c(/<link[^>]+rel=["'][^"']*icon/i.test(h), 'Imagen', 'Ícono de la pestaña (favicon)', 'No tiene ícono en la pestaña del navegador: se ve poco profesional.', 1),
+      c(/property=["']og:image/i.test(h), 'Imagen', 'Imagen al compartir en WhatsApp/Facebook', 'Al compartir el link en WhatsApp o redes no sale imagen.', 1),
+      c(!imgs.length || sinAlt / imgs.length < 0.3, 'Google', 'Imágenes descritas para Google', `${sinAlt} de ${imgs.length} imágenes no tienen descripción: Google no las entiende.`, 1),
+      c(/wa\.me\/|api\.whatsapp\.com|whatsapp:\/\//i.test(h), 'Ventas', 'Botón de WhatsApp', 'No tiene botón de WhatsApp: es la forma más fácil de que un cliente te escriba.', 3),
+      c(/href=["']tel:/i.test(h), 'Ventas', 'Teléfono que se toca para llamar', 'El teléfono no se puede tocar para llamar desde el celular.', 2),
+      c(/<form\b/i.test(h), 'Ventas', 'Formulario de contacto', 'No tiene formulario de contacto para pedir información.', 1),
+      c(/google\.com\/maps|maps\.google|goo\.gl\/maps/i.test(h), 'Ventas', 'Ubicación en Google Maps', 'No muestra el mapa o la ubicación del negocio.', 1),
+      c(/googletagmanager|google-analytics|gtag\(|databuddy|plausible|fbq\(/i.test(low), 'Medición', 'Mide sus visitas', 'No mide cuántas personas la visitan: no sabes si funciona.', 1),
+      c(palabras >= 250, 'Google', `Contenido suficiente (${palabras} palabras)`, 'Tiene muy poco texto: Google no tiene de dónde saber qué ofrece el negocio.', 1),
+      c(!anios || Number(anios) >= new Date().getFullYear() - 1, 'Imagen', 'Información al día', `El pie de página dice ${anios}: parece una web abandonada.`, 1),
+      c(!/noindex/i.test(tag(/<meta[^>]+name=["']robots["'][^>]*content=["']([^"']*)/i)), 'Google', 'Google puede mostrarla', 'Tiene una etiqueta que le pide a Google NO mostrarla.', 3)
+    ]
+  };
+}
+async function auditarSitio(env, token, entrada, cliente, por) {
+  let url = entrada.replace(/\s+/g, '');
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let host; try { host = new URL(url).hostname; } catch (e) { return { error: 'Esa dirección no es válida' }; }
+  const t0 = Date.now();
+  let html = '', urlFinal = url, codigo = null, ms = null, errorWeb = '';
+  const pagina = fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DGPAuditoria/1.0; +https://dgpglobalgroup.com)' } })
+    .then(async r => { ms = Date.now() - t0; codigo = r.status; urlFinal = r.url || url; html = (await r.text()).slice(0, 600000); })
+    .catch(async e => { errorWeb = String(e.message || e); try { const r = await fetch(url.replace(/^https:/, 'http:'), { redirect: 'follow', signal: AbortSignal.timeout(15000) }); codigo = r.status; urlFinal = r.url; ms = Date.now() - t0; html = (await r.text()).slice(0, 600000); errorWeb = ''; } catch (x) {} });
+  const extras = Promise.all(['/sitemap.xml', '/robots.txt'].map(pth => fetch(`https://${host}${pth}`, { signal: AbortSignal.timeout(8000) }).then(r => r.ok).catch(() => false)));
+  const [, movil, escritorio, [sitemap]] = await Promise.all([pagina, pageSpeed(env, url, 'mobile').catch(e => ({ error: e.message })), pageSpeed(env, url, 'desktop').catch(e => ({ error: e.message })), extras]);
+  if (!html && !codigo) return { error: `No pude abrir la web${errorWeb ? ' (' + errorWeb.slice(0, 80) + ')' : ''}. Revisa que la dirección esté bien.` };
+  const rev = revisarHTML(html, urlFinal, ms, codigo);
+  rev.checks.push({ ok: !!sitemap, grupo: 'Google', nombre: 'Mapa del sitio para Google (sitemap)', mal: 'No tiene sitemap: a Google le cuesta encontrar todas sus páginas.', peso: 1 });
+  if (!movil.error && movil.rendimiento != null) rev.checks.push({ ok: movil.rendimiento >= 60, grupo: 'Velocidad', nombre: `Velocidad en celular: ${movil.rendimiento}/100`, mal: `En celular carga lento (${movil.rendimiento}/100${movil.lcp ? ', tarda ' + movil.lcp + ' en mostrar lo principal' : ''}).`, peso: 3 });
+  // Puntaje propio (lo que le importa a un negocio) de 0 a 100
+  const pesoTotal = rev.checks.reduce((a, c) => a + c.peso, 0), pesoOk = rev.checks.filter(c => c.ok).reduce((a, c) => a + c.peso, 0);
+  const puntaje = Math.round(pesoOk / pesoTotal * 100);
+  const mejoras = rev.checks.filter(c => !c.ok).sort((a, b) => b.peso - a.peso).map(c => ({ texto: c.mal, prioridad: c.peso >= 3 ? 'alta' : c.peso === 2 ? 'media' : 'baja', grupo: c.grupo }));
+  // Resumen con IA: simple, honesto, y qué haría DGP
+  let resumen = '';
+  const datosIA = `Web: ${urlFinal}\nPuntaje general: ${puntaje}/100\nGoogle PageSpeed celular: ${movil.error ? 'no disponible' : `rendimiento ${movil.rendimiento}, SEO ${movil.seo}, accesibilidad ${movil.accesibilidad}, buenas prácticas ${movil.practicas}, LCP ${movil.lcp}`}\nComputadora: ${escritorio.error ? 'no disponible' : `rendimiento ${escritorio.rendimiento}`}\nBien: ${rev.checks.filter(c => c.ok).map(c => c.nombre).join('; ')}\nA mejorar: ${mejoras.map(m => `[${m.prioridad}] ${m.texto}`).join(' ')}`;
+  resumen = await aiTexto(env, `Eres consultor de DGP Global Group (páginas web, Google Business, marketing para negocios hispanos). Con los DATOS de la auditoría escribe en español, para el dueño del negocio, sin tecnicismos:
+1) "Resumen:" 2 o 3 frases honestas sobre cómo está la web.
+2) "Lo más urgente:" 3 viñetas "• " con las mejoras de mayor impacto en clientes y ventas.
+3) "Cómo te ayudamos:" 1 o 2 frases con lo que DGP puede hacer (rediseño, velocidad, Google Business, botón de WhatsApp, etc.), sin precios.
+Sin markdown ni asteriscos. No inventes datos que no estén.`, datosIA, 500).catch(() => '');
+  resumen = String(resumen || '').replace(/\*\*/g, '').trim();
+  const doc = { url: urlFinal, entrada, host, cliente, fecha: new Date().toISOString(), por: por || '', puntaje, codigo, ms,
+    titulo: rev.titulo, descripcion: rev.descripcion, palabras: rev.palabras, imagenes: rev.imagenes, sinAlt: rev.sinAlt,
+    checks: rev.checks.map(({ ok, grupo, nombre }) => ({ ok, grupo, nombre })), mejoras, resumen,
+    movil: { ...movil, captura: null }, escritorio: { ...escritorio, captura: null } };
+  const id = await fsCreate(env, 'auditorias', doc, token).catch(e => { console.warn('auditoria', e); return null; });
+  return { id, ...doc, captura: movil.captura || null };
+}
+// Informe por correo al cliente
+async function enviarAuditoria(env, token, id, correo, en) {
+  const a = await fsGet(env, `auditorias/${id}`, token).catch(() => null);
+  if (!a) return { error: 'No encontré esa auditoría' };
+  const m = a.movil || {};
+  const resumen = [['Puntaje general', `${a.puntaje}/100`, a.puntaje >= 75 ? '#059669' : a.puntaje >= 50 ? '#d97706' : '#dc2626']];
+  if (m.rendimiento != null) resumen.push(['Velocidad en celular (Google)', `${m.rendimiento}/100`], ['SEO (Google)', `${m.seo}/100`]);
+  (a.mejoras || []).slice(0, 5).forEach((x, i) => resumen.push([`Mejora ${i + 1}${x.prioridad === 'alta' ? ' · urgente' : ''}`, x.texto.slice(0, 90)]));
+  const html = correoBotHTML({ icono: 'web', titulo: `Auditoría de ${a.host}`, texto: String(a.resumen || '').split('\n').filter(Boolean).slice(0, 3).join(' ').slice(0, 600) || `Revisamos ${a.host} y encontramos varias mejoras para conseguir más clientes.`,
+    resumen, boton: 'Quiero mejorar mi web', link: `https://wa.me/12398231738?text=${encodeURIComponent(`Hola, recibí la auditoría de ${a.host} y quiero mejorarla.`)}`, nota: 'Auditoría gratuita de DGP Global Group · dgpglobalgroup.com' });
+  const ok = await enviarCorreoBot(env, correo, `Auditoría gratis de tu página web · ${a.host}`, html, `${a.resumen || ''}\n\nPuntaje: ${a.puntaje}/100\n\nDGP Global Group · WhatsApp +1 (239) 823-1738`);
+  if (!ok) return { error: 'No se pudo enviar el correo' };
+  await fsUpdate(env, `auditorias/${id}`, { enviadaA: correo, enviadaAt: new Date().toISOString() }, ['enviadaA', 'enviadaAt'], token).catch(() => {});
+  return { ok: true };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2345,17 +2466,17 @@ async function correosAutomaticos(env, token, docs, clientes, correoDe, auto = {
     const link = `${BOT_URL}/resena?d=${d._id}`;
     const ok = await enviarCorreoBot(env, correo, en ? `${nombre}, would you leave us a Google review?` : `${nombre}, ¿nos dejas tu reseña en Google?`,
       correoBotHTML(en
-        ? { icono: 'estrellas', titulo: `Thank you, ${nombre}!`, texto: `A few days ago we delivered ${servicio}. If you liked working with us, would you take 30 seconds to share it on Google? Your review helps other businesses find us.`, boton: 'Leave my Google review', link, nota: `Something we could improve? Tell us privately: ${SITIO}/encuesta.html?id=${d._id}` }
-        : { icono: 'estrellas', titulo: `¡Gracias, ${nombre}!`, texto: `Hace unos días te entregamos ${servicio}. Si te gustó trabajar con nosotros, ¿nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.`, boton: 'Dejar mi reseña en Google', link, nota: `¿Algo que podamos mejorar? Cuéntanos en privado: ${SITIO}/encuesta.html?id=${d._id}` }),
+        ? { icono: 'estrellas', titulo: `Thank you, ${nombre}!`, texto: `A few days ago we delivered ${servicio}. If you liked working with us, would you take 30 seconds to share it on Google? Your review helps other businesses find us.`, boton: 'Leave my Google review', link, nota: 'Thank you for trusting DGP Global Group.' }
+        : { icono: 'estrellas', titulo: `¡Gracias, ${nombre}!`, texto: `Hace unos días te entregamos ${servicio}. Si te gustó trabajar con nosotros, ¿nos regalas 30 segundos para contarlo en Google? Tu reseña ayuda a que más negocios nos conozcan.`, boton: 'Dejar mi reseña en Google', link, nota: 'Gracias por confiar en DGP Global Group.' }),
       en ? `Thank you, ${nombre}! Would you leave us a Google review? ${link}` : `¡Gracias, ${nombre}! ¿Nos dejas tu reseña en Google? ${link}`);
     if (ok) {
       await fsUpdate(env, `documentos/${d._id}`, { resenaPedidaAt: new Date(), encuestaEnviadaAt: new Date() }, ['resenaPedidaAt', 'encuestaEnviadaAt'], token).catch(() => {});
       enviados.push({ tipo: 'Reseña en Google', cliente: d.cli, correo });
     }
   }
-  // 1b) (si el pedido de reseña está apagado) encuesta unos días después de completar el proyecto
+  // 1b) Encuestas de satisfacción: desactivadas (los clientes no las usaban)
   for (const d of reales) {
-    if (auto.resenaAuto !== false) break;
+    break;
     if (!d.proyectoCompletadoAt || d.encuestaCompletada || d.encuestaEnviadaAt) continue;
     const f = fechaISO(d.proyectoCompletadoAt);
     if (!f || diasEntre(f, hoy) < DIAS_ENCUESTA || diasEntre(f, hoy) > 45) continue;
