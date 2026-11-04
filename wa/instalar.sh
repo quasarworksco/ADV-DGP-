@@ -13,15 +13,30 @@ BOT=https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev
 mkdir -p $DIR && cd $DIR
 
 echo "▶ 1/5 Preparando la máquina…"
+# Una máquina recién creada sigue instalando sus actualizaciones unos minutos: se espera a que termine
+command -v cloud-init >/dev/null && cloud-init status --wait >/dev/null 2>&1 || true
+esperar_apt() {
+  for i in $(seq 1 120); do
+    if ! pgrep -x apt-get >/dev/null && ! pgrep -x apt >/dev/null && ! pgrep -x dpkg >/dev/null && ! pgrep -f unattended-upgrade >/dev/null; then return 0; fi
+    [ "$i" = "1" ] && echo "   Ubuntu está instalando sus actualizaciones; esperando a que termine…"
+    sleep 5
+  done
+}
+esperar_apt
 # Memoria extra (la máquina gratis tiene 1 GB)
 if ! swapon --show | grep -q /swapfile; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
   grep -q /swapfile /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
-apt-get update -qq && apt-get install -y -qq ca-certificates curl openssl >/dev/null
+apt-get update -qq || { esperar_apt; apt-get update -qq; }
+apt-get install -y -qq ca-certificates curl openssl >/dev/null
 
 echo "▶ 2/5 Instalando Docker…"
-if ! command -v docker >/dev/null; then curl -fsSL https://get.docker.com | sh >/dev/null 2>&1; fi
+if ! command -v docker >/dev/null; then
+  esperar_apt
+  curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  sh /tmp/get-docker.sh >/tmp/docker-install.log 2>&1 || { echo "   ✗ No se pudo instalar Docker. Detalle:"; tail -15 /tmp/docker-install.log; exit 1; }
+fi
 systemctl enable --now docker >/dev/null
 
 echo "▶ 3/5 Creando las claves…"
