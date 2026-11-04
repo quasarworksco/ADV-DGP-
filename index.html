@@ -2692,6 +2692,43 @@ html.dark .ipv { box-shadow:0 0 0 1px #263352, 0 16px 40px rgba(0,0,0,.35); }
 .user-avatar.con-foto > svg { visibility:hidden; }
 .hr-p-pausa { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
 html.dark .hr-p-pausa { background:#1e293b; color:#cbd5e1; border-color:#334155; }
+.wa-app { display:grid; grid-template-columns:340px 1fr; height:calc(100vh - 120px); min-height:520px; margin:-6px 0 0; background:var(--white); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+@supports (height:100dvh) { .wa-app { height:calc(100dvh - 120px); } }
+.wa-izq { border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; }
+.wa-top { display:flex; justify-content:space-between; align-items:center; padding:14px 14px 8px; } .wa-top b { display:block; font:800 17px 'Plus Jakarta Sans',sans-serif; } .wa-top small { font-size:11.5px; color:var(--text-soft); }
+.wa-ico { width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--text-mid); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; } .wa-ico:hover { background:var(--off,#f1f5f9); }
+.wa-tabs { display:flex; gap:6px; padding:0 14px 8px; } .wa-tabs button { border:1px solid var(--border); background:transparent; border-radius:20px; padding:5px 14px; font:700 12px 'Plus Jakarta Sans',sans-serif; color:var(--text-mid); cursor:pointer; } .wa-tabs button.on { background:#dcfce7; color:#15803d; border-color:#86efac; }
+.wa-buscar { margin:0 14px 8px; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--off,#f8fafc); font:inherit; font-size:13px; color:inherit; }
+.wa-lista { overflow-y:auto; flex:1; min-height:0; }
+.wa-it { display:flex; align-items:center; gap:12px; width:100%; padding:10px 14px; border:0; border-top:1px solid var(--border); background:transparent; cursor:pointer; text-align:left; color:inherit; font:inherit; }
+.wa-it:hover, .wa-it.on { background:var(--off,#f1f5f9); }
+.wa-av { width:44px; height:44px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:14px; position:relative; overflow:hidden; }
+.wa-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.wa-tx { flex:1; min-width:0; } .wa-tx b { display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .wa-tx small { display:block; font-size:12.5px; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wa-h { font-size:11px; color:var(--text-soft); align-self:flex-start; margin-top:3px; }
+.wa-der { display:flex; flex-direction:column; min-height:0; background:#efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='2' cy='2' r='1.2' fill='%23d6cfc4'/%3E%3C/svg%3E"); }
+html.dark .wa-der { background:#0b141a; }
+.wa-cab { display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--white); border-bottom:1px solid var(--border); } .wa-cab b { display:block; font-size:15px; } .wa-cab small { font-size:12px; color:var(--text-soft); }
+.wa-atras { display:none; }
+.wa-msgs { flex:1; overflow-y:auto; padding:16px 6%; display:flex; flex-direction:column; gap:4px; }
+.wa-m { align-self:flex-start; max-width:72%; background:#fff; color:#111b21; border-radius:10px; padding:7px 10px 18px; font-size:14px; line-height:1.4; position:relative; box-shadow:0 1px 1px rgba(0,0,0,.08); word-wrap:break-word; min-width:70px; }
+.wa-m.yo { align-self:flex-end; background:#d9fdd3; }
+html.dark .wa-m { background:#202c33; color:#e9edef; } html.dark .wa-m.yo { background:#005c4b; }
+.wa-m a { color:#027eb5; } .wa-mh { position:absolute; right:8px; bottom:3px; font-size:10.5px; color:#667781; } html.dark .wa-mh { color:#8696a0; }
+.wa-adj { font-size:13px; font-weight:600; margin-bottom:2px; } .wa-adj small { font-weight:400; color:#667781; }
+.wa-dia { align-self:center; background:#fff; color:#54656f; font-size:11.5px; border-radius:8px; padding:4px 10px; margin:8px 0; box-shadow:0 1px 1px rgba(0,0,0,.06); text-transform:capitalize; } html.dark .wa-dia { background:#182229; color:#8696a0; }
+.wa-escribir { display:flex; align-items:flex-end; gap:8px; padding:10px 12px; background:var(--white); border-top:1px solid var(--border); }
+.wa-escribir textarea { flex:1; resize:none; border:1px solid var(--border); border-radius:20px; padding:10px 14px; font:inherit; font-size:14px; background:var(--off,#f8fafc); color:inherit; max-height:140px; }
+.wa-enviar { width:42px; height:42px; border-radius:50%; border:0; background:#25d366; color:#fff; cursor:pointer; flex-shrink:0; }
+.wa-centro { margin:auto; text-align:center; max-width:420px; padding:30px; } .wa-centro h3 { font:800 18px 'Plus Jakarta Sans',sans-serif; margin:12px 0 6px; } .wa-centro p { font-size:13px; color:var(--text-mid); line-height:1.5; }
+.wa-qr { width:264px; height:264px; margin:14px auto; background:#fff; border-radius:16px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); } .wa-qr img { width:240px; height:240px; }
+.wa-pasos { text-align:left; font-size:13px; line-height:1.6; color:var(--text-mid); padding-left:20px; }
+.wa-vacio { padding:30px 16px; text-align:center; color:var(--text-soft); font-size:13px; }
+@media (max-width:800px) {
+  .wa-app { grid-template-columns:1fr; height:calc(100vh - 150px); } @supports (height:100dvh) { .wa-app { height:calc(100dvh - 150px); } }
+  .wa-app .wa-der { display:none; } .wa-app.con-chat .wa-izq { display:none; } .wa-app.con-chat .wa-der { display:flex; } .wa-atras { display:inline-flex; }
+  .wa-msgs { padding:12px 10px; } .wa-m { max-width:86%; }
+}
 .au-ring { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--text-mid); text-align:center; }
 .au-rings { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; }
 .au-vit { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-top:14px; }
@@ -3006,6 +3043,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   </button>
   <button class="nav-tab" onclick="switchPage('llamadas', this)">
     <i class="fa-solid fa-phone"></i> Llamadas<span id="ll-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('whatsapp', this)">
+    <i class="fa-brands fa-whatsapp"></i> WhatsApp<span id="wa-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('respuestas', this)">
     <i class="fa-solid fa-envelope-open-text"></i> Respuestas<span id="rc-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
@@ -3485,6 +3525,19 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 <!-- ══════════════════════════════════════
      PAGE: SEGUIDORES Y LIKES (JustAnotherPanel)
 ══════════════════════════════════════ -->
+<div id="page-whatsapp" class="page">
+  <div class="wa-app" id="wa-app">
+    <aside class="wa-izq">
+      <div class="wa-top"><div><b>WhatsApp</b><small id="wa-yo">Conectando…</small></div>
+        <div style="display:flex;gap:6px"><button class="wa-ico" title="Actualizar" onclick="waCargarChats(true)"><i class="fa-solid fa-rotate"></i></button><button class="wa-ico" title="Opciones" onclick="waOpciones()"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
+      <div class="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="grupos" onclick="waTab('grupos',this)">Grupos</button></div>
+      <input class="wa-buscar" id="wa-buscar" placeholder="Buscar o empezar un chat (número con código de país)" oninput="waPintarLista()">
+      <div class="wa-lista" id="wa-lista"></div>
+    </aside>
+    <section class="wa-der" id="wa-der"></section>
+  </div>
+</div>
+
 <div id="page-auditoria" class="page">
   <div class="proy-main" style="max-width:1100px;">
     <div class="proy-header">
@@ -4609,6 +4662,7 @@ function switchPage(page, btn) {
   if (page === 'prospectos') renderProspectos();
   if (page === 'llamadas')   renderLlamadas();
   if (page === 'respuestas') renderRespuestas();
+  if (page === 'whatsapp')   waAbrir(); else waCerrar();
   if (page === 'aliados')    renderAliados();
   if (page !== 'portal' && _ptUnsubs.length) ptVolverLista();
   if (typeof navIndicador === 'function') requestAnimationFrame(navIndicador);
@@ -12686,6 +12740,132 @@ async function cambiarAuto(k, on) {
   try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
   catch (e) { toast('No se pudo guardar.', 'err'); }
 }
+/* ═══════════════════════════════════════════════════════
+   WHATSAPP (WAHA en Google Cloud; el bot hace de puente con /wa)
+═══════════════════════════════════════════════════════ */
+let _wa = { estado: null, yo: null, chats: [], grupos: null, tab: 'chats', chat: null, msgs: [], timer: null, n: 0, qrAt: 0 };
+async function waApi(accion, datos = {}) {
+  const token = await auth.currentUser.getIdToken();
+  const r = await fetch(`${RW_WORKER}/wa`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ accion, ...datos }) });
+  const d = await r.json().catch(() => ({})); if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status); return d;
+}
+const waNum = id => String(id || '').split('@')[0];
+const waNombre = c => c.name || (/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : waNum(c.id));
+const waHora = ts => { if (!ts) return ''; const d = new Date(ts * 1000), hoy = new Date(); return d.toDateString() === hoy.toDateString() ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }); };
+function waAbrir() {
+  clearInterval(_wa.timer);
+  waRevisar();
+  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') waRevisar(); else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
+}
+function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; }
+async function waRevisar() {
+  try {
+    const d = await waApi('estado');
+    if (d.instalado === false) { _wa.estado = 'NO'; waPintarDerecha(); document.getElementById('wa-yo').textContent = 'Sin instalar'; return; }
+    const antes = _wa.estado; _wa.estado = d.estado; _wa.yo = d.yo;
+    document.getElementById('wa-yo').textContent = d.estado === 'WORKING' ? `Conectado${d.yo?.id ? ' · +' + waNum(d.yo.id) : ''}` : { SCAN_QR_CODE: 'Escanea el código QR', STARTING: 'Iniciando…', STOPPED: 'Detenido', FAILED: 'Falló la conexión' }[d.estado] || d.estado;
+    if (d.estado === 'WORKING') { if (antes !== 'WORKING') { waCargarChats(true); waPintarDerecha(); } }
+    else { if (d.estado === 'STOPPED' || d.estado === 'FAILED') waApi('iniciar').catch(() => {}); waPintarDerecha(); }
+  } catch (e) { document.getElementById('wa-yo').textContent = 'Sin conexión con el servidor'; _wa.estado = 'ERR'; _wa.err = e.message; waPintarDerecha(); }
+}
+async function waCargarChats(forzar) {
+  if (_wa.estado !== 'WORKING') return;
+  try { const d = await waApi('chats', { limit: 80 }); _wa.chats = Array.isArray(d.chats) ? d.chats : []; waPintarLista(); } catch (e) { if (forzar) toast('No se pudieron cargar los chats: ' + e.message, 'err'); }
+}
+function waTab(t, btn) {
+  _wa.tab = t; document.querySelectorAll('.wa-tabs button').forEach(b => b.classList.toggle('on', b === btn));
+  if (t === 'grupos' && !_wa.grupos) waApi('grupos').then(d => { _wa.grupos = Array.isArray(d.grupos) ? d.grupos : Object.values(d.grupos || {}); waPintarLista(); }).catch(e => toast(e.message, 'err'));
+  waPintarLista();
+}
+function waPintarLista() {
+  const el = document.getElementById('wa-lista'); if (!el) return;
+  const q = ptNorm(document.getElementById('wa-buscar').value || '');
+  if (_wa.estado !== 'WORKING') { el.innerHTML = '<div class="wa-vacio">Conecta tu WhatsApp para ver los chats.</div>'; return; }
+  let L = _wa.tab === 'grupos' ? (_wa.grupos || []).map(g => ({ id: g.id?._serialized || g.id || g.JID, name: g.subject || g.name || g.Name || 'Grupo' })) : _wa.chats.filter(c => !/@g\.us$/.test(c.id) || _wa.tab === 'chats');
+  if (q) L = L.filter(c => ptNorm(waNombre(c)).includes(q) || waNum(c.id).includes(q.replace(/\D/g, '') || '¬'));
+  const num = (document.getElementById('wa-buscar').value || '').replace(/\D/g, '');
+  const nuevo = _wa.tab === 'chats' && num.length >= 10 && !L.some(c => waNum(c.id) === num) ? `<button class="wa-it" onclick="waAbrirChat('${num}@c.us')"><span class="wa-av" style="background:#25d366"><i class="fa-solid fa-plus"></i></span><span class="wa-tx"><b>Escribir a +${num}</b><small>Nuevo chat</small></span></button>` : '';
+  el.innerHTML = nuevo + (L.length ? L.map(c => { const lm = c.lastMessage || {}; const id = esc(c.id); const nom = waNombre(c);
+    return `<button class="wa-it${_wa.chat === c.id ? ' on' : ''}" onclick="waAbrirChat('${id}')"><span class="wa-av" style="background:${clColor(nom)}">${c.picture ? `<img src="${esc(c.picture)}" alt="" onerror="this.remove()">` : ''}${esc(clIniciales(nom.replace('+', '')))}</span>
+      <span class="wa-tx"><b>${esc(nom)}</b><small>${lm.fromMe ? '<i class="fa-solid fa-check-double"></i> ' : ''}${esc(String(lm.body || (lm.hasMedia ? '📎 Archivo' : '')).slice(0, 60))}</small></span><span class="wa-h">${waHora(lm.timestamp)}</span></button>`; }).join('') : `<div class="wa-vacio">${_wa.tab === 'grupos' && !_wa.grupos ? 'Cargando grupos…' : 'Sin chats'}</div>`);
+}
+async function waAbrirChat(id) {
+  _wa.chat = id; _wa.msgs = []; document.getElementById('wa-app').classList.add('con-chat');
+  waPintarLista(); waPintarDerecha(); await waCargarMensajes(true);
+  waApi('visto', { chatId: id }).catch(() => {});
+}
+function waVolver() { _wa.chat = null; document.getElementById('wa-app').classList.remove('con-chat'); waPintarDerecha(); waPintarLista(); }
+async function waCargarMensajes(primera) {
+  if (!_wa.chat) return;
+  try {
+    const d = await waApi('mensajes', { chatId: _wa.chat, limit: 60 });
+    const L = (Array.isArray(d.mensajes) ? d.mensajes : []).slice().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    const cambio = L.length !== _wa.msgs.length || (L[L.length - 1]?.id !== _wa.msgs[_wa.msgs.length - 1]?.id) || L.some((m, i) => m.ack !== _wa.msgs[i]?.ack);
+    _wa.msgs = L; if (cambio || primera) waPintarMensajes(primera || cambio);
+  } catch (e) { if (primera) document.getElementById('wa-msgs').innerHTML = `<div class="wa-vacio">No se pudieron cargar los mensajes: ${esc(e.message)}</div>`; }
+}
+function waPintarDerecha() {
+  const der = document.getElementById('wa-der'); if (!der) return;
+  if (_wa.estado === 'NO') { der.innerHTML = `<div class="wa-centro"><i class="fa-brands fa-whatsapp" style="font-size:54px;color:#25d366"></i><h3>Falta instalar el servidor de WhatsApp</h3><p>Sigue los pasos de Google Cloud y guarda <b>WA_URL</b>, <b>WA_KEY</b> y <b>WA_HMAC</b> en Cloudflare.</p></div>`; return; }
+  if (_wa.estado === 'ERR') { der.innerHTML = `<div class="wa-centro"><i class="fa-solid fa-plug-circle-xmark" style="font-size:44px;color:#dc2626"></i><h3>No hay conexión con el servidor de WhatsApp</h3><p>${esc(_wa.err || '')}</p><p>Revisa que la máquina de Google Cloud esté encendida.</p><button class="hr-btn" onclick="waRevisar()">Reintentar</button></div>`; return; }
+  if (_wa.estado && _wa.estado !== 'WORKING') {
+    der.innerHTML = `<div class="wa-centro"><h3>Conecta tu WhatsApp</h3>
+      <div class="wa-qr" id="wa-qr">${_wa.estado === 'SCAN_QR_CODE' ? '<div class="au-spin"></div>' : `<div style="color:var(--text-soft);font-size:13px">${_wa.estado === 'STARTING' ? 'Iniciando…' : 'Preparando…'}</div>`}</div>
+      <ol class="wa-pasos"><li>Abre <b>WhatsApp Business</b> en el celular del número que vas a usar.</li><li>Toca <b>⋮ / Ajustes → Dispositivos vinculados → Vincular dispositivo</b>.</li><li>Apunta la cámara a este código. Se actualiza solo.</li></ol></div>`;
+    if (_wa.estado === 'SCAN_QR_CODE' && Date.now() - _wa.qrAt > 15000) { _wa.qrAt = Date.now(); waApi('qr').then(d => { const q = document.getElementById('wa-qr'); if (q && d.qr) q.innerHTML = `<img src="${d.qr}" alt="Código QR">`; }).catch(() => {}); }
+    return;
+  }
+  if (!_wa.chat) { der.innerHTML = `<div class="wa-centro"><i class="fa-brands fa-whatsapp" style="font-size:60px;color:#25d366"></i><h3>WhatsApp de DGP Global Group</h3><p>Elige un chat de la izquierda, o escribe un número con código de país para empezar uno nuevo.</p></div>`; return; }
+  const c = _wa.chats.find(x => x.id === _wa.chat) || (_wa.grupos || []).map(g => ({ id: g.id?._serialized || g.id, name: g.subject || g.name })).find(x => x.id === _wa.chat) || { id: _wa.chat };
+  const nom = waNombre(c);
+  der.innerHTML = `<div class="wa-cab"><button class="wa-ico wa-atras" onclick="waVolver()"><i class="fa-solid fa-arrow-left"></i></button><span class="wa-av" style="background:${clColor(nom)}">${c.picture ? `<img src="${esc(c.picture)}" alt="" onerror="this.remove()">` : ''}${esc(clIniciales(nom.replace('+', '')))}</span><div style="min-width:0"><b>${esc(nom)}</b><small>${/@c\.us$/.test(c.id) ? '+' + waNum(c.id) : /@g\.us$/.test(c.id) ? 'Grupo' : ''}</small></div></div>
+    <div class="wa-msgs" id="wa-msgs"><div class="wa-vacio"><div class="au-spin"></div></div></div>
+    <div class="wa-escribir"><label class="wa-ico" title="Adjuntar foto o archivo"><i class="fa-solid fa-paperclip"></i><input type="file" hidden onchange="waAdjuntar(this)"></label>
+      <textarea id="wa-txt" rows="1" placeholder="Escribe un mensaje" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();waEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
+      <button class="wa-enviar" onclick="waEnviar()"><i class="fa-solid fa-paper-plane"></i></button></div>`;
+}
+function waPintarMensajes(abajo) {
+  const el = document.getElementById('wa-msgs'); if (!el) return;
+  const estabaAbajo = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  let dia = '';
+  el.innerHTML = _wa.msgs.length ? _wa.msgs.map(m => {
+    const d = new Date((m.timestamp || 0) * 1000), k = d.toDateString(); let sep = '';
+    if (k !== dia) { dia = k; sep = `<div class="wa-dia">${esc(d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>`; }
+    const tick = m.fromMe ? `<i class="fa-solid ${m.ack >= 2 ? 'fa-check-double' : 'fa-check'}" style="color:${m.ack >= 3 ? '#53bdeb' : 'inherit'}"></i>` : '';
+    const cuerpo = m.body ? esc(m.body).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>') : '';
+    return `${sep}<div class="wa-m ${m.fromMe ? 'yo' : ''}">${m.hasMedia ? `<div class="wa-adj"><i class="fa-solid fa-paperclip"></i> ${m.media?.mimetype?.startsWith('image/') ? 'Foto' : m.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo adjunto'} <small>(ábrelo en el celular)</small></div>` : ''}${cuerpo}<span class="wa-mh">${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${tick}</span></div>`;
+  }).join('') : '<div class="wa-vacio">Aún no hay mensajes en este chat.</div>';
+  if (abajo || estabaAbajo) el.scrollTop = el.scrollHeight;
+}
+async function waEnviar() {
+  const t = document.getElementById('wa-txt'), texto = (t?.value || '').trim(); if (!texto || !_wa.chat) return;
+  t.value = ''; t.style.height = 'auto';
+  _wa.msgs.push({ id: 'tmp' + Date.now(), body: texto, fromMe: true, timestamp: Math.floor(Date.now() / 1000), ack: 0 }); waPintarMensajes(true);
+  try { await waApi('enviar', { chatId: _wa.chat, texto }); setTimeout(() => { waCargarMensajes(); waCargarChats(); }, 1200); }
+  catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); t.value = texto; _wa.msgs = _wa.msgs.filter(m => !String(m.id).startsWith('tmp')); waPintarMensajes(true); }
+}
+async function waAdjuntar(input) {
+  const f = input.files && input.files[0]; if (!f || !_wa.chat) return;
+  if (f.size > 15e6) return toast('El archivo pesa más de 15 MB', 'err');
+  const texto = (document.getElementById('wa-txt')?.value || '').trim();
+  toast('Subiendo archivo…');
+  try {
+    const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const d = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, { method: 'POST', body: fd }).then(r => r.json());
+    if (!d.secure_url) throw new Error('no se pudo subir');
+    await waApi('archivo', { chatId: _wa.chat, url: d.secure_url, mimetype: f.type || 'application/octet-stream', nombre: f.name, texto });
+    if (texto) document.getElementById('wa-txt').value = '';
+    toast('Enviado ✅', 'ok'); setTimeout(waCargarMensajes, 1500);
+  } catch (e) { toast('No se pudo enviar el archivo: ' + e.message, 'err'); }
+  input.value = '';
+}
+function waOpciones() {
+  ptModal('WhatsApp', _wa.yo?.id ? 'Conectado como +' + waNum(_wa.yo.id) : 'Opciones de conexión', `<div class="rd-form">
+    <button class="ll-btn" style="background:var(--blue)" onclick="closePortalModal();waApi('reiniciar').then(()=>{toast('Reiniciando…');setTimeout(waRevisar,4000)}).catch(e=>toast(e.message,'err'))">Reiniciar conexión</button>
+    <button class="ll-btn" style="background:#dc2626;margin-top:8px" onclick="if(confirm('¿Desconectar este WhatsApp del panel? Tendrás que volver a escanear el QR.')){closePortalModal();waApi('salir').then(()=>{toast('Desconectado');_wa.estado=null;setTimeout(waRevisar,3000)}).catch(e=>toast(e.message,'err'))}">Desconectar (cerrar sesión)</button>
+    <div class="ll-sub" style="margin-top:10px">Los mensajes que te lleguen también te avisan por Telegram (tema 💬 WhatsApp) y en tu celular. Responde al aviso en Telegram para contestar por WhatsApp.</div></div>`);
+}
+
 /* ═══════════════════════════════════════════════════════
    AUDITORÍA DE SITIOS (el bot analiza; Firestore: auditorias)
 ═══════════════════════════════════════════════════════ */

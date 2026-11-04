@@ -212,6 +212,8 @@ export default {
     if (ruta === '/aviso') return handleAviso(request, env);
     if (ruta.startsWith('/push')) return handlePush(request, env, ctx);
     if (ruta === '/auditoria') return handleAuditoriaPublica(request, env);
+    if (ruta === '/wa') return handleWA(request, env);
+    if (ruta === '/whatsapp/webhook') return handleWAWebhook(request, env, ctx);
     if (ruta === '/abierto') return handleAbierto(request, env, ctx);
     if (ruta === '/verificar') return handleVerificar(request, env, firebaseLogin);
     if (ruta === '/diagnostico') return handleDiagnostico(request, env, firebaseLogin);
@@ -712,7 +714,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04d';
+const WORKER_VERSION = '2026-11-04e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -876,7 +878,7 @@ async function fsAgregarALista(env, docPath, campo, valor, token) {
 ══════════════════════════════════════════════════════════════ */
 const TG_TEMAS = [
   ['resumenes', '📊 Resúmenes', 0x6FB9F0], ['cobros', '💰 Cobros', 0xFFD67E], ['correos', '📨 Correos', 0xCB86DB],
-  ['redes', '📣 Redes', 0x8EEE98], ['webs', '🌐 Webs', 0x6FB9F0], ['alertas', '⚠️ Alertas', 0xFF93B2], ['altair', '✨ Altair', 0xFFD67E]
+  ['redes', '📣 Redes', 0x8EEE98], ['webs', '🌐 Webs', 0x6FB9F0], ['alertas', '⚠️ Alertas', 0xFF93B2], ['altair', '✨ Altair', 0xFFD67E], ['whatsapp', '💬 WhatsApp', 0x8EEE98]
 ];
 let _tgCfg = null, _tgCfgAt = 0;
 let _tgCtx = null;   // conversación en curso: las respuestas van al mismo tema donde escribiste
@@ -890,6 +892,7 @@ async function tgCfg(env) {
 function seccionTG(texto) {
   const t = String(texto || '');
   if (/Resumen (de cobros|semanal|mensual)|Briefing|Respaldo semanal/i.test(t)) return 'resumenes';
+  if (/^💬 <b>WhatsApp|WhatsApp de |Enviado por WhatsApp|WhatsApp se desconectó|WhatsApp conectado/i.test(t)) return 'whatsapp';
   if (/te respondió|Borrador para|Correo rebotado|Correo de info@|Correo enviado a/i.test(t)) return 'correos';
   if (/Webs de clientes|se cayó|volvió a estar en línea|está lenta|candado/i.test(t)) return 'webs';
   if (/Autopilot|Publicación automática|seguidores|JustAnotherPanel|Pedidos de seguidores|Reseña web|publicaci/i.test(t)) return 'redes';
@@ -940,13 +943,13 @@ async function tgVincularGrupo(env, msg) {
   const token = await firebaseLogin(env);
   const previo = await fsGet(env, 'config/telegram', token).catch(() => null) || {};
   const temas = String(previo.grupo) === String(chat.id) ? { ...(previo.temas || {}) } : {};
-  const nuevos = [];
+  const nuevos = [], nuevosK = [];
   for (const [k, nombre, color] of TG_TEMAS) {
     if (temas[k]) continue;
     const r = await fetch(`https://api.telegram.org/bot${tgToken(env)}/createForumTopic`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chat.id, name: nombre, icon_color: color }) }).then(x => x.json()).catch(() => ({}));
     if (!r.ok) return tgApi(env, 'sendMessage', { chat_id: chat.id, text: `No pude crear los temas: ${r.description || 'error'}. Revisa que el bot sea administrador con permiso para "Gestionar temas".` });
-    temas[k] = r.result.message_thread_id; nuevos.push(nombre);
+    temas[k] = r.result.message_thread_id; nuevos.push(nombre); nuevosK.push(k);
   }
   await fsGuardar(env, 'config/telegram', { grupo: String(chat.id), nombreGrupo: chat.title || '', temas, vinculado: new Date().toISOString() }, token);
   _tgCfg = null;
@@ -954,7 +957,7 @@ async function tgVincularGrupo(env, msg) {
   const oculto = await tgApi(env, 'hideGeneralForumTopic', { chat_id: chat.id }).catch(() => ({}));
   if (!nuevos.length) return tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas.altair, text: oculto.ok ? 'Listo: oculté el tema General. Los demás temas siguen igual.' : `No pude ocultar el tema General: ${oculto.description || 'error'}. Revisa que el bot tenga el permiso "Gestionar temas".` });
   await tgApi(env, 'sendMessage', { chat_id: chat.id, parse_mode: 'HTML', text: `✅ <b>Grupo vinculado</b>${nuevos.length ? `\nCreé los temas: ${nuevos.join(', ')}` : ''}\n\nDesde ahora cada aviso llega a su tema. Para hablar con Altair escribe en ✨ Altair (o en cualquier tema: te responde ahí mismo).` });
-  for (const [k] of TG_TEMAS) await tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas[k], text: { resumenes: 'Aquí llegan el resumen diario, el semanal, el mensual, el briefing y el respaldo.', cobros: 'Aquí llegan comprobantes, pagos, facturas, suscripciones y recordatorios de cobro.', correos: 'Aquí llegan las respuestas de clientes por correo. Responde a un aviso para contestarle.', redes: 'Aquí llegan Autopilot, pedidos de seguidores y reseñas.', webs: 'Aquí llegan las caídas y avisos de las webs de tus clientes.', alertas: 'Aquí llegan los errores del sistema.', altair: 'Háblame aquí: pregúntame cosas o pídeme facturas, escrito o con nota de voz.' }[k] }).catch(() => {});
+  for (const [k] of TG_TEMAS.filter(([k]) => nuevosK.includes(k))) await tgApi(env, 'sendMessage', { chat_id: chat.id, message_thread_id: temas[k], text: { resumenes: 'Aquí llegan el resumen diario, el semanal, el mensual, el briefing y el respaldo.', cobros: 'Aquí llegan comprobantes, pagos, facturas, suscripciones y recordatorios de cobro.', correos: 'Aquí llegan las respuestas de clientes por correo. Responde a un aviso para contestarle.', redes: 'Aquí llegan Autopilot, pedidos de seguidores y reseñas.', webs: 'Aquí llegan las caídas y avisos de las webs de tus clientes.', alertas: 'Aquí llegan los errores del sistema.', whatsapp: 'Aquí llegan los mensajes de WhatsApp de tus clientes. Responde a un aviso para contestarles por WhatsApp.', altair: 'Háblame aquí: pregúntame cosas o pídeme facturas, escrito o con nota de voz.' }[k] }).catch(() => {});
 }
 
 async function tgEnviar(env, html) {
@@ -1626,6 +1629,111 @@ function botonesPago(fsId, ev) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   WHATSAPP DEL PANEL (WAHA en Google Cloud, no oficial)
+   Secretos: WA_URL (https://wa-…sslip.io), WA_KEY (X-Api-Key), WA_HMAC (firma de avisos)
+   POST /wa {accion,…} (equipo) → estado, qr, iniciar, salir, chats, mensajes, enviar, archivo, visto, grupos, foto
+   POST /whatsapp/webhook ← WAHA: mensajes entrantes y estado de la sesión
+══════════════════════════════════════════════════════════════ */
+const WA_SESION = 'default';
+async function waFetch(env, ruta, opts = {}) {
+  if (!env.WA_URL || !env.WA_KEY) throw new Error('WhatsApp no está instalado (faltan WA_URL y WA_KEY en Cloudflare)');
+  const r = await fetch(env.WA_URL.replace(/\/$/, '') + ruta, { ...opts, headers: { 'X-Api-Key': env.WA_KEY, 'Content-Type': 'application/json', Accept: 'application/json', ...(opts.headers || {}) }, signal: AbortSignal.timeout(25000) });
+  return r;
+}
+async function waJSON(env, ruta, opts) {
+  const r = await waFetch(env, ruta, opts);
+  const t = await r.text(); let d = null; try { d = JSON.parse(t); } catch (e) { d = { texto: t }; }
+  if (!r.ok) { const e = new Error((d && (d.message || d.error)) || `WhatsApp respondió ${r.status}`); e.status = r.status; throw e; }
+  return d;
+}
+const waChat = id => encodeURIComponent(String(id || ''));
+async function waEnviarTexto(env, chatId, texto) {
+  return waJSON(env, '/api/sendText', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId, text: String(texto).slice(0, 4000) }) });
+}
+async function waEstado(env) {
+  try { return await waJSON(env, `/api/sessions/${WA_SESION}`); }
+  catch (e) {
+    if (e.status !== 404) throw e;
+    // Primera vez: se crea la sesión (los avisos ya van al bot por la configuración del servidor)
+    return waJSON(env, '/api/sessions', { method: 'POST', body: JSON.stringify({ name: WA_SESION, start: true }) });
+  }
+}
+async function handleWA(request, env) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  const quien = await verificarEquipo(request, env).catch(e => ({ error: e.message, status: 500 }));
+  if (quien.error) return json(request, { error: quien.error }, quien.status);
+  if (!env.WA_URL || !env.WA_KEY) return json(request, { instalado: false });
+  const b = await request.json().catch(() => ({}));
+  const S = WA_SESION, chat = String(b.chatId || '');
+  if (b.chatId !== undefined && !/^[0-9A-Za-z._-]+@(c\.us|g\.us|lid|newsletter|broadcast)$/.test(chat)) return json(request, { error: 'Chat no válido' }, 400);
+  try {
+    switch (b.accion) {
+      case 'estado': { const s = await waEstado(env); return json(request, { instalado: true, estado: s.status, yo: s.me || null }); }
+      case 'iniciar': { await waEstado(env); await waFetch(env, `/api/sessions/${S}/start`, { method: 'POST' }).catch(() => {}); return json(request, { ok: true }); }
+      case 'reiniciar': await waFetch(env, `/api/sessions/${S}/restart`, { method: 'POST' }); return json(request, { ok: true });
+      case 'salir': await waFetch(env, `/api/sessions/${S}/logout`, { method: 'POST' }); return json(request, { ok: true });
+      case 'qr': {
+        let r = await waFetch(env, `/api/${S}/auth/qr?format=image`, { headers: { Accept: 'image/png' } });
+        if (!r.ok) r = await waFetch(env, `/api/${S}/auth/qr?format=image`, { method: 'POST', headers: { Accept: 'image/png' } });
+        if (!r.ok) return json(request, { error: 'Todavía no hay código QR. Espera unos segundos.' }, 409);
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('json')) { const d = await r.json(); return json(request, { qr: d.data ? `data:${d.mimetype || 'image/png'};base64,${d.data}` : null, valor: d.value || null }); }
+        const buf = new Uint8Array(await r.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        return json(request, { qr: `data:image/png;base64,${btoa(bin)}` });
+      }
+      case 'chats': return json(request, { chats: await waJSON(env, `/api/${S}/chats/overview?limit=${Math.min(Number(b.limit) || 60, 200)}&offset=${Number(b.offset) || 0}`) });
+      case 'mensajes': return json(request, { mensajes: await waJSON(env, `/api/${S}/chats/${waChat(chat)}/messages?limit=${Math.min(Number(b.limit) || 50, 200)}&downloadMedia=false`) });
+      case 'enviar': {
+        const texto = String(b.texto || '').trim(); if (!texto) return json(request, { error: 'Escribe el mensaje' }, 400);
+        return json(request, { ok: true, mensaje: await waEnviarTexto(env, chat, texto) });
+      }
+      case 'archivo': {
+        const url = String(b.url || ''); if (!/^https:\/\//.test(url)) return json(request, { error: 'Archivo no válido' }, 400);
+        const mimetype = String(b.mimetype || 'application/octet-stream'), esImg = /^image\//.test(mimetype);
+        const d = await waJSON(env, esImg ? '/api/sendImage' : '/api/sendFile', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat, caption: String(b.texto || '').slice(0, 1000), file: { url, mimetype, filename: String(b.nombre || (esImg ? 'imagen.jpg' : 'archivo')) } }) });
+        return json(request, { ok: true, mensaje: d });
+      }
+      case 'visto': await waFetch(env, '/api/sendSeen', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat }) }).catch(() => {}); return json(request, { ok: true });
+      case 'grupos': return json(request, { grupos: await waJSON(env, `/api/${S}/groups?limit=300&offset=0&sortBy=subject&sortOrder=asc&exclude=participants`) });
+      case 'foto': { const d = await waJSON(env, `/api/${S}/chats/${waChat(chat)}/picture`).catch(() => ({})); return json(request, { url: d.url || null }); }
+      default: return json(request, { error: 'Acción no válida' }, 400);
+    }
+  } catch (e) { return json(request, { error: e.message || 'Error con WhatsApp' }, 502); }
+}
+// Avisos de WAHA: mensaje nuevo → Telegram y celular; desconexión → alerta
+async function handleWAWebhook(request, env, ctx) {
+  const cuerpo = await request.text();
+  if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
+  const firma = request.headers.get('X-Webhook-Hmac') || '';
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.WA_HMAC), { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
+  const esperada = [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(cuerpo)))].map(x => x.toString(16).padStart(2, '0')).join('');
+  if (!firma || firma.toLowerCase() !== esperada) return new Response('firma no válida', { status: 401 });
+  let ev = {}; try { ev = JSON.parse(cuerpo); } catch (e) { return new Response('ok'); }
+  const tarea = (async () => {
+    const p = ev.payload || {};
+    if (ev.event === 'message' && !p.fromMe) {
+      const de = String(p.from || '');
+      if (!/@(c\.us|lid)$/.test(de)) return;   // grupos, canales y estados no avisan (serían demasiados)
+      const nombre = p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '';
+      const numero = de.split('@')[0];
+      const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
+      const html = `💬 <b>WhatsApp de ${escHtml(nombre || '+' + numero)}</b>${nombre && /^\d+$/.test(numero) ? ` · +${escHtml(numero)}` : ''}\n\n${escHtml(String(texto).slice(0, 1500))}\n\n↩️ <i>Responde a este mensaje para contestarle por WhatsApp.</i>`;
+      const env2 = await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, text: html, parse_mode: 'HTML', disable_web_page_preview: true }).catch(() => null);
+      if (env2?.result?.message_id) { const token = await firebaseLogin(env); await fsGuardar(env, `tgMap/${env2.result.message_id}`, { tipo: 'wa', chatId: de, nombre: nombre || '+' + numero }, token).catch(() => {}); }
+    } else if (ev.event === 'session.status') {
+      const st = p.status, token = await firebaseLogin(env);
+      const cfg = await fsGet(env, 'config/whatsapp', token).catch(() => null) || {};
+      if (st === cfg.estado) return;
+      await fsGuardar(env, 'config/whatsapp', { estado: st, fecha: new Date().toISOString(), yo: ev.me?.id || cfg.yo || '' }, token).catch(() => {});
+      if (st === 'WORKING') await tgEnviar(env, `💬 <b>WhatsApp conectado</b>${ev.me?.id ? ` · +${escHtml(String(ev.me.id).split('@')[0])}` : ''}. Ya puedes usarlo desde el panel.`).catch(() => {});
+      else if (['SCAN_QR_CODE', 'FAILED', 'STOPPED'].includes(st) && cfg.estado === 'WORKING') await tgEnviar(env, `⚠️ <b>WhatsApp se desconectó</b> (${escHtml(st)}). Entra al panel → WhatsApp y vuelve a escanear el código QR.`).catch(() => {});
+    }
+  })().catch(e => console.warn('wa webhook', e));
+  if (ctx?.waitUntil) ctx.waitUntil(tarea); else await tarea;
+  return new Response('ok');
+}
+
+/* ══════════════════════════════════════════════════════════════
    AUDITORÍA DE SITIOS WEB (panel → Auditoría de sitios)
    · Google PageSpeed (velocidad, SEO, accesibilidad, buenas prácticas) con PSI_KEY si existe
    · Revisión propia del HTML: lo que le importa a un negocio (WhatsApp, teléfono, Google, celular…)
@@ -2010,6 +2118,11 @@ async function tgMensaje(env, msg) {
   if (respondeA) {
     const token = await firebaseLogin(env);
     const map = await fsGet(env, `tgMap/${respondeA}`, token).catch(() => null);
+    if (map && map.tipo === 'wa' && map.chatId) {
+      const r = await waEnviarTexto(env, map.chatId, dicho).catch(e => ({ error: e.message }));
+      return tgApi(env, 'sendMessage', { chat_id: chat, ...(msg.message_thread_id ? { message_thread_id: msg.message_thread_id } : {}), reply_to_message_id: msg.message_id, parse_mode: 'HTML',
+        text: r.error ? `⚠️ No se pudo enviar por WhatsApp: ${escHtml(r.error)}` : `✅ Enviado por WhatsApp a <b>${escHtml(map.nombre || map.chatId)}</b>${porVoz ? `\n🎙 <i>"${escHtml(dicho)}"</i>` : ''}` });
+    }
     if (map && (map.tipo === 'respuesta' || map.tipo === 'borrador')) {
       await tgApi(env, 'sendChatAction', { chat_id: chat, action: 'typing' });
       return borradorCorreoTG(env, token, map, dicho, porVoz);
@@ -3245,7 +3358,7 @@ const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\
 const desB64u = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((String(s).length + 3) % 4)), c => c.charCodeAt(0));
 function vapidJwk(env) { try { return env.VAPID_PRIVADA ? JSON.parse(env.VAPID_PRIVADA) : null; } catch (e) { return null; } }
 const vapidPublica = jwk => b64u(new Uint8Array([4, ...desB64u(jwk.x), ...desB64u(jwk.y)]));
-const PUSH_SECCIONES = ['cobros', 'correos', 'webs', 'alertas'];
+const PUSH_SECCIONES = ['cobros', 'correos', 'webs', 'alertas', 'whatsapp'];
 let _pushSubs = null, _pushSubsAt = 0;
 async function pushSubs(env, token) {
   if (_pushSubs && Date.now() - _pushSubsAt < 10 * 60e3) return _pushSubs;
@@ -3301,6 +3414,7 @@ async function enviarPush(env, datos, token) {
 // Momentos de venta que suenan aunque no sean de cobros (prospectos, firmas, brief, portal, llamadas)
 const PUSH_EVENTOS = [
   [/Nuevo posible cliente|Cliente escribió de nuevo|Nueva postulación/i, '🙋 Nuevo prospecto', 'prospectos'],
+  [/WhatsApp de /i, '💬 Nuevo WhatsApp', 'whatsapp'],
   [/COTIZACIÓN ACEPTADA/i, '✅ ¡Aceptó la cotización!', 'facturacion'],
   [/CONTRATO FIRMADO/i, '✍️ Firmó el contrato', 'facturacion'],
   [/BRIEF RECIBIDO/i, '📝 Envió el brief de su web', 'proyectos'],
