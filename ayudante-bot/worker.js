@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04q';
+const WORKER_VERSION = '2026-11-04s';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1854,39 +1854,106 @@ async function waComprobante(env, p, de) {
   await waEnviarTexto(env, de, en ? 'We received your payment receipt, we are verifying it ✅' : 'Recibimos tu comprobante, lo estamos verificando ✅').catch(() => {});
   return true;
 }
-/* Paso 7: respuesta automática fuera de horario (lunes a sábado 9am–10pm, hora de Miami).
-   Una vez cada 12 h por persona. Texto editable en Respuestas rápidas con el atajo "fuera-horario" ({nombre}, {cuando}). */
+/* Paso 7: fuera de horario (lunes a sábado 9am–10pm, hora de Miami) Altair ATIENDE por WhatsApp:
+   saluda, pregunta con quién tiene el gusto, ayuda con servicios y precios, y deja todo listo para Andrés.
+   Se calla apenas Andrés escribe en ese chat. Nunca en grupos. Estado por chat en KV (waBot:<chat>). */
 const WA_HORARIO = { abre: 9, cierra: 22, dias: [1, 2, 3, 4, 5, 6] };
 function waAhoraMiami() {
   const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date());
   const dia = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(f.find(x => x.type === 'weekday').value);
   return { dia, hora: Number(f.find(x => x.type === 'hour').value) % 24 };
 }
-async function waFueraHorario(env, de, nombre, texto) {
-  if (!env.CACHE) return;
-  const { dia, hora } = waAhoraMiami(), H = WA_HORARIO;
-  if (H.dias.includes(dia) && hora >= H.abre && hora < H.cierra) return;   // dentro del horario
-  const clave = 'waFH:' + de;
-  if (await env.CACHE.get(clave).catch(() => null)) return;
+const waEnHorario = () => { const { dia, hora } = waAhoraMiami(); return WA_HORARIO.dias.includes(dia) && hora >= WA_HORARIO.abre && hora < WA_HORARIO.cierra; };
+const WA_ALTAIR_SYSTEM = ALTAIR_WEB_SYSTEM.split('CONTACT CAPTURE')[0] + `REGISTRO DE EMPRESA (LLC) en cualquier estado de EE. UU., fees del estado incluidos: Básico $600 | Premium $950 (página: dgpglobalgroup.com/registro-de-empresas/).
+
+YOU ARE ANSWERING ON WHATSAPP. You are Altair, the virtual assistant of DGP Global Group. A human advisor ("el asesor encargado") follows up afterwards; never mention anyone's name.
+- NEVER say the business is closed, unavailable or outside hours. Attend the person warmly and help right now.
+- Write like WhatsApp: short (1 to 3 sentences), natural, friendly, no markdown, at most one emoji.
+- Conversation flow:
+  1) If you do not know the person's name yet and they have not given it: greet, introduce yourself in a few words ("Soy Altair, el asistente de DGP Global Group") and ask "¿Con quién tengo el gusto?". If they already asked something, answer briefly too.
+  2) When they give their name: "¡Es un placer, <name>!" and ask how you can help ("¿En qué te puedo ayudar?").
+  3) If they skip the name, do not insist: just ask how you can help and help them.
+  4) Answer questions about services and prices using ONLY the information above ("desde $X"). Ask what kind of business they have and what they need.
+  5) Try to move forward: ask what kind of business they have and what they need, and offer a quote or a call. When they want to hire, a quote, a call, or something you cannot confirm: say "Perfecto, el asesor encargado te contactará en breve" (in English: "Perfect, the advisor in charge will contact you shortly").
+- You already have their WhatsApp number: never ask for phone. Never ask for sensitive data (SSN, ITIN, IDs, cards, passwords). Never invent prices, dates or discounts.
+- If they write in English, answer 100% in English (in English: "Who do I have the pleasure of speaking with?", "It's a pleasure, <name>!").
+OUTPUT: only JSON {"respuesta": "<your WhatsApp message>", "nombre": "<the person's first name if they told it in this conversation, else null>", "interes": "<short summary of what they need, or null>"}`;
+async function waAsistente(env, ctx, de, nombreWA, texto) {
+  if (!env.CACHE || !env.GROQ_API_KEY || !String(texto || '').trim()) return false;
+  const horario = waEnHorario();
+  const clave = 'waBot:' + de;
+  let st = await env.CACHE.get(clave, 'json').catch(() => null);
+  if (st?.pausa) return false;
   const token = await firebaseLogin(env);
-  if (!(await automatizaciones(env, token)).waFueraHorario) return;
-  await env.CACHE.put(clave, '1', { expirationTtl: 12 * 3600 }).catch(() => {});
-  const en = idiomaTexto(texto) === 'en';
-  // ¿Cuándo abrimos? hoy (madrugada de un día de trabajo), mañana, o el lunes
-  let cuando;
-  if (H.dias.includes(dia) && hora < H.abre) cuando = en ? 'today at 9:00 a.m.' : 'hoy a partir de las 9:00 a. m.';
-  else { const sig = (dia + 1) % 7; cuando = H.dias.includes(sig) ? (en ? 'tomorrow at 9:00 a.m.' : 'mañana a partir de las 9:00 a. m.') : (en ? 'on Monday at 9:00 a.m.' : 'el lunes a partir de las 9:00 a. m.'); }
-  const n = String(nombre || '').trim().split(/\s+/)[0] || '';
-  let msg = en
-    ? `Hi${n ? ' ' + n : ''}! Thanks for writing to DGP Global Group. We are currently outside business hours (Monday to Saturday, 9 a.m. to 10 p.m. Miami time). We will reply ${cuando}. Feel free to leave your question and we will have it ready. 🙌`
-    : `¡Hola${n ? ' ' + n : ''}! Gracias por escribir a DGP Global Group. En este momento estamos fuera de horario (lunes a sábado de 9 a. m. a 10 p. m., hora de Miami). Te respondemos ${cuando}. Si quieres, déjanos tu consulta y la tenemos lista. 🙌`;
-  if (!en) {
-    const cfg = await fsGet(env, 'config/respuestasRapidas', token).catch(() => null);
-    const t = (cfg?.lista || []).find(x => x.atajo === 'fuera-horario');
-    if (t?.texto) msg = String(t.texto).replace(/\{nombre\}/g, n).replace(/\{cuando\}/g, cuando).replace(/ !/g, '!').replace(/¡Hola!/g, '¡Hola!');
+  const auto = await automatizaciones(env, token);
+  // Fuera de horario atiende a todos (interruptor waFueraHorario); en horario solo a números nuevos (interruptor waProspectos, apagado al inicio)
+  if (horario ? !auto.waProspectos : !auto.waFueraHorario) return false;
+  if (!st) {
+    st = { hist: [], n: 0 };
+    // ¿Ya lo conocemos? (cliente, portal o aliado) → se le saluda por su nombre
+    const num = /@c\.us$/.test(de) ? de.split('@')[0] : '';
+    if (num) {
+      const [cl, po, al] = await Promise.all(['clientes', 'portal', 'aliados'].map(c => fsList(env, c, token).catch(() => [])));
+      const igual = t => { const d = String(t || '').replace(/\D/g, ''); return d.length >= 7 && (num.endsWith(d.slice(-10)) || d.endsWith(num.slice(-10))); };
+      const x = al.find(a => igual(a.telefono)) || cl.find(c => igual(c.telefono)) || po.find(c => igual(c.telefono));
+      if (x) { st.nombre = String(x.nombre || '').split(' ')[0]; st.conocido = true; }
+    }
   }
-  await new Promise(r => setTimeout(r, 3000 + Math.random() * 4000));
-  await waEnviarTexto(env, de, msg);
+  if (horario && st.conocido) { st.pausa = true; await env.CACHE.put(clave, JSON.stringify(st), { expirationTtl: 14 * 3600 }).catch(() => {}); return false; }   // en horario no atiende a clientes ni aliados
+  st.hist.push({ role: 'user', content: String(texto).slice(0, 1200) });
+  st.hist = st.hist.slice(-12);
+  const en = idiomaTexto(texto) === 'en';
+  let respuesta = '', datos = {};
+  if (st.n >= 6) {   // después de 6 respuestas pasa la conversación al asesor
+    respuesta = en ? `Perfect${st.nombre ? ', ' + st.nombre : ''}! The advisor in charge will contact you shortly. Thank you! 🙌` : `¡Perfecto${st.nombre ? ', ' + st.nombre : ''}! El asesor encargado te contactará en breve. ¡Gracias! 🙌`;
+    st.pausa = true; st.traspaso = true;
+  } else {
+    const contexto = (st.nombre ? `\n\nKNOWN NAME: ${st.nombre}${st.conocido ? ' (existing client: greet them by name, do NOT ask who they are)' : ''}.` : (nombreWA ? `\n\nTheir WhatsApp profile name is "${nombreWA}" (it may not be their real name: still ask).` : ''))
+      + (en ? '\n\nThe person writes in ENGLISH: reply in English.' : '\n\nLa persona escribe en ESPAÑOL: responde en español.');
+    try {
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
+        headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: WA_ALTAIR_SYSTEM + contexto }, ...st.hist], max_tokens: 300, temperature: 0.6, response_format: { type: 'json_object' } }) });
+      const d = await r.json().catch(() => ({}));
+      datos = JSON.parse(String(d.choices?.[0]?.message?.content || '{}'));
+      respuesta = String(datos.respuesta || '').trim();
+    } catch (e) { console.warn('Altair WA', e); }
+    if (!respuesta) return false;
+    if (datos.nombre && datos.nombre !== 'null' && !st.conocido) st.nombre = String(datos.nombre).split(' ')[0].slice(0, 30);
+    if (datos.interes && datos.interes !== 'null') st.interes = String(datos.interes).slice(0, 200);
+  }
+  st.hist.push({ role: 'assistant', content: respuesta });
+  st.n++;
+  await env.CACHE.put(clave, JSON.stringify(st), { expirationTtl: 14 * 3600 }).catch(() => {});
+  // "escribiendo…" unos segundos, como una persona
+  await waFetch(env, '/api/startTyping', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId: de }) }).catch(() => {});
+  await new Promise(r => setTimeout(r, Math.min(12000, 4000 + respuesta.length * 40 + Math.random() * 2000)));
+  await waFetch(env, '/api/stopTyping', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId: de }) }).catch(() => {});
+  await env.CACHE.put('waBotTx:' + de, String(Date.now()), { expirationTtl: 300 }).catch(() => {});
+  const enviado = await waEnviarTexto(env, de, respuesta);
+  const mid = enviado?.id?._serialized || enviado?.id?.id || (typeof enviado?.id === 'string' ? enviado.id : '');
+  if (mid) await env.CACHE.put('waBotId:' + mid, '1', { expirationTtl: 600 }).catch(() => {});
+  // Te avisa con la conversación: al pasarte el chat, o cuando ya se sabe qué necesita (una vez)
+  if (st.traspaso || (st.interes && !st.avisado)) {
+    st.avisado = true; await env.CACHE.put(clave, JSON.stringify(st), { expirationTtl: 14 * 3600 }).catch(() => {});
+    const conv = st.hist.slice(-10).map(m => `${m.role === 'user' ? '👤' : '🤖'} ${escHtml(String(m.content).slice(0, 300))}`).join('\n');
+    const num = de.split('@')[0];
+    const env2 = await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', disable_web_page_preview: true,
+      text: `🤖 <b>Altair atendió por WhatsApp a ${escHtml(st.nombre || nombreWA || '+' + num)}</b>${/^\d+$/.test(num) ? ` · +${num}` : ''}${st.interes ? `\n🎯 <b>Necesita:</b> ${escHtml(st.interes)}` : ''}${st.traspaso ? '\n\n<b>Ya le dije que el asesor lo contacta en breve. Te toca.</b>' : ''}\n\n${conv}\n\n↩️ <i>Responde a este mensaje para escribirle por WhatsApp (Altair se calla).</i>` }).catch(() => null);
+    if (env2?.result?.message_id) await fsGuardar(env, `tgMap/${env2.result.message_id}`, { tipo: 'wa', chatId: de, nombre: st.nombre || nombreWA || '+' + num }, token).catch(() => {});
+  }
+  return true;
+}
+// Si Andrés escribe en el chat (panel, celular o Telegram), Altair se calla en ese chat
+async function waPausarAsistente(env, chat, msgId) {
+  if (!env.CACHE || !/@(c\.us|lid)$/.test(chat)) return;
+  if (msgId && await env.CACHE.get('waBotId:' + msgId).catch(() => null)) return;   // fue el propio Altair
+  const tx = Number(await env.CACHE.get('waBotTx:' + chat).catch(() => 0)) || 0;
+  if (!msgId && Date.now() - tx < 8000) return;
+  const st = await env.CACHE.get('waBot:' + chat, 'json').catch(() => null) || { hist: [], n: 0 };
+  if (st.pausa) return;
+  st.pausa = true;
+  await env.CACHE.put('waBot:' + chat, JSON.stringify(st), { expirationTtl: 14 * 3600 }).catch(() => {});
 }
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
@@ -1898,6 +1965,7 @@ async function handleWAWebhook(request, env, ctx) {
   let ev = {}; try { ev = JSON.parse(cuerpo); } catch (e) { return new Response('ok'); }
   const tarea = (async () => {
     const p = ev.payload || {};
+    if (ev.event === 'message.any' && p.fromMe) { await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
       if (!/@(c\.us|lid)$/.test(de)) return;   // grupos, canales y estados no avisan (serían demasiados)
@@ -1907,7 +1975,8 @@ async function handleWAWebhook(request, env, ctx) {
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
       // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
       // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
-      ctx?.waitUntil ? ctx.waitUntil(waFueraHorario(env, de, nombre, String(p.body || '')).catch(e => console.warn('fuera de horario', e))) : null;
+      const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; });
+      if (ctx?.waitUntil) ctx.waitUntil(atendido);
       const clave = 'waAviso:' + de;
       if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
       if (env.CACHE) await env.CACHE.put(clave, '1', { expirationTtl: 180 }).catch(() => {});
@@ -3551,7 +3620,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true };
 }
 
 /* ══════════════════════════════════════════════════════════════
