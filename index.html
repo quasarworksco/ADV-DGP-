@@ -8926,7 +8926,7 @@ async function renderResumenGeneral() {
     { ir: 'metaads', col: '#4f46e5', dark: '#4338ca', l: 'Meta Ads (30 días)', v: extra.meta ? cbMoney(extra.meta.gastado) : '…', n: extra.meta ? `gastado · <b>${extra.meta.conversaciones}</b> mensajes` : (extra.metaErr ? 'No disponible' : 'Cargando…'), ico: '<path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>' }
   ].map(_rgCard).join('');
   el.innerHTML = tarjetas(_rgCache);
-  if (Date.now() - _rgCache.t < 5 * 60e3 && _rgCache.web && _rgCache.meta && _rgCache.rw) return;
+  if (Date.now() - _rgCache.t < 5 * 60e3) return;   // también si fallaron: se reintenta a los 5 minutos
   // Lo que viene de fuera (reseñas, Databuddy, Meta) se pide aparte y se guarda 5 minutos
   const extra = { t: Date.now() };
   const tok = await currentUser.getIdToken().catch(() => null);
@@ -8936,7 +8936,8 @@ async function renderResumenGeneral() {
     fetch(`${RW_WORKER}/meta-ads?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.total) extra.meta = d.total; else extra.metaErr = true; }).catch(() => { extra.metaErr = true; })
   ]);
   _rgCache = extra;
-  if (document.getElementById('page-dashboard').classList.contains('active')) el.innerHTML = tarjetas(extra);
+  // Se vuelve a calcular con los datos de ahora (las facturas pudieron cargar mientras se esperaba la web y Meta)
+  if (document.getElementById('page-dashboard').classList.contains('active')) renderResumenGeneral();
 }
 function renderDashboard() {
   pintarSaludo();
