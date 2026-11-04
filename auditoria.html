@@ -78,7 +78,7 @@ function pintar(a) {
   const grupos = {}; (a.checks || []).forEach(c => (grupos[c.grupo] = grupos[c.grupo] || []).push(c));
   const vit = [['Carga lo principal', m.lcp], ['Primer contenido', m.fcp], ['Movimiento al cargar', m.cls], ['Bloqueo', m.tbt], ['Peso de la página', m.peso ? (m.peso > 1024 ? (m.peso / 1024).toFixed(1) + ' MB' : m.peso + ' KB') : null]].filter(x => x[1]);
   document.title = `Auditoría de ${a.host} · DGP Global Group`;
-  document.getElementById('wa').href = `https://wa.me/13465372353?text=${encodeURIComponent(`Hola DGP, vi la auditoría de ${a.host} y quiero mejorar mi página web.`)}`;
+  document.getElementById('wa').href = `https://wa.me/12398231738?text=${encodeURIComponent(`Hola DGP, vi la auditoría de ${a.host} y quiero mejorar mi página web.`)}`;
   document.getElementById('acc').hidden = false;
   document.getElementById('hoja').innerHTML = `
   <div class="cab"><div class="marca"><img src="/logo.png" alt="DGP"><div><b>DGP <span>GLOBAL</span> GROUP</b><small>Diseño web y marketing digital</small></div></div>
@@ -95,7 +95,7 @@ function pintar(a) {
     ${(m.oportunidades || []).length ? `<h2 style="margin-top:18px">Para que cargue más rápido</h2>${m.oportunidades.map(o => `<div class="mej"><span class="pri media">−${(o.ahorro / 1000).toFixed(1)} s</span><span>${esc(o.titulo)}</span></div>`).join('')}` : ''}</div>
   <div class="sec"><h2>Revisión completa</h2><div class="checks">${Object.entries(grupos).map(([g, cs]) => `<div class="grp"><h3>${esc(g)}</h3>${cs.map(c => `<div class="ck ${c.ok ? 'ok' : 'no'}"><i>${c.ok ? '✓' : '✕'}</i>${esc(c.nombre)}</div>`).join('')}</div>`).join('')}</div></div>
   <div class="cta"><h2>¿TE AYUDAMOS A <span>MEJORARLA?</span></h2><p>Páginas web rápidas, en español e inglés, con WhatsApp y listas para aparecer en Google.</p>
-    <div class="datos"><span>WhatsApp +1 (346) 537-2353</span><span>info@dgpglobalgroup.com</span><span>dgpglobalgroup.com</span></div></div>
+    <div class="datos"><span>WhatsApp +1 (239) 823-1738</span><span>info@dgpglobalgroup.com</span><span>dgpglobalgroup.com</span></div></div>
   <div class="pie">Auditoría automática de DGP Global Group con datos de Google PageSpeed y una revisión de la página. Los resultados pueden variar según el momento de la medición.</div>`;
 }
 async function descargarPDF(btn) {

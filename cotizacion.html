@@ -131,7 +131,7 @@
   const db = firebase.firestore();
   const AVISO_URL = 'https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/aviso';  // los avisos a Telegram pasan por el bot (el token no va en la página)
   const aviso = (col, id, texto, foto) => fetch(AVISO_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ col, id, texto, foto }) }).catch(() => {});
-  const WA = '13465372353';
+  const WA = '12398231738';
 
   const id = new URLSearchParams(location.search).get('id');
   let cot = null;
