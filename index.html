@@ -12801,6 +12801,7 @@ function abrirAltair() {
     ${fila('cobrador', 'Cobrador amable', 'Por correo, solo a quien no tiene WhatsApp: día 3 y día 8 de atraso; el día 15 te avisa para que llames.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
+    ${fila('waFueraHorario', 'Respuesta fuera de horario', 'Si alguien escribe por WhatsApp fuera de lunes a sábado de 9am a 10pm (hora de Miami), recibe una sola respuesta automática diciendo cuándo le contestas. Texto editable en Respuestas rápidas (/fuera-horario).')}
     ${fila('waRecibo', 'Recibo por WhatsApp al cobrar', 'Al confirmar un pago o abono (panel, Telegram o automático), el cliente recibe por WhatsApp el monto recibido y su recibo, o lo que le queda por pagar. Si es cliente de un aliado, le llega al aliado.')}
     ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}
     ${fila('smmAvisos', 'Seguidores que avisan solos', 'Cada 3 horas revisa tus pedidos en JustAnotherPanel. Al completarse te avisa por Telegram y le manda un correo al cliente; si queda parcial, se cancela o se traba 48 h, te avisa para decidir.')}
@@ -12962,13 +12963,19 @@ const WA_RR_BASE = [
   { atajo: 'llc', texto: 'Hola {nombre}! Registramos tu empresa (LLC) en cualquier estado de EE. UU., con los fees del estado incluidos:\n\n• Básico: $600\n• Premium: $950\n\nAquí tienes todos los detalles: https://dgpglobalgroup.com/registro-de-empresas/\n\n¿En qué estado quieres registrarla?' },
   { atajo: 'web', texto: 'Hola {nombre}! Tenemos tres planes de página web con pago único:\n\n• Básico desde $280: landing page + código QR\n• Estándar desde $455: hasta 5 páginas con WhatsApp y formulario\n• Premium desde $950: catálogo o reservas, SEO, Google Analytics y 12 meses de hosting\n\nMira los detalles: https://dgpglobalgroup.com/diseno-web/' },
   { atajo: 'gracias', texto: '¡Gracias por tu pago, {nombre}! Ya quedó registrado. Cualquier cosa que necesites, aquí estamos.' },
-  { atajo: 'horario', texto: 'Nuestro horario de atención es de lunes a viernes de 9:00 a. m. a 6:00 p. m. (hora de Miami). Si nos escribes fuera de ese horario, te respondemos apenas abramos. ¡Gracias!' }
+  { atajo: 'horario', texto: 'Nuestro horario de atención es de lunes a sábado de 9:00 a. m. a 10:00 p. m. (hora de Miami). Si nos escribes fuera de ese horario, te respondemos apenas abramos. ¡Gracias!' },
+  { atajo: 'fuera-horario', texto: '¡Hola {nombre}! Gracias por escribir a DGP Global Group. En este momento estamos fuera de horario (lunes a sábado de 9 a. m. a 10 p. m., hora de Miami). Te respondemos {cuando}. Si quieres, déjanos tu consulta y la tenemos lista. 🙌' }
 ];
 let _waRR = null;
 async function waRRCargar() {
   if (_waRR) return _waRR;
   try { const s = await db.collection('config').doc('respuestasRapidas').get();
-    if (s.exists && Array.isArray(s.data().lista)) _waRR = s.data().lista;
+    if (s.exists && Array.isArray(s.data().lista)) {
+      _waRR = s.data().lista; let cambio = false;
+      const h0 = _waRR.find(x => x.atajo === 'horario'); if (h0 && /lunes a viernes de 9:00 a\. m\. a 6:00 p\. m\./.test(h0.texto)) { h0.texto = WA_RR_BASE.find(x => x.atajo === 'horario').texto; cambio = true; }
+      if (!_waRR.some(x => x.atajo === 'fuera-horario')) { _waRR.push(WA_RR_BASE.find(x => x.atajo === 'fuera-horario')); cambio = true; }
+      if (cambio) db.collection('config').doc('respuestasRapidas').set({ lista: _waRR }).catch(() => {});
+    }
     else { _waRR = WA_RR_BASE.slice(); await db.collection('config').doc('respuestasRapidas').set({ lista: _waRR }); } }
   catch (e) { _waRR = WA_RR_BASE.slice(); }
   return _waRR;

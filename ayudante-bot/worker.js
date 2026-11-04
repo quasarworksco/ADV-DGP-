@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04p';
+const WORKER_VERSION = '2026-11-04q';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1854,6 +1854,40 @@ async function waComprobante(env, p, de) {
   await waEnviarTexto(env, de, en ? 'We received your payment receipt, we are verifying it ✅' : 'Recibimos tu comprobante, lo estamos verificando ✅').catch(() => {});
   return true;
 }
+/* Paso 7: respuesta automática fuera de horario (lunes a sábado 9am–10pm, hora de Miami).
+   Una vez cada 12 h por persona. Texto editable en Respuestas rápidas con el atajo "fuera-horario" ({nombre}, {cuando}). */
+const WA_HORARIO = { abre: 9, cierra: 22, dias: [1, 2, 3, 4, 5, 6] };
+function waAhoraMiami() {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date());
+  const dia = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(f.find(x => x.type === 'weekday').value);
+  return { dia, hora: Number(f.find(x => x.type === 'hour').value) % 24 };
+}
+async function waFueraHorario(env, de, nombre, texto) {
+  if (!env.CACHE) return;
+  const { dia, hora } = waAhoraMiami(), H = WA_HORARIO;
+  if (H.dias.includes(dia) && hora >= H.abre && hora < H.cierra) return;   // dentro del horario
+  const clave = 'waFH:' + de;
+  if (await env.CACHE.get(clave).catch(() => null)) return;
+  const token = await firebaseLogin(env);
+  if (!(await automatizaciones(env, token)).waFueraHorario) return;
+  await env.CACHE.put(clave, '1', { expirationTtl: 12 * 3600 }).catch(() => {});
+  const en = idiomaTexto(texto) === 'en';
+  // ¿Cuándo abrimos? hoy (madrugada de un día de trabajo), mañana, o el lunes
+  let cuando;
+  if (H.dias.includes(dia) && hora < H.abre) cuando = en ? 'today at 9:00 a.m.' : 'hoy a partir de las 9:00 a. m.';
+  else { const sig = (dia + 1) % 7; cuando = H.dias.includes(sig) ? (en ? 'tomorrow at 9:00 a.m.' : 'mañana a partir de las 9:00 a. m.') : (en ? 'on Monday at 9:00 a.m.' : 'el lunes a partir de las 9:00 a. m.'); }
+  const n = String(nombre || '').trim().split(/\s+/)[0] || '';
+  let msg = en
+    ? `Hi${n ? ' ' + n : ''}! Thanks for writing to DGP Global Group. We are currently outside business hours (Monday to Saturday, 9 a.m. to 10 p.m. Miami time). We will reply ${cuando}. Feel free to leave your question and we will have it ready. 🙌`
+    : `¡Hola${n ? ' ' + n : ''}! Gracias por escribir a DGP Global Group. En este momento estamos fuera de horario (lunes a sábado de 9 a. m. a 10 p. m., hora de Miami). Te respondemos ${cuando}. Si quieres, déjanos tu consulta y la tenemos lista. 🙌`;
+  if (!en) {
+    const cfg = await fsGet(env, 'config/respuestasRapidas', token).catch(() => null);
+    const t = (cfg?.lista || []).find(x => x.atajo === 'fuera-horario');
+    if (t?.texto) msg = String(t.texto).replace(/\{nombre\}/g, n).replace(/\{cuando\}/g, cuando).replace(/ !/g, '!').replace(/¡Hola!/g, '¡Hola!');
+  }
+  await new Promise(r => setTimeout(r, 3000 + Math.random() * 4000));
+  await waEnviarTexto(env, de, msg);
+}
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
   if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
@@ -1873,6 +1907,7 @@ async function handleWAWebhook(request, env, ctx) {
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
       // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
       // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
+      ctx?.waitUntil ? ctx.waitUntil(waFueraHorario(env, de, nombre, String(p.body || '')).catch(e => console.warn('fuera de horario', e))) : null;
       const clave = 'waAviso:' + de;
       if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
       if (env.CACHE) await env.CACHE.put(clave, '1', { expirationTtl: 180 }).catch(() => {});
@@ -3516,7 +3551,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════
