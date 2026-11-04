@@ -5310,7 +5310,7 @@ const PR_ESTADOS = {
   cliente:    ['Ganado', '#059669'],
   descartado: ['Descartado', '#94a3b8']
 };
-const PR_ORIGEN = { web: ['Formulario web', '#1438cc'], chat: ['Chat de Altair', '#7c3aed'], manual: ['Agregado a mano', '#64748b'] };
+const PR_ORIGEN = { web: ['Formulario web', '#1438cc'], chat: ['Chat de Altair', '#7c3aed'], manual: ['Agregado a mano', '#64748b'], whatsapp: ['WhatsApp', '#00a884'] };
 let _pr = { lista: null, filtro: 'activos', origen: '', q: '', t: 0 };
 
 async function renderProspectos(fresco) {
@@ -5342,8 +5342,8 @@ function _prFirma() { const n = (currentUser?.displayName || '').trim().split(/\
 function prMensaje(p, lang) {
   const primer = String(p.nombre || '').trim().split(/\s+/)[0];
   const sobre = p.servicio && !/chat/i.test(p.servicio) ? p.servicio.charAt(0).toLowerCase() + p.servicio.slice(1) : '';
-  if (lang === 'en') return `Hi${primer ? ' ' + primer : ''}! This is ${_prFirma()} from DGP Global Group. Thank you for contacting us${p.origen === 'chat' ? ' through our website chat' : ' through our website'}${sobre ? ` about ${sobre}` : ''}. I'd be happy to help you. Tell me a little about your business so I can send you the best option. When is a good time to talk?`;
-  return `¡Hola${primer ? ' ' + primer : ''}! Te escribe ${_prFirma()} de DGP Global Group. Gracias por escribirnos${p.origen === 'chat' ? ' por el chat de nuestra web' : ' desde nuestra web'}${sobre ? ` sobre ${sobre}` : ''}. Con gusto te ayudo. Cuéntame un poco de tu negocio para enviarte la mejor opción. ¿A qué hora te queda bien que hablemos?`;
+  if (lang === 'en') return `Hi${primer ? ' ' + primer : ''}! This is ${_prFirma()} from DGP Global Group. Thank you for contacting us${p.origen === 'chat' ? ' through our website chat' : p.origen === 'whatsapp' ? ' on WhatsApp' : ' through our website'}${sobre ? ` about ${sobre}` : ''}. I'd be happy to help you. Tell me a little about your business so I can send you the best option. When is a good time to talk?`;
+  return `¡Hola${primer ? ' ' + primer : ''}! Te escribe ${_prFirma()} de DGP Global Group. Gracias por escribirnos${p.origen === 'chat' ? ' por el chat de nuestra web' : p.origen === 'whatsapp' ? ' por WhatsApp' : ' desde nuestra web'}${sobre ? ` sobre ${sobre}` : ''}. Con gusto te ayudo. Cuéntame un poco de tu negocio para enviarte la mejor opción. ¿A qué hora te queda bien que hablemos?`;
 }
 
 function prPintar() {
@@ -12802,6 +12802,7 @@ function abrirAltair() {
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
     ${fila('waFueraHorario', 'Altair atiende fuera de horario', 'Fuera de lunes a sábado 9am–10pm (Miami), Altair atiende por WhatsApp: saluda, pregunta con quién tiene el gusto, ayuda con servicios y precios y te avisa en Telegram. Se calla apenas tú escribes en el chat.')}
+    ${fila('waProspectoAuto', 'Prospectos automáticos de WhatsApp', 'Si te escribe un número nuevo (no cliente, aliado ni prospecto), se guarda solo en Prospectos al segundo mensaje o cuando le dice su nombre a Altair, con lo que necesita. Sin spam ni grupos.')}
     ${fila('waProspectos', 'Altair responde a prospectos', 'En horario, Altair atiende solo a números nuevos (nunca clientes, aliados ni grupos): hasta 6 respuestas y luego les dice que el asesor encargado los contactará en breve.')}
     ${fila('waRecibo', 'Recibo por WhatsApp al cobrar', 'Al confirmar un pago o abono (panel, Telegram o automático), el cliente recibe por WhatsApp el monto recibido y su recibo, o lo que le queda por pagar. Si es cliente de un aliado, le llega al aliado.')}
     ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}

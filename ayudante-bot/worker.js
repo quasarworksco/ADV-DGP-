@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04s';
+const WORKER_VERSION = '2026-11-04t';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1944,6 +1944,49 @@ async function waAsistente(env, ctx, de, nombreWA, texto) {
   }
   return true;
 }
+/* Paso 9: prospecto automático. Número nuevo (no cliente, aliado ni prospecto) → se crea en Prospectos
+   al segundo mensaje o cuando le dice su nombre a Altair. Si ya es prospecto, se actualiza su último mensaje. */
+function waNumeroReal(de, p) {
+  if (/@c\.us$/.test(de)) return de.split('@')[0];
+  const m = JSON.stringify(p?._data || {}).match(/"(\d{8,15})(?::\d+)?@s\.whatsapp\.net"/);
+  return m ? m[1] : '';
+}
+async function waProspectoAuto(env, de, p, nombreWA, texto) {
+  if (!env.CACHE || !/@(c\.us|lid)$/.test(de)) return;
+  const t = String(texto || '').trim(), enlaces = (t.match(/https?:\/\/\S+/g) || []).length;
+  if (!t || enlaces >= 3 || /chat\.whatsapp\.com\//i.test(t) && enlaces >= 2) return;   // spam o difusión
+  const num = waNumeroReal(de, p); if (!num) return;
+  const marca = await env.CACHE.get('waCon:' + num).catch(() => null);
+  if (marca === 'conocido') return;
+  const token = await firebaseLogin(env);
+  const bot = await env.CACHE.get('waBot:' + de, 'json').catch(() => null) || {};
+  if (marca && marca.startsWith('p:')) {   // ya es prospecto: último mensaje (y lo que Altair entendió)
+    const id = marca.slice(2), upd = { ultimoMensaje: t.slice(0, 500), ultimoMensajeAt: new Date().toISOString() }, mask = ['ultimoMensaje', 'ultimoMensajeAt'];
+    if (bot.interes && !bot.interesGuardado) { upd.interesWA = bot.interes; mask.push('interesWA'); bot.interesGuardado = true; await env.CACHE.put('waBot:' + de, JSON.stringify(bot), { expirationTtl: 14 * 3600 }).catch(() => {}); }
+    await fsUpdate(env, `prospectos/${id}`, upd, mask, token).catch(() => {});
+    return;
+  }
+  if (!(await automatizaciones(env, token)).waProspectoAuto) return;
+  // ¿Lo conocemos? (una sola lectura; queda recordado)
+  if (!marca) {
+    const [cl, po, al, pr] = await Promise.all(['clientes', 'portal', 'aliados', 'prospectos'].map(c => fsList(env, c, token).catch(() => [])));
+    const igual = x => { const d = String(x || '').replace(/\D/g, ''); return d.length >= 7 && (num.endsWith(d.slice(-10)) || d.endsWith(num.slice(-10))); };
+    if ([...cl, ...po, ...al].some(x => igual(x.telefono))) { await env.CACHE.put('waCon:' + num, 'conocido', { expirationTtl: 7 * 86400 }).catch(() => {}); return; }
+    const ya = pr.find(x => igual(x.telefono));
+    if (ya) { await env.CACHE.put('waCon:' + num, 'p:' + ya._id, { expirationTtl: 30 * 86400 }).catch(() => {}); return waProspectoAuto(env, de, p, nombreWA, texto); }
+    await env.CACHE.put('waCon:' + num, 'nuevo', { expirationTtl: 2 * 86400 }).catch(() => {});
+  }
+  // Número nuevo: se crea al segundo mensaje o cuando ya dijo su nombre
+  const np = await env.CACHE.get('waNP:' + num, 'json').catch(() => null) || { n: 0, primer: t.slice(0, 500) };
+  np.n++;
+  await env.CACHE.put('waNP:' + num, JSON.stringify(np), { expirationTtl: 2 * 86400 }).catch(() => {});
+  if (np.n < 2 && !bot.nombre) return;
+  const nombre = bot.nombre || String(nombreWA || '').trim() || '+' + num;
+  const id = await fsCreate(env, 'prospectos', { nombre: nombre.slice(0, 80), negocio: '', telefono: '+' + num, correo: '', servicio: bot.interes || '', mensaje: np.primer,
+    ultimoMensaje: t.slice(0, 500), ultimoMensajeAt: new Date().toISOString(), notas: 'Escribió por WhatsApp', origen: 'whatsapp', estado: 'nuevo', intentos: 0, createdAt: new Date(), creadoPor: 'whatsapp' }, token);
+  await env.CACHE.put('waCon:' + num, 'p:' + id, { expirationTtl: 30 * 86400 }).catch(() => {});
+  await tgEnviar(env, `🎯 <b>Prospecto nuevo de WhatsApp:</b> ${escHtml(nombre)} · +${num}${bot.interes ? `\n${escHtml(bot.interes)}` : ''}\nQuedó en Prospectos.`).catch(() => {});
+}
 // Si Andrés escribe en el chat (panel, celular o Telegram), Altair se calla en ese chat
 async function waPausarAsistente(env, chat, msgId) {
   if (!env.CACHE || !/@(c\.us|lid)$/.test(chat)) return;
@@ -1975,7 +2018,8 @@ async function handleWAWebhook(request, env, ctx) {
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
       // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
       // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
-      const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; });
+      const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; })
+        .then(() => waProspectoAuto(env, de, p, nombre, String(p.body || '')).catch(e => console.warn('Prospecto WA', e)));
       if (ctx?.waitUntil) ctx.waitUntil(atendido);
       const clave = 'waAviso:' + de;
       if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
@@ -3620,7 +3664,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true, waProspectoAuto: c.waProspectoAuto !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════
