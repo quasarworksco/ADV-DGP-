@@ -11240,6 +11240,8 @@ aplicarTemporada();
 
 /* ═══ Perfil y saludo ═══ */
 function nombrePerfil(u) { u = u || currentUser; return (u?.displayName || '').trim(); }
+const SIN_FOTO = 'https://adv.dgp-link.com/#sin-foto';
+const fotoPerfil = u => { const f = u?.photoURL || ''; return f === SIN_FOTO ? '' : f; };
 function pintarPerfil(u) {
   u = u || currentUser;
   const n = nombrePerfil(u), mn = document.getElementById('hdr-menu-nombre'), mc = document.getElementById('hdr-menu-correo');
@@ -11248,7 +11250,7 @@ function pintarPerfil(u) {
   if (mc) mc.textContent = u?.email || '';
   // Foto de perfil en el botón de arriba (si no hay foto, queda el ícono)
   const av = document.getElementById('user-avatar-init');
-  if (av) { const f = u?.photoURL || ''; av.classList.toggle('con-foto', !!f); av.style.backgroundImage = f ? `url('${f}')` : ''; }
+  if (av) { const f = fotoPerfil(u); av.classList.toggle('con-foto', !!f); av.style.backgroundImage = f ? `url('${f}')` : ''; }
   pintarSaludo();
 }
 function pintarSaludo() {
@@ -11262,7 +11264,7 @@ function pintarSaludo() {
 }
 function abrirPerfil() {
   const u = currentUser;
-  const foto = u?.photoURL || '';
+  const foto = fotoPerfil(u);
   ptModal('Configurar perfil', 'Así te saluda el panel y te ve tu equipo', `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
       <div id="pf-foto" style="width:72px;height:72px;border-radius:18px;flex-shrink:0;background:${foto ? `center/cover url('${esc(foto)}')` : 'var(--blue)'};display:flex;align-items:center;justify-content:center;color:#fff;font:800 24px 'Plus Jakarta Sans',sans-serif">${foto ? '' : esc(clIniciales(nombrePerfil(u) || 'D'))}</div>
@@ -11292,7 +11294,7 @@ async function subirFotoPerfil(input) {
   } catch (e) { toast('No se pudo subir la foto: ' + e.message, 'err'); }
 }
 async function quitarFotoPerfil() {
-  try { await currentUser.updateProfile({ photoURL: null }); pintarPerfil(currentUser); closePortalModal(); toast('Foto quitada'); }
+  try { await currentUser.updateProfile({ photoURL: SIN_FOTO }); await currentUser.reload().catch(() => {}); currentUser = auth.currentUser || currentUser; pintarPerfil(currentUser); closePortalModal(); toast('Foto quitada'); }
   catch (e) { toast(e.message, 'err'); }
 }
 async function guardarPerfil() {
