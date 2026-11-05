@@ -739,7 +739,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05u';
+const WORKER_VERSION = '2026-11-05v';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -4217,6 +4217,11 @@ async function chequearWeb(dominio) {
   catch (e) {
     try { r = await prueba(`http://${host}/`); candado = false; }
     catch (e2) { return { estado: 'caida', candado: null, ms: null, codigo: null, error: String(e.message || e).slice(0, 120) }; }
+  }
+  // 525/526: el certificado de seguridad (https) no es válido → la web está en línea pero falla el candado (no es caída)
+  if (candado && (r.codigo === 525 || r.codigo === 526)) {
+    try { const h = await prueba(`http://${host}/`); if (h.codigo < 500) return { estado: h.ms > 3000 ? 'lenta' : 'ok', candado: false, ms: h.ms, codigo: h.codigo, error: 'Certificado https no válido' }; } catch (e) {}
+    return { estado: 'ok', candado: false, ms: r.ms, codigo: r.codigo, error: 'Certificado https no válido' };
   }
   // 401/403/429: la web responde pero no deja entrar a robots → está en línea
   const caida = r.codigo >= 500 || (r.codigo >= 400 && ![401, 403, 429].includes(r.codigo));
