@@ -5137,6 +5137,8 @@ function alDetalle(a) {
         <button class="pt-hbtn" onclick="alEditar('${a._id}')">Editar</button>
       </div>
     </div>
+    ${(() => { const c = a.clienteId && clientesList.find(x => x._id === a.clienteId); if (!c) return ''; const debeC = clStatsDe(c).debe || 0;
+      return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:12.5px">También es tu cliente <b>${esc(clNombre(c))}</b> · debe como cliente <b>${_alUsd(debeC)}</b> · <b>Total ${_alUsd(debeC + r.pendiente)}</b> <button class="pt-hbtn" style="margin-left:6px" onclick="abrirFichaCliente('${c._id}')">Ver cliente</button></div>`; })()}
     <div class="cb-tiles" style="margin-bottom:14px">
       <div class="cb-tile"><div class="cb-tile-l">Proyectos en común</div><div class="cb-tile-v">${r.docs.length}</div><div class="cb-tile-n">Páginas hechas para sus clientes</div></div>
       <div class="cb-tile"><div class="cb-tile-l">Facturado</div><div class="cb-tile-v">${_alUsd(r.facturado)}</div><div class="cb-tile-n">Cobrado ${_alUsd(r.cobrado)}</div></div>
@@ -9855,6 +9857,7 @@ function abrirFichaCliente(id) {
       <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Debe</div><div class="cb-tile-v" style="font-size:22px;color:${x.debe > 0.009 ? '#b91c1c' : 'var(--black)'}">${cbMoney(x.debe)}</div></div>
       <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Facturas</div><div class="cb-tile-v" style="font-size:22px;">${x.n}</div></div>
     </div>
+    ${clVinculoHTML(c, x)}
     ${(c.tags || []).length || c.notas ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">${(c.tags || []).map(t => `<span class="cl-tag">${esc(t)}</span>`).join('')}${c.notas ? `<div style="margin-top:6px;font-style:italic;color:var(--text-soft);">${esc(c.notas)}</div>` : ''}</div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
       <button class="btn-edit-save" style="margin:0;" onclick="closePortalModal();nuevaFacturaPara('${esc(c._id)}')">+ Nueva factura</button>
@@ -9871,6 +9874,47 @@ function abrirFichaCliente(id) {
       <div class="hr-monto">$${(d.total || 0).toFixed(2)}${cbSaldo(d) > 0.009 && d.pagadoParcial ? `<small>Debe $${cbSaldo(d).toFixed(2)}</small>` : ''}</div>
     </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-soft);padding:10px 0;">Aún no tiene facturas.</div>'}
     <button class="btn-edit-cancel" style="margin-top:14px;" onclick="closePortalModal()">Cerrar</button>`);
+}
+/* ── Cliente que también es aliado (misma persona, dos "sombreros"): Firestore clientes.aliadoPropioId ↔ aliados.clienteId ── */
+function _alPendiente(id) { return (_al.lista ? _alDocs(id) : []).filter(d => !d.pausada).reduce((a, d) => a + _alSaldo(d), 0); }
+function clVinculoHTML(c, x) {
+  const a = c.aliadoPropioId && (_al.lista || []).find(z => z._id === c.aliadoPropioId);
+  if (c.aliadoPropioId && !_al.lista) { aliadoParaFactura('').then(() => { if (document.getElementById('cl-vinc-' + c._id)) abrirFichaCliente(c._id); }).catch(() => {}); return `<div id="cl-vinc-${esc(c._id)}" style="font-size:12px;color:var(--text-soft);margin-bottom:12px">Cargando aliado vinculado…</div>`; }
+  if (!a) return `<button class="btn-edit-cancel" style="margin:0 0 12px;width:100%" onclick="clVincular('${esc(c._id)}')">Vincular con aliado (si esta persona también es tu aliado)</button>`;
+  const deA = _alPendiente(a._id), tot = (x.debe || 0) + deA;
+  return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.55">
+    <b>También es el aliado ${esc(a.nombre)}</b><br>Debe como cliente <b>${cbMoney(x.debe || 0)}</b> · como aliado <b>${cbMoney(deA)}</b> · <b style="color:${tot > 0.009 ? '#b91c1c' : 'var(--green-dark)'}">Total ${cbMoney(tot)}</b>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn-edit-cancel" style="margin:0" onclick="closePortalModal();_al.sel='${a._id}';irAPagina('aliados')">Ver aliado</button>
+    <button class="btn-edit-cancel" style="margin:0;color:#b91c1c" onclick="clDesvincular('${esc(c._id)}')">Desvincular</button></div></div>`;
+}
+async function clVincular(id) {
+  await aliadoParaFactura('').catch(() => {});
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  const libres = (_al.lista || []).filter(a => !a.clienteId || a.clienteId === id);
+  if (!libres.length) return toast('No hay aliados para vincular', 'err');
+  ptModal('Vincular con aliado', clNombre(c), `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:12.5px;color:var(--text-mid)">Para cuando la misma persona es tu cliente y también tu aliado. Sus facturas viejas quedan igual; solo se juntan el saldo total y los avisos.</div>
+    <select id="cl-vinc-sel">${libres.map(a => `<option value="${a._id}">${esc(a.nombre)}</option>`).join('')}</select>
+    <button class="ll-btn" style="background:var(--blue)" onclick="clVincularYa('${esc(id)}')">Vincular</button></div>`);
+}
+async function clVincularYa(id) {
+  const aid = document.getElementById('cl-vinc-sel').value, c = clientesList.find(x => x._id === id), a = (_al.lista || []).find(x => x._id === aid); if (!c || !a) return;
+  try {
+    await db.collection('clientes').doc(id).set({ aliadoPropioId: aid }, { merge: true });
+    await db.collection('aliados').doc(aid).set({ clienteId: id }, { merge: true });
+    c.aliadoPropioId = aid; a.clienteId = id; logActividad('Cliente vinculado con aliado', `${clNombre(c)} ↔ ${a.nombre}`);
+    toast('Vinculados ✅'); closePortalModal(); abrirFichaCliente(id);
+  } catch (e) { toast('No se pudo vincular: ' + e.message, 'err'); }
+}
+async function clDesvincular(id) {
+  const c = clientesList.find(x => x._id === id); if (!c || !confirm('¿Desvincular este cliente de su aliado? Sus facturas no cambian.')) return;
+  const aid = c.aliadoPropioId;
+  try {
+    await db.collection('clientes').doc(id).set({ aliadoPropioId: firebase.firestore.FieldValue.delete() }, { merge: true });
+    if (aid) await db.collection('aliados').doc(aid).set({ clienteId: firebase.firestore.FieldValue.delete() }, { merge: true });
+    delete c.aliadoPropioId; const a = (_al.lista || []).find(x => x._id === aid); if (a) delete a.clienteId;
+    toast('Desvinculados'); closePortalModal(); abrirFichaCliente(id);
+  } catch (e) { toast(e.message, 'err'); }
 }
 function nuevaFacturaPara(id) {
   const c = clientesList.find(x => x._id === id); if (!c) return;
@@ -13123,9 +13167,12 @@ function waQuien(chatId) {
   return { num };
 }
 function waDeudas(q) {
-  return Object.entries(docsMap).map(([id, d]) => ({ ...d, _fsId: id })).filter(d => d.type === 'factura' && saldoReal(d) > 0.009 && (q.aliado
-    ? (d.aliadoId === q.aliado._id || ptNorm(d.aliado || d.cli) === ptNorm(q.aliado.nombre))
-    : ptNorm(d.cli) === ptNorm(q.nombre))).sort((a, b) => (cbFecha(a.createdAt)?.getTime() || 0) - (cbFecha(b.createdAt)?.getTime() || 0));
+  // Si la persona es cliente y aliado a la vez (vinculados), se juntan las dos cosas
+  const al = q.aliado || (q.cliente?.aliadoPropioId && (_al.lista || []).find(a => a._id === q.cliente.aliadoPropioId));
+  const cli = q.cliente || (q.aliado?.clienteId && clientesList.find(c => c._id === q.aliado.clienteId));
+  const nomCli = cli ? ptNorm(clNombre(cli)) : (q.aliado ? '' : ptNorm(q.nombre));
+  return Object.entries(docsMap).map(([id, d]) => ({ ...d, _fsId: id })).filter(d => d.type === 'factura' && saldoReal(d) > 0.009 && (
+    (al && (d.aliadoId === al._id || ptNorm(d.aliado || d.cli) === ptNorm(al.nombre))) || (nomCli && !d.aliadoId && ptNorm(d.cli) === nomCli))).sort((a, b) => (cbFecha(a.createdAt)?.getTime() || 0) - (cbFecha(b.createdAt)?.getTime() || 0));
 }
 async function waPintarFicha() {
   const el = document.getElementById('wa-ficha'); if (!el || !_wa.chat) return;

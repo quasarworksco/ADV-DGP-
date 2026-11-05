@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05j';
+const WORKER_VERSION = '2026-11-05k';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1810,10 +1810,15 @@ function correoPagoHTML(doc, fsId, monto) {
 // Saldo global del cliente (o del aliado): todo lo que debe en facturas pendientes, sin contar las pausadas
 async function saldoGlobal(env, token, doc) {
   const docs = await fsList(env, 'documentos', token).catch(() => []);
-  const al = esAliado(doc) ? await aliadoDe(env, token, doc).catch(() => null) : null;
+  let al = esAliado(doc) ? await aliadoDe(env, token, doc).catch(() => null) : null;
+  // Cliente y aliado vinculados (misma persona): el total suma las dos cosas
+  let nomCli = al ? '' : normNombre(doc.cli);
+  if (al?.clienteId) { const c = await fsGet(env, `clientes/${al.clienteId}`, token).catch(() => null); if (c) nomCli = normNombre([c.nombre, c.apellido].filter(Boolean).join(' ')); }
+  if (!al) { const cl = await fsList(env, 'clientes', token).catch(() => []); const c = cl.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === nomCli);
+    if (c?.aliadoPropioId) al = await fsGet(env, `aliados/${c.aliadoPropioId}`, token).then(a => a ? { ...a, _id: c.aliadoPropioId } : null).catch(() => null); }
   const L = docs.filter(d => !String(d._id).startsWith('__diag') && d.type === 'factura' && deudaDoc(d) > 0.009 &&
-    (al ? (d.aliadoId === al._id || normNombre(d.aliado || d.cli) === normNombre(al.nombre)) : normNombre(d.cli) === normNombre(doc.cli)));
-  return { total: r2(L.reduce((a, d) => a + deudaDoc(d), 0)), n: L.length, quien: al ? al.nombre : doc.cli };
+    ((al && (d.aliadoId === al._id || normNombre(d.aliado || d.cli) === normNombre(al.nombre))) || (nomCli && !d.aliadoId && normNombre(d.cli) === nomCli)));
+  return { total: r2(L.reduce((a, d) => a + deudaDoc(d), 0)), n: L.length, quien: esAliado(doc) && al ? al.nombre : doc.cli };
 }
 async function waReciboPago(env, token, fsId, monto, global) {
   if (!env.WA_URL || !env.WA_KEY || !(monto > 0.009)) return null;
