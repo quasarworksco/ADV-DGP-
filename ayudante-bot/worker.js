@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05n';
+const WORKER_VERSION = '2026-11-05o';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1341,7 +1341,12 @@ async function gdAccion(env, token, b, request, email) {
         try { d = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(dominio)}&checkType=FULL`); }
         catch (e) {
           // GoDaddy no da disponibilidad ni compra por API a cuentas con menos de 50 dominios: se consulta el registro público (RDAP)
-          const libre = async x => { const r = await fetch(`https://rdap.org/domain/${x}`, { redirect: 'follow', signal: AbortSignal.timeout(12000) }).catch(() => null); return r ? (r.status === 404 ? true : r.ok ? false : null) : null; };
+          // Servidor RDAP oficial de cada terminación (.com, .net, .co…) según IANA; se recuerda 7 días
+          let mapa = env.CACHE ? await env.CACHE.get('rdapMapa', 'json').catch(() => null) : null;
+          if (!mapa) { const j = await fetch('https://data.iana.org/rdap/dns.json', { signal: AbortSignal.timeout(12000) }).then(r => r.json()).catch(() => null); mapa = {}; (j?.services || []).forEach(([tlds, urls]) => tlds.forEach(t => { mapa[t] = urls[0]; })); if (env.CACHE && Object.keys(mapa).length) await env.CACHE.put('rdapMapa', JSON.stringify(mapa), { expirationTtl: 7 * 86400 }).catch(() => {}); }
+          const libre = async x => { const t = x.split('.').pop(), srv = mapa[t]; if (!srv) return null;
+            const r = await fetch(`${srv.replace(/\/$/, '')}/domain/${x}`, { headers: { Accept: 'application/rdap+json', 'User-Agent': 'dgp-panel' }, redirect: 'follow', signal: AbortSignal.timeout(12000) }).catch(() => null);
+            return r ? (r.status === 404 ? true : r.ok ? false : null) : null; };
           const base = dominio.split('.')[0], tld = dominio.split('.').slice(1).join('.');
           const otros = [...new Set(['com', 'net', 'co', 'us', 'online', 'site'].filter(t => t !== tld).map(t => `${base}.${t}`).concat(tld === 'com' ? [`get${base}.com`, `${base}usa.com`] : [`${base}.com`]))].slice(0, 6);
           const [disp, ...L] = await Promise.all([libre(dominio), ...otros.map(libre)]);

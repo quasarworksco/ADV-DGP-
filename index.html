@@ -3634,7 +3634,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
           <input id="dm-sub" placeholder="subdominio (opcional)" style="min-width:0;width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit">
           <select id="dm-base" style="min-width:0;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit"><option value="">Dominio…</option></select>
         </div>
-        <select id="dm-repo" style="width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit"><option value="">Repositorio de quasarworksco…</option></select>
+        <input id="dm-repo" list="dm-repos-l" placeholder="Buscar repositorio de quasarworksco…" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit"><datalist id="dm-repos-l"></datalist>
         <button class="btn-logout" id="dm-cbtn" style="margin-top:10px;width:100%;background:var(--blue);color:#fff;border-color:var(--blue)" onclick="dmConectar()">Conectar</button>
         <div id="dm-cres" style="margin-top:8px;font-size:12.5px"></div>
       </div>
@@ -13567,7 +13567,8 @@ async function renderDominios(fresco) {
   }
   const sel = document.getElementById('dm-base'), act = sel.value;
   sel.innerHTML = '<option value="">Dominio…</option>' + _gdDom.map(g => `<option ${g.dominio === act ? 'selected' : ''}>${esc(g.dominio)}</option>`).join('');
-  if (!_dmRepos) dmApi({ accion: 'repos' }).then(d => { _dmRepos = d.repos || []; const r = document.getElementById('dm-repo'); r.innerHTML = '<option value="">Repositorio de quasarworksco…</option>' + _dmRepos.map(x => `<option value="${esc(x.nombre)}">${esc(x.nombre)}${x.web ? ' · ' + esc(x.web.replace(/^https?:\/\//, '')) : ''}</option>`).join(''); }).catch(e => toast('No se pudieron leer los repositorios: ' + e.message, 'err'));
+  const pintarRepos = () => { const l = document.getElementById('dm-repos-l'); if (l) l.innerHTML = dmReposOpciones(); };
+  if (!_dmRepos) dmApi({ accion: 'repos' }).then(d => { _dmRepos = d.repos || []; pintarRepos(); }).catch(e => toast('No se pudieron leer los repositorios: ' + e.message, 'err')); else pintarRepos();
   const hoy = Date.now(), webs = _wb.lista || [];
   const L = _gdDom.map(g => ({ ...g, dias: g.vence ? Math.round((new Date(g.vence).getTime() - hoy) / 864e5) : null, cli: (webs.find(w => String(w.dominio || '').replace(/^www\./, '') === g.dominio) || {}).cliente || '' })).sort((a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9));
   const pronto = L.filter(x => x.dias !== null && x.dias <= 30).length;
@@ -13577,6 +13578,8 @@ async function renderDominios(fresco) {
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><b style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</b><button class="btn-logout" style="font-size:10.5px;padding:4px 9px" onclick="dmDNS('${esc(x.dominio)}')">DNS</button></div>
         <div style="font-size:11.5px;color:var(--text-soft);margin-top:3px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
 }
+function dmReposOpciones() { return (_dmRepos || []).map(x => `<option value="${esc(x.nombre)}">${x.web ? esc(x.web.replace(/^https?:\/\//, '')) : ''}</option>`).join(''); }
+function dmRepoValido(v) { v = String(v || '').trim(); if (!v) return ''; if (_dmRepos && !_dmRepos.some(x => x.nombre === v)) { toast('Ese repositorio no existe: elígelo de la lista', 'err'); return null; } return v; }
 async function dmBuscar() {
   const q = document.getElementById('dm-q').value.trim(), out = document.getElementById('dm-res'), b = document.getElementById('dm-qbtn'); if (!q) return;
   b.disabled = true; out.innerHTML = '<div style="font-size:12.5px;color:var(--text-soft)">Buscando en GoDaddy…</div>';
@@ -13599,11 +13602,11 @@ function dmComprarGD(dom) {
   const ops = (_dmRepos || []).map(x => `<option value="${esc(x.nombre)}">${esc(x.nombre)}</option>`).join('');
   ptModal('Comprar en GoDaddy', dom, `<div class="rd-form" style="display:grid;gap:10px">
     <div style="font-size:12.5px;color:var(--text-mid);line-height:1.5">1. Elige a qué repositorio quieres conectarlo (opcional).<br>2. Toca el botón: se abre GoDaddy con el dominio para ver el precio y comprarlo.<br>3. Cuando aparezca en tu cuenta, el panel lo conecta solo a GitHub (revisa cada hora) y te avisa por Telegram.</div>
-    <div class="ff" style="margin:0"><label>Conectarlo a un repositorio</label><select id="dm-crepo"><option value="">No por ahora</option>${ops}</select></div>
+    <div class="ff" style="margin:0"><label>Conectarlo a un repositorio (opcional)</label><input id="dm-crepo" list="dm-crepo-l" placeholder="Buscar repositorio… (vacío = no por ahora)" autocomplete="off"><datalist id="dm-crepo-l">${dmReposOpciones()}</datalist></div>
     <button class="ll-btn" style="background:#16a34a" onclick="dmIrGD('${esc(dom)}')">Abrir GoDaddy para comprar</button></div>`);
 }
 async function dmIrGD(dom) {
-  const repo = document.getElementById('dm-crepo').value;
+  const repo = dmRepoValido(document.getElementById('dm-crepo').value); if (repo === null) return;
   window.open(`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(dom)}`, '_blank');
   if (repo) { try { await dmApi({ accion: 'pendiente', dominio: dom, repo }); toast(`Listo: cuando compres ${dom}, se conecta solo a ${repo}`); } catch (e) { toast(e.message, 'err'); } }
   closePortalModal();
@@ -13613,22 +13616,22 @@ function dmComprar(dom, precio) {
   ptModal('Comprar dominio', dom, `<div class="rd-form" style="display:grid;gap:10px">
     <div style="font-size:26px;font-weight:800">${precio ? '$' + precio.toFixed(2) : ''} <span style="font-size:13px;font-weight:500;color:var(--text-soft)">por 1 año · se renueva solo</span></div>
     <div style="font-size:12.5px;color:var(--text-mid)">Se cobra a tu cuenta de GoDaddy con tu forma de pago guardada. Los datos del dueño son los mismos de tus otros dominios.</div>
-    <div class="ff" style="margin:0"><label>Conectarlo a un repositorio (opcional)</label><select id="dm-crepo"><option value="">No por ahora</option>${ops}</select></div>
+    <div class="ff" style="margin:0"><label>Conectarlo a un repositorio (opcional)</label><input id="dm-crepo" list="dm-crepo-l" placeholder="Buscar repositorio… (vacío = no por ahora)" autocomplete="off"><datalist id="dm-crepo-l">${dmReposOpciones()}</datalist></div>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="dm-ok"> Confirmo la compra de <b>${esc(dom)}</b></label>
     <button class="ll-btn" id="dm-cbtn2" style="background:#16a34a" onclick="dmComprarYa('${esc(dom)}', ${precio || 0})">Comprar ahora</button></div>`);
 }
 async function dmComprarYa(dom, precio) {
   if (!document.getElementById('dm-ok').checked) return toast('Marca la casilla para confirmar', 'err');
   const b = document.getElementById('dm-cbtn2'); b.disabled = true; b.textContent = 'Comprando…';
-  try { const d = await dmApi({ accion: 'comprar', dominio: dom, confirmo: dom, precioVisto: precio, repo: document.getElementById('dm-crepo').value });
+  try { const rp = dmRepoValido(document.getElementById('dm-crepo').value); if (rp === null) { b.disabled = false; b.textContent = 'Comprar ahora'; return; } const d = await dmApi({ accion: 'comprar', dominio: dom, confirmo: dom, precioVisto: precio, repo: rp });
     closePortalModal(); toast(`Dominio comprado ✅${d.total ? ' · $' + Number(d.total).toFixed(2) : ''}`); logActividad('Dominio comprado', dom);
     ptModal('Dominio comprado', dom, `<div class="rd-form"><div class="ll-sub">GoDaddy tarda unos minutos en activarlo. ${document.getElementById('dm-crepo')?.value ? '' : ''}Si elegiste un repositorio, el panel lo conecta solo apenas esté activo (revisa cada hora) y te avisa por Telegram.</div></div>`);
     _gdDom = null; renderDominios(true);
   } catch (e) { b.disabled = false; b.textContent = 'Comprar ahora'; toast('No se pudo comprar: ' + e.message, 'err'); }
 }
 async function dmConectar() {
-  const base = document.getElementById('dm-base').value, sub = document.getElementById('dm-sub').value.trim(), repo = document.getElementById('dm-repo').value, out = document.getElementById('dm-cres'), b = document.getElementById('dm-cbtn');
-  if (!base) return toast('Elige el dominio', 'err'); if (!repo) return toast('Elige el repositorio', 'err');
+  const base = document.getElementById('dm-base').value, sub = document.getElementById('dm-sub').value.trim(), repo = dmRepoValido(document.getElementById('dm-repo').value), out = document.getElementById('dm-cres'), b = document.getElementById('dm-cbtn');
+  if (repo === null) return; if (!base) return toast('Elige el dominio', 'err'); if (!repo) return toast('Elige el repositorio', 'err');
   const final = (sub ? sub.toLowerCase() + '.' : '') + base;
   if (!confirm(`¿Conectar ${final} al repositorio ${repo}? Se reemplazan los registros ${sub ? 'de ese subdominio' : 'A (@) y www'} en GoDaddy.`)) return;
   b.disabled = true; b.textContent = 'Conectando…'; out.innerHTML = '';
