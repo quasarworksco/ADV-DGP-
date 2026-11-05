@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05b';
+const WORKER_VERSION = '2026-11-05c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -796,6 +796,10 @@ async function handleDiagnostico(request, env, firebaseLogin) {
       const j = await r.json().catch(() => null);
       out.checks.correo = j && j.ok ? { ok: true, restantesHoy: j.restantes, remitente: j.remitente || null } : { ok: false, error: 'El programa de envío no respondió bien (HTTP ' + r.status + ')' };
     } catch (e) { out.checks.correo = { ok: false, error: 'No se pudo contactar el programa de envío: ' + e.message }; }
+  if (env.GODADDY_KEY && env.GODADDY_SECRET) {
+    try { const L = await gdDominios(env, true); out.checks.godaddy = { ok: true, dominios: L.length }; }
+    catch (e) { out.checks.godaddy = { ok: false, error: e.message }; }
+  }
   }
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
   if (q.get('ia')) {
@@ -1256,6 +1260,34 @@ async function handleAviso(request, env) {
    Secreto en Cloudflare: GH_TOKEN (token de GitHub con permiso sobre los repositorios de quasarworksco).
 ══════════════════════════════════════════════════════════════ */
 const GH_ORG = 'quasarworksco';
+/* GoDaddy (llave clásica): secretos GODADDY_KEY y GODADDY_SECRET */
+async function gd(env, metodo, ruta, cuerpo) {
+  const r = await fetch('https://api.godaddy.com' + ruta, { method: metodo, headers: { Authorization: `sso-key ${env.GODADDY_KEY}:${env.GODADDY_SECRET}`, Accept: 'application/json', ...(cuerpo ? { 'Content-Type': 'application/json' } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined, signal: AbortSignal.timeout(20000) });
+  const t = await r.text(); let d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+  if (!r.ok) { const e = new Error('GoDaddy: ' + (d?.message || d?.code || ('HTTP ' + r.status))); e.status = r.status; throw e; }
+  return d;
+}
+async function gdDominios(env, fresco) {
+  if (!fresco && env.CACHE) { const c = await env.CACHE.get('gdDominios', 'json').catch(() => null); if (c) return c; }
+  const L = (await gd(env, 'GET', '/v1/domains?statuses=ACTIVE&limit=500') || []).map(d => ({ dominio: d.domain, vence: d.expires || null, autoRenovar: !!d.renewAuto, privacidad: !!d.privacy }));
+  if (env.CACHE) await env.CACHE.put('gdDominios', JSON.stringify(L), { expirationTtl: 12 * 3600 }).catch(() => {});
+  return L;
+}
+// Apunta un dominio (o subdominio) de la cuenta a GitHub Pages. Solo toca A @ y CNAME www (o el CNAME del subdominio); el correo (MX) queda igual.
+async function gdApuntarPages(env, dominio) {
+  const L = await gdDominios(env, true);
+  const raiz = L.find(d => dominio === d.dominio || dominio.endsWith('.' + d.dominio));
+  if (!raiz) return { ok: false, motivo: 'el dominio no está en tu cuenta de GoDaddy' };
+  const destino = `${GH_ORG}.github.io`;
+  if (dominio === raiz.dominio) {
+    await gd(env, 'PUT', `/v1/domains/${raiz.dominio}/records/A/@`, ['185.199.108.153', '185.199.109.153', '185.199.110.153', '185.199.111.153'].map(ip => ({ data: ip, ttl: 600 })));
+    await gd(env, 'PUT', `/v1/domains/${raiz.dominio}/records/CNAME/www`, [{ data: destino, ttl: 3600 }]);
+  } else {
+    const sub = dominio.slice(0, -(raiz.dominio.length + 1));
+    await gd(env, 'PUT', `/v1/domains/${raiz.dominio}/records/CNAME/${sub}`, [{ data: destino, ttl: 3600 }]);
+  }
+  return { ok: true };
+}
 async function gh(env, metodo, ruta, cuerpo) {
   const r = await fetch('https://api.github.com' + ruta, { method: metodo, headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'dgp-panel', ...(cuerpo ? { 'Content-Type': 'application/json' } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
   const d = await r.json().catch(() => ({}));
@@ -1363,10 +1395,12 @@ async function crearSitio(env, token, b, email) {
   let pages = null;
   try { pages = await gh(env, 'POST', `${R}/pages`, { source: { branch: 'main', path: '/' } }); } catch (e) { pages = { error: e.message }; }
   if (dominio) await gh(env, 'PUT', `${R}/pages`, { cname: dominio, source: { branch: 'main', path: '/' } }).catch(() => {});
+  let dnsAuto = null;
+  if (dominio && env.GODADDY_KEY && env.GODADDY_SECRET) dnsAuto = await gdApuntarPages(env, dominio).catch(e => ({ ok: false, motivo: e.message }));
   const url = dominio ? `https://${dominio}` : `https://${GH_ORG}.github.io/${repo}/`;
   await fsCreate(env, 'webs', { cliente: d.cliente || d.titulo, dominio: dominio || `${GH_ORG}.github.io/${repo}`, activo: true, repo: `${GH_ORG}/${repo}`, creado: new Date(), por: email || 'panel' }, token).catch(() => {});
-  return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null,
-    dns: dominio ? (dominio.split('.').length > 2 ? [{ tipo: 'CNAME', nombre: dominio.split('.')[0], valor: `${GH_ORG}.github.io` }] : [{ tipo: 'A', nombre: '@', valor: '185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153' }, { tipo: 'CNAME', nombre: 'www', valor: `${GH_ORG}.github.io` }]) : [] };
+  return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null, dnsAuto,
+    dns: dominio && !dnsAuto?.ok ? (dominio.split('.').length > 2 ? [{ tipo: 'CNAME', nombre: dominio.split('.')[0], valor: `${GH_ORG}.github.io` }] : [{ tipo: 'A', nombre: '@', valor: '185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153' }, { tipo: 'CNAME', nombre: 'www', valor: `${GH_ORG}.github.io` }]) : [] };
 }
 async function handleTarea(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
@@ -1407,6 +1441,7 @@ async function handleTarea(request, env) {
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'dominios') { if (!env.GODADDY_KEY) return json(request, { dominios: [] }); try { return json(request, { dominios: await gdDominios(env, !!cuerpo.fresco) }); } catch (e) { return json(request, { error: e.message }); } }
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
     if (tarea === 'responder') {
       const b2 = cuerpo;
