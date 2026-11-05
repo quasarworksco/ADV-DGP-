@@ -197,6 +197,7 @@ export default {
     }
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
+      ctx.waitUntil(gdPendientes(env).catch(e => console.warn('Dominios pendientes', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
       ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
       if (new Date().getUTCHours() === 15) ctx.waitUntil(recordatoriosWA(env).catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
@@ -736,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05e';
+const WORKER_VERSION = '2026-11-05g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1288,6 +1289,116 @@ async function gdDominios(env, fresco) {
   return L;
 }
 // Apunta un dominio (o subdominio) de la cuenta a GitHub Pages. Solo toca A @ y CNAME www (o el CNAME del subdominio); el correo (MX) queda igual.
+/* ══ SECCIÓN DOMINIOS (panel → Dominios): buscar precio, comprar, ver/borrar DNS y conectar a un repositorio de GitHub ══ */
+const GD_IPS = ['185.199.108.153', '185.199.109.153', '185.199.110.153', '185.199.111.153'];
+const domOk = d => /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(d);
+const CONTACTO_CAMPOS = ['nameFirst', 'nameMiddle', 'nameLast', 'organization', 'jobTitle', 'email', 'phone', 'fax'];
+function limpiarContacto(c) {
+  if (!c) return null; const o = {};
+  CONTACTO_CAMPOS.forEach(k => { if (c[k]) o[k] = c[k]; });
+  const a = c.addressMailing || {}; o.addressMailing = {}; ['address1', 'address2', 'city', 'state', 'postalCode', 'country'].forEach(k => { if (a[k]) o.addressMailing[k] = a[k]; });
+  return o;
+}
+// GitHub Pages del repositorio con su dominio (y el archivo CNAME)
+async function ghPonerDominio(env, repo, dominio) {
+  const R = `/repos/${GH_ORG}/${repo}`;
+  try { await gh(env, 'POST', `${R}/pages`, { source: { branch: 'main', path: '/' } }); } catch (e) {}
+  let sha; try { sha = (await gh(env, 'GET', `${R}/contents/CNAME`)).sha; } catch (e) {}
+  await gh(env, 'PUT', `${R}/contents/CNAME`, { message: `Dominio ${dominio}`, content: b64(dominio + '\n'), branch: 'main', ...(sha ? { sha } : {}) }).catch(() => {});
+  await gh(env, 'PUT', `${R}/pages`, { cname: dominio, source: { branch: 'main', path: '/' } }).catch(() => {});
+  await gh(env, 'PATCH', R, { homepage: `https://${dominio}` }).catch(() => {});
+}
+async function gdConectar(env, token, dominio, repo, email) {
+  const r = await gdApuntarPages(env, dominio);
+  if (!r.ok) return r;
+  if (repo) await ghPonerDominio(env, repo, dominio);
+  const webs = await fsList(env, 'webs', token).catch(() => []);
+  if (!webs.some(w => String(w.dominio || '').replace(/^www\./, '') === dominio)) await fsCreate(env, 'webs', { cliente: repo || dominio, dominio, activo: true, repo: repo ? `${GH_ORG}/${repo}` : '', creado: new Date(), por: email || 'panel' }, token).catch(() => {});
+  return { ok: true };
+}
+// Dominios recién comprados: GoDaddy tarda unos minutos en activarlos; cada hora se reintenta conectarlos
+async function gdPendientes(env) {
+  if (!env.CACHE || !env.GODADDY_KEY) return;
+  const L = (await env.CACHE.list({ prefix: 'gdPend:' }).catch(() => ({ keys: [] }))).keys;
+  if (!L.length) return;
+  const token = await firebaseLogin(env);
+  for (const k of L) {
+    const dominio = k.name.slice(7), p = await env.CACHE.get(k.name, 'json').catch(() => null) || {};
+    try { const r = await gdConectar(env, token, dominio, p.repo, p.por); if (r.ok) { await env.CACHE.delete(k.name); await tgEnviar(env, `🌐 <b>${escHtml(dominio)}</b> ya quedó conectado${p.repo ? ` al repositorio ${escHtml(p.repo)}` : ''} ✅`).catch(() => {}); } }
+    catch (e) { console.warn('pendiente', dominio, e.message); }
+  }
+}
+async function gdAccion(env, token, b, request, email) {
+  if (!env.GODADDY_KEY || !env.GODADDY_SECRET) return { error: 'Faltan GODADDY_KEY y GODADDY_SECRET en Cloudflare' };
+  const dominio = String(b.dominio || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+  try {
+    switch (b.accion) {
+      case 'buscar': {
+        if (!domOk(dominio)) return { error: 'Escribe un dominio completo, por ejemplo minegocio.com' };
+        const d = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(dominio)}&checkType=FULL`);
+        let sug = [];
+        try { const base = dominio.split('.')[0]; const S = await gd(env, 'GET', `/v1/domains/suggest?query=${encodeURIComponent(base)}&limit=6&waitMs=1500`); sug = (S || []).map(x => x.domain).filter(x => x !== dominio).slice(0, 6); } catch (e) {}
+        return { dominio, disponible: !!d.available, precio: d.price ? d.price / 1e6 : null, moneda: d.currency || 'USD', anios: d.period || 1, sugerencias: sug };
+      }
+      case 'precios': {   // precio de varias sugerencias
+        const L = (b.lista || []).slice(0, 8).filter(domOk);
+        const out = [];
+        for (const x of L) { try { const d = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(x)}&checkType=FAST`); out.push({ dominio: x, disponible: !!d.available, precio: d.price ? d.price / 1e6 : null }); } catch (e) {} }
+        return { lista: out };
+      }
+      case 'comprar': {
+        if (!domOk(dominio)) return { error: 'Dominio no válido' };
+        if (b.confirmo !== dominio) return { error: 'Falta confirmar la compra' };
+        const disp = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(dominio)}&checkType=FULL`);
+        if (!disp.available) return { error: 'Ese dominio ya no está disponible' };
+        const precio = disp.price ? disp.price / 1e6 : null;
+        if (b.precioVisto && precio && precio > Number(b.precioVisto) + 0.01) return { error: `El precio cambió a $${precio.toFixed(2)}. Vuelve a buscarlo.` };
+        // Contactos: los mismos de un dominio que ya tienes
+        const mios = await gdDominios(env, true);
+        if (!mios.length) return { error: 'No encontré un dominio tuyo para copiar los datos de contacto' };
+        const ref = await gd(env, 'GET', `/v1/domains/${mios[0].dominio}`);
+        const tld = dominio.split('.').slice(1).join('.');
+        const acuerdos = await gd(env, 'GET', `/v1/domains/agreements?tlds=${encodeURIComponent(tld)}&privacy=false`);
+        const ip = request.headers.get('CF-Connecting-IP') || '127.0.0.1';
+        const cuerpo = { domain: dominio, period: 1, renewAuto: true, privacy: false,
+          consent: { agreementKeys: (acuerdos || []).map(a => a.agreementKey), agreedBy: ip, agreedAt: new Date().toISOString() },
+          contactRegistrant: limpiarContacto(ref.contactRegistrant), contactAdmin: limpiarContacto(ref.contactAdmin || ref.contactRegistrant),
+          contactTech: limpiarContacto(ref.contactTech || ref.contactRegistrant), contactBilling: limpiarContacto(ref.contactBilling || ref.contactRegistrant) };
+        const orden = await gd(env, 'POST', '/v1/domains/purchase', cuerpo);
+        if (env.CACHE) await env.CACHE.delete('gdDominios').catch(() => {});
+        const repo = String(b.repo || '').replace(/[^A-Za-z0-9._-]/g, '');
+        if (env.CACHE) await env.CACHE.put('gdPend:' + dominio, JSON.stringify({ repo, por: email }), { expirationTtl: 3 * 86400 }).catch(() => {});
+        await tgEnviar(env, `🛒 <b>Dominio comprado:</b> ${escHtml(dominio)}${precio ? ` · $${precio.toFixed(2)}` : ''}${repo ? `\nSe conectará solo al repositorio ${escHtml(repo)} cuando GoDaddy lo active.` : ''}`).catch(() => {});
+        return { ok: true, orden: orden?.orderId || null, total: orden?.total ? orden.total / 1e6 : precio };
+      }
+      case 'registros': {
+        if (!domOk(dominio)) return { error: 'Dominio no válido' };
+        const R = await gd(env, 'GET', `/v1/domains/${dominio}/records`);
+        return { registros: (R || []).map(r => ({ tipo: r.type, nombre: r.name, valor: r.data, ttl: r.ttl, prioridad: r.priority })) };
+      }
+      case 'borrar': {
+        const tipo = String(b.tipo || '').toUpperCase(), nombre = String(b.nombre || '');
+        if (!domOk(dominio) || !/^(A|AAAA|CNAME|TXT|MX|SRV|CAA)$/.test(tipo) || !/^[A-Za-z0-9@._*-]{1,63}$/.test(nombre)) return { error: 'Registro no válido' };
+        if (tipo === 'MX') return { error: 'Los registros MX (correo) no se borran desde el panel, por seguridad' };
+        await gd(env, 'DELETE', `/v1/domains/${dominio}/records/${tipo}/${encodeURIComponent(nombre)}`);
+        return { ok: true };
+      }
+      case 'conectar': {
+        const sub = String(b.sub || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+        const final = sub ? `${sub}.${dominio}` : dominio;
+        if (!domOk(final)) return { error: 'Dominio no válido' };
+        const repo = String(b.repo || '').replace(/[^A-Za-z0-9._-]/g, '');
+        const r = await gdConectar(env, token, final, repo, email);
+        return r.ok ? { ok: true, dominio: final, url: `https://${final}` } : { error: r.motivo || 'No se pudo conectar' };
+      }
+      case 'repos': {
+        const L = await gh(env, 'GET', `/orgs/${GH_ORG}/repos?per_page=100&sort=updated`);
+        return { repos: (L || []).map(r => ({ nombre: r.name, pages: !!r.has_pages, web: r.homepage || '' })) };
+      }
+    }
+    return { error: 'Acción desconocida' };
+  } catch (e) { return { error: e.message }; }
+}
 async function gdApuntarPages(env, dominio) {
   const L = await gdDominios(env, true);
   const raiz = L.find(d => dominio === d.dominio || dominio.endsWith('.' + d.dominio));
@@ -1460,6 +1571,7 @@ async function handleTarea(request, env) {
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'gd') return json(request, await gdAccion(env, v.token, cuerpo, request, v.email));
     if (tarea === 'dominios') { if (!env.GODADDY_KEY) return json(request, { dominios: [] }); try { return json(request, { dominios: await gdDominios(env, !!cuerpo.fresco) }); } catch (e) { return json(request, { error: e.message }); } }
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
     if (tarea === 'responder') {
@@ -1973,7 +2085,8 @@ async function handleWA(request, env) {
         const d = await waJSON(env, esImg ? '/api/sendImage' : '/api/sendFile', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat, caption: String(b.texto || '').slice(0, 1000), file: { url, mimetype, filename: String(b.nombre || (esImg ? 'imagen.jpg' : 'archivo')) } }) });
         return json(request, { ok: true, mensaje: d });
       }
-      case 'visto': await waFetch(env, '/api/sendSeen', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat }) }).catch(() => {}); return json(request, { ok: true });
+      case 'noLeidos': { const nl = env.CACHE ? await env.CACHE.get('waNL', 'json').catch(() => null) || {} : {}; return json(request, { chats: Object.keys(nl).length }); }
+      case 'visto': await waLeido(env, chat); await waFetch(env, '/api/sendSeen', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat }) }).catch(() => {}); return json(request, { ok: true });
       case 'grupos': return json(request, { grupos: await waJSON(env, `/api/${S}/groups?limit=300&offset=0&sortBy=subject&sortOrder=asc&exclude=participants`) });
       case 'borrar': await waFetch(env, `/api/${S}/chats/${waChat(chat)}`, { method: 'DELETE' }); return json(request, { ok: true });
       case 'salirGrupo': {
@@ -2162,6 +2275,7 @@ async function waProspectoAuto(env, de, p, nombreWA, texto) {
   await env.CACHE.put('waCon:' + num, 'p:' + id, { expirationTtl: 30 * 86400 }).catch(() => {});
   await tgEnviar(env, `🎯 <b>Prospecto nuevo de WhatsApp:</b> ${escHtml(nombre)} · +${num}${bot.interes ? `\n${escHtml(bot.interes)}` : ''}\nQuedó en Prospectos.`).catch(() => {});
 }
+async function waLeido(env, chat) { if (!env.CACHE) return; const nl = await env.CACHE.get('waNL', 'json').catch(() => null) || {}; if (nl[chat]) { delete nl[chat]; await env.CACHE.put('waNL', JSON.stringify(nl)).catch(() => {}); } }
 // Si Andrés escribe en el chat (panel, celular o Telegram), Altair se calla en ese chat
 async function waPausarAsistente(env, chat, msgId) {
   if (!env.CACHE || !/@(c\.us|lid)$/.test(chat)) return;
@@ -2183,7 +2297,7 @@ async function handleWAWebhook(request, env, ctx) {
   let ev = {}; try { ev = JSON.parse(cuerpo); } catch (e) { return new Response('ok'); }
   const tarea = (async () => {
     const p = ev.payload || {};
-    if (ev.event === 'message.any' && p.fromMe) { await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
+    if (ev.event === 'message.any' && p.fromMe) { await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
       if (!/@(c\.us|lid)$/.test(de)) return;   // grupos, canales y estados no avisan (serían demasiados)
@@ -2193,6 +2307,7 @@ async function handleWAWebhook(request, env, ctx) {
       const texto = p.body || (p.hasMedia ? `📎 ${p.media?.mimetype?.startsWith('image/') ? 'Foto' : p.media?.mimetype?.startsWith('audio/') ? 'Nota de voz' : 'Archivo'}` : '(mensaje)');
       // Avisos cortos: mensaje completo solo si es corto; largo → resumen; muchos enlaces → posible spam.
       // Si la misma persona escribe varias veces seguidas, solo avisa una vez cada 3 minutos.
+      if (env.CACHE) { const nl = await env.CACHE.get('waNL', 'json').catch(() => null) || {}; nl[de] = (nl[de] || 0) + 1; await env.CACHE.put('waNL', JSON.stringify(nl)).catch(() => {}); }
       const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; })
         .then(() => waProspectoAuto(env, de, p, nombre, String(p.body || '')).catch(e => console.warn('Prospecto WA', e)));
       if (ctx?.waitUntil) ctx.waitUntil(atendido);

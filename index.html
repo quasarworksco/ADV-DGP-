@@ -645,7 +645,7 @@
 
     /* ─── PAYMENT BREAKDOWN BLOCK ─── */
     @media (max-width:1200px) { .wb-tiles { grid-template-columns:repeat(3,1fr) !important; } }
-    @media (max-width:900px) { .wb-resumen { grid-template-columns:1fr !important; } }
+    @media (max-width:900px) { .wb-resumen, .dm-grid { grid-template-columns:1fr !important; } }
     @media (max-width:700px) { .wb-tiles { grid-template-columns:1fr 1fr !important; } .wb-t thead { display:none; } .wb-t tr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 14px; } .wb-t td { padding:2px 0 !important; } .wb-t tr.wb-g { display:block; padding:0; } .wb-t tr.wb-g td { padding:12px 14px 6px !important; } }
     .sheet-ajuste { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; }
     .sheet-ajuste-row { display:flex; justify-content:space-between; gap:12px; padding:3px 0; color:#475569; }
@@ -1804,6 +1804,15 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   .cb-tile-n { font-size:10.5px !important; }
   .cb-card { padding:12px !important; }
 }
+
+/* Menú lateral por áreas que se pliegan */
+button.nav-group { background:none; border:0; width:100%; text-align:left; cursor:pointer; font-family:inherit; }
+button.nav-group:hover { color:rgba(255,255,255,.7) !important; }
+button.nav-group .nav-g-ico { float:right; font-size:9px; opacity:.6; transition:transform .2s; margin:2px 4px 0 0; }
+button.nav-group.cerrado .nav-g-ico { transform:rotate(-90deg); }
+.nav-sec { display:flex; flex-direction:column; gap:2px; }
+.nav-sec.cerrado { display:none; }
+body.menu-min .nav-sec.cerrado { display:flex; } body.menu-min button.nav-group .nav-g-ico { display:none; }
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3063,11 +3072,14 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-toggle" onclick="toggleMenuLateral()" title="Ocultar o mostrar el menú" aria-label="Ocultar o mostrar el menú">
     <i class="fa-solid fa-angles-left"></i><span>Ocultar menú</span>
   </button>
-  <div class="nav-group">Resumen</div>
+  <button type="button" class="nav-group" data-g="resumen" onclick="navGrupo(this)">Resumen<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
+  <div class="nav-sec" data-g="resumen">
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
     <i class="fa-solid fa-chart-pie"></i> Dashboard
   </button>
-  <div class="nav-group">Ventas</div>
+  </div>
+  <button type="button" class="nav-group" data-g="negocio" onclick="navGrupo(this)">Negocio<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
+  <div class="nav-sec" data-g="negocio">
   <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
     <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
@@ -3077,56 +3089,67 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-tab" onclick="switchPage('prospectos', this)">
     <i class="fa-solid fa-bullseye"></i> Prospectos
   </button>
-  <button class="nav-tab" onclick="switchPage('llamadas', this)">
-    <i class="fa-solid fa-phone"></i> Llamadas<span id="ll-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" onclick="switchPage('whatsapp', this)">
-    <i class="fa-brands fa-whatsapp"></i> WhatsApp<span id="wa-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" onclick="switchPage('respuestas', this)">
-    <i class="fa-solid fa-envelope-open-text"></i> Respuestas<span id="rc-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  <button class="nav-tab" onclick="switchPage('suscripciones', this)">
+    <i class="fa-solid fa-rotate"></i> Suscripciones<span id="sus-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('aliados', this)">
     <i class="fa-solid fa-handshake"></i> Aliados
   </button>
-  <button class="nav-tab" onclick="switchPage('suscripciones', this)">
-    <i class="fa-solid fa-rotate"></i> Suscripciones<span id="sus-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </div>
+  <button type="button" class="nav-group" data-g="comunicacion" onclick="navGrupo(this)">Comunicación<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
+  <div class="nav-sec" data-g="comunicacion">
+  <button class="nav-tab" onclick="switchPage('whatsapp', this)">
+    <i class="fa-brands fa-whatsapp"></i> WhatsApp<span id="wa-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
-  <div class="nav-group">Proyectos</div>
+  <button class="nav-tab" onclick="switchPage('llamadas', this)">
+    <i class="fa-solid fa-phone"></i> Llamadas<span id="ll-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('respuestas', this)">
+    <i class="fa-solid fa-envelope-open-text"></i> Correos<span id="rc-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('portal', this)">
+    <i class="fa-solid fa-user-shield"></i> Portal de clientes<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  </div>
+  <button type="button" class="nav-group" data-g="trabajo" onclick="navGrupo(this)">Trabajo<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
+  <div class="nav-sec" data-g="trabajo">
   <button class="nav-tab" onclick="switchPage('proyectos', this)">
     <i class="fa-solid fa-layer-group"></i> Proyectos
   </button>
   <button class="nav-tab" onclick="switchPage('webs', this)">
-    <i class="fa-solid fa-globe"></i> Webs de clientes<span id="wb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+    <i class="fa-solid fa-globe"></i> Sitios web<span id="wb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
-  <button class="nav-tab" onclick="switchPage('portal', this)">
-    <i class="fa-solid fa-user-shield"></i> Portal<span id="portal-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <div class="nav-group">Marketing</div>
-  <button class="nav-tab" onclick="switchPage('resenasweb', this)">
-    <i class="fa-solid fa-star"></i> Reseñas web<span id="resenasweb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)" hidden style="display:none">
-    <i class="fa-solid fa-square-poll-vertical"></i> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" onclick="switchPage('smm', this)">
-    <i class="fa-solid fa-arrow-trend-up"></i> Panel SMM<span id="smm-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
-  </button>
-  <button class="nav-tab" onclick="switchPage('metaads', this)">
-    <i class="fa-brands fa-meta"></i> Meta Ads
+  <button class="nav-tab" onclick="switchPage('dominios', this)">
+    <i class="fa-solid fa-earth-americas"></i> Dominios<span id="dom-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('auditoria', this)">
     <i class="fa-solid fa-magnifying-glass-chart"></i> Auditoría de sitios
   </button>
-  <button class="nav-tab" onclick="switchPage('miweb', this)">
-    <i class="fa-solid fa-globe"></i> Mi web
-  </button>
-  <button class="nav-tab" onclick="switchPage('contenido', this)">
-    <i class="fa-solid fa-share-nodes"></i> Redes y publicaciones
+  <button class="nav-tab" onclick="switchPage('smm', this)">
+    <i class="fa-solid fa-arrow-trend-up"></i> Panel SMM<span id="smm-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
   <button class="nav-tab" onclick="switchPage('autopilot', this)">
     <i class="fa-solid fa-robot"></i> Social Media Autopilot
   </button>
+  </div>
+  <button type="button" class="nav-group" data-g="marca" onclick="navGrupo(this)">Mi marca<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
+  <div class="nav-sec" data-g="marca">
+  <button class="nav-tab" onclick="switchPage('miweb', this)">
+    <i class="fa-solid fa-globe"></i> Mi web
+  </button>
+  <button class="nav-tab" onclick="switchPage('resenasweb', this)">
+    <i class="fa-solid fa-star"></i> Reseñas web<span id="resenasweb-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  <button class="nav-tab" onclick="switchPage('contenido', this)">
+    <i class="fa-solid fa-share-nodes"></i> Redes y publicaciones
+  </button>
+  <button class="nav-tab" onclick="switchPage('metaads', this)">
+    <i class="fa-brands fa-meta"></i> Meta Ads
+  </button>
+  <button class="nav-tab" id="nav-tab-encuestas" onclick="switchPage('encuestas', this)" hidden style="display:none">
+    <i class="fa-solid fa-square-poll-vertical"></i> Encuestas<span id="encuestas-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
+  </button>
+  </div>
   <div class="solo-movil">
     <div class="nav-group">Herramientas</div>
     <button class="nav-tab" onclick="cerrarMenuMovil();abrirDiagnostico()"><i class="fa-solid fa-heart-pulse"></i> Probar sistema</button>
@@ -3592,11 +3615,39 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   </div>
 </div>
 
+<div id="page-dominios" class="page">
+  <div class="proy-main" style="max-width:1100px;">
+    <div class="proy-header"><div>
+      <div class="panel-title-v" style="margin-bottom:2px;">Dominios</div>
+      <div style="font-size:11px;color:var(--text-soft);">Tus dominios de GoDaddy: busca precios, compra, y conéctalos a un repositorio de GitHub (los registros viejos o de "parked" se reemplazan solos). El correo (MX) nunca se toca.</div>
+    </div></div>
+    <div class="dm-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px">
+      <div class="cb-card" style="padding:16px">
+        <b style="font-size:14px">Buscar y comprar</b>
+        <div style="display:flex;gap:8px;margin-top:10px"><input id="dm-q" placeholder="minegocio.com" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit" onkeydown="if(event.key==='Enter')dmBuscar()"><button class="btn-logout" id="dm-qbtn" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="dmBuscar()">Buscar</button></div>
+        <div id="dm-res" style="margin-top:12px"></div>
+      </div>
+      <div class="cb-card" style="padding:16px">
+        <b style="font-size:14px">Conectar a un repositorio de GitHub</b>
+        <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">Para un dominio propio deja el subdominio vacío. Para ofrecer <b>cliente.dgp-link.com</b> o <b>cliente.3s-dev.com</b>, escribe el subdominio.</div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px;margin-top:10px">
+          <input id="dm-sub" placeholder="subdominio (opcional)" style="min-width:0;width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit">
+          <select id="dm-base" style="min-width:0;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit"><option value="">Dominio…</option></select>
+        </div>
+        <select id="dm-repo" style="width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--off,#f8fafc);color:inherit"><option value="">Repositorio de quasarworksco…</option></select>
+        <button class="btn-logout" id="dm-cbtn" style="margin-top:10px;width:100%;background:var(--blue);color:#fff;border-color:var(--blue)" onclick="dmConectar()">Conectar</button>
+        <div id="dm-cres" style="margin-top:8px;font-size:12.5px"></div>
+      </div>
+    </div>
+    <div id="dm-lista"></div>
+  </div>
+</div>
+
 <div id="page-webs" class="page">
   <div class="proy-main" style="max-width:1100px;">
     <div class="proy-header">
       <div>
-        <div class="panel-title-v" style="margin-bottom:2px;">Webs de clientes</div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Sitios web</div>
         <div style="font-size:11px;color:var(--text-soft);">Las páginas activas de tus clientes. Se revisan cada hora: si una se cae o el candado de seguridad falla, te avisa por Telegram. El hosting y el dominio salen del plan registrado en Suscripciones.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -3618,7 +3669,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <div class="proy-main" style="max-width:900px;">
     <div class="proy-header">
       <div>
-        <div class="panel-title-v" style="margin-bottom:2px;">Respuestas de correo</div>
+        <div class="panel-title-v" style="margin-bottom:2px;">Correos</div>
         <div style="font-size:11px;color:var(--text-soft);">Lo que los clientes y prospectos responden a los correos que salen de info@dgpglobalgroup.com. Se revisa cada 2 horas y te avisa por Telegram. Puedes contestar desde aquí.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -4689,6 +4740,8 @@ function switchPage(page, btn) {
   if (page === 'encuestas')  renderEncuestas();
   if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
   if (page === 'webs')       renderWebs();
+  if (page === 'dominios')   renderDominios();
+  { const sec = document.querySelector(`.nav-tab[onclick*="'${page}'"]`)?.closest('.nav-sec'); if (sec?.classList.contains('cerrado')) navGrupo(document.querySelector(`button.nav-group[data-g="${sec.dataset.g}"]`), true); }
   if (page === 'suscripciones') renderSuscripciones();
   if (page === 'resenasweb') renderResenasWeb();
   if (page === 'metaads')    renderMetaAds();
@@ -11158,6 +11211,22 @@ async function guardarPerfil() {
   catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
 
+/* Contador de WhatsApp en el menú: chats con mensajes sin leer (lo lleva el bot, sin cargar el servidor de WhatsApp) */
+async function waContador() {
+  try { if (!currentUser) return; const d = await waApi('noLeidos'); const b = document.getElementById('wa-badge'); if (b) { b.style.display = d.chats ? 'inline' : 'none'; b.textContent = d.chats; } } catch (e) {}
+}
+setInterval(() => { if (!document.hidden) waContador(); }, 120000); setTimeout(waContador, 6000);
+/* ═══ Áreas del menú lateral que se pliegan (se recuerdan en este navegador) ═══ */
+function navGrupo(btn, abrir) {
+  const g = btn.dataset.g, sec = document.querySelector(`.nav-sec[data-g="${g}"]`); if (!sec) return;
+  const cerrar = abrir === undefined ? !sec.classList.contains('cerrado') : !abrir;
+  sec.classList.toggle('cerrado', cerrar); btn.classList.toggle('cerrado', cerrar);
+  try { const c = JSON.parse(localStorage.getItem('dgp-nav-cerrados') || '[]').filter(x => x !== g); if (cerrar) c.push(g); localStorage.setItem('dgp-nav-cerrados', JSON.stringify(c)); } catch (e) {}
+}
+(function () {
+  let c = []; try { c = JSON.parse(localStorage.getItem('dgp-nav-cerrados') || '[]'); } catch (e) {}
+  c.forEach(g => { const s = document.querySelector(`.nav-sec[data-g="${g}"]`), b = document.querySelector(`button.nav-group[data-g="${g}"]`); if (s && !s.querySelector('.nav-tab.active')) { s.classList.add('cerrado'); b?.classList.add('cerrado'); } });
+})();
 /* ═══ Menú de usuario (avatar) ═══ */
 function toggleMenuUsuario(e) {
   e?.stopPropagation();
@@ -13347,7 +13416,7 @@ async function nsCrear() {
       ${d.pagesError ? `<div class="ll-sub" style="color:#dc2626">GitHub Pages no se activó solo (${esc(d.pagesError)}). Actívalo en el repositorio → Settings → Pages → rama main.</div>` : ''}
       ${d.dnsAuto?.ok ? '<div class="ll-sub" style="color:#16a34a"><b>Dominio configurado en GoDaddy ✅</b> · el candado de seguridad tarda hasta 1 hora en activarse.</div>' : d.dnsAuto ? `<div class="ll-sub" style="color:#d97706">No configuré el dominio en GoDaddy: ${esc(d.dnsAuto.motivo || '')}</div>` : ''}
       ${d.dns && d.dns.length ? `<div class="ll-sub"><b>Registros DNS para el dominio</b> (en GoDaddy o Cloudflare):<br>${d.dns.map(x => `${x.tipo} · <b>${esc(x.nombre)}</b> → ${esc(x.valor)}`).join('<br>')}</div>` : ''}
-      <div class="ll-sub">Ya quedó en Webs de clientes. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
+      <div class="ll-sub">Ya quedó en Sitios web. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
     renderWebs(true).catch(() => {});
   } catch (e) { btn.disabled = false; btn.textContent = 'Crear repositorio y sitio'; toast(e.message, 'err'); }
 }
@@ -13433,6 +13502,84 @@ function wbPintar() {
   wbPintarHist();
 }
 function wbHist(id) { _wb.hist = _wb.hist === id ? null : id; wbPintarHist(); document.getElementById('wb-hist').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+/* ═══ DOMINIOS (GoDaddy + GitHub) ═══ */
+let _dmRepos = null;
+async function dmApi(datos) {
+  const tok = await currentUser.getIdToken();
+  const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'gd', ...datos }) }).then(r => r.json());
+  if (d.error) throw new Error(d.error); return d;
+}
+async function renderDominios(fresco) {
+  const el = document.getElementById('dm-lista'); if (!el) return;
+  if (!_gdDom || fresco) {
+    el.innerHTML = '<div class="cb-card" style="padding:14px 16px;font-size:12.5px;color:var(--text-soft)">Leyendo tus dominios de GoDaddy…</div>';
+    try { const tok = await currentUser.getIdToken(); const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'dominios', fresco: !!fresco }) }).then(r => r.json()); if (d.error) throw new Error(d.error); _gdDom = d.dominios || []; }
+    catch (e) { el.innerHTML = `<div class="cb-card" style="padding:14px 16px;color:#dc2626">${esc(e.message)}</div>`; return; }
+  }
+  const sel = document.getElementById('dm-base'), act = sel.value;
+  sel.innerHTML = '<option value="">Dominio…</option>' + _gdDom.map(g => `<option ${g.dominio === act ? 'selected' : ''}>${esc(g.dominio)}</option>`).join('');
+  if (!_dmRepos) dmApi({ accion: 'repos' }).then(d => { _dmRepos = d.repos || []; const r = document.getElementById('dm-repo'); r.innerHTML = '<option value="">Repositorio de quasarworksco…</option>' + _dmRepos.map(x => `<option value="${esc(x.nombre)}">${esc(x.nombre)}${x.web ? ' · ' + esc(x.web.replace(/^https?:\/\//, '')) : ''}</option>`).join(''); }).catch(e => toast('No se pudieron leer los repositorios: ' + e.message, 'err'));
+  const hoy = Date.now(), webs = _wb.lista || [];
+  const L = _gdDom.map(g => ({ ...g, dias: g.vence ? Math.round((new Date(g.vence).getTime() - hoy) / 864e5) : null, cli: (webs.find(w => String(w.dominio || '').replace(/^www\./, '') === g.dominio) || {}).cliente || '' })).sort((a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9));
+  const pronto = L.filter(x => x.dias !== null && x.dias <= 30).length;
+  const bd = document.getElementById('dom-badge'); if (bd) { bd.style.display = pronto ? 'inline' : 'none'; bd.textContent = pronto; }
+  el.innerHTML = `<div class="cb-card" style="padding:14px 16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:14px">Mis dominios · ${L.length}</b><button class="btn-logout" style="font-size:11px" onclick="renderDominios(true)">Actualizar</button></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px">${L.map(x => { const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><b style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</b><button class="btn-logout" style="font-size:10.5px;padding:4px 9px" onclick="dmDNS('${esc(x.dominio)}')">DNS</button></div>
+        <div style="font-size:11.5px;color:var(--text-soft);margin-top:3px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
+async function dmBuscar() {
+  const q = document.getElementById('dm-q').value.trim(), out = document.getElementById('dm-res'), b = document.getElementById('dm-qbtn'); if (!q) return;
+  b.disabled = true; out.innerHTML = '<div style="font-size:12.5px;color:var(--text-soft)">Buscando en GoDaddy…</div>';
+  try {
+    const d = await dmApi({ accion: 'buscar', dominio: q.includes('.') ? q : q + '.com' });
+    const fila = x => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span><b>${esc(x.dominio)}</b> <span style="font-size:12px;color:${x.disponible ? '#16a34a' : '#dc2626'}">${x.disponible ? 'disponible' : 'no disponible'}</span></span>${x.disponible ? `<span style="display:flex;gap:8px;align-items:center"><b>${x.precio ? '$' + x.precio.toFixed(2) : ''}</b><button class="btn-logout" style="font-size:11px" onclick="dmComprar('${esc(x.dominio)}', ${x.precio || 0})">Comprar</button></span>` : ''}</div>`;
+    out.innerHTML = fila(d) + (d.sugerencias.length ? `<div id="dm-sug" style="font-size:12px;color:var(--text-soft);margin-top:8px">Buscando precios de otras opciones…</div>` : '');
+    if (d.sugerencias.length) dmApi({ accion: 'precios', lista: d.sugerencias }).then(s => { const el = document.getElementById('dm-sug'); if (el) el.outerHTML = `<div style="font-size:11.5px;color:var(--text-soft);margin-top:10px">Otras opciones</div>` + s.lista.filter(x => x.disponible).map(fila).join(''); }).catch(() => {});
+  } catch (e) { out.innerHTML = `<div style="color:#dc2626;font-size:12.5px">${esc(e.message)}</div>`; }
+  b.disabled = false;
+}
+function dmComprar(dom, precio) {
+  const ops = (_dmRepos || []).map(x => `<option value="${esc(x.nombre)}">${esc(x.nombre)}</option>`).join('');
+  ptModal('Comprar dominio', dom, `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:26px;font-weight:800">${precio ? '$' + precio.toFixed(2) : ''} <span style="font-size:13px;font-weight:500;color:var(--text-soft)">por 1 año · se renueva solo</span></div>
+    <div style="font-size:12.5px;color:var(--text-mid)">Se cobra a tu cuenta de GoDaddy con tu forma de pago guardada. Los datos del dueño son los mismos de tus otros dominios.</div>
+    <div class="ff" style="margin:0"><label>Conectarlo a un repositorio (opcional)</label><select id="dm-crepo"><option value="">No por ahora</option>${ops}</select></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="dm-ok"> Confirmo la compra de <b>${esc(dom)}</b></label>
+    <button class="ll-btn" id="dm-cbtn2" style="background:#16a34a" onclick="dmComprarYa('${esc(dom)}', ${precio || 0})">Comprar ahora</button></div>`);
+}
+async function dmComprarYa(dom, precio) {
+  if (!document.getElementById('dm-ok').checked) return toast('Marca la casilla para confirmar', 'err');
+  const b = document.getElementById('dm-cbtn2'); b.disabled = true; b.textContent = 'Comprando…';
+  try { const d = await dmApi({ accion: 'comprar', dominio: dom, confirmo: dom, precioVisto: precio, repo: document.getElementById('dm-crepo').value });
+    closePortalModal(); toast(`Dominio comprado ✅${d.total ? ' · $' + Number(d.total).toFixed(2) : ''}`); logActividad('Dominio comprado', dom);
+    ptModal('Dominio comprado', dom, `<div class="rd-form"><div class="ll-sub">GoDaddy tarda unos minutos en activarlo. ${document.getElementById('dm-crepo')?.value ? '' : ''}Si elegiste un repositorio, el panel lo conecta solo apenas esté activo (revisa cada hora) y te avisa por Telegram.</div></div>`);
+    _gdDom = null; renderDominios(true);
+  } catch (e) { b.disabled = false; b.textContent = 'Comprar ahora'; toast('No se pudo comprar: ' + e.message, 'err'); }
+}
+async function dmConectar() {
+  const base = document.getElementById('dm-base').value, sub = document.getElementById('dm-sub').value.trim(), repo = document.getElementById('dm-repo').value, out = document.getElementById('dm-cres'), b = document.getElementById('dm-cbtn');
+  if (!base) return toast('Elige el dominio', 'err'); if (!repo) return toast('Elige el repositorio', 'err');
+  const final = (sub ? sub.toLowerCase() + '.' : '') + base;
+  if (!confirm(`¿Conectar ${final} al repositorio ${repo}? Se reemplazan los registros ${sub ? 'de ese subdominio' : 'A (@) y www'} en GoDaddy.`)) return;
+  b.disabled = true; b.textContent = 'Conectando…'; out.innerHTML = '';
+  try { const d = await dmApi({ accion: 'conectar', dominio: base, sub, repo });
+    out.innerHTML = `<span style="color:#16a34a">Conectado ✅</span> <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.url)}</a><br><span style="color:var(--text-soft)">Puede tardar unos minutos en verse y hasta 1 hora el candado de seguridad.</span>`;
+    logActividad('Dominio conectado', `${d.dominio} → ${repo}`); document.getElementById('dm-sub').value = '';
+  } catch (e) { out.innerHTML = `<span style="color:#dc2626">${esc(e.message)}</span>`; }
+  b.disabled = false; b.textContent = 'Conectar';
+}
+async function dmDNS(dom) {
+  ptModal('Registros DNS', dom, '<div class="rd-form"><div class="ll-sub">Leyendo…</div></div>');
+  try { const d = await dmApi({ accion: 'registros', dominio: dom });
+    const R = d.registros.filter(r => r.tipo !== 'NS' && r.tipo !== 'SOA');
+    ptModal('Registros DNS', dom + ' · el correo (MX) no se puede borrar desde aquí', `<div class="rd-form"><div style="max-height:56vh;overflow:auto">${R.map(r => `<div style="display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px"><b>${esc(r.tipo)}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(r.nombre)}</b> → ${esc(r.valor)}</span>${r.tipo === 'MX' ? '' : `<button class="hr-ico" title="Borrar" style="color:#dc2626" onclick="dmBorrar('${esc(dom)}','${esc(r.tipo)}','${esc(r.nombre)}')"><i class="fa-solid fa-trash"></i></button>`}</div>`).join('') || '<div class="ll-sub">Sin registros</div>'}</div></div>`);
+  } catch (e) { ptModal('Registros DNS', dom, `<div class="rd-form"><div class="ll-sub" style="color:#dc2626">${esc(e.message)}</div></div>`); }
+}
+async function dmBorrar(dom, tipo, nombre) {
+  if (!confirm(`¿Borrar todos los registros ${tipo} de "${nombre}" en ${dom}?`)) return;
+  try { await dmApi({ accion: 'borrar', dominio: dom, tipo, nombre }); toast('Registro borrado'); dmDNS(dom); } catch (e) { toast(e.message, 'err'); }
+}
 /* Dominios de GoDaddy con su vencimiento (el bot los lee con la llave de GoDaddy; se recuerdan 12 h) */
 let _gdDom = null;
 async function wbDominios(fresco) {
