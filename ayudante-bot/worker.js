@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05c';
+const WORKER_VERSION = '2026-11-05d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1091,6 +1091,20 @@ async function tareaDiaria(env) {
     await fsUpdate(env, `documentos/${d._id}`, { pausada: null, cobranzaPausada: false, cobranza: {}, venceEl: hoy }, ['pausada', 'cobranzaPausada', 'cobranza', 'venceEl'], token).catch(() => {});
     d.pausada = null; reanudadas.push(d);
   }
+  // 1d2) Dominios de GoDaddy que vencen en 30 días o menos → aviso por Telegram (una vez por vencimiento)
+  if (env.GODADDY_KEY && env.GODADDY_SECRET && env.CACHE) try {
+    const webs = await fsList(env, 'webs', token).catch(() => []);
+    for (const g of await gdDominios(env, true)) {
+      if (!g.vence) continue;
+      const dias = diasEntre(hoy, String(g.vence).slice(0, 10));
+      if (dias > 30 || dias < -30) continue;
+      const k = `gdAviso:${g.dominio}:${String(g.vence).slice(0, 10)}`;
+      if (await env.CACHE.get(k).catch(() => null)) continue;
+      await env.CACHE.put(k, '1', { expirationTtl: 70 * 86400 }).catch(() => {});
+      const w = webs.find(x => String(x.dominio || '').replace(/^www\./, '') === g.dominio);
+      await tgEnviar(env, `🌐 <b>Dominio por vencer:</b> ${escHtml(g.dominio)}${w?.cliente ? ` · ${escHtml(w.cliente)}` : ''}\n${dias >= 0 ? `Vence en <b>${dias} día${dias === 1 ? '' : 's'}</b>` : `<b>Venció hace ${-dias} días</b>`} (${fechaCorta(String(g.vence).slice(0, 10))}) · ${g.autoRenovar ? 'renovación automática activa ✅' : '<b>sin renovación automática</b> ⚠️'}\nSi lo paga el cliente, recuerda enviarle la factura de renovación.`).catch(() => {});
+    }
+  } catch (e) { console.warn('Dominios GoDaddy', e); }
   // 1e) Saldo a favor de clientes que pagaron de más → a sus facturas nuevas
   const saldosAplicados = await aplicarSaldosFavor(env, token, docs).catch(e => { console.warn('Saldo a favor', e); return []; });
 

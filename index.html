@@ -3607,6 +3607,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     </div>
     <div id="wb-tiles" class="wb-tiles" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px"></div>
     <div id="wb-resumen" class="wb-resumen" style="display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:16px"></div>
+    <div id="wb-dominios" style="margin-bottom:16px"></div>
     <div id="wb-filtros" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
     <div id="wb-lista"></div>
     <div id="wb-hist"></div>
@@ -13310,6 +13311,7 @@ async function nsCrear() {
       <a class="ll-btn" style="background:#d97757;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="https://claude.ai/code" target="_blank" rel="noopener">${ico} Abrir Claude Code y elegir ${esc(d.repo.split('/')[1])}</a>
       <div class="ll-sub">Sitio (tarda 1–2 minutos la primera vez): <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.url)}</a></div>
       ${d.pagesError ? `<div class="ll-sub" style="color:#dc2626">GitHub Pages no se activó solo (${esc(d.pagesError)}). Actívalo en el repositorio → Settings → Pages → rama main.</div>` : ''}
+      ${d.dnsAuto?.ok ? '<div class="ll-sub" style="color:#16a34a"><b>Dominio configurado en GoDaddy ✅</b> · el candado de seguridad tarda hasta 1 hora en activarse.</div>' : d.dnsAuto ? `<div class="ll-sub" style="color:#d97706">No configuré el dominio en GoDaddy: ${esc(d.dnsAuto.motivo || '')}</div>` : ''}
       ${d.dns && d.dns.length ? `<div class="ll-sub"><b>Registros DNS para el dominio</b> (en GoDaddy o Cloudflare):<br>${d.dns.map(x => `${x.tipo} · <b>${esc(x.nombre)}</b> → ${esc(x.valor)}`).join('<br>')}</div>` : ''}
       <div class="ll-sub">Ya quedó en Webs de clientes. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
     renderWebs(true).catch(() => {});
@@ -13325,6 +13327,7 @@ async function renderWebs(fresco) {
   wbPintar();
 }
 function wbPintar() {
+  if (!_gdDom) wbDominios(false); else if (document.getElementById('wb-dominios') && !document.getElementById('wb-dominios').innerHTML) wbDominios(false);
   const L = _wb.lista || [];
   const prob = L.filter(w => w.estado === 'caida' || w.estado === 'lenta' || w.candado === false);
   const ok = L.filter(w => w.estado === 'ok');
@@ -13396,6 +13399,27 @@ function wbPintar() {
   wbPintarHist();
 }
 function wbHist(id) { _wb.hist = _wb.hist === id ? null : id; wbPintarHist(); document.getElementById('wb-hist').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+/* Dominios de GoDaddy con su vencimiento (el bot los lee con la llave de GoDaddy; se recuerdan 12 h) */
+let _gdDom = null;
+async function wbDominios(fresco) {
+  const el = document.getElementById('wb-dominios'); if (!el) return;
+  if (!_gdDom || fresco) {
+    el.innerHTML = '<div class="cb-card" style="padding:14px 16px;font-size:12.5px;color:var(--text-soft)">Leyendo tus dominios de GoDaddy…</div>';
+    try { const tok = await currentUser.getIdToken(); const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'dominios', fresco: !!fresco }) }).then(r => r.json()); if (d.error) throw new Error(d.error); _gdDom = d.dominios || []; }
+    catch (e) { el.innerHTML = `<div class="cb-card" style="padding:14px 16px;font-size:12.5px;color:#dc2626">No se pudieron leer los dominios: ${esc(e.message)}</div>`; return; }
+  }
+  if (!_gdDom.length) { el.innerHTML = ''; return; }
+  const hoy = Date.now(), webs = (_wb.lista || []);
+  const L = _gdDom.map(g => ({ ...g, dias: g.vence ? Math.round((new Date(g.vence).getTime() - hoy) / 864e5) : null, cli: (webs.find(w => String(w.dominio || '').replace(/^www\./, '') === g.dominio) || {}).cliente || '' })).sort((a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9));
+  const pronto = L.filter(x => x.dias !== null && x.dias <= 30).length;
+  el.innerHTML = `<div class="cb-card" style="padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><div><b style="font-size:14px">Dominios en GoDaddy · ${L.length}</b><div style="font-size:11.5px;color:var(--text-soft)">${pronto ? `<b style="color:#d97706">${pronto} vence${pronto > 1 ? 'n' : ''} en 30 días o menos</b> · ` : ''}Te avisa por Telegram 30 días antes.</div></div>
+      <button class="btn-logout" onclick="wbDominios(true)" style="font-size:11px">Actualizar</button></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${L.map(x => {
+      const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:9px 11px"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</div>
+        <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
 function wbPintarHist() {
   const box = document.getElementById('wb-hist'); const w = (_wb.lista || []).find(x => x._id === _wb.hist);
   if (!w) { box.innerHTML = ''; return; }
