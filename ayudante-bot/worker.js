@@ -739,7 +739,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05w';
+const WORKER_VERSION = '2026-11-05x';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1102,6 +1102,8 @@ async function tareaDiaria(env) {
     await fsUpdate(env, `documentos/${d._id}`, { pausada: null, cobranzaPausada: false, cobranza: {}, venceEl: hoy }, ['pausada', 'cobranzaPausada', 'cobranza', 'venceEl'], token).catch(() => {});
     d.pausada = null; reanudadas.push(d);
   }
+  // 1d1) Día 1 de cada mes: informe de su web a cada cliente con hosting activo
+  if (hoy.slice(8) === '01' && auto.informeWeb) await informesWeb(env, token, { canal: auto.informeCanal }).then(r => r.enviados && tgEnviar(env, `📊 <b>Informes mensuales de webs enviados (${r.enviados})</b>\n${r.detalle.map(d => '• ' + escHtml(d)).join('\n')}`)).catch(e => console.warn('Informes web', e));
   // 1d2) Dominios de GoDaddy que vencen en 30 días o menos → aviso por Telegram (una vez por vencimiento)
   if (env.GODADDY_KEY && env.GODADDY_SECRET && env.CACHE) try {
     const webs = await fsList(env, 'webs', token).catch(() => []);
@@ -1616,6 +1618,7 @@ async function handleTarea(request, env) {
       return json(request, { ok: true, mensaje: String(r.html || r.aviso || '').replace(/<[^>]+>/g, '') });
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
+    if (tarea === 'informe-web') { const a = await automatizaciones(env, v.token); if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400); return json(request, { ok: true, ...(await informesWeb(env, v.token, { webId: cuerpo.id, canal: cuerpo.canal || a.informeCanal })) }); }
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
     if (tarea === 'gd') return json(request, await gdAccion(env, v.token, cuerpo, request, v.email));
     if (tarea === 'dominios') { if (!env.GODADDY_KEY) return json(request, { dominios: [] }); try { return json(request, { dominios: await gdDominios(env, !!cuerpo.fresco) }); } catch (e) { return json(request, { error: e.message }); } }
@@ -4064,7 +4067,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true, waProspectoAuto: c.waProspectoAuto !== false, waRemesista: c.waRemesista !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true, waProspectoAuto: c.waProspectoAuto !== false, waRemesista: c.waRemesista !== false, informeWeb: c.informeWeb !== false, informeCanal: ['whatsapp', 'correo', 'ambos'].includes(c.informeCanal) ? c.informeCanal : 'ambos' };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -4232,6 +4235,42 @@ async function chequearWeb(dominio) {
   // 401/403/429: la web responde pero no deja entrar a robots → está en línea
   const caida = r.codigo >= 500 || (r.codigo >= 400 && ![401, 403, 429].includes(r.codigo));
   return { estado: caida ? 'caida' : r.ms > 3000 ? 'lenta' : 'ok', candado, ms: r.ms, codigo: r.codigo, error: caida ? `Error ${r.codigo}` : '' };
+}
+/* ══ INFORME MENSUAL DE LA WEB (día 1): disponibilidad, velocidad y candado, por WhatsApp, correo o ambos.
+   Solo a clientes con hosting activo; si el cliente es de un aliado, le llega al aliado. ══ */
+async function informesWeb(env, token, op = {}) {
+  const [webs, subs, clientes, portales, aliados] = await Promise.all(['webs', 'suscripciones', 'clientes', 'portal', 'aliados'].map(c => fsList(env, c, token).catch(() => [])));
+  const canal = op.canal || 'ambos', mesTxt = new Date(Date.now() - 5 * 864e5).toLocaleDateString('es-ES', { month: 'long', year: 'numeric', timeZone: 'America/New_York' });
+  const limpio = d => String(d || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  let enviados = 0; const detalle = [];
+  for (const w of webs.filter(x => x.activo !== false && x.dominio && (!op.webId || x._id === op.webId))) {
+    const dom = limpio(w.dominio);
+    const sub = subs.find(s => s.estado === 'activa' && (limpio(s.dominio) === dom || (s.cliente && normNombre(s.cliente) === normNombre(w.cliente))) && /hosting|plan|mant/i.test(`${s.tipo} ${s.servicio}`));
+    if (!sub && !op.webId) continue;   // solo clientes con hosting activo (a mano se puede mandar igual)
+    const dias = Object.values(w.dias || {}), total = dias.length;
+    const caidos = dias.filter(x => x === 'caida').length;
+    const uptime = total ? Math.round((1 - caidos / total) * 1000) / 10 : 100;
+    const ms = Number(w.ms) || null;
+    const nombreCli = sub?.cliente || w.cliente || dom;
+    // ¿A quién? cliente directo, o su aliado
+    const n = normNombre(nombreCli);
+    const cli = clientes.find(c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' ')) === n), por = portales.find(p => normNombre(p.nombre) === n);
+    const alId = sub?.aliadoId || cli?.aliadoId; const al = alId ? aliados.find(a => a._id === alId) : null;
+    const para = al ? { nombre: al.nombre, tel: al.telefono, correo: al.correo } : { nombre: nombreCli, tel: cli?.telefono || por?.telefono, correo: cli?.correo || por?.correo };
+    const primer = String(para.nombre || '').split(' ')[0];
+    const lineas = [`🌐 *${dom}*${al ? ` (${nombreCli})` : ''}`, `• En línea: *${uptime}%* del mes${caidos ? ` (${caidos} día${caidos > 1 ? 's' : ''} con caídas)` : ''}`, `• Velocidad: ${ms ? (ms / 1000).toFixed(1) + ' s' : '—'}${ms && ms < 1500 ? ' ⚡ muy rápida' : ''}`, `• Candado de seguridad (https): ${w.candado === false ? '⚠️ revisándolo' : 'activo ✅'}`, `• Monitoreo cada hora y respaldo incluidos`];
+    const textoWA = `Hola ${primer}! Este es el informe de ${mesTxt} de tu página web, de parte de DGP Global Group:\n\n${lineas.join('\n')}\n\nCualquier cambio que necesites en tu web, escríbenos por aquí. ¡Gracias por confiar en nosotros!`;
+    let ok = false;
+    if ((canal === 'whatsapp' || canal === 'ambos') && env.WA_URL && waTelIntl(para.tel)) { try { await waEnviarTexto(env, waTelIntl(para.tel) + '@c.us', textoWA); ok = true; } catch (e) { console.warn('informe WA', e); } }
+    if ((canal === 'correo' || canal === 'ambos') && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(para.correo || ''))) {
+      const html = correoBotHTML({ icono: 'web', titulo: `Tu web en ${mesTxt}`, texto: `Hola ${primer}, este es el resumen mensual de ${al ? `la página de ${nombreCli}` : 'tu página web'}. La vigilamos cada hora para que siempre esté en línea, rápida y segura.`,
+        boton: 'Ver la página', link: `https://${dom}`, nota: 'Si necesitas algún cambio, responde este correo o escríbenos por WhatsApp.',
+        resumen: [['Página', dom], ['En línea este mes', uptime + '%', uptime >= 99 ? '#16a34a' : '#d97706'], ['Velocidad de carga', ms ? (ms / 1000).toFixed(1) + ' s' : '—'], ['Candado de seguridad (https)', w.candado === false ? 'En revisión' : 'Activo'], ['Monitoreo', 'Cada hora']] });
+      if (await enviarCorreoBot(env, para.correo, `Informe de tu web · ${mesTxt} · ${dom}`, html, textoWA.replace(/\*/g, '')).catch(() => false)) ok = true;
+    }
+    if (ok) { enviados++; detalle.push(dom); await fsUpdate(env, `webs/${w._id}`, { ultimoInforme: new Date().toISOString() }, ['ultimoInforme'], token).catch(() => {}); }
+  }
+  return { enviados, detalle };
 }
 async function revisarWebs(env, manual) {
   const token = await firebaseLogin(env);

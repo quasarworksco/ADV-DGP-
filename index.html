@@ -13126,6 +13126,8 @@ function abrirAltair() {
     ${fila('waFueraHorario', 'Altair atiende fuera de horario', 'Fuera de lunes a sábado 9am–10pm (Miami), Altair atiende por WhatsApp: saluda, pregunta con quién tiene el gusto, ayuda con servicios y precios y te avisa en Telegram. Se calla apenas tú escribes en el chat.')}
     ${fila('waProspectoAuto', 'Prospectos automáticos de WhatsApp', 'Si te escribe un número nuevo (no cliente, aliado ni prospecto), se guarda solo en Prospectos al segundo mensaje o cuando le dice su nombre a Altair, con lo que necesita. Sin spam ni grupos.')}
     ${fila('waProspectos', 'Altair responde a prospectos', 'En horario, Altair atiende solo a números nuevos (nunca clientes, aliados ni grupos): hasta 6 respuestas y luego les dice que el asesor encargado los contactará en breve.')}
+    ${fila('informeWeb', 'Informe mensual de la web', 'El día 1 de cada mes, cada cliente con hosting activo recibe el resumen de su web: días en línea, velocidad y candado. Si es de un aliado, le llega al aliado.')}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-4px 0 10px;font-size:12.5px;color:var(--text-mid)"><span>Enviar el informe por</span><select onchange="cambiarAutoValor('informeCanal', this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:12.5px;background:var(--white);color:inherit">${[['ambos', 'WhatsApp y correo'], ['whatsapp', 'Solo WhatsApp'], ['correo', 'Solo correo']].map(([v, t]) => `<option value="${v}" ${(_auto.informeCanal || 'ambos') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
     ${fila('waRemesista', 'Reenviar comprobantes al remesista', 'Cada comprobante de una factura le llega por WhatsApp al remesista de esa cuenta de pago (Pagos → Métodos de pago), con la pregunta "¿Llegó?". No marca nada: los pagos los confirmas tú.')}
     ${fila('waRecibo', 'Recibo por WhatsApp al cobrar', 'Al confirmar un pago o abono (panel, Telegram o automático), el cliente recibe por WhatsApp el monto recibido y su recibo, o lo que le queda por pagar. Si es cliente de un aliado, le llega al aliado.')}
     ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}
@@ -13139,6 +13141,10 @@ function abrirAltair() {
       <button class="alt-act" onclick="sonarChaching();lanzarConfeti();"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
     </div>`);
   pushEstadoHTML();
+}
+async function cambiarAutoValor(k, v) {
+  _auto[k] = v;
+  try { await db.collection('config').doc('automatizaciones').set({ [k]: v, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast('Guardado ✅'); } catch (e) { toast('No se pudo guardar.', 'err'); }
 }
 async function cambiarAuto(k, on) {
   if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) { sonarChaching(); lanzarConfeti(); } return; }
@@ -13739,7 +13745,7 @@ function wbPintar() {
         <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
@@ -13941,6 +13947,17 @@ async function wbDominios(fresco) {
       const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:9px 11px"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</div>
         <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
+async function wbInforme(id) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  const canal = prompt(`Enviar el informe de ${w.dominio} a su cliente.\n\nEscribe el canal: whatsapp, correo o ambos`, _auto.informeCanal || 'ambos');
+  if (!canal) return; const c = ptNorm(canal);
+  if (!['whatsapp', 'correo', 'ambos'].includes(c)) return toast('Escribe whatsapp, correo o ambos', 'err');
+  try { const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'informe-web', id, canal: c }) }).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    toast(d.enviados ? 'Informe enviado ✅' : 'No se envió: el cliente no tiene WhatsApp o correo guardado', d.enviados ? 'ok' : 'err');
+  } catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); }
 }
 function wbPintarHist() {
   const box = document.getElementById('wb-hist'); const w = (_wb.lista || []).find(x => x._id === _wb.hist);
