@@ -3601,7 +3601,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-logout" id="wb-btn" onclick="wbRevisar(this)" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Revisar ahora</button>
-        <button class="btn-logout" onclick="wbAgregar()" style="background:var(--blue);color:#fff;border-color:var(--blue);">+ Agregar web</button>
+        <button class="btn-logout" onclick="wbAgregar()">+ Agregar web</button>
+        <button class="btn-logout" onclick="nsAbrir()" style="background:var(--blue);color:#fff;border-color:var(--blue);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg> Nuevo sitio web</button>
       </div>
     </div>
     <div id="wb-tiles" class="wb-tiles" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px"></div>
@@ -13261,6 +13262,59 @@ function wbSubs(w) {
 const wbEsDominio = d => /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(wbHost(d));
 function wbFecha(iso) { const d = ptDate(iso); return d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) }) : ''; }
 const wbPronto = iso => { const d = ptDate(iso); return d && (d - new Date()) / 864e5 <= 30; };
+/* ── Nuevo sitio web: crea el repositorio en quasarworksco con la plantilla base (index.html + CLAUDE.md),
+      el logo, GitHub Pages desde main y auto-merge. Lo hace el bot (secreto GH_TOKEN). ── */
+function nsAbrir() {
+  const dl = clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('');
+  const f = (id, lab, ph = '', extra = '') => `<div class="ff" style="margin:0"><label>${lab}</label><input id="${id}" placeholder="${ph}" ${extra}></div>`;
+  ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco con la plantilla base para Claude. Lo que dejes vacío, Claude lo pregunta antes de diseñar.', `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${f('ns-tit', 'Nombre de la empresa', 'JF Network Solutions', 'oninput="const r=document.getElementById(\'ns-repo\');if(!r.dataset.tocado)r.value=this.value.toLowerCase().normalize(\'NFD\').replace(/[\\u0300-\\u036f]/g,\'\').replace(/[^a-z0-9]+/g,\'-\').replace(/^-+|-+$/g,\'\')"')}
+      ${f('ns-repo', 'Nombre del repositorio', 'jf-network-solutions', 'oninput="this.dataset.tocado=1"')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${f('ns-cli', 'Cliente (opcional)', 'De tu lista de clientes', 'list="ns-cli-l"')}<datalist id="ns-cli-l">${dl}</datalist>
+      ${f('ns-rubro', 'A qué se dedica', 'Fibra óptica y redes')}
+    </div>
+    <div class="ff" style="margin:0"><label>Logo</label><input id="ns-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que Claude pregunte</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
+      <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que Claude pregunte</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
+    </div>
+    ${f('ns-ej', 'Página de ejemplo (opcional)', 'https://…')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${f('ns-cor', 'Correo', 'info@empresa.com', 'type="email"')}
+      ${f('ns-tel', 'Teléfono / WhatsApp', '+1 …')}
+    </div>
+    ${f('ns-redes', 'Redes sociales', 'Instagram @…, Facebook …')}
+    ${f('ns-dom', 'Dominio (opcional)', 'empresa.com o empresa.dgp-link.com')}
+    <div class="ff" style="margin:0"><label>Notas para Claude (opcional)</label><textarea id="ns-notas" rows="3" placeholder="Servicios, zona que atiende, lo que pidió el cliente…"></textarea></div>
+    <button class="ll-btn" id="ns-btn" style="background:var(--blue)" onclick="nsCrear()">Crear repositorio y sitio</button></div>`);
+}
+async function nsCrear() {
+  const v = id => (document.getElementById(id)?.value || '').trim(), btn = document.getElementById('ns-btn');
+  if (!v('ns-tit') || !v('ns-repo')) return toast('Escribe el nombre de la empresa y del repositorio', 'err');
+  const file = document.getElementById('ns-logo').files[0];
+  if (file && file.size > 3e6) return toast('El logo pesa más de 3 MB', 'err');
+  btn.disabled = true; btn.textContent = 'Creando en GitHub…';
+  try {
+    const logo = file ? await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); }) : '';
+    const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      body: JSON.stringify({ tarea: 'nuevo-sitio', titulo: v('ns-tit'), repo: v('ns-repo'), cliente: v('ns-cli'), rubro: v('ns-rubro'), estilo: v('ns-estilo'), idiomas: v('ns-idi'), ejemplo: v('ns-ej'), correo: v('ns-cor'), telefono: v('ns-tel'), redes: v('ns-redes'), dominio: v('ns-dom'), notas: v('ns-notas'), logo }) }).then(r => r.json());
+    if (!d.ok) throw new Error(d.error || 'No se pudo crear');
+    logActividad('Nuevo sitio web', `${d.repo} → ${d.url}`);
+    const ico = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+    ptModal('Sitio creado', d.repo, `<div class="rd-form" style="display:grid;gap:8px">
+      <a class="ll-btn" style="background:var(--blue);text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="${esc(d.repoUrl)}" target="_blank" rel="noopener">${ico} Abrir el repositorio</a>
+      <a class="ll-btn" style="background:#d97757;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="https://claude.ai/code" target="_blank" rel="noopener">${ico} Abrir Claude Code y elegir ${esc(d.repo.split('/')[1])}</a>
+      <div class="ll-sub">Sitio (tarda 1–2 minutos la primera vez): <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.url)}</a></div>
+      ${d.pagesError ? `<div class="ll-sub" style="color:#dc2626">GitHub Pages no se activó solo (${esc(d.pagesError)}). Actívalo en el repositorio → Settings → Pages → rama main.</div>` : ''}
+      ${d.dns && d.dns.length ? `<div class="ll-sub"><b>Registros DNS para el dominio</b> (en GoDaddy o Cloudflare):<br>${d.dns.map(x => `${x.tipo} · <b>${esc(x.nombre)}</b> → ${esc(x.valor)}`).join('<br>')}</div>` : ''}
+      <div class="ll-sub">Ya quedó en Webs de clientes. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
+    renderWebs(true).catch(() => {});
+  } catch (e) { btn.disabled = false; btn.textContent = 'Crear repositorio y sitio'; toast(e.message, 'err'); }
+}
 async function renderWebs(fresco) {
   const el = document.getElementById('wb-lista'); if (!el) return;
   if (!_wb.lista || fresco) {

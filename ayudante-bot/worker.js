@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-04t';
+const WORKER_VERSION = '2026-11-05a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1249,6 +1249,125 @@ async function handleAviso(request, env) {
 }
 
 /* ── POST /tarea (solo equipo) ── */
+/* ══════════════════════════════════════════════════════════════
+   NUEVO SITIO WEB (panel → Webs de clientes → Nuevo sitio web)
+   Crea el repositorio en quasarworksco con la plantilla base (index.html + CLAUDE.md con el brief),
+   sube el logo, activa GitHub Pages desde main y "Allow auto-merge", y lo agrega a Webs de clientes.
+   Secreto en Cloudflare: GH_TOKEN (token de GitHub con permiso sobre los repositorios de quasarworksco).
+══════════════════════════════════════════════════════════════ */
+const GH_ORG = 'quasarworksco';
+async function gh(env, metodo, ruta, cuerpo) {
+  const r = await fetch('https://api.github.com' + ruta, { method: metodo, headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'dgp-panel', ...(cuerpo ? { 'Content-Type': 'application/json' } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.message || ('GitHub respondió ' + r.status)); e.status = r.status; throw e; }
+  return d;
+}
+const b64 = t => { const u = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
+function plantillaClaude(d) {
+  const L = (t, v) => `- **${t}:** ${v || '_pendiente: pregúntalo antes de diseñar_'}`;
+  return `# ${d.titulo} · sitio web de DGP Global Group
+
+Este repositorio es el sitio web de **${d.titulo}**${d.cliente ? ` (cliente: ${d.cliente})` : ''}. Lo publica GitHub Pages desde la rama \`main\`${d.dominio ? ` en **${d.dominio}**` : ''}.
+
+## Antes de escribir código: pregunta lo que falte
+Haz estas preguntas **en un solo mensaje** y espera la respuesta. No inventes datos de contacto ni de la empresa.
+1. **Estilo visual:** ¿glassmorphism, minimalista, oscuro tecnológico, elegante/lujo, corporativo, colorido u otro?
+2. **Página de ejemplo:** ¿hay algún sitio de referencia que le guste al cliente? (si da enlaces, revísalos y toma ideas de estructura, no copies diseño ni textos)
+3. **Contacto:** correo, teléfono, WhatsApp, dirección y horario (solo lo que exista).
+4. **Redes sociales:** Instagram, Facebook, TikTok, LinkedIn, YouTube, Google Business (solo las que tenga).
+5. **Servicios o productos** principales, y la ciudad o zona que atiende.
+6. **Idiomas:** ¿solo español, solo inglés o bilingüe ES/EN con botón para cambiar?
+
+## Datos que ya tenemos
+${L('Empresa', d.titulo)}
+${L('Rubro / qué hace', d.rubro)}
+${L('Estilo visual', d.estilo)}
+${L('Página de ejemplo', d.ejemplo)}
+${L('Correo', d.correo)}
+${L('Teléfono / WhatsApp', d.telefono)}
+${L('Redes sociales', d.redes)}
+${L('Idiomas', d.idiomas)}
+${L('Notas', d.notas)}
+${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: pídelo_'}
+
+## Reglas de diseño (obligatorias)
+- **Diseño premium basado en el logo:** saca la paleta de colores, el estilo y la personalidad del logo (\`${d.logo || 'assets/logo'}\`). El sitio debe sentirse hecho a la medida de esa marca.
+- **Sin emojis.** Solo **iconos SVG** (inline o de una librería de iconos), consistentes en estilo y grosor.
+- Tipografías de Google Fonts que combinen con la marca; jerarquía clara y mucho aire.
+- **Mobile first:** perfecto en celular (botones grandes, nada se sale de la pantalla) y en escritorio.
+- Animaciones suaves y discretas (aparecer al hacer scroll, hover); respeta \`prefers-reduced-motion\`.
+- Botón flotante de **WhatsApp** y llamadas a la acción claras (cotizar, llamar, escribir) si hay contacto.
+- **SEO básico:** \`<title>\`, meta description, Open Graph con imagen, favicon a partir del logo, \`lang\` correcto, textos alternativos en las imágenes, datos estructurados LocalBusiness si hay dirección o teléfono.
+- Rendimiento: imágenes optimizadas (webp), carga diferida, sin librerías pesadas innecesarias.
+- Nunca pidas ni muestres datos sensibles (SSN, ITIN, documentos de identidad) en formularios.
+- Pie de página: © año, nombre de la empresa y "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
+
+## Cómo trabajar
+- Todo el sitio vive en \`index.html\` (CSS y JS dentro) salvo imágenes en \`assets/\`, a menos que el proyecto pida varias páginas.
+- Cuando termines, haz commit y push a \`main\`: GitHub Pages publica solo.
+`;
+}
+function plantillaIndex(d) {
+  return `<!doctype html>
+<!--
+  ${d.titulo} · sitio en construcción por DGP Global Group.
+  Para Claude: lee CLAUDE.md antes de empezar. Diseño premium basado en el logo, sin emojis (solo iconos SVG),
+  pregunta el estilo visual, la página de ejemplo y los datos de contacto y redes que falten, y trabaja sobre eso.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${d.titulo} · Próximamente</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#0b1220; color:#e2e8f0; text-align:center; padding:24px; box-sizing:border-box; }
+  img { max-width:220px; max-height:140px; object-fit:contain; margin-bottom:28px; }
+  h1 { font-size:clamp(26px,5vw,40px); margin:0 0 10px; font-weight:700; letter-spacing:-.02em; }
+  p { margin:0; color:#94a3b8; }
+</style>
+</head>
+<body>
+  <main>
+    ${d.logo ? `<img src="${d.logo}" alt="${d.titulo}">` : ''}
+    <h1>${d.titulo}</h1>
+    <p>Nuestro sitio web está en construcción.</p>
+  </main>
+</body>
+</html>
+`;
+}
+async function crearSitio(env, token, b, email) {
+  if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
+  const limpio = (x, n = 300) => String(x || '').replace(/[<>`]/g, '').trim().slice(0, n);
+  const repo = String(b.repo || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  if (!repo) return { error: 'Escribe el nombre del proyecto' };
+  const dominio = limpio(b.dominio, 120).toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  if (dominio && !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) return { error: 'El dominio no es válido' };
+  const d = { titulo: limpio(b.titulo, 80) || repo, cliente: limpio(b.cliente, 80), rubro: limpio(b.rubro), estilo: limpio(b.estilo), ejemplo: limpio(b.ejemplo), correo: limpio(b.correo, 120),
+    telefono: limpio(b.telefono, 60), redes: limpio(b.redes, 500), idiomas: limpio(b.idiomas, 60), notas: limpio(b.notas, 1500), dominio, logo: '' };
+  // Logo (data URL desde el panel)
+  let logo = null;
+  const m = String(b.logo || '').match(/^data:image\/(png|jpe?g|webp|svg\+xml|gif);base64,([A-Za-z0-9+/=]+)$/);
+  if (m) { if (m[2].length > 4e6) return { error: 'El logo pesa más de 3 MB' }; logo = { ext: m[1] === 'svg+xml' ? 'svg' : m[1] === 'jpeg' ? 'jpg' : m[1], data: m[2] }; d.logo = `assets/logo.${logo.ext}`; }
+  const R = `/repos/${GH_ORG}/${repo}`;
+  try { await gh(env, 'POST', `/orgs/${GH_ORG}/repos`, { name: repo, description: `Sitio web de ${d.titulo} · DGP Global Group`, private: false, has_wiki: false, has_projects: false, allow_auto_merge: true, delete_branch_on_merge: true, homepage: dominio ? `https://${dominio}` : undefined }); }
+  catch (e) { return { error: e.status === 422 ? `Ya existe un repositorio llamado ${repo}` : 'GitHub: ' + e.message }; }
+  const subir = (path, contenido, msg) => gh(env, 'PUT', `${R}/contents/${path}`, { message: msg, content: contenido, branch: 'main' });
+  await subir('index.html', b64(plantillaIndex(d)), 'Plantilla base del sitio');
+  await subir('CLAUDE.md', b64(plantillaClaude(d)), 'Brief para Claude: diseño premium, sin emojis, preguntas iniciales');
+  if (logo) await subir(d.logo, logo.data, 'Logo de la empresa');
+  if (dominio) await subir('CNAME', b64(dominio + '\n'), 'Dominio del sitio');
+  await gh(env, 'PATCH', R, { allow_auto_merge: true }).catch(() => {});
+  let pages = null;
+  try { pages = await gh(env, 'POST', `${R}/pages`, { source: { branch: 'main', path: '/' } }); } catch (e) { pages = { error: e.message }; }
+  if (dominio) await gh(env, 'PUT', `${R}/pages`, { cname: dominio, source: { branch: 'main', path: '/' } }).catch(() => {});
+  const url = dominio ? `https://${dominio}` : `https://${GH_ORG}.github.io/${repo}/`;
+  await fsCreate(env, 'webs', { cliente: d.cliente || d.titulo, dominio: dominio || `${GH_ORG}.github.io/${repo}`, activo: true, repo: `${GH_ORG}/${repo}`, creado: new Date(), por: email || 'panel' }, token).catch(() => {});
+  return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null,
+    dns: dominio ? (dominio.split('.').length > 2 ? [{ tipo: 'CNAME', nombre: dominio.split('.')[0], valor: `${GH_ORG}.github.io` }] : [{ tipo: 'A', nombre: '@', valor: '185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153' }, { tipo: 'CNAME', nombre: 'www', valor: `${GH_ORG}.github.io` }]) : [] };
+}
 async function handleTarea(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
   if (request.method !== 'POST') return json(request, { error: 'Método no permitido' }, 405);
@@ -1287,6 +1406,7 @@ async function handleTarea(request, env) {
       return json(request, { ok: true, mensaje: String(r.html || r.aviso || '').replace(/<[^>]+>/g, '') });
     }
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
+    if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });
     if (tarea === 'responder') {
       const b2 = cuerpo;
