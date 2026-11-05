@@ -8511,6 +8511,7 @@ async function confirmarCerrarFactura() {
   };
   try {
     await db.collection('documentos').doc(fsId).update(upd);
+    sincronizarPagoTelegram(fsId, 'pagado');
     logActividad('Factura cerrada con lo pagado', `${doc.docId || fsId} · cobrado $${pagado.toFixed(2)} de $${total.toFixed(2)}`);
     document.getElementById('modalCerrarFactura').classList.remove('show');
     toastAccion('Factura cerrada con lo pagado', 'Deshacer', () => reabrirFactura(fsId, true));

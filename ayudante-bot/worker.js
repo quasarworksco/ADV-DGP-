@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05g';
+const WORKER_VERSION = '2026-11-05h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2474,6 +2474,7 @@ async function abonarA(env, token, d, monto, ref) {
   const nuevo = r2((Number(d.montoPagado) || 0) + pago.monto);
   await fsUpdate(env, `documentos/${d._id}`, { pagos: [...(d.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true }, ['pagos', 'montoPagado', 'pagadoParcial'], token);
   await correoPagoCliente(env, token, d._id, pago.monto, 'automático').catch(() => {});
+  await tgSincronizarPago(env, token, d._id, 'abono').catch(() => {});
   return 'abono';
 }
 // Reparte un monto entre las facturas pendientes del cliente, de la más reciente a la más vieja
@@ -2660,13 +2661,15 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo) {
   extra += await crearHostingAliadoBot(env, token, fsId, doc).catch(e => { console.error('hosting aliado', e); return '\n⚠️ No se pudo crear el hosting del aliado: créalo en Suscripciones.'; });
   extra += lineaCorreoPago(await correoPagoCliente(env, token, fsId, pagoNuevo ? pagoNuevo.monto : saldoDoc(doc), 'telegram'));
   const animo = ['¡Brutal! 💰', '¡Eso es! Un pago más 🔥', '¡Cha-ching! 💸', '¡Vamos con todo! 🚀', '¡Así se hace! 🙌'][Math.floor(Math.random() * 5)];
+  await tgSincronizarPago(env, token, fsId, 'pagado').catch(() => {});
   return { aviso: 'Pago confirmado ✅', html: `${animo}\n✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
 }
 async function botAbono(env, token, fsId, monto) {
   if (!(monto > 0)) return { aviso: 'Monto no válido' };
   const doc = await fsGet(env, `documentos/${fsId}`, token);
   if (!doc) return { aviso: 'Esa factura ya no existe' };
-  if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada' };
+  if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada', html: `ℹ️ ${escHtml(doc.docId || fsId)} ya estaba pagada: no se registró nada nuevo.` };
+  if (listaComprobantes(doc).length && !compPendientes(doc).length) return { aviso: 'Ese comprobante ya se registró', html: `ℹ️ Los comprobantes de ${escHtml(doc.docId || fsId)} ya estaban registrados: no se sumó otro abono.` };
   const pago = { monto: r2(monto), ref: 'Confirmado por Telegram', fecha: isoADmy(hoyVE()) };
   const nuevo = r2((Number(doc.montoPagado) || 0) + pago.monto);
   if (nuevo >= (Number(doc.total) || 0) - 0.009) return botMarcarPagado(env, token, fsId, pago);
@@ -2674,6 +2677,7 @@ async function botAbono(env, token, fsId, monto) {
   await fsUpdate(env, `documentos/${fsId}`, { pagos: [...(doc.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true, pagoRechazado: null, comprobantesRevisados: revisados },
     ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado', 'comprobantesRevisados'], token);
   const correo = lineaCorreoPago(await correoPagoCliente(env, token, fsId, pago.monto, 'telegram'));
+  await tgSincronizarPago(env, token, fsId, 'abono').catch(() => {});
   return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>${correo}` };
 }
 async function botRechazar(env, token, fsId) {
