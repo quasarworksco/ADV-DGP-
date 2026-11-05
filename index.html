@@ -7987,6 +7987,10 @@ async function saveDoc() {
     if (portalCli) docData.portalCodigo = portalCli._id;
     const alFac = await aliadoParaFactura(cli);
     if (alFac) { docData.aliadoId = alFac._id; docData.aliado = alFac.nombre; }
+    else { // cliente que viene de un aliado: la factura queda del aliado (los avisos y cobros le llegan a él)
+      const cAl = clientesList.find(x => x.aliadoId && ptNorm(clNombre(x)) === ptNorm(cli));
+      if (cAl) { docData.aliadoId = cAl.aliadoId; docData.aliado = cAl.aliado || ''; docData.clienteFinal = clNombre(cAl); }
+    }
     const alH = alHostingDeFormulario();
     if (alH?.error) { toast(alH.error, 'err'); btn.disabled = false; btn.classList.remove('cargando'); btn.innerHTML = btnHtmlOriginal; return; }
     if (alH) {
@@ -9880,12 +9884,53 @@ function _alPendiente(id) { return (_al.lista ? _alDocs(id) : []).filter(d => !d
 function clVinculoHTML(c, x) {
   const a = c.aliadoPropioId && (_al.lista || []).find(z => z._id === c.aliadoPropioId);
   if (c.aliadoPropioId && !_al.lista) { aliadoParaFactura('').then(() => { if (document.getElementById('cl-vinc-' + c._id)) abrirFichaCliente(c._id); }).catch(() => {}); return `<div id="cl-vinc-${esc(c._id)}" style="font-size:12px;color:var(--text-soft);margin-bottom:12px">Cargando aliado vinculado…</div>`; }
-  if (!a) return `<button class="btn-edit-cancel" style="margin:0 0 12px;width:100%" onclick="clVincular('${esc(c._id)}')">Vincular con aliado (si esta persona también es tu aliado)</button>`;
+  if (c.aliadoId || (c.tags || []).includes('aliado')) {
+    const de = (_al.lista || []).find(z => z._id === c.aliadoId);
+    return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.55"><b>Cliente del aliado ${esc(de ? de.nombre : (c.aliado || ''))}</b><br>No se le escribe directo: facturas, recordatorios y recibos le llegan al aliado.
+      <div style="margin-top:8px"><button class="btn-edit-cancel" style="margin:0;color:#b91c1c" onclick="clQuitarDeAliado('${esc(c._id)}')">Ya no es cliente del aliado</button></div></div>`;
+  }
+  if (!a) return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <button class="btn-edit-cancel" style="margin:0" onclick="clDeAliado('${esc(c._id)}')">Es cliente de un aliado</button>
+    <button class="btn-edit-cancel" style="margin:0" onclick="clVincular('${esc(c._id)}')">Es la misma persona que un aliado</button></div>`;
   const deA = _alPendiente(a._id), tot = (x.debe || 0) + deA;
   return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.55">
     <b>También es el aliado ${esc(a.nombre)}</b><br>Debe como cliente <b>${cbMoney(x.debe || 0)}</b> · como aliado <b>${cbMoney(deA)}</b> · <b style="color:${tot > 0.009 ? '#b91c1c' : 'var(--green-dark)'}">Total ${cbMoney(tot)}</b>
     <div style="display:flex;gap:8px;margin-top:8px"><button class="btn-edit-cancel" style="margin:0" onclick="closePortalModal();_al.sel='${a._id}';irAPagina('aliados')">Ver aliado</button>
     <button class="btn-edit-cancel" style="margin:0;color:#b91c1c" onclick="clDesvincular('${esc(c._id)}')">Desvincular</button></div></div>`;
+}
+/* Cliente que viene de un aliado (ej. JF Network → AVA): se marca para que todo vaya al aliado */
+async function clDeAliado(id) {
+  await aliadoParaFactura('').catch(() => {});
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  const pend = Object.entries(docsMap).filter(([, d]) => d.type === 'factura' && saldoReal(d) > 0.009 && !d.aliadoId && ptNorm(d.cli) === ptNorm(clNombre(c)));
+  ptModal('Cliente de un aliado', clNombre(c), `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:12.5px;color:var(--text-mid)">Desde ahora no se le escribe directo a ${esc(clNombre(c))}: los avisos y cobros le llegan al aliado.</div>
+    <select id="cl-de-sel">${(_al.lista || []).map(a => `<option value="${a._id}">${esc(a.nombre)}</option>`).join('')}</select>
+    ${pend.length ? `<label style="display:flex;gap:8px;align-items:center;font-size:12.5px"><input type="checkbox" id="cl-de-fac" checked> Sus ${pend.length} factura${pend.length > 1 ? 's' : ''} pendiente${pend.length > 1 ? 's' : ''} también: se cobran al aliado (no cambia el monto ni el nombre)</label>` : ''}
+    <button class="ll-btn" style="background:var(--blue)" onclick="clDeAliadoYa('${esc(id)}')">Guardar</button></div>`);
+}
+async function clDeAliadoYa(id) {
+  const aid = document.getElementById('cl-de-sel').value, c = clientesList.find(x => x._id === id), a = (_al.lista || []).find(x => x._id === aid); if (!c || !a) return;
+  const conFac = document.getElementById('cl-de-fac')?.checked;
+  try {
+    const tags = [...new Set([...(c.tags || []), 'aliado'])];
+    await db.collection('clientes').doc(id).set({ aliadoId: aid, aliado: a.nombre, tags }, { merge: true });
+    Object.assign(c, { aliadoId: aid, aliado: a.nombre, tags });
+    let n = 0;
+    if (conFac) for (const [fid, d] of Object.entries(docsMap)) if (d.type === 'factura' && saldoReal(d) > 0.009 && !d.aliadoId && ptNorm(d.cli) === ptNorm(clNombre(c))) {
+      await db.collection('documentos').doc(fid).update({ aliadoId: aid, aliado: a.nombre, clienteFinal: clNombre(c) }); n++; }
+    logActividad('Cliente de aliado', `${clNombre(c)} → ${a.nombre}${n ? ` · ${n} facturas` : ''}`);
+    toast('Guardado ✅'); closePortalModal(); abrirFichaCliente(id);
+  } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+async function clQuitarDeAliado(id) {
+  const c = clientesList.find(x => x._id === id); if (!c || !confirm('¿Ya no es cliente del aliado? Se le volverá a escribir directo.')) return;
+  try {
+    const tags = (c.tags || []).filter(t => t !== 'aliado');
+    await db.collection('clientes').doc(id).set({ aliadoId: firebase.firestore.FieldValue.delete(), aliado: firebase.firestore.FieldValue.delete(), tags, origen: c.origen === 'aliado' ? '' : (c.origen || '') }, { merge: true });
+    delete c.aliadoId; delete c.aliado; c.tags = tags; if (c.origen === 'aliado') c.origen = '';
+    toast('Listo'); closePortalModal(); abrirFichaCliente(id);
+  } catch (e) { toast(e.message, 'err'); }
 }
 async function clVincular(id) {
   await aliadoParaFactura('').catch(() => {});

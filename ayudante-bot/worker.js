@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05o';
+const WORKER_VERSION = '2026-11-05p';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3050,6 +3050,7 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar, idioma = 'es') {
     link = `${SITIO}/cotizacion.html?id=${nuevoId}${EN ? '&lang=en' : ''}`;
   } else {
     docId = 'FAC-' + sufijo;
+    if (cli?.aliadoId) Object.assign(comun, { aliadoId: cli.aliadoId, aliado: cli.aliado || '', clienteFinal: b.cliente });   // cliente de un aliado
     nuevoId = await fsCreate(env, 'documentos', { ...comun, docId, type: 'factura', contrato: false, pagado: false, fechaPago: null }, token);
     if (!sinEnviar) await waFacturaNueva(env, token, nuevoId, { ...comun, docId, type: 'factura', pagado: false }, tel);
     if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'facturaIds', nuevoId, token).catch(() => {});
