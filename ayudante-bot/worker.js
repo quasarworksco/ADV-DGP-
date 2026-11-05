@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05i';
+const WORKER_VERSION = '2026-11-05j';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1842,8 +1842,8 @@ async function waReciboPago(env, token, fsId, monto, global) {
               : `Hola ${nombre}! Recibimos tu abono de ${dinero(monto)} ✅\n\n${ref}: te quedan *${dinero(saldo)}* por pagar.\nVer tu factura: ${link}\n\n¡Gracias!`);
   const g = global || await saldoGlobal(env, token, doc).catch(() => null);
   const lineaG = !g ? '' : g.total > 0.009
-    ? (en ? `\n\n📋 *Your total pending balance:* ${dinero(g.total)}${g.n > 1 ? ` (${g.n} invoices)` : ''}.` : `\n\n📋 *Tu saldo pendiente total:* ${dinero(g.total)}${g.n > 1 ? ` (${g.n} facturas)` : ''}.`)
-    : (en ? `\n\n📋 You're all caught up: no pending balance ✅` : `\n\n📋 Estás al día: no tienes saldo pendiente ✅`);
+    ? (en ? `\n\n📋 With this payment, your total pending balance is *${dinero(g.total)}*${g.n > 1 ? ` (${g.n} invoices)` : ''}.` : `\n\n📋 Con este pago, debes un total de *${dinero(g.total)}*${g.n > 1 ? ` (${g.n} facturas)` : ''}.`)
+    : (en ? `\n\n📋 *With this payment you are all caught up* ✅ No pending balance.` : `\n\n📋 *Con este pago quedas al día* ✅ No tienes saldo pendiente.`);
   await waEnviarTexto(env, t + '@c.us', texto + lineaG);
   return { ok: true, tel: t, para };
 }
