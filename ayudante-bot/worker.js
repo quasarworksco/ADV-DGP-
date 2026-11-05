@@ -739,7 +739,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05t';
+const WORKER_VERSION = '2026-11-05u';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -4230,7 +4230,8 @@ async function revisarWebs(env, manual) {
   let caidas = 0;
   for (const w of webs) {
     let r = await chequearWeb(w.dominio);
-    if (r.estado === 'caida') { await new Promise(x => setTimeout(x, 3000)); r = await chequearWeb(w.dominio); }   // segunda prueba antes de avisar
+    // Antes de decir que se cayó: dos pruebas más separadas (evita avisos falsos por un corte de segundos)
+    for (const espera of [5000, 20000]) { if (r.estado !== 'caida') break; await new Promise(x => setTimeout(x, espera)); r = await chequearWeb(w.dominio); }
     if (r.estado === 'caida') caidas++;
     const dias = { ...(w.dias || {}) };
     if (!(hoy in dias) || WEB_ORDEN[r.estado] > WEB_ORDEN[dias[hoy]]) dias[hoy] = r.estado;
@@ -4246,14 +4247,25 @@ async function revisarWebs(env, manual) {
     if (r.candado === false && w.candado !== false) ev.push({ tipo: 'candado', detalle: '' });
     if (r.candado === true && w.candado === false) ev.push({ tipo: 'candadoOk', detalle: '' });
     if (ev.length) upd.eventos = [...(Array.isArray(w.eventos) ? w.eventos : []), ...ev.map(e => ({ ...e, fecha: ahora }))].slice(-20);
-    if (r.estado === 'caida' && w.estado !== 'caida') { upd.caidaDesde = ahora; L.push(`🔴 ${quien} <b>se cayó</b>${r.error ? ` (${escHtml(r.error)})` : ''}.`); }
+    // Un solo aviso de caída cada 12 h por web (si la web va y viene, no se repite), y el "volvió" solo si se avisó la caída
+    const kAviso = 'webCaida:' + w._id;
+    if (r.estado === 'caida' && w.estado !== 'caida') {
+      upd.caidaDesde = ahora;
+      const yaAvisado = env.CACHE ? await env.CACHE.get(kAviso).catch(() => null) : null;
+      if (!yaAvisado) { L.push(`🔴 ${quien} <b>se cayó</b>${r.error ? ` (${escHtml(r.error)})` : ''}.`); if (env.CACHE) await env.CACHE.put(kAviso, ahora, { expirationTtl: 12 * 3600 }).catch(() => {}); }
+    }
     if (r.estado !== 'caida' && w.estado === 'caida') {
       const min = w.caidaDesde ? Math.round((Date.now() - new Date(w.caidaDesde).getTime()) / 60000) : null;
-      upd.caidaDesde = null; L.push(`🟢 ${quien} <b>volvió a estar en línea</b>${min ? ` después de ${min >= 90 ? Math.round(min / 60) + ' h' : min + ' min'}` : ''}.`);
+      upd.caidaDesde = null;
+      const avisado = env.CACHE ? await env.CACHE.get(kAviso).catch(() => null) : 'si';
+      if (avisado && !(env.CACHE && await env.CACHE.get(kAviso + ':vuelve').catch(() => null))) {
+        L.push(`🟢 ${quien} <b>volvió a estar en línea</b>${min ? ` después de ${min >= 90 ? Math.round(min / 60) + ' h' : min + ' min'}` : ''}.`);
+        if (env.CACHE) await env.CACHE.put(kAviso + ':vuelve', '1', { expirationTtl: 12 * 3600 }).catch(() => {});
+      }
     }
     if (r.candado === false && w.candado !== false) L.push(`🔓 ${quien}: <b>el candado (https) falla</b>, la web abre sin seguridad. Revisa el certificado en el hosting.`);
     if (r.candado === true && w.candado === false) L.push(`🔒 ${quien}: el candado volvió a funcionar.`);
-    await fsUpdate(env, `webs/${w._id}`, upd, Object.keys(upd), token).catch(e => console.warn('web', e));
+    await fsUpdate(env, `webs/${w._id}`, upd, Object.keys(upd), token).catch(async e => { console.warn('web', e); await fsUpdate(env, `webs/${w._id}`, { estado: upd.estado, revisado: ahora, caidaDesde: upd.caidaDesde ?? w.caidaDesde ?? null }, ['estado', 'revisado', 'caidaDesde'], token).catch(() => {}); });
   }
   if (L.length) await tgEnviar(env, ['🌐 <b>Webs de clientes</b>', '', ...L, '', `<a href="${SITIO}/">Abrir el panel → Webs de clientes</a>`].join('\n')).catch(() => {});
   return { revisadas: webs.length, caidas };
