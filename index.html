@@ -12202,9 +12202,26 @@ let _susRevisadas = false;
 async function susRegistrarFaltantes() {
   if (_susRevisadas || !suscripcionesList.length || !clientesList.length) return; _susRevisadas = true;
   await aliadoParaFactura('').catch(() => {});
+  // Prospectos: si solo es prospecto y nunca compró (sin facturas), no se pasa a Clientes
+  let prospectos = [];
+  const hayCandidatos = clientesList.some(c => c.origen === 'suscripcion') || suscripcionesList.some(s => s.cliente && s.estado === 'activa' && !clientesList.some(c => ptNorm(clNombre(c)) === ptNorm(s.cliente)));
+  if (hayCandidatos) try { const q = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get(); prospectos = q.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) {}
+  const esProspectoSinCompras = nombre => prospectos.some(p => ptNorm(p.nombre || '') === ptNorm(nombre)) && !Object.values(docsMap).some(d => d.type !== 'cotizacion' && ptNorm(d.cli || '') === ptNorm(nombre));
+  // Arreglo de una vez: clientes que se crearon por error desde una suscripción siendo solo prospectos sin compras
+  let quitados = 0;
+  try { if (!localStorage.getItem('dgp-limpieza-prosp-1')) {
+    for (const c of clientesList.filter(c => c.origen === 'suscripcion' && esProspectoSinCompras(clNombre(c)))) {
+      await db.collection('clientes').doc(c._id).delete(); quitados++;
+      for (const s of suscripcionesList.filter(s => s.clienteId === c._id)) await db.collection('suscripciones').doc(s._id).set({ clienteId: null }, { merge: true }).catch(() => {});
+    }
+    if (quitados) clientesList = clientesList.filter(c => !(c.origen === 'suscripcion' && esProspectoSinCompras(clNombre(c))));
+    localStorage.setItem('dgp-limpieza-prosp-1', '1');
+    if (quitados) toast(`${quitados} prospecto${quitados > 1 ? 's' : ''} sin compras ya no aparece${quitados > 1 ? 'n' : ''} en Clientes`);
+  } } catch (e) { console.warn('limpieza', e); }
   let n = 0;
   for (const s of suscripcionesList) {
-    if (!s.cliente || s.estado === 'cancelada') continue;
+    if (!s.cliente || s.estado !== 'activa') continue;
+    if (!s.aliadoId && esProspectoSinCompras(s.cliente)) continue;
     let al = (_al.lista || []).find(a => a._id === s.aliadoId);
     if (!al) { const m = String(s.notas || '').match(/aliado\s+([^·\n]+)/i); if (m) al = (_al.lista || []).find(a => ptNorm(a.nombre) === ptNorm(m[1].trim())); }
     const existe = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(s.cliente));
