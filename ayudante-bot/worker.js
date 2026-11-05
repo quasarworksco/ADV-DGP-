@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05q';
+const WORKER_VERSION = '2026-11-05r';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1485,6 +1485,21 @@ ${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: pídelo_'}
 ## Cómo trabajar
 - Todo el sitio vive en \`index.html\` (CSS y JS dentro) salvo imágenes en \`assets/\`, a menos que el proyecto pida varias páginas.
 - Cuando termines, haz commit y push a \`main\`: GitHub Pages publica solo.
+
+## Página de entrega (/entrega) — cuando el sitio esté listo
+Cuando el cliente apruebe el sitio (o te digan "ya está listo"), crea \`entrega/index.html\` (se ve en \`/entrega\`). Es la página que DGP le muestra al cliente para entregarle su web:
+- Mismo diseño premium y colores de la marca del sitio, sin emojis (solo iconos SVG), perfecta en celular. En el idioma del sitio (si es bilingüe, con botón ES/EN).
+- \`<meta name="robots" content="noindex">\` y que **no** aparezca en el menú ni en el sitemap del sitio.
+- Contenido:
+  1. Título tipo "Tu sitio web está listo" con el logo y un botón grande para abrir el sitio${d.dominio ? ' (https://' + d.dominio + ')' : ''}.
+  2. Qué se entregó: las páginas y secciones del sitio, y las funciones (botón de WhatsApp, formulario, idiomas, galería, etc.).
+  3. Lo que ya queda listo: candado de seguridad (https), adaptado a celular, SEO básico para Google (título, descripción, sitemap), favicon y vista previa al compartir en WhatsApp/redes.
+  4. Un **código QR** que lleve al sitio (generado en la página, para imprimir o compartir) y un botón "Copiar enlace".
+  5. Próximos pasos recomendados: compartir el enlace en sus redes y en la bio de Instagram, agregarlo a su perfil de Google Business, y pedir reseñas a sus clientes.
+  6. Soporte: "¿Cambios o dudas? Escríbenos" con WhatsApp +1 (239) 823-1738 (https://wa.me/12398231738) y info@dgpglobalgroup.com.
+  7. Un botón "Déjanos tu reseña en Google" → https://g.page/r/CbcyuFX7hqvuEAI/review
+  8. Pie: "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
+- Haz commit y push a \`main\`, y responde con el enlace final de \`/entrega\`.
 `;
 }
 function plantillaIndex(d) {
