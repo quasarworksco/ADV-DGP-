@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05k';
+const WORKER_VERSION = '2026-11-05l';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1392,7 +1392,7 @@ async function gdAccion(env, token, b, request, email) {
         return r.ok ? { ok: true, dominio: final, url: `https://${final}` } : { error: r.motivo || 'No se pudo conectar' };
       }
       case 'repos': {
-        const L = await gh(env, 'GET', `/orgs/${GH_ORG}/repos?per_page=100&sort=updated`);
+        const L = [...await gh(env, 'GET', `/user/repos?affiliation=owner&per_page=100&sort=updated`), ...await gh(env, 'GET', `/user/repos?affiliation=owner&per_page=100&sort=updated&page=2`).catch(() => [])];
         return { repos: (L || []).map(r => ({ nombre: r.name, pages: !!r.has_pages, web: r.homepage || '' })) };
       }
     }
@@ -1514,7 +1514,7 @@ async function crearSitio(env, token, b, email) {
   const m = String(b.logo || '').match(/^data:image\/(png|jpe?g|webp|svg\+xml|gif);base64,([A-Za-z0-9+/=]+)$/);
   if (m) { if (m[2].length > 4e6) return { error: 'El logo pesa más de 3 MB' }; logo = { ext: m[1] === 'svg+xml' ? 'svg' : m[1] === 'jpeg' ? 'jpg' : m[1], data: m[2] }; d.logo = `assets/logo.${logo.ext}`; }
   const R = `/repos/${GH_ORG}/${repo}`;
-  try { await gh(env, 'POST', `/orgs/${GH_ORG}/repos`, { name: repo, description: `Sitio web de ${d.titulo} · DGP Global Group`, private: false, has_wiki: false, has_projects: false, allow_auto_merge: true, delete_branch_on_merge: true, homepage: dominio ? `https://${dominio}` : undefined }); }
+  try { await gh(env, 'POST', `/user/repos`, { name: repo, description: `Sitio web de ${d.titulo} · DGP Global Group`, private: false, has_wiki: false, has_projects: false, allow_auto_merge: true, delete_branch_on_merge: true, homepage: dominio ? `https://${dominio}` : undefined }); }
   catch (e) { return { error: e.status === 422 ? `Ya existe un repositorio llamado ${repo}` : 'GitHub: ' + e.message }; }
   const subir = (path, contenido, msg) => gh(env, 'PUT', `${R}/contents/${path}`, { message: msg, content: contenido, branch: 'main' });
   await subir('index.html', b64(plantillaIndex(d)), 'Plantilla base del sitio');
