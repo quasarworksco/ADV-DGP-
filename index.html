@@ -9863,7 +9863,7 @@ function abrirFichaCliente(id) {
       <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Facturas</div><div class="cb-tile-v" style="font-size:22px;">${x.n}</div></div>
     </div>
     ${clVinculoHTML(c, x)}
-    ${!x.n && !(c.portalCodigo) && !suscripcionesList.some(s => s.estado === 'activa' && ptNorm(s.cliente) === ptNorm(nombre)) ? `<button class="btn-edit-cancel" style="margin:0 0 12px;width:100%" onclick="clAProspecto('${esc(c._id)}')">No ha comprado nada: devolver a Prospectos</button>` : ''}
+    ${!x.n ? `<button class="btn-edit-cancel" style="margin:0 0 12px;width:100%" onclick="clAProspecto('${esc(c._id)}')">No ha comprado nada: devolver a Prospectos</button>` : ''}
     ${(c.tags || []).length || c.notas ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">${(c.tags || []).map(t => `<span class="cl-tag">${esc(t)}</span>`).join('')}${c.notas ? `<div style="margin-top:6px;font-style:italic;color:var(--text-soft);">${esc(c.notas)}</div>` : ''}</div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
       <button class="btn-edit-save" style="margin:0;" onclick="closePortalModal();nuevaFacturaPara('${esc(c._id)}')">+ Nueva factura</button>
@@ -9903,7 +9903,8 @@ function clVinculoHTML(c, x) {
 /* Cliente que viene de un aliado (ej. JF Network → AVA): se marca para que todo vaya al aliado */
 async function clAProspecto(id) {
   const c = clientesList.find(x => x._id === id); if (!c) return;
-  if (!confirm(`¿Quitar a ${clNombre(c)} de Clientes y dejarlo solo en Prospectos? No tiene facturas.`)) return;
+  const subs = suscripcionesList.filter(s => s.estado === 'activa' && ptNorm(s.cliente) === ptNorm(clNombre(c))).length;
+  if (!confirm(`¿Quitar a ${clNombre(c)} de Clientes y dejarlo solo en Prospectos? No tiene facturas.${c.portalCodigo ? '\n\nOjo: tiene un portal de cliente; el portal no se borra.' : ''}${subs ? `\n\nOjo: tiene ${subs} suscripción activa a su nombre; revísala en Suscripciones.` : ''}`)) return;
   try {
     await prImportar([{ nombre: clNombre(c), telefono: c.telefono || '', correo: c.correo || '', servicio: '', notas: c.notas || '' }]).catch(() => {});
     await db.collection('clientes').doc(id).delete();
