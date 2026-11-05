@@ -11241,7 +11241,7 @@ aplicarTemporada();
 /* ═══ Perfil y saludo ═══ */
 function nombrePerfil(u) { u = u || currentUser; return (u?.displayName || '').trim(); }
 const SIN_FOTO = 'https://adv.dgp-link.com/#sin-foto';
-const fotoPerfil = u => { const f = u?.photoURL || ''; return f === SIN_FOTO ? '' : f; };
+const fotoPerfil = u => { const f = u?.photoURL || ''; let q = ''; try { q = localStorage.getItem('dgp-foto-quitada') || ''; } catch (e) {} return f === SIN_FOTO || (q && f === q) ? '' : f; };
 function pintarPerfil(u) {
   u = u || currentUser;
   const n = nombrePerfil(u), mn = document.getElementById('hdr-menu-nombre'), mc = document.getElementById('hdr-menu-correo');
@@ -11288,14 +11288,18 @@ async function subirFotoPerfil(input) {
     if (!d.secure_url) throw new Error('no se pudo subir');
     const url = d.secure_url.replace('/upload/', '/upload/w_240,h_240,c_fill,g_face,q_auto,f_auto/');
     await currentUser.updateProfile({ photoURL: url });
+    try { localStorage.removeItem('dgp-foto-quitada'); } catch (e) {}
     pintarPerfil(currentUser);
     const pf = document.getElementById('pf-foto'); if (pf) { pf.style.background = `center/cover url('${url}')`; pf.textContent = ''; }
     toast('¡Foto lista! 📸', 'ok');
   } catch (e) { toast('No se pudo subir la foto: ' + e.message, 'err'); }
 }
 async function quitarFotoPerfil() {
-  try { await currentUser.updateProfile({ photoURL: SIN_FOTO }); await currentUser.reload().catch(() => {}); currentUser = auth.currentUser || currentUser; pintarPerfil(currentUser); closePortalModal(); toast('Foto quitada'); }
-  catch (e) { toast(e.message, 'err'); }
+  // Se recuerda en este navegador al instante (aunque Google intente volver a ponerla) y se guarda en la cuenta
+  try { localStorage.setItem('dgp-foto-quitada', currentUser?.photoURL || ''); } catch (e) {}
+  pintarPerfil(currentUser); closePortalModal(); toast('Foto quitada');
+  try { await currentUser.updateProfile({ photoURL: SIN_FOTO }); await currentUser.reload().catch(() => {}); currentUser = auth.currentUser || currentUser; pintarPerfil(currentUser); }
+  catch (e) { console.warn('quitar foto', e); toast('La foto se quitó en este equipo, pero no en tu cuenta: ' + (e.code || e.message), 'err'); }
 }
 async function guardarPerfil() {
   const n = (document.getElementById('pf-nom')?.value || '').trim().replace(/\s+/g, ' ');
