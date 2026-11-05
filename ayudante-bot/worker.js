@@ -725,6 +725,8 @@ async function handleVerificar(request, env, firebaseLogin) {
     // Se guarda el mensaje para quitarle los botones si el pago se resuelve desde el panel
     const msgId = enviado?.result?.message_id;
     if (msgId) await fsUpdate(env, `documentos/${fsId}`, { tgPagoMsgs: [...(Array.isArray(doc.tgPagoMsgs) ? doc.tgPagoMsgs : []), msgId].slice(-10) }, ['tgPagoMsgs'], token).catch(() => {});
+    // El comprobante también le llega al remesista de esa cuenta de pago (si tiene uno)
+    await reenviarRemesista(env, token, fsId, doc, url, ev, lectura).catch(e => console.warn('remesista', e));
 
     return json(request, verificacion);
   } catch (e) {
@@ -737,7 +739,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05s';
+const WORKER_VERSION = '2026-11-05t';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2166,6 +2168,36 @@ async function handleWA(request, env) {
   } catch (e) { return json(request, { error: e.message || 'Error con WhatsApp' }, 502); }
 }
 // Avisos de WAHA: mensaje nuevo → Telegram y celular; desconexión → alerta
+/* ══ REMESISTAS: cada cuenta de pago puede tener quien recibe el dinero (cuentasPago.remesista = { nombre, tel }).
+   Todo comprobante de una factura de esa cuenta se le reenvía por WhatsApp (solo informa: los pagos los confirmas tú). ══ */
+const normTxt = v => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+function cuentaDeDoc(cuentas, doc) {
+  const info = doc.infoPago || {}, claves = Object.keys(info).filter(k => String(info[k] || '').trim());
+  if (!doc.metodoPago || !claves.length) return null;
+  return cuentas.find(c => c.metodo === doc.metodoPago && c.remesista?.tel && claves.every(k => normTxt((c.info || {})[k]) === normTxt(info[k]))
+    && Object.keys(c.info || {}).filter(k => String(c.info[k] || '').trim()).length === claves.length) || null;
+}
+async function reenviarRemesista(env, token, fsId, doc, url, ev, lectura) {
+  if (!env.WA_URL || !env.WA_KEY || ev.estado === 'no_es_comprobante') return;
+  if (!(await automatizaciones(env, token)).waRemesista) return;
+  const cuentas = await fsList(env, 'cuentasPago', token).catch(() => []);
+  const c = cuentaDeDoc(cuentas, doc); if (!c) return;
+  const tel = waTelIntl(c.remesista.tel); if (!tel) return;
+  const key = iaKey(url);
+  const fresco = await fsGet(env, `documentos/${fsId}`, token).catch(() => null) || doc;
+  if ((fresco.remesistaEnvios || {})[key]) return;   // una sola vez por comprobante
+  const cuentaTxt = `${c.metodo}${c.info?.nombre ? ' · ' + c.info.nombre : ''}`;
+  const caption = `💸 Comprobante · ${cuentaTxt}\nMonto leído: *${ev.monto !== null && ev.monto !== undefined ? dinero(ev.monto) : '—'}*${lectura.referencia ? ` · Ref: ${lectura.referencia}` : ''}${lectura.fecha ? ` · ${lectura.fecha}` : ''}\nFactura ${doc.docId || fsId} · ${doc.clienteFinal || doc.cli || ''}\n\n¿Llegó?`;
+  const d = await waJSON(env, '/api/sendImage', { method: 'POST', body: JSON.stringify({ session: WA_SESION, chatId: tel + '@c.us', caption, file: { url, mimetype: 'image/jpeg', filename: 'comprobante.jpg' } }) });
+  await fsUpdate(env, `documentos/${fsId}`, { remesistaEnvios: { ...(fresco.remesistaEnvios || {}), [key]: { a: c.remesista.nombre || ('+' + tel), fecha: new Date().toISOString(), monto: ev.monto ?? null, estado: 'enviado' } } }, ['remesistaEnvios'], token).catch(() => {});
+}
+async function esRemesista(env, token, num) {
+  if (!num) return false;
+  if (env.CACHE) { const c = await env.CACHE.get('remesistas', 'json').catch(() => null); if (c) return c.some(t => num.endsWith(t.slice(-10))); }
+  const L = (await fsList(env, 'cuentasPago', token).catch(() => [])).map(c => waTelIntl(c.remesista?.tel)).filter(Boolean);
+  if (env.CACHE) await env.CACHE.put('remesistas', JSON.stringify(L), { expirationTtl: 3600 }).catch(() => {});
+  return L.some(t => num.endsWith(t.slice(-10)));
+}
 /* Paso 4: el cliente (o aliado) manda la foto de un pago por WhatsApp → la IA la lee,
    se guarda como comprobante en su factura pendiente más antigua y te llega el aviso con botones. */
 async function waComprobante(env, p, de) {
@@ -2238,6 +2270,7 @@ async function waAsistente(env, ctx, de, nombreWA, texto) {
   let st = await env.CACHE.get(clave, 'json').catch(() => null);
   if (st?.pausa) return false;
   const token = await firebaseLogin(env);
+  if (await esRemesista(env, token, /@c\.us$/.test(de) ? de.split('@')[0] : '')) return false;   // al remesista no le contesta Altair
   const auto = await automatizaciones(env, token);
   // Fuera de horario atiende a todos (interruptor waFueraHorario); en horario solo a números nuevos (interruptor waProspectos, apagado al inicio)
   if (horario ? !auto.waProspectos : !auto.waFueraHorario) return false;
@@ -2312,6 +2345,7 @@ async function waProspectoAuto(env, de, p, nombreWA, texto) {
   const marca = await env.CACHE.get('waCon:' + num).catch(() => null);
   if (marca === 'conocido') return;
   const token = await firebaseLogin(env);
+  if (await esRemesista(env, token, num)) return;
   const bot = await env.CACHE.get('waBot:' + de, 'json').catch(() => null) || {};
   if (marca && marca.startsWith('p:')) {   // ya es prospecto: último mensaje (y lo que Altair entendió)
     const id = marca.slice(2), upd = { ultimoMensaje: t.slice(0, 500), ultimoMensajeAt: new Date().toISOString() }, mask = ['ultimoMensaje', 'ultimoMensajeAt'];
@@ -4024,7 +4058,7 @@ async function handleSmm(request, env) {
 async function automatizaciones(env, token) {
   const c = await fsGet(env, 'config/automatizaciones', token).catch(() => null) || {};
   return { cobrador: c.cobrador !== false, vendedor: c.vendedor !== false, briefing: c.briefing !== false, correoPago: c.correoPago !== false,
-    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true, waProspectoAuto: c.waProspectoAuto !== false };
+    smmAvisos: c.smmAvisos !== false, susCorreo: c.susCorreo !== false, bienvenida: c.bienvenida !== false, resenaAuto: c.resenaAuto !== false, waFactura: c.waFactura !== false, waCobro: c.waCobro !== false, waRecibo: c.waRecibo !== false, waFueraHorario: c.waFueraHorario !== false, waProspectos: c.waProspectos === true, waProspectoAuto: c.waProspectoAuto !== false, waRemesista: c.waRemesista !== false };
 }
 
 /* ══════════════════════════════════════════════════════════════

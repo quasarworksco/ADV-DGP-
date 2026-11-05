@@ -3084,6 +3084,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-tab active" onclick="switchPage('facturacion', this); _clearNotifBadge();">
     <i class="fa-solid fa-file-invoice-dollar"></i> Facturación<span id="notif-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px;vertical-align:1px;"></span>
   </button>
+  <button class="nav-tab" onclick="switchPage('pagos', this)">
+    <i class="fa-solid fa-money-bill-transfer"></i> Pagos
+  </button>
   <button class="nav-tab" onclick="switchPage('clientes', this)">
     <i class="fa-solid fa-address-book"></i> Clientes
   </button>
@@ -3613,6 +3616,17 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     </div>
     <div id="au-res"></div>
     <div id="au-hist"></div>
+  </div>
+</div>
+
+<div id="page-pagos" class="page">
+  <div class="proy-main" style="max-width:1100px;">
+    <div class="proy-header"><div>
+      <div class="panel-title-v" style="margin-bottom:2px;">Pagos</div>
+      <div style="font-size:11px;color:var(--text-soft);">Tus métodos de pago con su remesista (a quien le llegan los comprobantes por WhatsApp) y el historial de todo lo cobrado.</div>
+    </div></div>
+    <div id="pg-metodos" style="margin-bottom:14px"></div>
+    <div id="pg-hist"></div>
   </div>
 </div>
 
@@ -4749,6 +4763,7 @@ function switchPage(page, btn) {
   if (page === 'portal')     { renderPortalList(); renderPortalDetail(); }
   if (page === 'webs')       renderWebs();
   if (page === 'dominios')   renderDominios();
+  if (page === 'pagos')      renderPagos();
   { const sec = document.querySelector(`.nav-tab[onclick*="'${page}'"]`)?.closest('.nav-sec'); if (sec?.classList.contains('cerrado')) navGrupo(document.querySelector(`button.nav-group[data-g="${sec.dataset.g}"]`), true); }
   if (page === 'suscripciones') renderSuscripciones();
   if (page === 'resenasweb') renderResenasWeb();
@@ -13111,6 +13126,7 @@ function abrirAltair() {
     ${fila('waFueraHorario', 'Altair atiende fuera de horario', 'Fuera de lunes a sábado 9am–10pm (Miami), Altair atiende por WhatsApp: saluda, pregunta con quién tiene el gusto, ayuda con servicios y precios y te avisa en Telegram. Se calla apenas tú escribes en el chat.')}
     ${fila('waProspectoAuto', 'Prospectos automáticos de WhatsApp', 'Si te escribe un número nuevo (no cliente, aliado ni prospecto), se guarda solo en Prospectos al segundo mensaje o cuando le dice su nombre a Altair, con lo que necesita. Sin spam ni grupos.')}
     ${fila('waProspectos', 'Altair responde a prospectos', 'En horario, Altair atiende solo a números nuevos (nunca clientes, aliados ni grupos): hasta 6 respuestas y luego les dice que el asesor encargado los contactará en breve.')}
+    ${fila('waRemesista', 'Reenviar comprobantes al remesista', 'Cada comprobante de una factura le llega por WhatsApp al remesista de esa cuenta de pago (Pagos → Métodos de pago), con la pregunta "¿Llegó?". No marca nada: los pagos los confirmas tú.')}
     ${fila('waRecibo', 'Recibo por WhatsApp al cobrar', 'Al confirmar un pago o abono (panel, Telegram o automático), el cliente recibe por WhatsApp el monto recibido y su recibo, o lo que le queda por pagar. Si es cliente de un aliado, le llega al aliado.')}
     ${fila('correoPago', 'Recibo por correo al cobrar', 'Al registrar un pago, el cliente recibe un correo con el monto pagado, su factura y, si fue un abono, lo que le queda debiendo.')}
     ${fila('smmAvisos', 'Seguidores que avisan solos', 'Cada 3 horas revisa tus pedidos en JustAnotherPanel. Al completarse te avisa por Telegram y le manda un correo al cliente; si queda parcial, se cancela o se traba 48 h, te avisa para decidir.')}
@@ -13728,6 +13744,74 @@ function wbPintar() {
   wbPintarHist();
 }
 function wbHist(id) { _wb.hist = _wb.hist === id ? null : id; wbPintarHist(); document.getElementById('wb-hist').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+/* ═══ PAGOS: métodos de pago (cuentasPago) con remesista + historial de cobros ═══ */
+let _pg = { cuenta: '', mes: '' };
+function pgCuentas() {
+  const L = [];
+  Object.keys(METODOS_CAMPOS).forEach(m => cpLista(m).forEach(c => L.push({ ...c, metodo: m, datos: cuentasPago[c.k] || {} })));
+  return L;
+}
+function pgFechaISO(v) {
+  if (!v) return ''; if (v.toDate) return v.toDate().toISOString().slice(0, 10);
+  const s = String(v); const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : '';
+}
+function pgHistorial() {
+  const out = [];
+  Object.entries(docsMap).forEach(([id, d]) => {
+    if (d.type === 'cotizacion' || String(id).startsWith('__diag')) return;
+    const cuenta = d.metodoPago ? cpKey(d.metodoPago, d.infoPago || {}) : '';
+    const etq = d.metodoPago ? `${d.metodoPago}${d.infoPago?.nombre ? ' · ' + d.infoPago.nombre : ''}` : 'Sin método';
+    const pagos = Array.isArray(d.pagos) ? d.pagos : [];
+    let suma = 0;
+    pagos.forEach(p => { const m = Number(p.monto) || 0; suma += m; out.push({ id, d, fecha: pgFechaISO(p.fecha), monto: m, ref: p.ref || '', cuenta, etq }); });
+    if ((d.pagado || d.type === 'recibo') && !d.cerrada) { const resto = (Number(d.total) || 0) - suma; if (resto > 0.009) out.push({ id, d, fecha: pgFechaISO(d.fechaPago) || pgFechaISO(d.fecha), monto: resto, ref: suma ? 'Saldo final' : 'Pago completo', cuenta, etq }); }
+  });
+  return out.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+function renderPagos() {
+  const mt = document.getElementById('pg-metodos'), hi = document.getElementById('pg-hist'); if (!mt || !hi) return;
+  const C = pgCuentas();
+  mt.innerHTML = `<div class="cb-card" style="padding:14px 16px"><b style="font-size:14px">Métodos de pago · ${C.length}</b>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:10px">${C.map(c => { const r = c.datos.remesista;
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-weight:700;font-size:13px">${esc(c.metodo)}</div>
+        <div style="font-size:12px;color:var(--text-mid);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(cpEtiqueta(c.metodo, c.info))}">${esc(cpEtiqueta(c.metodo, c.info))}</div>
+        <div style="font-size:12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="color:${r?.tel ? 'var(--green-dark)' : 'var(--text-soft)'}">${r?.tel ? 'Remesista: <b>' + esc(r.nombre || r.tel) + '</b>' : 'Sin remesista'}</span>
+        <button class="btn-logout" style="font-size:10.5px;padding:4px 9px" onclick="pgRemesista('${esc(c.k)}')">${r?.tel ? 'Editar' : 'Asignar'}</button></div></div>`; }).join('') || '<div style="font-size:12.5px;color:var(--text-soft)">Aún no hay métodos de pago guardados: se guardan solos al hacer facturas.</div>'}</div></div>`;
+  const H = pgHistorial().filter(x => (!_pg.cuenta || x.cuenta === _pg.cuenta) && (!_pg.mes || x.fecha.startsWith(_pg.mes)));
+  const meses = [...new Set(pgHistorial().map(x => x.fecha.slice(0, 7)).filter(Boolean))].sort().reverse();
+  const total = H.reduce((a, x) => a + x.monto, 0);
+  const estRem = d => { const v = Object.values(d.remesistaEnvios || {}); if (!v.length) return ''; const x = v[v.length - 1];
+    return `<span style="font-size:11px;color:var(--text-soft)">· enviado a ${esc(x.a)}</span>`; };
+  hi.innerHTML = `<div class="cb-card" style="padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b style="font-size:14px">Historial de pagos · ${cbMoney(total)}</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><select onchange="_pg.cuenta=this.value;renderPagos()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:12px;background:var(--white);color:inherit"><option value="">Todas las cuentas</option>${C.map(c => `<option value="${esc(c.k)}" ${_pg.cuenta === c.k ? 'selected' : ''}>${esc(c.metodo + ' · ' + (c.info.nombre || cpEtiqueta(c.metodo, c.info)))}</option>`).join('')}</select>
+      <select onchange="_pg.mes=this.value;renderPagos()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:12px;background:var(--white);color:inherit"><option value="">Todos los meses</option>${meses.map(m => `<option value="${m}" ${_pg.mes === m ? 'selected' : ''}>${new Date(m + '-15').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</option>`).join('')}</select></div></div>
+    ${H.length ? `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;color:var(--text-soft);font-size:11px;text-transform:uppercase;letter-spacing:.04em"><th style="padding:6px 8px">Fecha</th><th style="padding:6px 8px">Cliente</th><th style="padding:6px 8px">Factura</th><th style="padding:6px 8px">Cuenta</th><th style="padding:6px 8px;text-align:right">Monto</th><th style="padding:6px 8px">Comprobante</th></tr></thead><tbody>
+      ${H.slice(0, 300).map(x => { const comps = listaComprobantes(x.d);
+        return `<tr style="border-top:1px solid var(--border);cursor:pointer" onclick="openSheet({ ...docsMap['${esc(x.id)}'], _fsId: '${esc(x.id)}' })"><td style="padding:8px;white-space:nowrap">${x.fecha ? new Date(x.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
+          <td style="padding:8px">${esc(x.d.clienteFinal || x.d.cli || '—')}${x.d.aliado ? `<div style="font-size:11px;color:var(--text-soft)">vía ${esc(x.d.aliado)}</div>` : ''}</td><td style="padding:8px">${esc(x.d.docId || '')}<div style="font-size:11px;color:var(--text-soft)">${esc(x.ref)}</div></td>
+          <td style="padding:8px">${esc(x.etq)}</td><td style="padding:8px;text-align:right;font-weight:700">${cbMoney(x.monto)}</td>
+          <td style="padding:8px">${comps.length ? `<a href="${esc(comps[comps.length - 1].url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">ver (${comps.length})</a>` : '<span style="color:var(--text-soft)">—</span>'} ${estRem(x.d)}</td></tr>`; }).join('')}
+    </tbody></table></div>` : '<div style="font-size:12.5px;color:var(--text-soft)">No hay pagos con estos filtros.</div>'}</div>`;
+}
+function pgRemesista(k) {
+  const c = pgCuentas().find(x => x.k === k); if (!c) return; const r = c.datos.remesista || {};
+  ptModal('Remesista', `${c.metodo} · ${cpEtiqueta(c.metodo, c.info)}`, `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:12.5px;color:var(--text-mid)">Todo comprobante de una factura con esta cuenta le llega por WhatsApp (imagen, monto, referencia, factura y nombre del cliente) con la pregunta "¿Llegó?". Solo informa: los pagos los confirmas tú.</div>
+    <div class="ff" style="margin:0"><label>Nombre</label><input id="pg-rn" value="${esc(r.nombre || '')}" placeholder="Jefferson Maldonado"></div>
+    <div class="ff" style="margin:0"><label>WhatsApp (con código de país)</label><input id="pg-rt" value="${esc(r.tel || '')}" placeholder="+58 …"></div>
+    <button class="ll-btn" style="background:var(--blue)" onclick="pgRemesistaGuardar('${esc(k)}')">Guardar</button>
+    ${r.tel ? `<button class="ll-btn" style="background:transparent;color:#b91c1c;border:1px solid #fecaca" onclick="pgRemesistaGuardar('${esc(k)}', true)">Quitar remesista</button>` : ''}</div>`);
+}
+async function pgRemesistaGuardar(k, quitar) {
+  const c = pgCuentas().find(x => x.k === k); if (!c) return;
+  const nombre = quitar ? '' : document.getElementById('pg-rn').value.trim(), tel = quitar ? '' : document.getElementById('pg-rt').value.trim();
+  if (!quitar && tel.replace(/\D/g, '').length < 10) return toast('Escribe el WhatsApp con código de país', 'err');
+  try { await db.collection('cuentasPago').doc(k).set({ metodo: c.metodo, info: c.info, remesista: quitar ? firebase.firestore.FieldValue.delete() : { nombre, tel } }, { merge: true });
+    toast(quitar ? 'Remesista quitado' : 'Remesista guardado ✅'); closePortalModal(); setTimeout(renderPagos, 600); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
 /* ═══ DOMINIOS (GoDaddy + GitHub) ═══ */
 let _dmRepos = null;
 async function dmApi(datos) {
