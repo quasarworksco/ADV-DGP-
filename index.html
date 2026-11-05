@@ -5146,6 +5146,7 @@ function alDetalle(a) {
       <div class="cb-tile"><div class="cb-tile-l">Hosting activos</div><div class="cb-tile-v">${r.hosting}</div><div class="cb-tile-n">Clientes del aliado</div></div>
     </div>
     <div class="al-sec"><div class="al-sec-h">Proyectos (facturas a ${esc(a.nombre)})</div>${docsHtml}</div>
+    <div class="al-sec"><div class="al-sec-h">Sus clientes</div>${(() => { const L = clientesList.filter(c => c.aliadoId === a._id); return L.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${L.map(c => `<button class="pt-hbtn" onclick="abrirFichaCliente('${c._id}')">${esc(clNombre(c))}</button>`).join('')}</div>` : '<div class="al-vacio">Aún no hay clientes marcados como de este aliado.</div>'; })()}</div>
     <div class="al-sec"><div class="al-sec-h">Hosting y dominios de sus clientes</div>${susHtml}</div>
     <div class="al-sec"><div class="al-sec-h">Referidos entre nosotros</div>${refHtml}</div>
   </div>`;
@@ -9919,6 +9920,7 @@ async function clDeAliadoYa(id) {
     let n = 0;
     if (conFac) for (const [fid, d] of Object.entries(docsMap)) if (d.type === 'factura' && saldoReal(d) > 0.009 && !d.aliadoId && ptNorm(d.cli) === ptNorm(clNombre(c))) {
       await db.collection('documentos').doc(fid).update({ aliadoId: aid, aliado: a.nombre, clienteFinal: clNombre(c) }); n++; }
+    for (const s of suscripcionesList.filter(s => !s.aliadoId && ptNorm(s.cliente) === ptNorm(clNombre(c)))) { await db.collection('suscripciones').doc(s._id).set({ aliadoId: aid, aliado: a.nombre, clienteId: id }, { merge: true }); s.aliadoId = aid; s.aliado = a.nombre; }
     logActividad('Cliente de aliado', `${clNombre(c)} → ${a.nombre}${n ? ` · ${n} facturas` : ''}`);
     toast('Guardado ✅'); closePortalModal(); abrirFichaCliente(id);
   } catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
@@ -12180,6 +12182,37 @@ function susFila(s, compacta) {
     </div>
   </div>`;
 }
+/* Garantiza que el cliente exista en Clientes; si es de un aliado, lo deja marcado como cliente de ese aliado */
+async function susAsegurarCliente(nombre, al) {
+  nombre = String(nombre || '').trim().replace(/\s+/g, ' '); if (!nombre) return null;
+  let c = clientesList.find(x => ptNorm(clNombre(x)) === ptNorm(nombre));
+  const marcas = al ? { aliadoId: al._id, aliado: al.nombre, origen: 'aliado' } : {};
+  if (c) {
+    if (al && c.aliadoId !== al._id) { const tags = [...new Set([...(c.tags || []), 'aliado'])]; await db.collection('clientes').doc(c._id).set({ ...marcas, tags }, { merge: true }); Object.assign(c, marcas, { tags }); }
+    return c;
+  }
+  const p = nombre.split(' ');
+  const datos = { nombre: p[0], apellido: p.slice(1).join(' '), empresa: '', telefono: '', correo: '', notas: al ? `Cliente del aliado ${al.nombre}` : '', tags: al ? ['aliado'] : [], cumpleanos: '', origen: al ? 'aliado' : 'suscripcion', ...marcas,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' };
+  const r = await db.collection('clientes').add(datos); c = { _id: r.id, ...datos }; clientesList.push(c);
+  return c;
+}
+// Una vez por sesión: suscripciones cuyo cliente no está en Clientes → se registra solo (con su aliado si la suscripción lo dice)
+let _susRevisadas = false;
+async function susRegistrarFaltantes() {
+  if (_susRevisadas || !suscripcionesList.length || !clientesList.length) return; _susRevisadas = true;
+  await aliadoParaFactura('').catch(() => {});
+  let n = 0;
+  for (const s of suscripcionesList) {
+    if (!s.cliente || s.estado === 'cancelada') continue;
+    let al = (_al.lista || []).find(a => a._id === s.aliadoId);
+    if (!al) { const m = String(s.notas || '').match(/aliado\s+([^·\n]+)/i); if (m) al = (_al.lista || []).find(a => ptNorm(a.nombre) === ptNorm(m[1].trim())); }
+    const existe = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(s.cliente));
+    if (existe && (!al || existe.aliadoId === al._id)) continue;
+    try { const c = await susAsegurarCliente(s.cliente, al || null); if (c) { await db.collection('suscripciones').doc(s._id).set({ clienteId: c._id, ...(al ? { aliadoId: al._id, aliado: al.nombre } : {}) }, { merge: true }); n++; } } catch (e) { console.warn('cliente de suscripción', e); }
+  }
+  if (n) { toast(`${n} cliente${n > 1 ? 's' : ''} de suscripciones registrado${n > 1 ? 's' : ''} en Clientes`); renderSuscripciones(); }
+}
 /* Suscripción cuyo cliente no está en Clientes: se registra con un clic (si es de un aliado, queda como cliente del aliado) */
 async function susRegistrarCliente(id) {
   await aliadoParaFactura('').catch(() => {});
@@ -12217,6 +12250,7 @@ function setSusFiltro(tipo, valor, btn) {
 function renderSuscripciones() {
   const el = document.getElementById('sus-list');
   if (!el) return;
+  setTimeout(() => susRegistrarFaltantes().catch(() => {}), 1500);
   const activas = suscripcionesList.filter(s => s.estado === 'activa');
   const mrr = activas.reduce((a, s) => a + susMensual(s), 0);
   const pronto = activas.filter(s => { const d = susDias(s); return d !== null && d >= 0 && d <= 7; });
@@ -12247,12 +12281,14 @@ function renderSuscripciones() {
 
 /* ── Formulario ── */
 function openSuscripcionForm(id, preset) {
+  if (!_al.lista) { aliadoParaFactura('').then(() => openSuscripcionForm(id, preset)).catch(() => {}); return; }
   const s = id ? suscripcionesList.find(x => x._id === id) : { ...(preset || {}) };
   if (!s) return;
   const opts = (obj, sel) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${Array.isArray(v) ? v[0] : v}</option>`).join('');
   const tipo = s.tipo || 'hosting';
   ptModal(id ? 'Editar suscripción' : 'Nueva suscripción', id ? (s.cliente || '') : 'Servicio que el cliente paga de forma recurrente', `
     <div class="ff"><label>Cliente</label><input id="sf-cliente" list="clientes-list" maxlength="120" value="${esc(s.cliente || '')}" placeholder="Nombre como en sus facturas"></div>
+    <div class="ff"><label>¿Es cliente de un aliado?</label><select id="sf-aliado"><option value="">No, es mi cliente</option>${(_al.lista || []).map(a => `<option value="${a._id}" ${s.aliadoId === a._id ? 'selected' : ''}>Sí, de ${esc(a.nombre)}</option>`).join('')}</select></div>
     <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px;">
       <div class="ff"><label>Tipo</label><select id="sf-tipo" onchange="susSugerencias()">${opts(SUS_TIPOS, tipo)}</select></div>
       <div class="ff"><label>Servicio</label><input id="sf-servicio" list="sf-sugs" maxlength="120" value="${esc(s.servicio || '')}" placeholder="Ej. Hosting mensual"><datalist id="sf-sugs"></datalist></div>
@@ -12335,10 +12371,12 @@ async function guardarSuscripcion(id, otra) {
   const ciclo = document.getElementById('sf-ciclo').value;
   const inicio = document.getElementById('sf-inicio').value || todayISO();
   const portal = portalParaCliente(cliente);
-  const cli = clientesList.find(c => ptNorm(clNombre(c)) === ptNorm(cliente));
+  const alSel = (_al.lista || []).find(a => a._id === document.getElementById('sf-aliado')?.value) || null;
+  const cli = await susAsegurarCliente(cliente, alSel);   // toda suscripción tiene su cliente en Clientes (y si es de aliado, dentro de ese aliado)
   const anterior = id ? suscripcionesList.find(x => x._id === id) : null;
   const data = {
     cliente: portal?.nombre || (cli ? clNombre(cli) : cliente), clienteId: cli?._id || null, portalCodigo: portal ? portal._id : null,
+    aliadoId: alSel ? alSel._id : null, aliado: alSel ? alSel.nombre : '',
     tipo: document.getElementById('sf-tipo').value, servicio,
     dominio: document.getElementById('sf-dominio').value.trim(),
     precio, moneda: 'usd', ciclo, inicio,
@@ -12356,7 +12394,6 @@ async function guardarSuscripcion(id, otra) {
     if (id) await db.collection('suscripciones').doc(id).update(data);
     else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); docId = (await db.collection('suscripciones').add(data)).id; }
     await susSincronizarPortal(docId, data, anterior?.portalCodigo);
-    saveCliente(cliente);
     logActividad(id ? 'Suscripción editada' : 'Nueva suscripción', `${cliente} · ${servicio}`);
     toast('Suscripción guardada ✅');
     closePortalModal();
