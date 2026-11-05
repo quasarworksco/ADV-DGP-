@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05d';
+const WORKER_VERSION = '2026-11-05e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1395,6 +1395,11 @@ async function crearSitio(env, token, b, email) {
     telefono: limpio(b.telefono, 60), redes: limpio(b.redes, 500), idiomas: limpio(b.idiomas, 60), notas: limpio(b.notas, 1500), dominio, logo: '' };
   // Logo (data URL desde el panel)
   let logo = null;
+  // Logo del brief (Cloudinary) si no se subió uno
+  if (!b.logo && /^https:\/\/res\.cloudinary\.com\/dgden7fws\//.test(String(b.logoUrl || ''))) {
+    try { const r = await fetch(b.logoUrl, { signal: AbortSignal.timeout(15000) }); const ct = (r.headers.get('content-type') || '').split(';')[0];
+      if (r.ok && /^image\/(png|jpe?g|webp|svg\+xml|gif)$/.test(ct)) { const u = new Uint8Array(await r.arrayBuffer()); let bin = ''; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); b.logo = `data:${ct};base64,${btoa(bin)}`; } } catch (e) {}
+  }
   const m = String(b.logo || '').match(/^data:image\/(png|jpe?g|webp|svg\+xml|gif);base64,([A-Za-z0-9+/=]+)$/);
   if (m) { if (m[2].length > 4e6) return { error: 'El logo pesa más de 3 MB' }; logo = { ext: m[1] === 'svg+xml' ? 'svg' : m[1] === 'jpeg' ? 'jpg' : m[1], data: m[2] }; d.logo = `assets/logo.${logo.ext}`; }
   const R = `/repos/${GH_ORG}/${repo}`;

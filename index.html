@@ -7415,10 +7415,26 @@ Factura: ${doc.docId || fsId} | Cliente: ${doc.cli || '—'}`;
       <span>Prompt generado</span>
       <button class="proy-prompt-copy" id="proy-copy-btn-${esc(fsId)}" onclick="copiarPromptBrief('${esc(fsId)}')">${SVG_COPY} Copiar</button>
     </div>
-    <div class="proy-prompt-text" id="proy-prompt-text-${esc(fsId)}">${esc(prompt)}</div>`;
+    <div class="proy-prompt-text" id="proy-prompt-text-${esc(fsId)}">${esc(prompt)}</div>
+    ${tipo === 'web' ? `<div class="proy-prompt-toolbar" style="margin-top:10px">
+      <span>Datos para Nuevo sitio web</span>
+      <span style="display:flex;gap:6px"><button class="proy-prompt-copy" onclick="navigator.clipboard.writeText(datosSitioBrief('${esc(fsId)}')).then(()=>toast('Datos copiados ✅'))">${SVG_COPY} Copiar</button>
+      <button class="proy-prompt-copy" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="nsAbrir(datosSitioBrief('${esc(fsId)}'))">Crear sitio con estos datos</button></span>
+    </div>
+    <div class="proy-prompt-text" style="max-height:none">${esc(datosSitioBrief(fsId))}</div>` : ''}`;
   box.classList.add('open');
 }
 
+/* Lista corta del brief para el formulario "Nuevo sitio web" (se puede copiar y pegar, o abrir el formulario ya lleno) */
+function datosSitioBrief(fsId) {
+  const doc = docsMap[fsId] || {}, b = doc.brief || {};
+  const redes = b.redes ? Object.entries({ Instagram: b.redes.ig, Facebook: b.redes.fb, TikTok: b.redes.tt, YouTube: b.redes.yt, 'X': b.redes.tw, LinkedIn: b.redes.li, 'Google Business': b.redes.gb || b.redes.gmb }).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(', ') : '';
+  const servicios = String(b.servicios || '').split('\n').map(x => x.trim()).filter(Boolean).join('; ');
+  const notas = [servicios && 'Servicios: ' + servicios, (b.ubicacion || b.zona) && 'Zona: ' + (b.ubicacion || b.zona), b.objetivo && 'Objetivo: ' + b.objetivo, b.diferencia && 'Diferencia: ' + b.diferencia, b.slogan && 'Eslogan: ' + b.slogan].filter(Boolean).join(' · ');
+  const L = [['Empresa', b.negocio || doc.cli], ['A qué se dedica', b.descripcion], ['Estilo visual', b.estilo], ['Idiomas', b.idioma], ['Página de ejemplo', b.referencias || b.ejemplos || b.ejemplo],
+    ['Correo', b.correo], ['Teléfono / WhatsApp', b.redes?.wa || b.tel], ['Redes sociales', redes], ['Dominio', b.dominio], ['Logo', b.logoUrl], ['Cliente', doc.cli], ['Notas', notas]];
+  return L.filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${String(v).replace(/\n+/g, ' ').trim()}`).join('\n');
+}
 function copiarPromptBrief(fsId) {
   const textEl = document.getElementById('proy-prompt-text-' + fsId);
   const btn    = document.getElementById('proy-copy-btn-'   + fsId);
@@ -13265,10 +13281,14 @@ function wbFecha(iso) { const d = ptDate(iso); return d ? d.toLocaleDateString('
 const wbPronto = iso => { const d = ptDate(iso); return d && (d - new Date()) / 864e5 <= 30; };
 /* ── Nuevo sitio web: crea el repositorio en quasarworksco con la plantilla base (index.html + CLAUDE.md),
       el logo, GitHub Pages desde main y auto-merge. Lo hace el bot (secreto GH_TOKEN). ── */
-function nsAbrir() {
+function nsAbrir(pre) {
+  if (typeof pre !== 'string') pre = '';
   const dl = clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('');
   const f = (id, lab, ph = '', extra = '') => `<div class="ff" style="margin:0"><label>${lab}</label><input id="${id}" placeholder="${ph}" ${extra}></div>`;
   ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco con la plantilla base para Claude. Lo que dejes vacío, Claude lo pregunta antes de diseñar.', `<div class="rd-form" style="display:grid;gap:10px">
+    <details${pre ? '' : ''}><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--blue)">Pegar datos del brief (desde Proyectos)</summary>
+      <textarea id="ns-pegar" rows="5" style="width:100%;box-sizing:border-box;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12.5px" placeholder="Empresa: …&#10;Correo: …&#10;Teléfono / WhatsApp: …"></textarea>
+      <button class="btn-logout" style="margin-top:6px" onclick="nsRellenar(document.getElementById('ns-pegar').value)">Rellenar el formulario</button></details>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${f('ns-tit', 'Nombre de la empresa', 'JF Network Solutions', 'oninput="const r=document.getElementById(\'ns-repo\');if(!r.dataset.tocado)r.value=this.value.toLowerCase().normalize(\'NFD\').replace(/[\\u0300-\\u036f]/g,\'\').replace(/[^a-z0-9]+/g,\'-\').replace(/^-+|-+$/g,\'\')"')}
       ${f('ns-repo', 'Nombre del repositorio', 'jf-network-solutions', 'oninput="this.dataset.tocado=1"')}
@@ -13277,7 +13297,7 @@ function nsAbrir() {
       ${f('ns-cli', 'Cliente (opcional)', 'De tu lista de clientes', 'list="ns-cli-l"')}<datalist id="ns-cli-l">${dl}</datalist>
       ${f('ns-rubro', 'A qué se dedica', 'Fibra óptica y redes')}
     </div>
-    <div class="ff" style="margin:0"><label>Logo</label><input id="ns-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></div>
+    <div class="ff" style="margin:0"><label>Logo</label><input id="ns-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><input id="ns-logourl" type="hidden"><div id="ns-logoinfo" style="font-size:11.5px;color:var(--text-soft);margin-top:4px"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que Claude pregunte</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
       <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que Claude pregunte</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
@@ -13291,6 +13311,20 @@ function nsAbrir() {
     ${f('ns-dom', 'Dominio (opcional)', 'empresa.com o empresa.dgp-link.com')}
     <div class="ff" style="margin:0"><label>Notas para Claude (opcional)</label><textarea id="ns-notas" rows="3" placeholder="Servicios, zona que atiende, lo que pidió el cliente…"></textarea></div>
     <button class="ll-btn" id="ns-btn" style="background:var(--blue)" onclick="nsCrear()">Crear repositorio y sitio</button></div>`);
+  if (pre) nsRellenar(pre);
+}
+function nsRellenar(txt) {
+  const M = { 'empresa': 'ns-tit', 'a qué se dedica': 'ns-rubro', 'estilo visual': 'ns-estilo', 'idiomas': 'ns-idi', 'página de ejemplo': 'ns-ej', 'correo': 'ns-cor', 'teléfono / whatsapp': 'ns-tel', 'redes sociales': 'ns-redes', 'dominio': 'ns-dom', 'cliente': 'ns-cli', 'notas': 'ns-notas', 'logo': 'ns-logourl' };
+  let n = 0;
+  String(txt || '').split('\n').forEach(l => { const m = l.match(/^\s*([^:]+):\s*(.+)$/); if (!m) return; const id = M[m[1].trim().toLowerCase()]; const el = id && document.getElementById(id); if (!el) return;
+    let v = m[2].trim();
+    if (id === 'ns-idi') { const n2 = ptNorm(v); v = /espanol/.test(n2) && /ingles|english/.test(n2) ? 'Bilingüe ES/EN con botón' : /ingles|english/.test(n2) ? 'Solo inglés' : /espanol/.test(n2) ? 'Solo español' : v; }
+    if (el.tagName === 'SELECT') { const op = [...el.options].find(o => ptNorm(o.text).includes(ptNorm(v).slice(0, 8)) || ptNorm(v).includes(ptNorm(o.text).slice(0, 8))); if (op) el.value = op.value || op.text; else { const nt = document.getElementById('ns-notas'); nt.value = (nt.value ? nt.value + ' · ' : '') + m[1].trim() + ': ' + v; } }
+    else el.value = v;
+    n++; });
+  const t = document.getElementById('ns-tit'), r = document.getElementById('ns-repo'); if (t?.value && r && !r.dataset.tocado) t.dispatchEvent(new Event('input'));
+  const lu = document.getElementById('ns-logourl')?.value; const li = document.getElementById('ns-logoinfo'); if (li) li.innerHTML = lu ? `Se usará el logo del brief: <a href="${esc(lu)}" target="_blank" rel="noopener">ver</a> (o sube otro)` : '';
+  toast(n ? `Listo: ${n} datos en el formulario` : 'No reconocí datos: usa el formato "Empresa: …"', n ? 'ok' : 'err');
 }
 async function nsCrear() {
   const v = id => (document.getElementById(id)?.value || '').trim(), btn = document.getElementById('ns-btn');
@@ -13302,7 +13336,7 @@ async function nsCrear() {
     const logo = file ? await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); }) : '';
     const tok = await currentUser.getIdToken();
     const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-      body: JSON.stringify({ tarea: 'nuevo-sitio', titulo: v('ns-tit'), repo: v('ns-repo'), cliente: v('ns-cli'), rubro: v('ns-rubro'), estilo: v('ns-estilo'), idiomas: v('ns-idi'), ejemplo: v('ns-ej'), correo: v('ns-cor'), telefono: v('ns-tel'), redes: v('ns-redes'), dominio: v('ns-dom'), notas: v('ns-notas'), logo }) }).then(r => r.json());
+      body: JSON.stringify({ tarea: 'nuevo-sitio', logoUrl: v('ns-logourl'), titulo: v('ns-tit'), repo: v('ns-repo'), cliente: v('ns-cli'), rubro: v('ns-rubro'), estilo: v('ns-estilo'), idiomas: v('ns-idi'), ejemplo: v('ns-ej'), correo: v('ns-cor'), telefono: v('ns-tel'), redes: v('ns-redes'), dominio: v('ns-dom'), notas: v('ns-notas'), logo }) }).then(r => r.json());
     if (!d.ok) throw new Error(d.error || 'No se pudo crear');
     logActividad('Nuevo sitio web', `${d.repo} → ${d.url}`);
     const ico = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
