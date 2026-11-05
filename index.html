@@ -3019,6 +3019,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     </div>
   </div>
   <div class="header-right">
+    <button class="hdr-search" onclick="recargarPanel(this)" title="Actualizar (igual que F5)" aria-label="Actualizar" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     <button class="hdr-search" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
     <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente y automatizaciones" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg><span class="hide-m">Altair</span></button>
     <button class="btn-logout hdr-opt" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
@@ -4599,6 +4600,13 @@ function initPage() {
   irAPagina(location.hash.slice(1) || 'dashboard');
   setTimeout(actualizarBadgeApp, 4000);
   if (location.hash) history.replaceState(null, '', location.pathname);
+}
+// Botón Actualizar del encabezado: recarga como F5 y vuelve a la misma sección
+function recargarPanel(btn) {
+  const act = (document.querySelector('.nav-tab.active')?.getAttribute('onclick') || '').match(/switchPage\('(\w+)'/)?.[1];
+  if (btn) btn.style.opacity = '.5';
+  history.replaceState(null, '', location.pathname + (act ? '#' + act : ''));
+  location.reload();
 }
 function irAPagina(p) {
   const btn = [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes(`'${p}'`))
@@ -12558,7 +12566,7 @@ function sincronizarCorreosClientes() {
           if (!c.correo) upd.correo = d.clienteCorreo;
           if (!c.telefono && d.clienteTelefono) upd.telefono = d.clienteTelefono;
           if (Object.keys(upd).length) await db.collection('clientes').doc(c._id).update(upd);
-        } else {
+        } else if (d.type !== 'cotizacion' && !cotizacionesList.includes(d)) {   // solo una factura registra a alguien como cliente (una cotización no)
           const partes = String(d.cli).trim().split(/\s+/);
           const id = n.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
           if (id) await db.collection('clientes').doc(id).set({ nombre: partes[0], apellido: partes.slice(1).join(' '), correo: d.clienteCorreo, telefono: d.clienteTelefono || '', createdAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: 'cliente' }, { merge: true });
