@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05m';
+const WORKER_VERSION = '2026-11-05n';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1337,7 +1337,16 @@ async function gdAccion(env, token, b, request, email) {
     switch (b.accion) {
       case 'buscar': {
         if (!domOk(dominio)) return { error: 'Escribe un dominio completo, por ejemplo minegocio.com' };
-        const d = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(dominio)}&checkType=FULL`);
+        let d;
+        try { d = await gd(env, 'GET', `/v1/domains/available?domain=${encodeURIComponent(dominio)}&checkType=FULL`); }
+        catch (e) {
+          // GoDaddy no da disponibilidad ni compra por API a cuentas con menos de 50 dominios: se consulta el registro público (RDAP)
+          const libre = async x => { const r = await fetch(`https://rdap.org/domain/${x}`, { redirect: 'follow', signal: AbortSignal.timeout(12000) }).catch(() => null); return r ? (r.status === 404 ? true : r.ok ? false : null) : null; };
+          const base = dominio.split('.')[0], tld = dominio.split('.').slice(1).join('.');
+          const otros = [...new Set(['com', 'net', 'co', 'us', 'online', 'site'].filter(t => t !== tld).map(t => `${base}.${t}`).concat(tld === 'com' ? [`get${base}.com`, `${base}usa.com`] : [`${base}.com`]))].slice(0, 6);
+          const [disp, ...L] = await Promise.all([libre(dominio), ...otros.map(libre)]);
+          return { dominio, disponible: disp, sinApi: true, precio: null, sugerencias: [], otras: otros.map((x, i) => ({ dominio: x, disponible: L[i] })).filter(x => x.disponible) };
+        }
         let sug = [];
         try { const base = dominio.split('.')[0]; const S = await gd(env, 'GET', `/v1/domains/suggest?query=${encodeURIComponent(base)}&limit=6&waitMs=1500`); sug = (S || []).map(x => x.domain).filter(x => x !== dominio).slice(0, 6); } catch (e) {}
         return { dominio, disponible: !!d.available, precio: d.price ? d.price / 1e6 : null, moneda: d.currency || 'USD', anios: d.period || 1, sugerencias: sug };
@@ -1372,6 +1381,13 @@ async function gdAccion(env, token, b, request, email) {
         if (env.CACHE) await env.CACHE.put('gdPend:' + dominio, JSON.stringify({ repo, por: email }), { expirationTtl: 3 * 86400 }).catch(() => {});
         await tgEnviar(env, `🛒 <b>Dominio comprado:</b> ${escHtml(dominio)}${precio ? ` · $${precio.toFixed(2)}` : ''}${repo ? `\nSe conectará solo al repositorio ${escHtml(repo)} cuando GoDaddy lo active.` : ''}`).catch(() => {});
         return { ok: true, orden: orden?.orderId || null, total: orden?.total ? orden.total / 1e6 : precio };
+      }
+      case 'pendiente': {   // compraste en GoDaddy: se conecta solo al repositorio cuando aparezca en tu cuenta
+        if (!domOk(dominio)) return { error: 'Dominio no válido' };
+        const repo = String(b.repo || '').replace(/[^A-Za-z0-9._-]/g, '');
+        if (!repo) return { error: 'Elige el repositorio' };
+        if (env.CACHE) await env.CACHE.put('gdPend:' + dominio, JSON.stringify({ repo, por: email }), { expirationTtl: 7 * 86400 });
+        return { ok: true };
       }
       case 'registros': {
         if (!domOk(dominio)) return { error: 'Dominio no válido' };
