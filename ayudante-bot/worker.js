@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05p';
+const WORKER_VERSION = '2026-11-05q';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -2127,6 +2127,13 @@ async function handleWA(request, env) {
         const mimetype = String(b.mimetype || 'application/octet-stream'), esImg = /^image\//.test(mimetype);
         const d = await waJSON(env, esImg ? '/api/sendImage' : '/api/sendFile', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat, caption: String(b.texto || '').slice(0, 1000), file: { url, mimetype, filename: String(b.nombre || (esImg ? 'imagen.jpg' : 'archivo')) } }) });
         return json(request, { ok: true, mensaje: d });
+      }
+      case 'sincNoLeidos': {   // el panel trae los chats con mensajes sin leer según WhatsApp (incluye lo que ya leíste en el celular)
+        if (!env.CACHE) return json(request, { ok: true });
+        const L = (Array.isArray(b.chats) ? b.chats : []).filter(x => /^[0-9A-Za-z._-]+@(c\.us|lid)$/.test(String(x))).slice(0, 300);
+        const nl = {}; L.forEach(x => { nl[x] = 1; });
+        await env.CACHE.put('waNL', JSON.stringify(nl)).catch(() => {});
+        return json(request, { ok: true, chats: L.length });
       }
       case 'noLeidos': { const nl = env.CACHE ? await env.CACHE.get('waNL', 'json').catch(() => null) || {} : {}; return json(request, { chats: Object.keys(nl).length }); }
       case 'visto': await waLeido(env, chat); await waFetch(env, '/api/sendSeen', { method: 'POST', body: JSON.stringify({ session: S, chatId: chat }) }).catch(() => {}); return json(request, { ok: true });
