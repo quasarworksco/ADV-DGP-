@@ -736,7 +736,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05a';
+const WORKER_VERSION = '2026-11-05b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1984,7 +1984,8 @@ function waAhoraMiami() {
   return { dia, hora: Number(f.find(x => x.type === 'hour').value) % 24 };
 }
 const waEnHorario = () => { const { dia, hora } = waAhoraMiami(); return WA_HORARIO.dias.includes(dia) && hora >= WA_HORARIO.abre && hora < WA_HORARIO.cierra; };
-const WA_ALTAIR_SYSTEM = ALTAIR_WEB_SYSTEM.split('CONTACT CAPTURE')[0] + `REGISTRO DE EMPRESA (LLC) en cualquier estado de EE. UU., fees del estado incluidos: Básico $600 | Premium $950 (página: dgpglobalgroup.com/registro-de-empresas/).
+// Se arma al usarlo (ALTAIR_WEB_SYSTEM se declara más abajo en el archivo)
+const waAltairSystem = () => ALTAIR_WEB_SYSTEM.split('CONTACT CAPTURE')[0] + `REGISTRO DE EMPRESA (LLC) en cualquier estado de EE. UU., fees del estado incluidos: Básico $600 | Premium $950 (página: dgpglobalgroup.com/registro-de-empresas/).
 
 YOU ARE ANSWERING ON WHATSAPP. You are Altair, the virtual assistant of DGP Global Group. A human advisor ("el asesor encargado") follows up afterwards; never mention anyone's name.
 - NEVER say the business is closed, unavailable or outside hours. Attend the person warmly and help right now.
@@ -2033,7 +2034,7 @@ async function waAsistente(env, ctx, de, nombreWA, texto) {
     try {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
         headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: WA_ALTAIR_SYSTEM + contexto }, ...st.hist], max_tokens: 300, temperature: 0.6, response_format: { type: 'json_object' } }) });
+        body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: waAltairSystem() + contexto }, ...st.hist], max_tokens: 300, temperature: 0.6, response_format: { type: 'json_object' } }) });
       const d = await r.json().catch(() => ({}));
       datos = JSON.parse(String(d.choices?.[0]?.message?.content || '{}'));
       respuesta = String(datos.respuesta || '').trim();
