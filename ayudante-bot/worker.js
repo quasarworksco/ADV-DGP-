@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05h';
+const WORKER_VERSION = '2026-11-05i';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1807,7 +1807,15 @@ function correoPagoHTML(doc, fsId, monto) {
   };
 }
 // Al confirmar un pago o abono: recibo por WhatsApp (al aliado si es cliente de aliado)
-async function waReciboPago(env, token, fsId, monto) {
+// Saldo global del cliente (o del aliado): todo lo que debe en facturas pendientes, sin contar las pausadas
+async function saldoGlobal(env, token, doc) {
+  const docs = await fsList(env, 'documentos', token).catch(() => []);
+  const al = esAliado(doc) ? await aliadoDe(env, token, doc).catch(() => null) : null;
+  const L = docs.filter(d => !String(d._id).startsWith('__diag') && d.type === 'factura' && deudaDoc(d) > 0.009 &&
+    (al ? (d.aliadoId === al._id || normNombre(d.aliado || d.cli) === normNombre(al.nombre)) : normNombre(d.cli) === normNombre(doc.cli)));
+  return { total: r2(L.reduce((a, d) => a + deudaDoc(d), 0)), n: L.length, quien: al ? al.nombre : doc.cli };
+}
+async function waReciboPago(env, token, fsId, monto, global) {
   if (!env.WA_URL || !env.WA_KEY || !(monto > 0.009)) return null;
   if (!(await automatizaciones(env, token)).waRecibo) return null;
   const doc = await fsGet(env, `documentos/${fsId}`, token); if (!doc) return null;
@@ -1832,12 +1840,19 @@ async function waReciboPago(env, token, fsId, monto) {
               : `Hi ${nombre}! We received your payment of ${dinero(monto)} ✅\n\n${ref}: *${dinero(saldo)} left* to pay.\nView your invoice: ${link}\n\nThank you!`)
     : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!${resena ? `\n\n⭐ ¿Nos regalas 30 segundos para dejar tu reseña en Google? Nos ayuda muchísimo:\n${resena}` : ''}`
               : `Hola ${nombre}! Recibimos tu abono de ${dinero(monto)} ✅\n\n${ref}: te quedan *${dinero(saldo)}* por pagar.\nVer tu factura: ${link}\n\n¡Gracias!`);
-  await waEnviarTexto(env, t + '@c.us', texto);
+  const g = global || await saldoGlobal(env, token, doc).catch(() => null);
+  const lineaG = !g ? '' : g.total > 0.009
+    ? (en ? `\n\n📋 *Your total pending balance:* ${dinero(g.total)}${g.n > 1 ? ` (${g.n} invoices)` : ''}.` : `\n\n📋 *Tu saldo pendiente total:* ${dinero(g.total)}${g.n > 1 ? ` (${g.n} facturas)` : ''}.`)
+    : (en ? `\n\n📋 You're all caught up: no pending balance ✅` : `\n\n📋 Estás al día: no tienes saldo pendiente ✅`);
+  await waEnviarTexto(env, t + '@c.us', texto + lineaG);
   return { ok: true, tel: t, para };
 }
 async function correoPagoCliente(env, token, fsId, monto, por) {
   const r = await correoPagoCliente0(env, token, fsId, monto, por);
-  const w = await waReciboPago(env, token, fsId, monto).catch(e => { console.warn('WA recibo', e); return null; });
+  const docG = await fsGet(env, `documentos/${fsId}`, token).catch(() => null);
+  const g = docG ? await saldoGlobal(env, token, docG).catch(() => null) : null;
+  if (g) r.saldoGlobal = g;
+  const w = await waReciboPago(env, token, fsId, monto, g).catch(e => { console.warn('WA recibo', e); return null; });
   if (w?.ok) r.wa = w.para || ('+' + w.tel);
   // Primer pago de una web o un registro de empresa: correo de bienvenida
   if ((await automatizaciones(env, token)).bienvenida) {
@@ -1868,7 +1883,7 @@ async function correoPagoCliente0(env, token, fsId, monto, por) {
     return { enviado: true, correo };
   } catch (e) { console.warn('Correo de pago', e); return { enviado: false, motivo: e.message || 'error' }; }
 }
-const lineaCorreoPago = r => (r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '') + (r.wa ? `\n💬 Recibo enviado por WhatsApp a ${escHtml(r.wa)}` : '') + (r.bienvenida ? `\n🎉 Bienvenida enviada a ${escHtml(r.bienvenida)}` : '');
+const lineaCorreoPago = r => (r.enviado ? `\n📧 Recibo enviado por correo a ${escHtml(r.correo)}` : r.motivo ? `\n⚠️ No se envió el recibo por correo: ${escHtml(r.motivo)}` : '') + (r.wa ? `\n💬 Recibo enviado por WhatsApp a ${escHtml(r.wa)}` : '') + (r.saldoGlobal ? (r.saldoGlobal.total > 0.009 ? `\n📋 Saldo global de ${escHtml(r.saldoGlobal.quien || '')}: <b>${dinero(r.saldoGlobal.total)}</b>${r.saldoGlobal.n > 1 ? ` en ${r.saldoGlobal.n} facturas` : ''}` : `\n📋 ${escHtml(r.saldoGlobal.quien || 'El cliente')} quedó al día ✅`) : '') + (r.bienvenida ? `\n🎉 Bienvenida enviada a ${escHtml(r.bienvenida)}` : '');
 
 async function recordarResenas(env, token, docs, correoDe) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return [];

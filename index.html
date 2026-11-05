@@ -8323,6 +8323,7 @@ function programarCorreoPago(fsId, monto) {
       const res = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'correo-pago', id: fsId, monto: total }) });
       const d = await res.json().catch(() => ({}));
       if (d.wa) toast(`Recibo enviado por WhatsApp a ${d.wa} ✅`);
+      if (d.saldoGlobal) setTimeout(() => toast(d.saldoGlobal.total > 0.009 ? `Saldo global de ${d.saldoGlobal.quien}: $${d.saldoGlobal.total.toFixed(2)}${d.saldoGlobal.n > 1 ? ` en ${d.saldoGlobal.n} facturas` : ''}` : `${d.saldoGlobal.quien} quedó al día ✅`), 2500);
       if (d.enviado) { toast(`📧 Recibo de pago enviado a ${d.correo}`); logActividad('Recibo de pago por correo', `${docsMap[fsId]?.docId || fsId} → ${d.correo}`); }
       else if ((d.motivo || d.error) && _auto.correoPago !== false) toast(`No se envió el recibo por correo: ${d.motivo || d.error}`, 'err');
     } catch (e) { console.warn('correo-pago', e); }
