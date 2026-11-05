@@ -12167,7 +12167,7 @@ function susFila(s, compacta) {
   return `<div class="sus-row" onclick="openSuscripcionForm('${id}')">
     <span class="sus-tipo" style="color:${tc};background:${tb};">${tl}</span>
     <div class="hr-main">
-      ${compacta ? '' : `<div class="hr-top"><span class="hr-cli">${esc(s.cliente || '—')}</span>${s.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${s.autoFactura ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);" title="La factura se crea sola antes del vencimiento">Auto-factura</span>' : ''}</div>`}
+      ${compacta ? '' : `<div class="hr-top"><span class="hr-cli">${esc(s.cliente || '—')}</span>${s.cliente && !clientesList.some(c => ptNorm(clNombre(c)) === ptNorm(s.cliente)) ? `<button class="emisor-tag" style="margin:0;cursor:pointer;border:1px dashed currentColor;background:transparent;color:var(--blue)" title="Este cliente no está en Clientes" onclick="event.stopPropagation();susRegistrarCliente('${id}')">+ Registrar cliente</button>` : ''}${s.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${s.autoFactura ? '<span class="emisor-tag" style="margin:0;background:#ecfdf5;color:#047857;border-color:rgba(5,150,105,.2);" title="La factura se crea sola antes del vencimiento">Auto-factura</span>' : ''}</div>`}
       <div class="hr-srv" style="${compacta ? 'font-size:13px;font-weight:600;color:var(--black);' : ''}">${esc(susNombre(s) || '—')}</div>
       ${s.fechaFin ? (() => { const df = susDiasFin(s); return `<div style="font-size:10.5px;margin-top:2px;font-weight:600;color:${df < 0 ? '#b91c1c' : df <= 30 ? '#b45309' : 'var(--text-soft)'};">${df < 0 ? 'Contrato terminó el ' : 'Contrato hasta el '}${ptFmt(s.fechaFin)}${df >= 0 && df <= 30 ? ` · faltan ${df} día${df !== 1 ? 's' : ''}` : ''}</div>`; })() : (s.inicio ? `<div style="font-size:10.5px;margin-top:2px;color:var(--text-soft);">Desde el ${ptFmt(s.inicio)}</div>` : '')}
     </div>
@@ -12179,6 +12179,34 @@ function susFila(s, compacta) {
       <button class="hr-ico del" title="Eliminar" onclick="event.stopPropagation();borrarSuscripcion('${id}')">${HR_ICON.del}</button>
     </div>
   </div>`;
+}
+/* Suscripción cuyo cliente no está en Clientes: se registra con un clic (si es de un aliado, queda como cliente del aliado) */
+async function susRegistrarCliente(id) {
+  await aliadoParaFactura('').catch(() => {});
+  const s = suscripcionesList.find(x => x._id === id); if (!s) return;
+  const al = (_al.lista || []).find(a => a._id === s.aliadoId);
+  ptModal('Registrar cliente', s.cliente, `<div class="rd-form" style="display:grid;gap:10px">
+    <div class="ff" style="margin:0"><label>Nombre</label><input id="sr-nom" value="${esc(s.cliente || '')}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="ff" style="margin:0"><label>Teléfono (opcional)</label><input id="sr-tel" placeholder="+1 …"></div><div class="ff" style="margin:0"><label>Correo (opcional)</label><input id="sr-cor" type="email"></div></div>
+    <div class="ff" style="margin:0"><label>¿Es cliente de un aliado?</label><select id="sr-al"><option value="">No, es mi cliente</option>${(_al.lista || []).map(a => `<option value="${a._id}" ${al && al._id === a._id ? 'selected' : ''}>Sí, de ${esc(a.nombre)}</option>`).join('')}</select></div>
+    <button class="ll-btn" style="background:var(--blue)" onclick="susRegistrarClienteYa('${esc(id)}')">Registrar</button></div>`);
+}
+async function susRegistrarClienteYa(id) {
+  const s = suscripcionesList.find(x => x._id === id); if (!s) return;
+  const nom = document.getElementById('sr-nom').value.trim(); if (!nom) return toast('Escribe el nombre', 'err');
+  const aid = document.getElementById('sr-al').value, a = (_al.lista || []).find(x => x._id === aid);
+  const p = nom.split(/\s+/);
+  const datos = { nombre: p[0], apellido: p.slice(1).join(' '), empresa: '', telefono: document.getElementById('sr-tel').value.trim(), correo: document.getElementById('sr-cor').value.trim().toLowerCase(),
+    notas: a ? `Cliente del aliado ${a.nombre}` : '', tags: a ? ['aliado'] : [], cumpleanos: '', origen: a ? 'aliado' : 'suscripcion', ...(a ? { aliadoId: a._id, aliado: a.nombre } : {}),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), creadoPor: currentUser?.email || '' };
+  try {
+    const r = await db.collection('clientes').add(datos);
+    clientesList.push({ _id: r.id, ...datos });
+    await db.collection('suscripciones').doc(id).set({ clienteId: r.id, ...(a && !s.aliadoId ? { aliadoId: a._id, aliado: a.nombre } : {}) }, { merge: true });
+    s.clienteId = r.id; if (a && !s.aliadoId) { s.aliadoId = a._id; s.aliado = a.nombre; }
+    logActividad('Cliente registrado desde suscripción', `${nom}${a ? ' · aliado ' + a.nombre : ''}`);
+    toast('Cliente registrado ✅'); closePortalModal(); renderSuscripciones();
+  } catch (e) { toast('No se pudo registrar: ' + e.message, 'err'); }
 }
 function setSusFiltro(tipo, valor, btn) {
   if (tipo === 'tipo') susFiltroTipo = valor; else if (tipo === 'ciclo') susFiltroCiclo = valor; else susFiltroEstado = valor;
