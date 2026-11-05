@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05l';
+const WORKER_VERSION = '2026-11-05m';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -798,7 +798,9 @@ async function handleDiagnostico(request, env, firebaseLogin) {
       out.checks.correo = j && j.ok ? { ok: true, restantesHoy: j.restantes, remitente: j.remitente || null } : { ok: false, error: 'El programa de envío no respondió bien (HTTP ' + r.status + ')' };
     } catch (e) { out.checks.correo = { ok: false, error: 'No se pudo contactar el programa de envío: ' + e.message }; }
   if (env.GODADDY_KEY && env.GODADDY_SECRET) {
-    try { const L = await gdDominios(env, true); out.checks.godaddy = { ok: true, dominios: L.length }; }
+    try { const L = await gdDominios(env, true); out.checks.godaddy = { ok: true, dominios: L.length };
+      try { await gd(env, 'GET', `/v1/domains/${L[0].dominio}/records`); out.checks.godaddy.dns = 'ok'; } catch (e) { out.checks.godaddy.dns = e.message; }
+      try { await gd(env, 'GET', `/v1/domains/available?domain=dgp-prueba-${Date.now()}.com`); out.checks.godaddy.disponibilidad = 'ok'; } catch (e) { out.checks.godaddy.disponibilidad = e.message; } }
     catch (e) { out.checks.godaddy = { ok: false, error: e.message }; }
   }
   }
