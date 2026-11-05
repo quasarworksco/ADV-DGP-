@@ -739,12 +739,18 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05v';
+const WORKER_VERSION = '2026-11-05w';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...cors(request), 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
   const q = new URL(request.url).searchParams;
+  // ?web=dominio → prueba ese sitio igual que el monitor de Webs de clientes (sin datos privados)
+  const qWeb = new URL(request.url).searchParams.get('web');
+  if (qWeb && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(qWeb)) {
+    const host = qWeb.toLowerCase(), crudo = async u => { try { const r = await fetch(u, { redirect: 'manual', signal: AbortSignal.timeout(15000) }); return { codigo: r.status, ubicacion: r.headers.get('location') || '' }; } catch (e) { return { error: String(e.message || e).slice(0, 150) }; } };
+    return new Response(JSON.stringify({ monitor: await chequearWeb(host), https: await crudo(`https://${host}/`), http: await crudo(`http://${host}/`) }), { headers: { 'Content-Type': 'application/json', ...cors(request) } });
+  }
   const out = { version: WORKER_VERSION, region: request.cf ? `${request.cf.colo || ''} (${request.cf.country || ''})` : null, checks: {} };
 
   const faltan = ['GROQ_API_KEY', 'TG_TOKEN', 'FB_EMAIL', 'FB_PASSWORD'].filter(k => !env[k]);
