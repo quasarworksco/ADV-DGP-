@@ -737,7 +737,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05r';
+const WORKER_VERSION = '2026-11-05s';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -3078,8 +3078,8 @@ async function botCrearDesdeBorrador(env, token, id, sinEnviar, idioma = 'es') {
     if (portal) await fsAgregarALista(env, `portal/${portal._id}`, 'facturaIds', nuevoId, token).catch(() => {});
     link = `${SITIO}/factura-publica.html?id=${nuevoId}`;
   }
-  // Cliente nuevo → se agenda en Clientes
-  if (!cli) {
+  // Cliente nuevo → se agenda en Clientes (solo con factura: una cotización no lo convierte en cliente)
+  if (!cli && b.tipo !== 'cotizacion') {
     const partes = b.cliente.split(' ');
     const cid = n.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     if (cid && !(await fsGet(env, `clientes/${cid}`, token).catch(() => null))) {

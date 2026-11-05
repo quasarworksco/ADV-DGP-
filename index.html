@@ -9863,6 +9863,7 @@ function abrirFichaCliente(id) {
       <div class="cb-tile" style="padding:10px 12px;"><div class="cb-tile-l">Facturas</div><div class="cb-tile-v" style="font-size:22px;">${x.n}</div></div>
     </div>
     ${clVinculoHTML(c, x)}
+    ${!x.n && !(c.portalCodigo) && !suscripcionesList.some(s => s.estado === 'activa' && ptNorm(s.cliente) === ptNorm(nombre)) ? `<button class="btn-edit-cancel" style="margin:0 0 12px;width:100%" onclick="clAProspecto('${esc(c._id)}')">No ha comprado nada: devolver a Prospectos</button>` : ''}
     ${(c.tags || []).length || c.notas ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">${(c.tags || []).map(t => `<span class="cl-tag">${esc(t)}</span>`).join('')}${c.notas ? `<div style="margin-top:6px;font-style:italic;color:var(--text-soft);">${esc(c.notas)}</div>` : ''}</div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
       <button class="btn-edit-save" style="margin:0;" onclick="closePortalModal();nuevaFacturaPara('${esc(c._id)}')">+ Nueva factura</button>
@@ -9900,6 +9901,17 @@ function clVinculoHTML(c, x) {
     <button class="btn-edit-cancel" style="margin:0;color:#b91c1c" onclick="clDesvincular('${esc(c._id)}')">Desvincular</button></div></div>`;
 }
 /* Cliente que viene de un aliado (ej. JF Network → AVA): se marca para que todo vaya al aliado */
+async function clAProspecto(id) {
+  const c = clientesList.find(x => x._id === id); if (!c) return;
+  if (!confirm(`¿Quitar a ${clNombre(c)} de Clientes y dejarlo solo en Prospectos? No tiene facturas.`)) return;
+  try {
+    await prImportar([{ nombre: clNombre(c), telefono: c.telefono || '', correo: c.correo || '', servicio: '', notas: c.notas || '' }]).catch(() => {});
+    await db.collection('clientes').doc(id).delete();
+    clientesList = clientesList.filter(x => x._id !== id);
+    logActividad('Cliente devuelto a prospectos', clNombre(c));
+    toast('Listo: ahora está solo en Prospectos'); closePortalModal();
+  } catch (e) { toast('No se pudo: ' + e.message, 'err'); }
+}
 async function clDeAliado(id) {
   await aliadoParaFactura('').catch(() => {});
   const c = clientesList.find(x => x._id === id); if (!c) return;
@@ -11566,7 +11578,7 @@ async function guardarCotizacion() {
     const added = await db.collection('cotizaciones').add(data);
     if (portalCli) ptRef(portalCli._id).update({ cotizacionIds: firebase.firestore.FieldValue.arrayUnion(added.id) }).catch(() => {});
     guardarCuentaPago(data.metodoPago, data.infoPago);
-    saveCliente(cli);
+    // Una cotización no convierte a nadie en cliente: se registra en Clientes cuando se factura
     logActividad('Nueva cotización', `${data.docId} · ${cli} · $${data.total.toFixed(2)}`);
     // Limpiar formulario
     cart = []; renderCart();
@@ -11608,6 +11620,7 @@ async function convertirCotizacion(id) {
     if (portalCli) docData.portalCodigo = portalCli._id;
     const added = await db.collection('documentos').add(docData);
     waFacturaAuto(added.id, docData);
+    saveCliente(docData.cli);
     if (portalCli) {
       registrarFacturaEnPortal(added.id, portalCli._id);
       crearProyectoDesdeFactura(portalCli._id, added.id, docData);
