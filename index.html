@@ -5379,6 +5379,21 @@ async function renderProspectos(fresco) {
     try {
       const snap = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get();
       _pr.lista = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      try { if (!localStorage.getItem('dgp-prosp-dup-1')) {
+        const porMail = {};
+        _pr.lista.forEach(p => { const m = String(p.correo || '').toLowerCase().trim(); if (m) (porMail[m] = porMail[m] || []).push(p); });
+        for (const L of Object.values(porMail)) {
+          if (L.length < 2) continue;
+          const orden = L.slice().sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+          const queda = orden.find(p => p.origen !== 'manual') || orden[0];
+          for (const d of orden.filter(p => p !== queda && p.origen === 'manual')) {
+            const upd = {}; if (!queda.telefono && d.telefono) upd.telefono = d.telefono;
+            if (Object.keys(upd).length) { await db.collection('prospectos').doc(queda._id).update(upd); Object.assign(queda, upd); }
+            await db.collection('prospectos').doc(d._id).delete(); _pr.lista = _pr.lista.filter(x => x !== d);
+          }
+        }
+        localStorage.setItem('dgp-prosp-dup-1', '1');
+      } } catch (e) { console.warn('prospectos repetidos', e); }
       // La lista de negocios investigados (sin origen) ya no se usa: se borra
       const viejos = _pr.lista.filter(p => !p.origen);
       if (viejos.length) {
@@ -5521,7 +5536,8 @@ function prNuevo() {
 async function prImportar(items) {
   if (!_pr.lista) { try { const s = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get(); _pr.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) { _pr.lista = []; } }
   const clave = p => _prTel(p.telefono) || ptNorm(p.nombre || '');
-  const existentes = new Set(_pr.lista.map(clave));
+  const existentes = new Set([..._pr.lista.map(clave), ..._pr.lista.map(p => String(p.correo || '').toLowerCase().trim()).filter(Boolean).map(c => 'mail:' + c), ..._pr.lista.map(p => 'nom:' + ptNorm(p.nombre || '')).filter(x => x !== 'nom:')]);
+  items = items.filter(it => !existentes.has('mail:' + String(it.correo || '').toLowerCase().trim()) && !existentes.has('nom:' + ptNorm(it.nombre || '')));
   const campos = ['nombre', 'negocio', 'telefono', 'correo', 'servicio', 'mensaje', 'notas'];
   const nuevos = [];
   for (const it of items) {
@@ -9906,7 +9922,10 @@ async function clAProspecto(id) {
   const subs = suscripcionesList.filter(s => s.estado === 'activa' && ptNorm(s.cliente) === ptNorm(clNombre(c))).length;
   if (!confirm(`¿Quitar a ${clNombre(c)} de Clientes y dejarlo solo en Prospectos? No tiene facturas.${c.portalCodigo ? '\n\nOjo: tiene un portal de cliente; el portal no se borra.' : ''}${subs ? `\n\nOjo: tiene ${subs} suscripción activa a su nombre; revísala en Suscripciones.` : ''}`)) return;
   try {
-    await prImportar([{ nombre: clNombre(c), telefono: c.telefono || '', correo: c.correo || '', servicio: '', notas: c.notas || '' }]).catch(() => {});
+    if (!_pr.lista) { try { const s = await db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get(); _pr.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); } catch (e) { _pr.lista = []; } }
+    const ya = _pr.lista.find(p => ptNorm(p.nombre || '') === ptNorm(clNombre(c)) || (c.correo && String(p.correo || '').toLowerCase() === String(c.correo).toLowerCase()));
+    if (ya) { const upd = {}; if (!ya.telefono && c.telefono) upd.telefono = c.telefono; if (!ya.correo && c.correo) upd.correo = c.correo; if (Object.keys(upd).length) { await db.collection('prospectos').doc(ya._id).update(upd); Object.assign(ya, upd); } }
+    else await prImportar([{ nombre: clNombre(c), telefono: c.telefono || '', correo: c.correo || '', servicio: '', notas: c.notas || '' }]).catch(() => {});
     await db.collection('clientes').doc(id).delete();
     clientesList = clientesList.filter(x => x._id !== id);
     logActividad('Cliente devuelto a prospectos', clNombre(c));
