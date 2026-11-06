@@ -198,6 +198,8 @@ export default {
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       ctx.waitUntil(gdPendientes(env).catch(e => console.warn('Dominios pendientes', e)));
+      ctx.waitUntil((async () => { if (!env.CACHE || await env.CACHE.get('fixSaldosFavor1')) return; await env.CACHE.put('fixSaldosFavor1', '1');
+        const t = await firebaseLogin(env); const L = await aplicarSaldosFavor(env, t, null); if (L.length) await tgEnviar(env, ['💵 <b>Saldos a favor aplicados</b> (sobrantes que no se habían abonado)', ...L].join('\n')); })().catch(e => console.warn('fix saldos', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
       ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
       if (new Date().getUTCHours() === 15) ctx.waitUntil(recordatoriosWA(env).catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
@@ -739,7 +741,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-06a';
+const WORKER_VERSION = '2026-11-06b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1859,15 +1861,13 @@ function correoPagoHTML(doc, fsId, monto) {
 // Saldo global del cliente (o del aliado): todo lo que debe en facturas pendientes, sin contar las pausadas
 async function saldoGlobal(env, token, doc) {
   const docs = await fsList(env, 'documentos', token).catch(() => []);
-  let al = esAliado(doc) ? await aliadoDe(env, token, doc).catch(() => null) : null;
-  // Cliente y aliado vinculados (misma persona): el total suma las dos cosas
-  let nomCli = al ? '' : normNombre(doc.cli);
-  if (al?.clienteId) { const c = await fsGet(env, `clientes/${al.clienteId}`, token).catch(() => null); if (c) nomCli = normNombre([c.nombre, c.apellido].filter(Boolean).join(' ')); }
-  if (!al) { const cl = await fsList(env, 'clientes', token).catch(() => []); const c = cl.find(x => normNombre([x.nombre, x.apellido].filter(Boolean).join(' ')) === nomCli);
-    if (c?.aliadoPropioId) al = await fsGet(env, `aliados/${c.aliadoPropioId}`, token).then(a => a ? { ...a, _id: c.aliadoPropioId } : null).catch(() => null); }
-  const L = docs.filter(d => !String(d._id).startsWith('__diag') && d.type === 'factura' && deudaDoc(d) > 0.009 &&
-    ((al && (d.aliadoId === al._id || normNombre(d.aliado || d.cli) === normNombre(al.nombre))) || (nomCli && !d.aliadoId && normNombre(d.cli) === nomCli)));
-  return { total: r2(L.reduce((a, d) => a + deudaDoc(d), 0)), n: L.length, quien: esAliado(doc) && al ? al.nombre : doc.cli };
+  const grupo = await grupoPagador(env, token, doc);
+  const L = docs.filter(d => !String(d._id).startsWith('__diag') && d.type === 'factura' && deudaDoc(d) > 0.009 && grupo.es(d));
+  // Lo que tenga a favor (pagos de más aún sin aplicar) se descuenta del total
+  const favores = await Promise.all([...grupo.nombres].map(n => fsGet(env, `saldosFavor/${claveCliente(n)}`, token).catch(() => null)));
+  const aFavor = r2(favores.reduce((a, f) => a + (Number(f?.monto) || 0), 0));
+  const debe = r2(L.reduce((a, d) => a + deudaDoc(d), 0));
+  return { total: r2(Math.max(0, debe - aFavor)), aFavor, n: L.length, quien: esAliado(doc) && grupo.al ? grupo.al.nombre : doc.cli };
 }
 async function waReciboPago(env, token, fsId, monto, global) {
   if (!env.WA_URL || !env.WA_KEY || !(monto > 0.009)) return null;
@@ -2586,10 +2586,21 @@ async function abonarA(env, token, d, monto, ref) {
   return 'abono';
 }
 // Reparte un monto entre las facturas pendientes del cliente, de la más reciente a la más vieja
-async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs) {
+// Quién es "el mismo pagador": el cliente, su aliado (facturas de los clientes del aliado) y, si están vinculados, la persona y su aliado
+async function grupoPagador(env, token, ref) {
+  const nombres = new Set([normNombre(ref.cli)]);
+  const [aliados, clientes] = await Promise.all([fsList(env, 'aliados', token).catch(() => []), fsList(env, 'clientes', token).catch(() => [])]);
+  const nomC = c => normNombre([c.nombre, c.apellido].filter(Boolean).join(' '));
+  let al = (ref.aliadoId && aliados.find(a => a._id === ref.aliadoId)) || aliados.find(a => normNombre(a.nombre) === normNombre(ref.cli)) || null;
+  if (!al) { const c = clientes.find(x => nomC(x) === normNombre(ref.cli)); if (c?.aliadoPropioId) al = aliados.find(a => a._id === c.aliadoPropioId) || null; }
+  if (al) { nombres.add(normNombre(al.nombre)); const c = al.clienteId && clientes.find(x => x._id === al.clienteId); if (c) nombres.add(nomC(c)); clientes.filter(x => x.aliadoPropioId === al._id).forEach(x => nombres.add(nomC(x))); }
+  const es = d => nombres.has(normNombre(d.cli)) || !!(al && (d.aliadoId === al._id || normNombre(d.aliado || '') === normNombre(al.nombre)));
+  return { es, al, nombres };
+}
+async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs, ref) {
   docs = docs || await fsList(env, 'documentos', token);
-  const k = normNombre(cliente);
-  const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && normNombre(d.cli) === k && deudaDoc(d) > 0.009)
+  const grupo = await grupoPagador(env, token, ref || { cli: cliente });
+  const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && grupo.es(d) && deudaDoc(d) > 0.009)
     .sort((a, b) => fechaOrden(b).localeCompare(fechaOrden(a)));
   let resto = r2(monto); const lineas = [];
   for (const d of pendientes) {
@@ -2616,7 +2627,7 @@ async function aplicarExcedente(env, token, fsId, recibido, por) {
   const saldo = saldoDoc(doc), sobra = r2(recibido - saldo);
   const res = await botMarcarPagado(env, token, fsId, { monto: r2(saldo), ref: `Pago de ${dinero(recibido)} (${por || 'confirmado'})`, fecha: isoADmy(hoyVE()) });
   if (sobra <= 0.009) return res;
-  const { resto, lineas } = await repartirSaldo(env, token, doc.cli, sobra, doc.docId || fsId, fsId);
+  const { resto, lineas } = await repartirSaldo(env, token, doc.cli, sobra, doc.docId || fsId, fsId, null, doc);
   let favor = 0;
   if (resto > 0.009) favor = await sumarSaldoFavor(env, token, doc.cli, resto, doc.docId || fsId);
   await fsUpdate(env, `documentos/${fsId}`, { excedente: { monto: sobra, recibido: r2(recibido), aplicado: r2(sobra - resto), aFavor: r2(resto), fecha: hoyVE() } }, ['excedente'], token).catch(() => {});
@@ -2627,7 +2638,7 @@ async function aplicarSaldosFavor(env, token, docs) {
   const saldos = (await fsList(env, 'saldosFavor', token).catch(() => [])).filter(x => Number(x.monto) > 0.009);
   const L = [];
   for (const sf of saldos) {
-    const { resto, lineas } = await repartirSaldo(env, token, sf.cliente, Number(sf.monto), 'saldo a favor', null, docs);
+    const { resto, lineas } = await repartirSaldo(env, token, sf.cliente, Number(sf.monto), 'saldo a favor', null, null, { cli: sf.cliente, aliadoId: sf.aliadoId || null });
     if (!lineas.length) continue;
     await fsUpdate(env, `saldosFavor/${sf._id}`, { monto: resto, actualizado: new Date().toISOString() }, ['monto', 'actualizado'], token).catch(() => {});
     L.push(`• <b>${escHtml(sf.cliente)}</b>: se aplicó su saldo a favor\n${lineas.join('\n')}${resto > 0.009 ? `\n  Le quedan ${dinero(resto)} a favor` : ''}`);
