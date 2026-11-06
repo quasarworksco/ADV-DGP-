@@ -741,7 +741,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-06d';
+const WORKER_VERSION = '2026-11-06e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1909,12 +1909,14 @@ async function waReciboPago(env, token, fsId, monto, global) {
   const en = doc.idioma === 'en', nombre = String(para || '').split(' ')[0], saldo = saldoDoc(doc), pagada = doc.pagado || doc.type === 'recibo' || saldo <= 0.009;
   const link = `${SITIO}/factura-publica.html?id=${fsId}${en ? '&lang=en' : ''}`;
   const ref = `${doc.docId || (en ? 'Invoice' : 'Factura')}${final ? ` (${final})` : ''}`;
+  const exc = doc.excedente && doc.excedente.fecha === hoyVE() && Math.abs((Number(doc.excedente.recibido) || 0) - monto) < 0.01 ? doc.excedente : null;
+  const lineaExc = !exc ? '' : en ? `\nThe extra ${dinero(exc.monto)} was ${exc.aFavor > 0.009 ? `applied to your other invoices (${dinero(exc.aFavor)} left as credit)` : 'applied to your other pending invoices'}.` : `\nLos ${dinero(exc.monto)} de más ${exc.aFavor > 0.009 ? `se abonaron a tus otras facturas (te quedan ${dinero(exc.aFavor)} a favor)` : 'se abonaron a tus otras facturas pendientes'}.`;
   // Reseña: solo clientes directos, pago completo, sin suscripción y si no la ha dejado antes
   const resena = pagada && !esAliado(doc) && !doc.suscripcionId && !doc.resenaClick ? `https://ayudante-dgp-bot.dgpgroupusa-llc.workers.dev/resena?d=${fsId}` : '';
   const texto = en
-    ? (pagada ? `Hi ${nombre}! *We received your payment of ${dinero(monto)}* ✅\n\n${ref}: *paid in full*\nYour receipt: ${link}\n\nThank you for trusting DGP Global Group!${resena ? `\n\n⭐ Would you give us 30 seconds to leave a Google review? It helps us a lot:\n${resena}` : ''}`
+    ? (pagada ? `Hi ${nombre}! *We received your payment of ${dinero(monto)}* ✅\n\n${ref}: *paid in full*${lineaExc}\nYour receipt: ${link}\n\nThank you for trusting DGP Global Group!${resena ? `\n\n⭐ Would you give us 30 seconds to leave a Google review? It helps us a lot:\n${resena}` : ''}`
               : `Hi ${nombre}! We received your payment of ${dinero(monto)} ✅\n\n${ref}: *${dinero(saldo)} left* to pay.\nView your invoice: ${link}\n\nThank you!`)
-    : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!${resena ? `\n\n⭐ ¿Nos regalas 30 segundos para dejar tu reseña en Google? Nos ayuda muchísimo:\n${resena}` : ''}`
+    : (pagada ? `Hola ${nombre}! *Recibimos tu pago de ${dinero(monto)}* ✅\n\n${ref}: *pagada*${lineaExc}\nTu recibo: ${link}\n\n¡Gracias por confiar en DGP Global Group!${resena ? `\n\n⭐ ¿Nos regalas 30 segundos para dejar tu reseña en Google? Nos ayuda muchísimo:\n${resena}` : ''}`
               : `Hola ${nombre}! Recibimos tu abono de ${dinero(monto)} ✅\n\n${ref}: te quedan *${dinero(saldo)}* por pagar.\nVer tu factura: ${link}\n\n¡Gracias!`);
   const g = global || await saldoGlobal(env, token, doc).catch(() => null);
   const lineaG = !g ? '' : g.total > 0.009
@@ -2598,12 +2600,12 @@ async function enviarAuditoria(env, token, id, correo, en) {
 ══════════════════════════════════════════════════════════════ */
 const claveCliente = n => normNombre(n).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 80) || 'sin_nombre';
 const fechaOrden = d => String(fechaISO(d.createdAt) || fechaDoc(d) || '');
-async function abonarA(env, token, d, monto, ref) {
+async function abonarA(env, token, d, monto, ref, op = {}) {
   const pago = { monto: r2(monto), ref, fecha: isoADmy(hoyVE()) };
-  if (pago.monto >= saldoDoc(d) - 0.009) { await botMarcarPagado(env, token, d._id, pago); return 'pagada'; }
+  if (pago.monto >= saldoDoc(d) - 0.009) { await botMarcarPagado(env, token, d._id, pago, op); return 'pagada'; }
   const nuevo = r2((Number(d.montoPagado) || 0) + pago.monto);
   await fsUpdate(env, `documentos/${d._id}`, { pagos: [...(d.pagos || []), pago], montoPagado: nuevo, pagadoParcial: true }, ['pagos', 'montoPagado', 'pagadoParcial'], token);
-  await correoPagoCliente(env, token, d._id, pago.monto, 'automático').catch(() => {});
+  if (!op.sinRecibo) await correoPagoCliente(env, token, d._id, pago.monto, 'automático').catch(() => {});
   await tgSincronizarPago(env, token, d._id, 'abono').catch(() => {});
   return 'abono';
 }
@@ -2619,7 +2621,7 @@ async function grupoPagador(env, token, ref) {
   const es = d => nombres.has(normNombre(d.cli)) || !!(al && (d.aliadoId === al._id || normNombre(d.aliado || '') === normNombre(al.nombre)));
   return { es, al, nombres };
 }
-async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs, ref) {
+async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs, ref, op = {}) {
   docs = docs || await fsList(env, 'documentos', token);
   const grupo = await grupoPagador(env, token, ref || { cli: cliente });
   const pendientes = docs.filter(d => d._id !== excluirId && !String(d._id).startsWith('__diag') && d.type !== 'cotizacion' && grupo.es(d) && deudaDoc(d) > 0.009)
@@ -2628,7 +2630,7 @@ async function repartirSaldo(env, token, cliente, monto, origen, excluirId, docs
   for (const d of pendientes) {
     if (resto <= 0.009) break;
     const m = r2(Math.min(resto, saldoDoc(d)));
-    const r = await abonarA(env, token, d, m, `Sobrante del pago de ${origen}`);
+    const r = await abonarA(env, token, d, m, `Sobrante del pago de ${origen}`, op);
     lineas.push(`• ${dinero(m)} → ${escHtml(d.docId || d._id)}${r === 'pagada' ? ' (quedó pagada ✅)' : ` (debe ${dinero(saldoDoc(d) - m)})`}`);
     resto = r2(resto - m);
   }
@@ -2647,12 +2649,16 @@ async function aplicarExcedente(env, token, fsId, recibido, por) {
   if (!doc) return { aviso: 'Esa factura ya no existe' };
   if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada', html: `ℹ️ ${escHtml(doc.docId || fsId)} ya estaba marcada como pagada.` };
   const saldo = saldoDoc(doc), sobra = r2(recibido - saldo);
-  const res = await botMarcarPagado(env, token, fsId, { monto: r2(saldo), ref: `Pago de ${dinero(recibido)} (${por || 'confirmado'})`, fecha: isoADmy(hoyVE()) });
-  if (sobra <= 0.009) return res;
-  const { resto, lineas } = await repartirSaldo(env, token, doc.cli, sobra, doc.docId || fsId, fsId, null, doc);
+  const sobra0 = sobra > 0.009;
+  const res = await botMarcarPagado(env, token, fsId, { monto: r2(saldo), ref: `Pago de ${dinero(recibido)} (${por || 'confirmado'})`, fecha: isoADmy(hoyVE()) }, { sinRecibo: sobra0 });
+  if (!sobra0) return res;
+  const { resto, lineas } = await repartirSaldo(env, token, doc.cli, sobra, doc.docId || fsId, fsId, null, doc, { sinRecibo: true });
   let favor = 0;
   if (resto > 0.009) favor = await sumarSaldoFavor(env, token, doc.cli, resto, doc.docId || fsId);
   await fsUpdate(env, `documentos/${fsId}`, { excedente: { monto: sobra, recibido: r2(recibido), aplicado: r2(sobra - resto), aFavor: r2(resto), fecha: hoyVE() } }, ['excedente'], token).catch(() => {});
+  // Un solo recibo al final: lo que pagó en total y lo que le queda, ya con el sobrante repartido
+  const recibo = await correoPagoCliente(env, token, fsId, r2(recibido), por || 'telegram').catch(() => ({}));
+  res.html = (res.html || '') + lineaCorreoPago(recibo || {});
   return { aviso: 'Pago y sobrante aplicados ✅', html: `${res.html || ''}\n\n💵 <b>Pagó ${dinero(sobra)} de más</b>${lineas.length ? `\nSe abonó a sus facturas pendientes:\n${lineas.join('\n')}` : ''}${resto > 0.009 ? `\n🟢 Quedan <b>${dinero(resto)} a su favor</b>${favor > resto + 0.009 ? ` (en total ${dinero(favor)})` : ''}: se descuentan solos de su próxima factura.` : ''}` };
 }
 // Saldo a favor pendiente → se aplica a las facturas nuevas del cliente (tarea diaria)
@@ -2774,7 +2780,7 @@ async function crearHostingAliadoBot(env, token, fsId, doc) {
   await fsUpdate(env, `documentos/${fsId}`, { hostingIds: ids, clienteId }, ['hostingIds', 'clienteId'], token);
   return `\n🖥️ Hosting${h.dominioCom ? ' y dominio' : ''} de ${escHtml(h.clienteFinal)} creado en Suscripciones`;
 }
-async function botMarcarPagado(env, token, fsId, pagoNuevo) {
+async function botMarcarPagado(env, token, fsId, pagoNuevo, op = {}) {
   const doc = await fsGet(env, `documentos/${fsId}`, token);
   if (!doc) return { aviso: 'Esa factura ya no existe' };
   if (doc.pagado || doc.type === 'recibo') return { aviso: 'Ya estaba pagada', html: `ℹ️ ${escHtml(doc.docId || fsId)} ya estaba marcada como pagada.` };
@@ -2800,7 +2806,7 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo) {
     extra = `\n🔁 Suscripción renovada · próximo pago ${escHtml(fechaCorta(nueva))}`;
   }
   extra += await crearHostingAliadoBot(env, token, fsId, doc).catch(e => { console.error('hosting aliado', e); return '\n⚠️ No se pudo crear el hosting del aliado: créalo en Suscripciones.'; });
-  extra += lineaCorreoPago(await correoPagoCliente(env, token, fsId, pagoNuevo ? pagoNuevo.monto : saldoDoc(doc), 'telegram'));
+  if (!op.sinRecibo) extra += lineaCorreoPago(await correoPagoCliente(env, token, fsId, pagoNuevo ? pagoNuevo.monto : saldoDoc(doc), 'telegram'));   // con sobrante, el recibo va al final (con el total ya repartido)
   const animo = ['¡Brutal! 💰', '¡Eso es! Un pago más 🔥', '¡Cha-ching! 💸', '¡Vamos con todo! 🚀', '¡Así se hace! 🙌'][Math.floor(Math.random() * 5)];
   await tgSincronizarPago(env, token, fsId, 'pagado').catch(() => {});
   return { aviso: 'Pago confirmado ✅', html: `${animo}\n✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
