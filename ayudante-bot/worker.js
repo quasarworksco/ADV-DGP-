@@ -741,7 +741,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-06c';
+const WORKER_VERSION = '2026-11-06d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -755,6 +755,19 @@ async function handleDiagnostico(request, env, firebaseLogin) {
     const t = await firebaseLogin(env); const L = await aplicarSaldosFavor(env, t, null);
     if (L.length) await tgEnviar(env, ['💵 <b>Saldos a favor aplicados</b> (sobrantes que no se habían abonado)', ...L].join('\n')).catch(() => {});
     return new Response(JSON.stringify({ aplicados: L.length }), { headers: { 'Content-Type': 'application/json' } });
+  }
+  // ?desglose=Nombre → manda SOLO a Telegram el detalle de lo que debe ese pagador (cliente + aliado + vinculados)
+  const qDes = new URL(request.url).searchParams.get('desglose');
+  if (qDes && qDes.length < 80) {
+    const t = await firebaseLogin(env);
+    const docs = await fsList(env, 'documentos', t).catch(() => []);
+    const g = await grupoPagador(env, t, { cli: qDes });
+    const L = docs.filter(d => !String(d._id).startsWith('__diag') && d.type === 'factura' && grupoPagador && g.es(d) && saldoDoc(d) > 0.009);
+    const fav = await Promise.all([...g.nombres].map(n => fsGet(env, `saldosFavor/${claveCliente(n)}`, t).then(x => x ? { n, m: Number(x.monto) || 0 } : null).catch(() => null)));
+    const lin = L.map(d => `• ${escHtml(d.docId || d._id)} · ${escHtml(d.clienteFinal || d.cli)} · total ${dinero(d.total)} · pagado ${dinero(d.montoPagado || 0)} · <b>debe ${dinero(saldoDoc(d))}</b>${d.pausada ? ' · EN PAUSA (no cuenta)' : ''}`);
+    await tgEnviar(env, [`🔎 <b>Desglose de ${escHtml(qDes)}</b> (incluye: ${escHtml([...g.nombres].join(', '))}${g.al ? ' · aliado ' + escHtml(g.al.nombre) : ''})`, ...lin,
+      `Total que cuenta: <b>${dinero(L.filter(d => !d.pausada).reduce((a, d) => a + saldoDoc(d), 0))}</b>`, ...fav.filter(Boolean).map(f => `Saldo a favor (${escHtml(f.n)}): ${dinero(f.m)}`)].join('\n')).catch(() => {});
+    return new Response(JSON.stringify({ enviado: true }), { headers: { 'Content-Type': 'application/json' } });
   }
   // ?web=dominio → prueba ese sitio igual que el monitor de Webs de clientes (sin datos privados)
   const qWeb = new URL(request.url).searchParams.get('web');
