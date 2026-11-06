@@ -739,7 +739,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-05x';
+const WORKER_VERSION = '2026-11-06a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -4562,58 +4562,59 @@ const ETAPAS_COBRO = [
   { n: 2, desde: 8, hasta: 14 },
   { n: 3, desde: 15, hasta: 45 }   // 3 = aviso a ti para llamar
 ];
-function textoCobranza(doc, fsId, etapa) {
-  const nombre = String(doc.cli || '').split(' ')[0] || 'hola';
+function textoCobranza(doc, fsId, etapa, dias) {
+  const nombre = String(doc._para || doc.cli || '').split(' ')[0] || 'hola';
   const link = `${SITIO}/factura-publica.html?id=${fsId}`;
+  const ref = `${doc.docId || ''}${doc._final ? ` (${doc._final})` : ''}`;
   return etapa === 2
-    ? `Hola ${nombre}, ¿todo bien? Tu factura ${doc.docId || ''} por ${dinero(saldoDoc(doc))} sigue pendiente. Si ya pagaste, sube tu comprobante aquí: ${link}. Si necesitas ayuda o un plan de pago, responde este correo.`
-    : `¡Hola ${nombre}! Te recordamos que tu factura ${doc.docId || ''} por ${dinero(saldoDoc(doc))} está pendiente de pago. Puedes pagarla y subir tu comprobante aquí: ${link}`;
+    ? `Hola ${nombre}, seguimos con pendiente la factura ${ref} por ${dinero(saldoDoc(doc))} desde hace ${dias} días: ${link}\n\nSi ya realizaste el pago, sube tu comprobante en el enlace o respóndenos este correo para registrarlo. ¡Gracias!`
+    : `Hola ${nombre}, te escribimos de DGP Global Group. Tienes pendiente la factura ${ref} por ${dinero(saldoDoc(doc))}: ${link}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. Si ya pagaste, envíanos el comprobante. ¡Gracias!`;
 }
-function correoCobranzaHTML(doc, fsId, etapa) {
-  const nombre = String(doc.cli || '').split(' ')[0] || 'hola';
-  const saldo = dinero(saldoDoc(doc));
+function correoCobranzaHTML(doc, fsId, etapa, dias) {
+  const nombre = String(doc._para || doc.cli || '').split(' ')[0] || 'hola';
+  const saldo = dinero(saldoDoc(doc)), ref = `${doc.docId || ''}${doc._final ? ` (${doc._final})` : ''}`;
   return correoBotHTML(etapa === 2 ? {
-    icono: 'factura', titulo: `¿Todo bien, ${nombre}?`,
-    texto: `Tu factura ${doc.docId || ''} por ${saldo} sigue pendiente. Si ya realizaste el pago, solo sube tu comprobante en el enlace y lo confirmamos. Si necesitas más tiempo o un plan de pago, responde este correo y lo resolvemos juntos.`,
-    boton: 'Ver mi factura', link: `${SITIO}/factura-publica.html?id=${fsId}`, nota: 'Si ya pagaste, ignora este mensaje. ¡Gracias!'
+    icono: 'factura', titulo: `Hola, ${nombre}`,
+    texto: `Seguimos con pendiente la factura ${ref} por ${saldo} desde hace ${dias} días. Si ya realizaste el pago, sube tu comprobante en el enlace o responde este correo para registrarlo.`,
+    boton: 'Ver mi factura', link: `${SITIO}/factura-publica.html?id=${fsId}`, nota: '¡Gracias!'
   } : {
-    icono: 'factura', titulo: `¡Hola, ${nombre}!`,
-    texto: `Te recordamos amablemente que tu factura ${doc.docId || ''} por ${saldo} está pendiente de pago. Desde el botón puedes ver los datos de pago y subir tu comprobante.`,
-    boton: 'Ver y pagar factura', link: `${SITIO}/factura-publica.html?id=${fsId}`, nota: 'Si ya pagaste, ignora este mensaje. ¡Gracias!'
+    icono: 'factura', titulo: `Hola, ${nombre}`,
+    texto: `Te escribimos de DGP Global Group. Tienes pendiente la factura ${ref} por ${saldo}. Desde el botón ves los métodos de pago y puedes subir tu comprobante.`,
+    boton: 'Ver y pagar factura', link: `${SITIO}/factura-publica.html?id=${fsId}`, nota: 'Si ya pagaste, envíanos el comprobante. ¡Gracias!'
   });
 }
 async function cobradorAmable(env, token, docs, correoDe, telDe, waActivo) {
+  // Por correo, solo a quien no tiene WhatsApp: desde los 7 días y cada 7 días; nunca si pagó algo en los últimos 7 días
   const hoy = hoyVE(); let aliadosC = null;
   const enviados = [], llamar = [];
+  const pagos = ultimosPagos(docs);
   for (const d of docs) {
     if (String(d._id).startsWith('__diag') || d.pagado || d.type === 'recibo' || deudaDoc(d) <= 0.009 || d.cobranzaPausada) continue;
     const al = esAliado(d) ? await aliadoDe(env, token, d, aliadosC || (aliadosC = await fsList(env, 'aliados', token).catch(() => []))) : null;
     if (esAliado(d) && !al) continue;
-    if (waActivo && waTelIntl(al ? al.telefono : telDe(d.cli))) continue;   // tiene WhatsApp: lo cobra el recordatorio por WhatsApp
+    if (waActivo && waTelIntl(al ? al.telefono : telDe(d.cli))) continue;   // tiene WhatsApp: lo cobra el WhatsApp
     const base = d.venceEl || fechaDoc(d);
     if (!base) continue;
     const dias = diasEntre(base, hoy);
-    const etapa = ETAPAS_COBRO.find(e => dias >= e.desde && dias <= e.hasta);
-    if (!etapa) continue;
+    if (dias < 7) continue;
     const c = d.cobranza || {};
-    if (c[`e${etapa.n}`]) continue;
-    // Si le recordaste a mano hace menos de 3 días, no le escribimos de nuevo
-    if (c.manualAt && etapa.n !== 3 && (Date.now() - new Date(c.manualAt).getTime()) < 3 * 864e5) continue;
-    // El cliente ya subió un comprobante que no has rechazado: no lo molestamos
-    const comps = listaComprobantes(d);
-    if (comps.length && !(d.pagoRechazado && d.pagoRechazado.url === comps[comps.length - 1].url)) continue;
-    if (etapa.n === 3) {
-      llamar.push({ d, dias, tel: al ? waTelIntl(al.telefono) : telDe(d.cli) });
-      await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, e3: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
-      continue;
-    }
+    const ult = String(c.ultimo || '').slice(0, 10) || [c.e1, c.e2].filter(Boolean).map(x => String(x).slice(0, 10)).sort().pop();
+    if (ult && diasEntre(ult, hoy) < 7) continue;
+    if (c.manualAt && (Date.now() - new Date(c.manualAt).getTime()) < 7 * 864e5) continue;   // se lo recordaste tú hace poco
+    const ultPago = [pagos.porCli[normNombre(d.cli)], al ? pagos.porAl[al._id] : null].filter(Boolean).sort().pop();
+    if (ultPago && diasEntre(ultPago, hoy) < 7) continue;
+    if (compPendientes(d).length) continue;   // subió un comprobante que aún no revisas
+    const n = (Number(c.n) || [c.e1, c.e2].filter(Boolean).length) + 1;
+    if (n >= 4 && !c.e3) { llamar.push({ d, dias, tel: al ? waTelIntl(al.telefono) : telDe(d.cli) }); c.e3 = new Date().toISOString(); }
     const correo = al ? al.correo : (d.clienteCorreo || correoDe(d.cli));
-    if (!correo || enviados.length >= 15) continue;
-    const ok = await enviarCorreoBot(env, correo, etapa.n === 2 ? `¿Todo bien? Tu factura ${d.docId || ''} sigue pendiente` : `Recordatorio: factura ${d.docId || ''} · DGP Global Group`,
-      correoCobranzaHTML(d, d._id, etapa.n), textoCobranza(d, d._id, etapa.n), { c: 'documentos', id: d._id });
+    if (!correo || enviados.length >= 15) { if (c.e3) await fsUpdate(env, `documentos/${d._id}`, { cobranza: c }, ['cobranza'], token).catch(() => {}); continue; }
+    const para = al ? { ...d, _para: al.nombre, _final: d.clienteFinal || d.cli } : d;
+    const etapa = n === 1 ? 1 : 2;
+    const ok = await enviarCorreoBot(env, correo, etapa === 2 ? `Factura ${d.docId || ''} pendiente desde hace ${dias} días` : `Factura pendiente ${d.docId || ''} · DGP Global Group`,
+      correoCobranzaHTML(para, d._id, etapa, dias), textoCobranza(para, d._id, etapa, dias), { c: 'documentos', id: d._id });
     if (ok) {
-      await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, [`e${etapa.n}`]: new Date().toISOString() } }, ['cobranza'], token).catch(() => {});
-      enviados.push({ d, etapa: etapa.n, correo, dias });
+      await fsUpdate(env, `documentos/${d._id}`, { cobranza: { ...c, ultimo: new Date().toISOString(), n } }, ['cobranza'], token).catch(() => {});
+      enviados.push({ d, etapa, correo, dias });
     }
   }
   return { enviados, llamar };
@@ -4627,6 +4628,17 @@ async function cobradorAmable(env, token, docs, correoDe, telDe, waActivo) {
    recordatorio ya no le escribe y te avisa por Telegram para llamar o pausar.
 ══════════════════════════════════════════════════════════════ */
 const dmyAIsoF = f => /^\d{2}\/\d{2}\/\d{4}$/.test(f || '') ? `${f.slice(6)}-${f.slice(3, 5)}-${f.slice(0, 2)}` : (fechaISO(f) || null);
+// Último pago o abono de cada cliente (por nombre) y de cada aliado: si pagó hace menos de 7 días no se le cobra
+function ultimosPagos(docs) {
+  const porCli = {}, porAl = {};
+  const marca = (m, k, f) => { if (k && f && (!m[k] || f > m[k])) m[k] = f; };
+  for (const d of docs) {
+    const fechas = [...(d.pagos || []).map(x => dmyAIsoF(x.fecha)), (d.pagado || d.type === 'recibo') ? (fechaISO(d.fechaPago) || dmyAIsoF(d.fechaPago)) : null].filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f || ''));
+    for (const f of fechas) { marca(porCli, normNombre(d.cli), f); marca(porAl, d.aliadoId, f); }
+  }
+  return { porCli, porAl };
+}
+// Cobro por WhatsApp: desde los 7 días de pendiente y luego cada 7 días; nunca si el cliente pagó algo en los últimos 7 días
 async function recordatoriosWA(env) {
   if (!env.WA_URL || !env.WA_KEY) return;
   const token = await firebaseLogin(env);
@@ -4639,51 +4651,65 @@ async function recordatoriosWA(env) {
     const p = portales.find(x => normNombre(x.nombre) === n);
     return waTelIntl(c?.telefono || p?.telefono || ''); };
   const aliados = await fsList(env, 'aliados', token).catch(() => []);
+  const pagos = ultimosPagos(docs);
   const grupos = {};
   for (const d of docs) {
     if (String(d._id).startsWith('__diag') || d.pagado || d.type !== 'factura' || d.contrato || d.cobranzaPausada || deudaDoc(d) <= 0.009) continue;
-    // Comprobante subido sin revisar: no lo molestamos
-    if (compPendientes(d).length) continue;
-    // Cada abono o comprobante registrado reinicia la cuenta (cada 5 días)
-    const abonos = [...(d.pagos || []).map(x => dmyAIsoF(x.fecha)), ...listaComprobantes(d).filter(c => compEstado(d, c) === 'registrado').map(c => _fechaIso(c.fecha))].filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f || '')).sort();
-    const conAbono = abonos.length > 0;
-    const base = conAbono ? abonos[abonos.length - 1] : fechaDoc(d);
-    if (!base) continue;
-    const etapas = conAbono ? [5, 10, 15] : [3, 7, 14];
-    const w = d.waCobro && d.waCobro.base === base ? d.waCobro : { base, enviados: [] };
-    const dias = diasEntre(base, hoy);
-    const toca = etapas.filter(e => dias >= e && !(w.enviados || []).includes(e)).pop();
-    if (!toca) continue;
-    const al = esAliado(d) ? await aliadoDe(env, token, d, aliados) : null;   // cliente de aliado → se le recuerda al aliado
+    if (compPendientes(d).length) continue;   // subió un comprobante que aún no revisas
+    const base = fechaDoc(d); if (!base) continue;
+    const al = esAliado(d) ? await aliadoDe(env, token, d, aliados) : null;   // cliente de aliado → se le cobra al aliado
     if (esAliado(d) && !al) continue;
     const tel = al ? waTelIntl(al.telefono) : telDe(d.cli); if (!tel) continue;
     const final = al ? (d.clienteFinal || (normNombre(d.cli) !== normNombre(al.nombre) ? d.cli : '')) : '';
-    (grupos[tel] = grupos[tel] || { tel, cli: al ? al.nombre : d.cli, xs: [] }).xs.push({ d, w, toca, ultimo: toca === etapas[2], conAbono, dias, final });
+    const g = grupos[tel] = grupos[tel] || { tel, cli: al ? al.nombre : d.cli, al, nombres: new Set(), xs: [] };
+    g.nombres.add(normNombre(d.cli));
+    g.xs.push({ d, dias: diasEntre(base, hoy), final, w: d.waCobro || {} });
   }
   const enviados = [], alertas = [];
-  for (const g of Object.values(grupos).slice(0, 25)) {
-    const en = g.xs.every(x => x.d.idioma === 'en'), nombre = String(g.cli || '').split(' ')[0];
-    const lineas = g.xs.map(({ d, final }) => {
-      const pagado = Number(d.montoPagado) || 0, saldo = saldoDoc(d);
-      const link = `${SITIO}/factura-publica.html?id=${d._id}${en ? '&lang=en' : ''}`;
-      return en ? `• ${d.docId || 'Invoice'}${final ? ` (${final})` : ''}: ${dinero(saldo)}${pagado > 0 ? ` left (of ${dinero(d.total)})` : ''}\n${link}`
-                : `• ${d.docId || 'Factura'}${final ? ` (${final})` : ''}: ${dinero(saldo)}${pagado > 0 ? ` por pagar (de ${dinero(d.total)})` : ''}\n${link}`;
-    }).join('\n\n');
-    const segundo = g.xs.some(x => x.toca !== (x.conAbono ? 5 : 3)), ultimo = g.xs.some(x => x.ultimo), varias = g.xs.length > 1;
-    const texto = en
-      ? `Hi ${nombre}! ${ultimo ? 'This is a friendly last reminder from DGP Global Group about' : segundo ? 'Just following up from DGP Global Group on' : 'A friendly reminder from DGP Global Group about'} your pending ${varias ? 'invoices' : 'invoice'}:\n\n${lineas}\n\nFrom the link you can see the payment methods and upload your receipt. If you already paid, just send us the receipt here. Thank you!`
-      : `Hola ${nombre}! ${ultimo ? 'Te escribimos de DGP Global Group con un último recordatorio amable de' : segundo ? 'Te escribimos de DGP Global Group para dar seguimiento a' : 'Te recordamos amablemente de DGP Global Group'} tu${varias ? 's facturas pendientes' : ' factura pendiente'}:\n\n${lineas}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. Si ya pagaste, envíanos el comprobante por aquí. ¡Gracias!`;
+  for (const g of Object.values(grupos)) {
+    if (enviados.length >= 25) break;
+    const mayor = Math.max(...g.xs.map(x => x.dias));
+    if (mayor < 7) continue;                                             // ninguna factura cumple 7 días
+    const ultimoCobro = g.xs.map(x => String(x.w.ultimo || x.w.ultimoAt || '').slice(0, 10)).filter(Boolean).sort().pop();   // ultimoAt: avisos del sistema anterior
+    if (ultimoCobro && diasEntre(ultimoCobro, hoy) < 7) continue;        // cada 7 días
+    const ultPago = [...g.nombres].map(n => pagos.porCli[n]).concat(g.al ? [pagos.porAl[g.al._id]] : []).filter(Boolean).sort().pop();
+    if (ultPago && diasEntre(ultPago, hoy) < 7) continue;                // pagó o abonó hace menos de 7 días
+    const L = g.xs.sort((a, b) => b.dias - a.dias);
+    const en = L.every(x => x.d.idioma === 'en'), nombre = String(g.cli || '').split(' ')[0];
+    const primero = !ultimoCobro, total = L.reduce((a, x) => a + saldoDoc(x.d), 0);
+    const link = d => `${SITIO}/factura-publica.html?id=${d._id}${en ? '&lang=en' : ''}`;
+    const item = ({ d, final }) => { const pagado = Number(d.montoPagado) || 0, saldo = saldoDoc(d);
+      return en ? `• ${d.docId || 'Invoice'}${final ? ` (${final})` : ''}: *${dinero(saldo)}*${pagado > 0 ? ` left (of ${dinero(d.total)})` : ''}\n${link(d)}`
+                : `• ${d.docId || 'Factura'}${final ? ` (${final})` : ''}: *${dinero(saldo)}*${pagado > 0 ? ` por pagar (de ${dinero(d.total)})` : ''}\n${link(d)}`; };
+    let texto;
+    if (L.length === 1 && !g.al) {
+      const { d } = L[0], saldo = saldoDoc(d), pagado = Number(d.montoPagado) || 0;
+      const monto = `*${dinero(saldo)}*${pagado > 0 ? (en ? ` left (of ${dinero(d.total)})` : ` por pagar (de ${dinero(d.total)})`) : ''}`;
+      texto = primero
+        ? (en ? `Hi ${nombre}, this is DGP Global Group. You have a pending invoice *${d.docId || ''}* for ${monto}:\n${link(d)}\n\nFrom the link you can see the payment methods and upload your receipt. If you already paid, send us the receipt here. Thank you!`
+              : `Hola ${nombre}, te escribimos de DGP Global Group. Tienes pendiente la factura *${d.docId || ''}* por ${monto}:\n${link(d)}\n\nDesde el enlace ves los métodos de pago y puedes subir tu comprobante. Si ya pagaste, envíanos el comprobante por aquí. ¡Gracias!`)
+        : (en ? `Hi ${nombre}, invoice *${d.docId || ''}* for ${monto} is still pending after ${L[0].dias} days:\n${link(d)}\n\nIf you already paid, send us the receipt here so we can record it. Thank you!`
+              : `Hola ${nombre}, seguimos con pendiente la factura *${d.docId || ''}* por ${monto} desde hace ${L[0].dias} días:\n${link(d)}\n\nSi ya realizaste el pago, envíanos el comprobante por aquí para registrarlo. ¡Gracias!`);
+    } else {
+      const intro = en ? (primero ? `Hi ${nombre}, this is DGP Global Group. You have these pending invoices${g.al ? ' from your clients' : ''}:` : `Hi ${nombre}, these invoices${g.al ? ' from your clients' : ''} are still pending:`)
+                       : (primero ? `Hola ${nombre}, te escribimos de DGP Global Group. Tienes estas facturas pendientes${g.al ? ' de tus clientes' : ''}:` : `Hola ${nombre}, seguimos con pendientes estas facturas${g.al ? ' de tus clientes' : ''}:`);
+      const cierre = en ? (primero ? 'From each link you can see the payment methods and upload your receipt. If you already paid, send us the receipt here. Thank you!' : 'If you already paid, send us the receipt here so we can record it. Thank you!')
+                        : (primero ? 'Desde cada enlace ves los métodos de pago y puedes subir tu comprobante. Si ya pagaste, envíanos el comprobante por aquí. ¡Gracias!' : 'Si ya realizaste el pago, envíanos el comprobante por aquí para registrarlo. ¡Gracias!');
+      texto = `${intro}\n\n${L.map(item).join('\n\n')}\n\n*${en ? 'Total pending' : 'Total pendiente'}: ${dinero(total)}*\n${cierre}`;
+    }
     try { await waEnviarTexto(env, g.tel + '@c.us', texto); } catch (e) { console.warn('WA cobro', g.cli, e); continue; }
-    for (const x of g.xs) await fsUpdate(env, `documentos/${x.d._id}`, { waCobro: { base: x.w.base, enviados: [...(x.w.enviados || []), x.toca], ultimoAt: new Date().toISOString() } }, ['waCobro'], token).catch(() => {});
-    const total = g.xs.reduce((a, x) => a + saldoDoc(x.d), 0);
-    enviados.push({ cli: g.cli, total, ultimo });
-    if (ultimo) alertas.push({ cli: g.cli, total, tel: g.tel, dias: Math.max(...g.xs.map(x => x.dias)) });
+    const ahoraISO = new Date().toISOString();
+    let alerta = false;
+    for (const x of L) { const n = (Number(x.w.n) || (x.w.enviados || []).length || 0) + 1; if (n >= 4 && !x.w.alertado) alerta = true;
+      await fsUpdate(env, `documentos/${x.d._id}`, { waCobro: { ultimo: ahoraISO, n, alertado: !!x.w.alertado || n >= 4 } }, ['waCobro'], token).catch(() => {}); }
+    enviados.push({ cli: g.cli, total, primero });
+    if (alerta) alertas.push({ cli: g.cli, total, tel: g.tel, dias: mayor });
     await new Promise(r => setTimeout(r, 4000 + Math.random() * 4000));
   }
   if (!enviados.length) return;
-  const L = [`💬 <b>Recordatorios de pago por WhatsApp (${enviados.length})</b>`, ...enviados.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)}${x.ultimo ? ' · <i>último aviso</i>' : ''}`)];
-  if (alertas.length) L.push('', '📞 <b>Ya no les escribo más, te toca a ti</b> (llamar o pausar la factura en el panel):', ...alertas.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)} · ${x.dias} días · <a href="tel:+${x.tel}">llamar</a>`));
-  await tgEnviar(env, L.join('\n')).catch(() => {});
+  const T = [`💬 <b>Cobros por WhatsApp (${enviados.length})</b>`, ...enviados.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)}${x.primero ? ' · primer cobro' : ''}`)];
+  if (alertas.length) T.push('', '📞 <b>Llevan 4 cobros sin pagar</b> (se les sigue cobrando cada 7 días; tú decides si llamar o pausar):', ...alertas.map(x => `• ${escHtml(x.cli)} · ${dinero(x.total)} · ${x.dias} días · <a href="tel:+${x.tel}">llamar</a>`));
+  await tgEnviar(env, T.join('\n')).catch(() => {});
 }
 
 /* ══════════════════════════════════════════════════════════════

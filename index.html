@@ -13119,8 +13119,8 @@ function abrirAltair() {
     <div id="push-caja" style="font-size:12.5px;color:var(--text-mid);line-height:1.55;padding:2px 0 10px">Revisando…</div>
     <div class="alt-t">Automatizaciones</div>
     ${fila('waFactura', 'Factura nueva por WhatsApp', 'Al crear una factura sin pagar, le llega sola al cliente por el WhatsApp del panel, con el resumen y el enlace para pagar. Solo si el cliente tiene teléfono guardado.')}
-    ${fila('waCobro', 'Recordatorios de pago por WhatsApp', 'A las 10am, a quien debe: días 3, 7 y 14 desde la factura. Si abona o sube un comprobante, se reinicia cada 5 días. Un solo mensaje por cliente; después del último te avisa para llamar o pausar.')}
-    ${fila('cobrador', 'Cobrador amable', 'Por correo, solo a quien no tiene WhatsApp: día 3 y día 8 de atraso; el día 15 te avisa para que llames.')}
+    ${fila('waCobro', 'Cobro por WhatsApp', 'A las 10:30am: desde que una factura cumple 7 días pendiente y luego cada 7 días, un solo mensaje con todas sus facturas. Si pagó o abonó algo en los últimos 7 días, no se le cobra. A los 4 cobros te aviso para que decidas.')}
+    ${fila('cobrador', 'Cobro por correo', 'Igual que el de WhatsApp, pero por correo y solo a quien no tiene WhatsApp: desde los 7 días y cada 7 días; nunca si pagó algo en la última semana.')}
     ${fila('vendedor', 'Vendedor nocturno', 'Quien escribe en tu web recibe respuesta al instante, y te llega una cotización armada con tu catálogo para aprobar.')}
     ${fila('briefing', 'Briefing de los lunes', 'Cada lunes a las 8am, resumen de la semana en texto y audio, con clientes en riesgo.')}
     ${fila('waFueraHorario', 'Altair atiende fuera de horario', 'Fuera de lunes a sábado 9am–10pm (Miami), Altair atiende por WhatsApp: saluda, pregunta con quién tiene el gusto, ayuda con servicios y precios y te avisa en Telegram. Se calla apenas tú escribes en el chat.')}
