@@ -741,12 +741,21 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-06b';
+const WORKER_VERSION = '2026-11-06c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...cors(request), 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
   const q = new URL(request.url).searchParams;
+  // ?saldos=aplicar → aplica una sola vez los saldos a favor pendientes (el detalle llega solo a Telegram)
+  if (new URL(request.url).searchParams.get('saldos') === 'aplicar' && env.CACHE) {
+    const ya = await env.CACHE.get('fixSaldosFavor1');
+    if (ya) return new Response(JSON.stringify({ yaAplicado: true }), { headers: { 'Content-Type': 'application/json' } });
+    await env.CACHE.put('fixSaldosFavor1', '1');
+    const t = await firebaseLogin(env); const L = await aplicarSaldosFavor(env, t, null);
+    if (L.length) await tgEnviar(env, ['💵 <b>Saldos a favor aplicados</b> (sobrantes que no se habían abonado)', ...L].join('\n')).catch(() => {});
+    return new Response(JSON.stringify({ aplicados: L.length }), { headers: { 'Content-Type': 'application/json' } });
+  }
   // ?web=dominio → prueba ese sitio igual que el monitor de Webs de clientes (sin datos privados)
   const qWeb = new URL(request.url).searchParams.get('web');
   if (qWeb && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(qWeb)) {
