@@ -741,7 +741,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-06e';
+const WORKER_VERSION = '2026-11-07a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1482,6 +1482,14 @@ ${L('Idiomas', d.idiomas)}
 ${L('Notas', d.notas)}
 ${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: pídelo_'}
 
+## Skills de diseño instaladas (úsalas)
+Este repositorio trae en \`.claude/skills/\` el kit de diseño de DGP. Úsalo en este orden:
+1. **impeccable** → empieza con \`/impeccable init\`: hace las preguntas del negocio (para quién es, qué necesita lograr) y guarda PRODUCT.md. Junta esas preguntas con las de arriba en una sola ronda.
+2. **ui-ux-pro-max** → busca el estilo, la paleta, las fuentes y los íconos recomendados para este tipo de negocio antes de decidir el diseño.
+3. **frontend-design** y **taste-skill** → dirección visual distintiva, sin plantillas genéricas ni "AI slop".
+4. **animate / improve-animations / choreograph** (Emil Kowalski) → animaciones con propósito, suaves y rápidas.
+5. Antes de entregar: \`/impeccable critique\`, \`/impeccable audit\` y **review-animations**; corrige lo que salga P0/P1.
+
 ## Reglas de diseño (obligatorias)
 - **Diseño premium basado en el logo:** saca la paleta de colores, el estilo y la personalidad del logo (\`${d.logo || 'assets/logo'}\`). El sitio debe sentirse hecho a la medida de esa marca.
 - **Sin emojis.** Solo **iconos SVG** (inline o de una librería de iconos), consistentes en estilo y grosor.
@@ -1545,6 +1553,17 @@ function plantillaIndex(d) {
 </html>
 `;
 }
+// Kit de diseño (skills de Claude: Impeccable, frontend-design, taste, ui-ux-pro-max, animaciones de Emil Kowalski) → .claude/skills del repositorio, en un solo commit
+async function instalarKit(env, repo) {
+  const kit = await fetch(`${SITIO}/kit-diseno/kit.json`, { cf: { cacheTtl: 300 } }).then(r => r.json());
+  const R = `/repos/${GH_ORG}/${repo}`;
+  const ref = await gh(env, 'GET', `${R}/git/ref/heads/main`);
+  const base = await gh(env, 'GET', `${R}/git/commits/${ref.object.sha}`);
+  const tree = await gh(env, 'POST', `${R}/git/trees`, { base_tree: base.tree.sha, tree: kit.files.map(f => ({ path: f.path, mode: f.mode || '100644', type: 'blob', content: f.content })) });
+  const commit = await gh(env, 'POST', `${R}/git/commits`, { message: `Kit de diseño DGP (${kit.version}): Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones`, tree: tree.sha, parents: [ref.object.sha] });
+  await gh(env, 'PATCH', `${R}/git/refs/heads/main`, { sha: commit.sha });
+  return { ok: true, archivos: kit.files.length, version: kit.version };
+}
 async function crearSitio(env, token, b, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
   const limpio = (x, n = 300) => String(x || '').replace(/[<>`]/g, '').trim().slice(0, n);
@@ -1571,6 +1590,7 @@ async function crearSitio(env, token, b, email) {
   await subir('CLAUDE.md', b64(plantillaClaude(d)), 'Brief para Claude: diseño premium, sin emojis, preguntas iniciales');
   if (logo) await subir(d.logo, logo.data, 'Logo de la empresa');
   if (dominio) await subir('CNAME', b64(dominio + '\n'), 'Dominio del sitio');
+  const kit = await instalarKit(env, repo).catch(e => ({ error: e.message }));
   await gh(env, 'PATCH', R, { allow_auto_merge: true }).catch(() => {});
   let pages = null;
   try { pages = await gh(env, 'POST', `${R}/pages`, { source: { branch: 'main', path: '/' } }); } catch (e) { pages = { error: e.message }; }
@@ -1579,7 +1599,7 @@ async function crearSitio(env, token, b, email) {
   if (dominio && env.GODADDY_KEY && env.GODADDY_SECRET) dnsAuto = await gdApuntarPages(env, dominio).catch(e => ({ ok: false, motivo: e.message }));
   const url = dominio ? `https://${dominio}` : `https://${GH_ORG}.github.io/${repo}/`;
   await fsCreate(env, 'webs', { cliente: d.cliente || d.titulo, dominio: dominio || `${GH_ORG}.github.io/${repo}`, activo: true, repo: `${GH_ORG}/${repo}`, creado: new Date(), por: email || 'panel' }, token).catch(() => {});
-  return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null, dnsAuto,
+  return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null, dnsAuto, kit,
     dns: dominio && !dnsAuto?.ok ? (dominio.split('.').length > 2 ? [{ tipo: 'CNAME', nombre: dominio.split('.')[0], valor: `${GH_ORG}.github.io` }] : [{ tipo: 'A', nombre: '@', valor: '185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153' }, { tipo: 'CNAME', nombre: 'www', valor: `${GH_ORG}.github.io` }]) : [] };
 }
 async function handleTarea(request, env) {
@@ -1622,6 +1642,7 @@ async function handleTarea(request, env) {
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'informe-web') { const a = await automatizaciones(env, v.token); if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400); return json(request, { ok: true, ...(await informesWeb(env, v.token, { webId: cuerpo.id, canal: cuerpo.canal || a.informeCanal })) }); }
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'instalar-kit') { const rp = String(cuerpo.repo || '').replace(/^.*\//, '').replace(/[^A-Za-z0-9._-]/g, ''); if (!rp) return json(request, { error: 'Falta el repositorio' }, 400); try { return json(request, await instalarKit(env, rp)); } catch (e) { return json(request, { error: e.message }); } }
     if (tarea === 'gd') return json(request, await gdAccion(env, v.token, cuerpo, request, v.email));
     if (tarea === 'dominios') { if (!env.GODADDY_KEY) return json(request, { dominios: [] }); try { return json(request, { dominios: await gdDominios(env, !!cuerpo.fresco) }); } catch (e) { return json(request, { error: e.message }); } }
     if (tarea === 'respuestas') return json(request, { ok: true, ...(await revisarRespuestas(env, v.token, false)) });

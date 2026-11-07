@@ -13664,6 +13664,7 @@ async function nsCrear() {
       ${d.pagesError ? `<div class="ll-sub" style="color:#dc2626">GitHub Pages no se activó solo (${esc(d.pagesError)}). Actívalo en el repositorio → Settings → Pages → rama main.</div>` : ''}
       ${d.dnsAuto?.ok ? '<div class="ll-sub" style="color:#16a34a"><b>Dominio configurado en GoDaddy ✅</b> · el candado de seguridad tarda hasta 1 hora en activarse.</div>' : d.dnsAuto ? `<div class="ll-sub" style="color:#d97706">No configuré el dominio en GoDaddy: ${esc(d.dnsAuto.motivo || '')}</div>` : ''}
       ${d.dns && d.dns.length ? `<div class="ll-sub"><b>Registros DNS para el dominio</b> (en GoDaddy o Cloudflare):<br>${d.dns.map(x => `${x.tipo} · <b>${esc(x.nombre)}</b> → ${esc(x.valor)}`).join('<br>')}</div>` : ''}
+      <div class="ll-sub">${d.kit?.ok ? `Kit de diseño instalado ✅ (${d.kit.archivos} archivos: Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones).` : `<span style="color:#d97706">El kit de diseño no se instaló (${esc(d.kit?.error || '')}): instálalo desde Sitios web.</span>`}</div>
       <div class="ll-sub">Ya quedó en Sitios web. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
     renderWebs(true).catch(() => {});
   } catch (e) { btn.disabled = false; btn.textContent = 'Crear repositorio y sitio'; toast(e.message, 'err'); }
@@ -13745,7 +13746,7 @@ function wbPintar() {
         <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> <button class="hr-ico" title="Instalar el kit de diseño (skills de Claude) en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
@@ -13947,6 +13948,18 @@ async function wbDominios(fresco) {
       const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:9px 11px"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</div>
         <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
+async function wbKit(id) {
+  const w = (_wb.lista || []).find(x => x._id === id) || {};
+  const sug = String(w.repo || '').replace(/^.*\//, '') || String(w.dominio || '').replace(/^www\./, '').split('.')[0];
+  const repo = prompt('Instalar el kit de diseño (Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones) en el repositorio de quasarworksco:\n\nNombre del repositorio', sug);
+  if (!repo) return;
+  toast('Instalando el kit de diseño…');
+  try { const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'instalar-kit', repo: repo.trim() }) }).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    toast(`Kit instalado en ${repo.trim()} ✅ (${d.archivos} archivos)`);
+  } catch (e) { toast('No se pudo instalar: ' + e.message, 'err'); }
 }
 async function wbInforme(id) {
   const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
