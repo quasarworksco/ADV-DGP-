@@ -2126,6 +2126,7 @@ html.dark .nd-mini li em.tarde{color:#f87171}
 @media(min-width:900px) and (max-height:760px){.nd-mini li:nth-child(3){display:none}.nd-c{padding:16px 20px}.nd-big{font-size:42px}}
 @media(min-width:900px){.nd-lbl-res{display:none!important}}
 @media(max-width:899px){.bnav{display:none!important}}
+@media(min-width:900px){.dk-i span{white-space:nowrap}.dk-i{min-width:58px;padding:7px 9px 6px}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -15069,8 +15070,8 @@ document.addEventListener('keydown', e => {
 <script>
 (function () {
   const dock = document.getElementById('dock'), pop = document.getElementById('dock-pop');
-  const PRIM = ['dashboard', 'facturacion', 'clientes', 'whatsapp', 'suscripciones'];
-  const CORTO = { dashboard: 'Inicio', facturacion: 'Facturas', suscripciones: 'Suscrip.' };
+  const PRIM = ['dashboard', 'facturacion', 'clientes', 'suscripciones', 'webs', 'dominios'];
+  const CORTO = { dashboard: 'Inicio', facturacion: 'Facturas', suscripciones: 'Suscrip.', webs: 'Sitios web' };
   const GICO = { negocio: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>', comunicacion: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>', trabajo: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>', marca: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>' };
   const pag = b => ((b.getAttribute('onclick') || '').match(/switchPage\('([a-z]+)'/) || [])[1];
   const nombre = b => [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
