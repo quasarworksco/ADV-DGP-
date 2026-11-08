@@ -2580,10 +2580,10 @@ html.dark .cl-et-moroso { background:rgba(239,68,68,.18); color:#fca5a5; } html.
 html body #splash-screen #splash-saludo.splash-logo-sub { min-height:40px; }
 #splash-screen { justify-content:center; }
 .sp-l { animation-delay:calc(1.25s + var(--i) * 38ms) !important; }
-html body #splash-screen #splash-saludo.splash-logo-sub { animation-delay:1.95s !important; }
-html body #splash-screen .splash-bar-wrap { animation-delay:2s !important; }
-html body #splash-screen .splash-bar { animation-delay:2s !important; }
-html body #splash-screen .sp-l { animation-delay:calc(1.25s + var(--i) * 38ms) !important; }
+html body #splash-screen #splash-saludo.splash-logo-sub { animation-delay:.95s !important; }
+html body #splash-screen .splash-bar-wrap { animation-delay:1.1s !important; }
+html body #splash-screen .splash-bar { animation-delay:1.1s !important; animation-duration:.5s !important; }
+html body #splash-screen .sp-l { animation-delay:calc(.6s + var(--i) * 22ms) !important; }
 
 /* ═══ Transición entre secciones ═══ */
 @media (prefers-reduced-motion: no-preference) {
@@ -2637,7 +2637,7 @@ html.dark .rg-card::after, html.dark .cb-tile::after { background:radial-gradien
 
 /* ═══ Entrada animada (pantalla de carga) ═══ */
 /* Salida tipo santamaría: la pantalla sube de abajo hacia arriba */
-#splash-screen { transition:transform .75s cubic-bezier(.76,0,.24,1), visibility 0s linear .75s !important; will-change:transform; }
+#splash-screen { transition:transform .6s cubic-bezier(.76,0,.24,1), visibility 0s linear .6s !important; will-change:transform; }
 #splash-screen::after { content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:rgba(255,255,255,.18); }
 #splash-screen.hidden { opacity:1 !important; visibility:hidden; transform:translateY(-100%); filter:none; }
 .sp-mark { position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; margin-bottom:26px; }
@@ -3071,9 +3071,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       var pts = [], paso = Math.max(2, Math.round(S / 48));
       for (var y = 0; y < S; y += paso) for (var x = 0; x < S; x += paso) if (d[(y * S + x) * 4 + 3] > 140) pts.push([x, y]);
       var P = pts.map(function (t) {
-        return { x: Math.random() * W, y: Math.random() * H, tx: t[0], ty: t[1], dl: Math.random() * 420, s: 0.7 + Math.random() * 1 };
+        return { x: Math.random() * W, y: Math.random() * H, tx: t[0], ty: t[1], dl: Math.random() * 240, s: 0.7 + Math.random() * 1 };
       });
-      var t0 = performance.now(), DUR = 1400;
+      var t0 = performance.now(), DUR = 900;
       var ease = function (k) { return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
       (function cuadro(now) {
         ctx.clearRect(0, 0, W, H);
@@ -4657,8 +4657,8 @@ function hideSplash() {
   const s = document.getElementById('splash-screen');
   if (!s || s.classList.contains('hidden') || s._saliendo) return;
   s._saliendo = true;
-  const espera = Math.max(0, 2500 - (Date.now() - (window._spT0 || 0)));
-  setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 850); }, espera);
+  const espera = Math.max(0, 1600 - (Date.now() - (window._spT0 || 0)));
+  setTimeout(() => { s.classList.add('hidden'); setTimeout(() => s.remove(), 700); }, espera);
 }
 
 function showLogin() {
