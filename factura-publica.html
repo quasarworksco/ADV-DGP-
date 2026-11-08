@@ -595,7 +595,7 @@
   }
 
   function renderPago(doc) {
-    if (!doc.metodoPago || ['usdt', 'binancepay'].includes(doc.metodoPago)) return '';
+    if (!doc.metodoPago) return '';
     const label  = METODO_LABELS[doc.metodoPago] || doc.metodoPago;
     const info   = doc.infoPago || {};
     const moneda = doc.moneda === 'eur' ? '€' : '$';
