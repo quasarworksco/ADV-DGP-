@@ -2263,6 +2263,17 @@ html.dark #app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(79
 html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{background:linear-gradient(180deg,#141823,#10131c)!important;border-color:rgba(255,255,255,.075)!important}
 html.dark .header{background:rgba(9,11,17,.88)!important;border-bottom-color:rgba(255,255,255,.06)!important}
 html.dark .nd-bar,html.dark .nd-ic,html.dark .nd-act-f button{background:#1b2030!important}
+/* Lupa del dock: crece dentro del dock sin recortarse */
+@media(min-width:900px){
+  .dock,.dk-i{overflow:visible!important}
+  .dk-i{padding-top:9px!important}
+  .dk-i>i,.dk-i>svg{transform:translateY(calc(var(--lupa,0) * -2px)) scale(calc(1 + var(--lupa,0) * .2))!important}
+  .dk-i span{transform:none!important}
+}
+/* Punto final de la curva: late cada 10 segundos */
+.nd-dot::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--blue);opacity:0;animation:ndLatido10 10s ease-out 2.5s infinite}
+@keyframes ndLatido10{0%{opacity:.7;transform:scale(1)}10%{opacity:0;transform:scale(2.6)}100%{opacity:0;transform:scale(2.6)}}
+@media(prefers-reduced-motion:reduce){.nd-dot::after{animation:none}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
