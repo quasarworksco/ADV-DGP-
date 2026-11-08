@@ -1813,6 +1813,61 @@ button.nav-group.cerrado .nav-g-ico { transform:rotate(-90deg); }
 .nav-sec { display:flex; flex-direction:column; gap:2px; }
 .nav-sec.cerrado { display:none; }
 body.menu-min .nav-sec.cerrado { display:flex; } body.menu-min button.nav-group .nav-g-ico { display:none; }
+
+/* ===== Reloj de tres zonas (Miami · Texas · Caracas) ===== */
+.hz{display:flex;align-items:center;gap:14px;height:40px;padding:0 16px;border-radius:12px;border:1px solid var(--border);background:var(--off);font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0;margin:0 12px}
+.hz-c{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:4px;align-items:baseline;line-height:1}
+.hz-c small{grid-column:1/3;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.hz-c small::before{content:'';width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.18)}
+.hz-c.is-night small::before{background:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.2)}
+.hz-t{font-size:15px;font-weight:700;color:var(--black);font-variant-numeric:tabular-nums;display:inline-flex;letter-spacing:-.01em}
+.hz-ap{font-style:normal;font-size:9.5px;font-weight:700;color:var(--text-soft)}
+.hz-sep{width:1px;height:22px;background:var(--border)}
+/* dígitos que ruedan */
+.hz-d{display:inline-block;height:1em;line-height:1em;overflow:hidden;vertical-align:top}
+.hz-d>span{display:flex;flex-direction:column;transition:transform .5s cubic-bezier(.23,1,.32,1)}
+.hz-d>span>span{height:1em;line-height:1em;text-align:center}
+@media(prefers-reduced-motion:reduce){.hz-d>span{transition:none}}
+@media(max-width:1180px){.hz{margin:0 6px;padding:0 12px;gap:10px}}
+@media(max-width:900px){
+  .header{flex-wrap:wrap}
+  .hz{order:3;flex-basis:100%;justify-content:center;height:34px;margin:8px 0 0;border-radius:10px;gap:12px}
+  .hz-c{display:flex;align-items:baseline;gap:5px}
+  .hz-c small{margin:0;font-size:9px}
+  .hz-t{font-size:13.5px}
+}
+
+/* ===== Botón de Altair (IA): orbe + borde degradado ===== */
+.header-right .altair-btn{display:inline-flex!important;align-items:center;gap:9px;height:36px;padding:0 12px 0 8px!important;border-radius:10px;border:1px solid transparent!important;color:var(--black)!important;font-weight:600;
+  background:linear-gradient(var(--white),var(--white)) padding-box,linear-gradient(135deg,color-mix(in srgb,var(--blue) 75%,#7dd3fc) 0%,color-mix(in srgb,var(--blue) 30%,var(--border)) 55%,var(--border) 100%) border-box!important;
+  box-shadow:0 4px 14px -8px color-mix(in srgb,var(--blue) 55%,transparent);transition:box-shadow .2s ease,transform .16s ease-out}
+.header-right .altair-btn:hover{box-shadow:0 6px 18px -8px color-mix(in srgb,var(--blue) 75%,transparent)}
+.header-right .altair-btn:active{transform:scale(.97)}
+.ai-orb{position:relative;width:20px;height:20px;border-radius:50%;overflow:hidden;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 2px 8px -2px color-mix(in srgb,var(--blue) 70%,transparent)}
+.ai-orb::before{content:'';position:absolute;inset:-20%;background:conic-gradient(from 200deg,var(--blue),#38bdf8,color-mix(in srgb,var(--blue) 55%,#a5b4fc),var(--blue));transition:transform .9s cubic-bezier(.23,1,.32,1)}
+.ai-orb::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0 7%,rgba(255,255,255,0) 34%)}
+@media(hover:hover) and (pointer:fine){.header-right .altair-btn:hover .ai-orb::before{transform:rotate(200deg)}}
+.ai-lbl{display:inline-flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.01em}
+.ai-tag{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent);padding:2px 5px;border-radius:5px;line-height:1.2}
+html.dark .ai-tag{color:color-mix(in srgb,var(--blue) 45%,#fff)}
+@media(prefers-reduced-motion:reduce){.ai-orb::before{transition:none}}
+/* reloj: etiquetas cortas en el teléfono */
+.hz-ls{display:none}
+@media(max-width:520px){.hz-lf{display:none}.hz-ls{display:inline}.hz{gap:9px;padding:0 10px}.hz-t{font-size:13px}.hz-ap{font-size:8.5px}.hz-c small::before{width:5px;height:5px}}
+.header-right .altair-btn{width:auto!important}
+.header-right .altair-btn .ai-orb{display:block!important}
+@media(max-width:760px){.header-right .altair-btn{width:36px!important;padding:0!important;justify-content:center}}
+
+/* ===== Papelera animada: la tapa se abre al pasar el mouse o al tocar ===== */
+.tr-ic{overflow:visible;display:inline-block;vertical-align:middle}
+.tr-ic .tr-lid{transform-box:fill-box;transform-origin:100% 100%;transition:transform .28s cubic-bezier(.23,1,.32,1)}
+.tr-ic .tr-can{transition:transform .28s cubic-bezier(.23,1,.32,1)}
+:where(button,a,[onclick],[role=button]):hover>.tr-ic .tr-lid,
+:where(button,a,[onclick],[role=button]):focus-visible>.tr-ic .tr-lid,
+:where(button,a,[onclick],[role=button]):active>.tr-ic .tr-lid,
+.tr-ic:hover .tr-lid{transform:translateY(-2px) rotate(-18deg)}
+:where(button,a,[onclick],[role=button]):active>.tr-ic .tr-can{transform:translateY(.5px)}
+@media(prefers-reduced-motion:reduce){.tr-ic .tr-lid,.tr-ic .tr-can{transition:none}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3018,10 +3073,17 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <div class="logo-sub">Sistema de Gestión</div>
     </div>
   </div>
+  <div class="hz" id="hz" aria-label="Hora en Miami, Texas y Caracas">
+    <div class="hz-c" data-tz="America/New_York"><small><span class="hz-lf">Miami</span><span class="hz-ls">MIA</span></small><b class="hz-t"></b><i class="hz-ap"></i></div>
+    <span class="hz-sep" aria-hidden="true"></span>
+    <div class="hz-c" data-tz="America/Chicago"><small><span class="hz-lf">Texas</span><span class="hz-ls">TX</span></small><b class="hz-t"></b><i class="hz-ap"></i></div>
+    <span class="hz-sep" aria-hidden="true"></span>
+    <div class="hz-c" data-tz="America/Caracas"><small><span class="hz-lf">Caracas</span><span class="hz-ls">CCS</span></small><b class="hz-t"></b><i class="hz-ap"></i></div>
+  </div>
   <div class="header-right">
     <button class="hdr-search" onclick="recargarPanel(this)" title="Actualizar (igual que F5)" aria-label="Actualizar" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     <button class="hdr-search" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
-    <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente y automatizaciones" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg><span class="hide-m">Altair</span></button>
+    <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente con IA y automatizaciones"><span class="ai-orb" aria-hidden="true"></span><span class="hide-m ai-lbl">Altair<em class="ai-tag">IA</em></span></button>
     <button class="btn-logout hdr-opt" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
     <button class="btn-logout theme-toggle" onclick="toggleTema()" title="Modo noche / día" aria-label="Cambiar entre modo noche y modo día" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg class="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
     <div style="position:relative;" class="hdr-opt">
@@ -14481,5 +14543,55 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+
+<script>
+/* Reloj de tres zonas: actualiza cada segundo, los minutos ruedan al cambiar */
+(function(){
+  const box=document.getElementById('hz');if(!box)return;
+  const cells=[...box.querySelectorAll('.hz-c')];
+  function digit(){const w=document.createElement('span');w.className='hz-d';const st=document.createElement('span');for(let i=0;i<10;i++){const d=document.createElement('span');d.textContent=i;st.appendChild(d)}w.appendChild(st);return w}
+  function partes(tz){const f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit',hour12:true}).formatToParts(new Date());const g=t=>(f.find(p=>p.type===t)||{}).value||'';return{h:g('hour'),m:g('minute'),ap:g('dayPeriod').toUpperCase(),h24:+new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',hour12:false}).format(new Date())%24}}
+  cells.forEach(c=>{c._t=c.querySelector('.hz-t');c._ap=c.querySelector('.hz-ap');c._last=''});
+  function pintar(){
+    cells.forEach(c=>{
+      const p=partes(c.dataset.tz),txt=p.h+':'+p.m;
+      if(txt===c._last)return;
+      // arma la estructura solo si cambió la cantidad de caracteres (p. ej. 9:59 → 10:00)
+      if(!c._last||c._last.length!==txt.length){c._t.textContent='';c._ds=[];for(const ch of txt){if(ch===':'){const s=document.createElement('span');s.textContent=':';s.style.margin='0 1px';c._t.appendChild(s);c._ds.push(null)}else{const d=digit();c._t.appendChild(d);c._ds.push(d)}}}
+      [...txt].forEach((ch,i)=>{const d=c._ds[i];if(d)d.firstChild.style.transform='translateY(-'+(+ch)+'em)'});
+      c._ap.textContent=p.ap;
+      c.classList.toggle('is-night',p.h24<6||p.h24>=19);
+      c.title=c.querySelector('.hz-lf').textContent+': '+txt+' '+p.ap;
+      c._last=txt;
+    });
+  }
+  pintar();setInterval(pintar,1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pintar()});
+})();
+</script>
+
+<script>
+/* Reemplaza cualquier ícono de papelera del panel por la papelera animada (también en listas que se cargan después) */
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  function nueva(w,h,sw){
+    const sv=document.createElementNS(NS,'svg');
+    sv.setAttribute('viewBox','0 0 24 24');sv.setAttribute('width',w);sv.setAttribute('height',h);sv.setAttribute('fill','none');sv.setAttribute('stroke','currentColor');sv.setAttribute('stroke-width',sw||2);sv.setAttribute('stroke-linecap','round');sv.setAttribute('stroke-linejoin','round');sv.setAttribute('aria-hidden','true');
+    sv.setAttribute('class','tr-ic');
+    sv.innerHTML='<g class="tr-lid"><path d="M3 6h18"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/></g><g class="tr-can"><path d="M19 6l-.9 13.1A2 2 0 0 1 16.1 21H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v5.5M14 11v5.5"/></g>';
+    return sv;
+  }
+  function esPapelera(sv){return sv.querySelector('polyline[points="3 6 5 6 21 6"]')||[...sv.querySelectorAll('path')].some(p=>(p.getAttribute('d')||'').startsWith('M3 6h18'))}
+  function mejorar(root){
+    if(!root||!root.querySelectorAll)return;
+    root.querySelectorAll('svg:not(.tr-ic)').forEach(sv=>{if(esPapelera(sv))sv.replaceWith(nueva(sv.getAttribute('width')||14,sv.getAttribute('height')||14,sv.getAttribute('stroke-width')))});
+    root.querySelectorAll('i.fa-trash,i.fa-trash-can').forEach(ic=>{ic.replaceWith(nueva('1em','1em',2.2))});
+  }
+  let pend=false;
+  const obs=new MutationObserver(()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;mejorar(document.body)})});
+  function iniciar(){mejorar(document.body);obs.observe(document.body,{childList:true,subtree:true})}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar);else iniciar();
+})();
+</script>
 </body>
 </html>
