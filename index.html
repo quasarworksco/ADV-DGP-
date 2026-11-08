@@ -2127,6 +2127,17 @@ html.dark .nd-mini li em.tarde{color:#f87171}
 @media(min-width:900px){.nd-lbl-res{display:none!important}}
 @media(max-width:899px){.bnav{display:none!important}}
 @media(min-width:900px){.dk-i span{white-space:nowrap}.dk-i{min-width:58px;padding:7px 9px 6px}}
+/* Sin barra de desplazamiento visible */
+html,body{scrollbar-width:none}html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0}
+/* Profundidad: fondo con capas y tarjetas que flotan */
+body{background:linear-gradient(180deg,#e9edf6 0%,#dfe5f1 100%) fixed!important}
+#app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(20,56,204,.14),transparent 70%),radial-gradient(45% 40% at 5% 105%,rgba(79,110,255,.10),transparent 70%),radial-gradient(80% 60% at 50% 50%,rgba(255,255,255,.35),transparent 75%)!important;background-attachment:fixed!important}
+html.dark body{background:linear-gradient(180deg,#0b1221 0%,#070c18 100%) fixed!important}
+html.dark #app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(79,110,255,.20),transparent 70%),radial-gradient(45% 40% at 5% 105%,rgba(79,110,255,.10),transparent 70%)!important}
+.nd-c,#page-dashboard .cb-card,#page-dashboard .cb-tile{box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 0 0 1px rgba(11,20,48,.05),0 2px 4px -1px rgba(11,20,48,.06),0 10px 20px -8px rgba(11,20,48,.12),0 28px 50px -24px rgba(11,20,48,.28)!important}
+html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(0,0,0,.35),0 10px 22px -8px rgba(0,0,0,.55),0 30px 60px -26px rgba(0,0,0,.9)!important}
+@media(hover:hover) and (pointer:fine){.nd-c{transition:transform .2s cubic-bezier(.23,1,.32,1),box-shadow .2s ease}.nd-c:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 0 0 1px rgba(11,20,48,.06),0 4px 8px -2px rgba(11,20,48,.08),0 16px 30px -10px rgba(11,20,48,.18),0 40px 70px -28px rgba(11,20,48,.35)!important}}
+#page-dashboard .dash-saludo h2{text-shadow:0 1px 0 rgba(255,255,255,.8)}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -12262,7 +12273,7 @@ function renderCobranza() {
       <div class="cb-card cb-chart${window._cbAnimado ? '' : ' cb-anim'}" id="cb-chart">
         <div class="cb-title">Ingresos cobrados por mes</div>
         <div class="cb-sub">Últimos 12 meses · pagos registrados en facturas</div>
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cobrados por mes, últimos 12 meses">${grid}${barras}${metaM ? `<g class="cb-meta"><line x1="${padL}" x2="${W}" y1="${y(metaM)}" y2="${y(metaM)}" stroke-dasharray="5 4"></line><text x="${W - 2}" y="${y(metaM) - 5}" text-anchor="end">Meta ${cbMoney(metaM).replace('.00', '')}</text></g>` : ''}</svg>
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cobrados por mes, últimos 12 meses">${grid}${barras}${metaM ? `<g class="cb-meta"><line x1="${padL}" x2="${W}" y1="${y(metaM)}" y2="${y(metaM)}" stroke-dasharray="5 4"></line><text x="${padL + 4}" y="${y(metaM) - 5}" text-anchor="start">Meta ${cbMoney(metaM).replace('.00', '')}</text></g>` : ''}</svg>
         <div class="cb-tip" id="cb-tip"></div>
         <details style="margin-top:8px;"><summary style="font-size:11px;color:var(--text-soft);cursor:pointer;">Ver como tabla</summary>
           <table class="cb-table" style="margin-top:6px;"><tr><th>Mes</th><th class="num">Cobrado</th><th class="num">Pagos</th></tr>
@@ -15012,7 +15023,7 @@ if ('serviceWorker' in navigator) {
   <button type="button" data-p="dashboard" onclick="irASeccion('dashboard')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></button>
   <button type="button" data-p="facturacion" onclick="irASeccion('facturacion')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h5"/></svg><span>Facturas</span></button>
   <button type="button" class="tb-fab" onclick="qaHoja(true)" aria-label="Crear algo nuevo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button type="button" data-p="whatsapp" onclick="irASeccion('whatsapp')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>WhatsApp</span></button>
+  <button type="button" data-p="webs" onclick="irASeccion('webs')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Sitios web</span></button>
   <button type="button" onclick="abrirMenuMovil()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menú</span></button>
 </nav>
 <div class="qa-scrim" id="qa-scrim" onclick="qaHoja(false)"></div>
