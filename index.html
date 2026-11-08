@@ -2196,6 +2196,24 @@ html.dark .nd-c::after,html.dark #page-dashboard .cb-card::after,html.dark #page
 .nd-proj .nd-chip{font-size:12px}
 .nd-chip.nd-up{color:#0b7f58}.nd-chip.nd-down{color:#c81e1e}
 html.dark .nd-chip.nd-up{color:#34d399}html.dark .nd-chip.nd-down{color:#f87171}
+/* Dock con marco definido */
+@media(min-width:900px){
+  .dock{border:1px solid rgba(10,10,12,.14)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.85),inset 0 1px 0 #fff,0 1px 2px rgba(10,10,12,.08),0 12px 28px -10px rgba(10,10,12,.28),0 30px 60px -24px rgba(10,10,12,.4)!important}
+  html.dark .dock{border-color:rgba(255,255,255,.16)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px -10px rgba(0,0,0,.7),0 30px 60px -24px rgba(0,0,0,.9)!important}
+  /* transición hacia abajo: lo de abajo empieza fuera de la primera pantalla */
+  #page-dashboard .nd-mov{margin-top:110px!important;scroll-margin-top:calc(var(--hdr-h,71px) + 16px)}
+  .nd-fade{position:fixed;left:0;right:0;bottom:0;height:120px;z-index:490;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(223,229,241,.92) 70%);transition:opacity .25s ease}
+  html.dark .nd-fade{background:linear-gradient(180deg,transparent,rgba(7,12,24,.94) 70%)}
+  .nd-mas{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:495;display:flex;align-items:center;gap:6px;padding:5px 12px;border:0;border-radius:20px;background:none;color:var(--text-soft);font:600 11.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .25s ease,color .15s ease}
+  .nd-mas:hover{color:var(--black)}
+  .nd-mas svg{animation:ndBaja 1.6s cubic-bezier(.45,0,.55,1) infinite}
+  @keyframes ndBaja{0%,100%{transform:translateY(-2px);opacity:.6}50%{transform:translateY(2px);opacity:1}}
+  body.nd-bajo .nd-mas{opacity:0;pointer-events:none}
+  body:not(.nd-en-inicio) .nd-mas{display:none}
+}
+.nd-fade,.nd-mas{display:none}
+@media(min-width:900px){body.nd-en-inicio .nd-fade{display:block}body.nd-en-inicio .nd-mas{display:flex}}
+@media(prefers-reduced-motion:reduce){.nd-mas svg{animation:none}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3755,7 +3773,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <div id="dash-resumen" class="rg-grid"></div>
 
     <!-- COBRANZA -->
-    <div class="db-head"><div class="dash-section-label" style="margin:0;">Movimiento</div></div>
+    <div class="db-head nd-mov" id="nd-mov"><div class="dash-section-label" style="margin:0;">Movimiento</div></div>
     <div id="dash-cobranza"></div>
 
     <!-- VENTAS (filtradas por período) -->
@@ -15243,6 +15261,16 @@ function ndAv(nombre, cls) {
   const dom = ndFavDe(nombre), ini = esc(clIniciales(nombre || '?')), col = clColor(nombre || '?');
   return dom ? `<span class="nd-avt ${cls || ''}" style="background:#fff"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" loading="lazy" onerror="this.parentNode.style.background='${col}';this.replaceWith(document.createTextNode('${ini}'))"></span>` : `<span class="nd-avt ${cls || ''}" style="background:${col}">${ini}</span>`;
 }
+</script>
+<div class="nd-fade" aria-hidden="true"></div>
+<button type="button" class="nd-mas" id="nd-mas" onclick="document.getElementById('nd-mov')?.scrollIntoView({behavior:'smooth',block:'start'})">Movimiento<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+<script>
+(function () {
+  const marcar = () => { const act = document.querySelector('.page.active'); document.body.classList.toggle('nd-en-inicio', !!act && act.id === 'page-dashboard'); };
+  document.querySelectorAll('.page').forEach(p => new MutationObserver(marcar).observe(p, { attributes: true, attributeFilter: ['class'] }));
+  addEventListener('scroll', () => document.body.classList.toggle('nd-bajo', scrollY > 40), { passive: true });
+  document.addEventListener('DOMContentLoaded', marcar); marcar();
+})();
 </script>
 </body>
 </html>
