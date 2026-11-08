@@ -2190,6 +2190,12 @@ html.dark .nd-c::after,html.dark #page-dashboard .cb-card::after,html.dark #page
 @keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
 @media(max-width:899px){.edit-sheet,.doc-sheet{animation:sheetUp .24s cubic-bezier(.32,.72,0,1) both!important}@keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}}
 @media(prefers-reduced-motion:reduce){.modal-overlay.show,.edit-sheet,.doc-sheet,.modal-box{animation-duration:.01s!important}}
+/* Etiquetas solo con texto de color (sin cápsula) */
+.nd-chip,.nd-up,.nd-down{background:none!important;padding:0!important;border-radius:0!important}
+.nd-chip{font-weight:700;color:var(--text-mid)}
+.nd-proj .nd-chip{font-size:12px}
+.nd-chip.nd-up{color:#0b7f58}.nd-chip.nd-down{color:#c81e1e}
+html.dark .nd-chip.nd-up{color:#34d399}html.dark .nd-chip.nd-down{color:#f87171}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
