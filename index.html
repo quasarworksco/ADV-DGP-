@@ -2274,6 +2274,14 @@ html.dark .nd-bar,html.dark .nd-ic,html.dark .nd-act-f button{background:#1b2030
 .nd-dot::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--blue);opacity:0;animation:ndLatido10 10s ease-out 2.5s infinite}
 @keyframes ndLatido10{0%{opacity:.7;transform:scale(1)}10%{opacity:0;transform:scale(2.6)}100%{opacity:0;transform:scale(2.6)}}
 @media(prefers-reduced-motion:reduce){.nd-dot::after{animation:none}}
+/* ===== Cursores vidrio + set útil ===== */
+html,body,#app-shell,#login-screen{cursor:url('/cursores/cur-flecha.png') 6 4, auto; cursor:-webkit-image-set(url('/cursores/cur-flecha.png') 1x, url('/cursores/cur-flecha@2x.png') 2x) 6 4, auto!important}
+a,button,[onclick],[role=button],[role=menuitem],label,select,summary,.nav-tab,.dk-i,.dk-o,.nd-c,.nd-tl li,input[type=checkbox],input[type=radio]{cursor:url('/cursores/cur-mano.png') 12 4, pointer; cursor:-webkit-image-set(url('/cursores/cur-mano.png') 1x, url('/cursores/cur-mano@2x.png') 2x) 12 4, pointer!important}
+input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),textarea,[contenteditable=true]{cursor:url('/cursores/cur-texto.png') 16 16, text; cursor:-webkit-image-set(url('/cursores/cur-texto.png') 1x, url('/cursores/cur-texto@2x.png') 2x) 16 16, text!important}
+[draggable=true],.draggable,.sortable-handle{cursor:url('/cursores/cur-arrastrar.png') 15 14, grab; cursor:-webkit-image-set(url('/cursores/cur-arrastrar.png') 1x, url('/cursores/cur-arrastrar@2x.png') 2x) 15 14, grab!important}
+button:disabled,[disabled],[aria-disabled=true],.disabled{cursor:url('/cursores/cur-no.png') 6 4, not-allowed; cursor:-webkit-image-set(url('/cursores/cur-no.png') 1x, url('/cursores/cur-no@2x.png') 2x) 6 4, not-allowed!important}
+[onclick*="copiar"],[onclick*="Copiar"],[onclick*="clipboard"],.pub-pago-copy,.btn-copiar{cursor:url('/cursores/cur-copiar.png') 6 4, copy; cursor:-webkit-image-set(url('/cursores/cur-copiar.png') 1x, url('/cursores/cur-copiar@2x.png') 2x) 6 4, copy!important}
+body.esperando,body.esperando *{cursor:url('/cursores/cur-espera.png') 6 4, progress; cursor:-webkit-image-set(url('/cursores/cur-espera.png') 1x, url('/cursores/cur-espera@2x.png') 2x) 6 4, progress!important}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
