@@ -1934,6 +1934,117 @@ html.dark .nd-cbars rect{fill:#34d399}
 html.dark #dash-cobranza svg line:not(.cb-meta line){stroke:#1f2b46}
 html.dark #dash-cobranza .cb-bar text{fill:#a7b1c9}
 html.dark #dash-cobranza svg text[fill="#94a3b8"]{fill:#7c88a6}
+
+/* Reloj opción 1: texto limpio, sin marco */
+.hz{border:0!important;background:none!important;height:auto;padding:0 6px;gap:16px}
+.hz-c{display:flex!important;align-items:baseline;gap:6px}
+.hz-c small{margin:0!important;font-size:13px!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;color:var(--text-soft)}
+.hz-c small::before{width:6px!important;height:6px!important;box-shadow:none!important;align-self:center}
+.hz-t{font-size:14px!important}
+.hz-ap{font-size:10.5px!important}
+.hz-sep{height:14px!important}
+@media(max-width:900px){.hz{justify-content:center;margin:6px 0 0!important;height:28px!important;border-top:1px solid var(--border)!important;border-radius:0!important;padding-top:6px}}
+@media(max-width:520px){.hz-c small{font-size:11px!important}.hz-t{font-size:12.5px!important}}
+/* Saludo limpio: sin botón ni etiqueta suelta */
+#page-dashboard .dash-saludo-btn,#page-dashboard #pronostico{display:none!important}
+.nd-proj{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--text-mid)}
+.nd-proj b{color:var(--black);font-variant-numeric:tabular-nums}
+.nd-proj .nd-chip{margin-left:auto}
+
+/* ===== Barra lateral A: azul noche refinada ===== */
+.nav-tabs{background:radial-gradient(130% 45% at 0% 0%,#16267a 0%,#0b1640 55%,#080f2c 100%)!important;border-right:1px solid rgba(255,255,255,.04)!important}
+.nav-tab{position:relative;transition:background .15s ease,color .15s ease}
+.nav-tab>i{opacity:.7!important;transition:opacity .15s ease}
+.nav-tab:hover>i{opacity:1!important}
+.nav-tab.active{background:linear-gradient(90deg,rgba(79,110,255,.30),rgba(79,110,255,.08))!important;box-shadow:inset 0 0 0 1px rgba(143,168,255,.22)!important;color:#fff!important}
+.nav-tab.active>i{opacity:1!important;color:#c7d3ff}
+.nav-tab.active::before{content:'';position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:#8fa8ff;box-shadow:0 0 12px #5b7cff}
+.nav-group{color:rgba(160,175,230,.55)!important;letter-spacing:.12em!important}
+.nav-find{display:flex;align-items:center;gap:9px;width:100%;height:36px;padding:0 10px;margin:2px 0 6px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.06);color:#8e9ac7;font:500 12.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:background .15s ease,color .15s ease}
+.nav-find:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-find kbd{margin-left:auto;font:600 10.5px 'Plus Jakarta Sans',sans-serif;color:#aab4dd;background:rgba(255,255,255,.08);border-radius:5px;padding:2px 6px}
+.nav-user{position:sticky;bottom:-24px;margin-top:auto;display:flex;align-items:center;gap:10px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(13,24,70,.92);backdrop-filter:blur(10px);color:#fff;cursor:pointer;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:-10px;transition:background .15s ease}
+.nav-user:hover{background:rgba(26,40,100,.95)}
+.nav-user-av{position:relative;width:32px;height:32px;border-radius:50%;background:var(--blue);display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0;background-size:cover;background-position:center}
+.nav-user-av::after{content:'';position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid #0b1640}
+.nav-user-t{min-width:0}.nav-user-t b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav-user-t small{font-size:11px;color:#8e9ac7}
+body.menu-min .nav-find{justify-content:center;padding:0}
+body.menu-min .nav-find span,body.menu-min .nav-find kbd,body.menu-min .nav-user-t{display:none}
+body.menu-min .nav-user{justify-content:center;padding:8px 0}
+body.menu-min .nav-tab.active::before{left:-10px}
+/* nombre flotante cuando el menú está plegado */
+.nav-tip{position:fixed;z-index:9999;pointer-events:none;background:#0b1430;color:#fff;font:600 12px 'Plus Jakarta Sans',sans-serif;padding:7px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(0,0,0,.6);opacity:0;transform:translateX(-4px);transition:opacity .12s ease,transform .12s ease}
+.nav-tip.on{opacity:1;transform:none}
+.nav-tip::before{content:'';position:absolute;left:-4px;top:50%;width:8px;height:8px;background:#0b1430;transform:translateY(-50%) rotate(45deg)}
+@media(prefers-reduced-motion:reduce){.nav-tip{transition:none}}
+/* Actividad reciente */
+.nd-act-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nd-act-mas{border:0;background:none;color:var(--blue);font:600 12.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer;padding:4px}
+html.dark .nd-act-mas{color:color-mix(in srgb,var(--blue) 45%,#fff)}
+.nd-act-f{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px}
+.nd-act-f button{border:0;cursor:pointer;font:600 12px 'Plus Jakarta Sans',sans-serif;padding:5px 11px;border-radius:20px;background:var(--off);color:var(--text-mid);transition:background .15s ease,color .15s ease}
+.nd-act-f button.on{background:var(--black);color:var(--white)}
+html.dark .nd-act-f button.on{background:#e6ebf5;color:#0b1221}
+.nd-act-body{max-height:440px;overflow-y:auto;scrollbar-width:thin;margin-right:-8px;padding-right:8px}
+.nd-day{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft);margin:14px 0 4px}
+.nd-tl{list-style:none;margin:0;padding:0;position:relative}
+.nd-tl::before{content:'';position:absolute;left:15px;top:10px;bottom:10px;width:2px;border-radius:2px;background:var(--border)}
+.nd-tl li{display:flex;align-items:flex-start;gap:12px;padding:7px 6px 7px 0;cursor:pointer;position:relative}
+@media(hover:hover) and (pointer:fine){.nd-tl li:hover .nd-tl-t b{color:var(--blue)}}
+.nd-tl-dot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 0 0 4px var(--white);z-index:1}
+html.dark .nd-tl-dot{box-shadow:0 0 0 4px #111a2e}
+.nd-tl-t{flex:1;min-width:0;padding-top:2px}
+.nd-tl-t b{display:block;font-size:13.5px;font-weight:600;color:var(--black);transition:color .15s ease}
+.nd-tl-t small{display:block;font-size:12px;color:var(--text-soft);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nd-tl-r{text-align:right;padding-top:2px;font-size:11.5px;color:var(--text-soft);white-space:nowrap}
+.nd-tl-r strong{display:block;font-size:13.5px;color:var(--black);font-variant-numeric:tabular-nums}
+.nd-tl li.nuevo .nd-tl-t b::after{content:'Nuevo';margin-left:8px;font-size:10px;font-weight:700;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent);border-radius:6px;padding:2px 6px;vertical-align:1px}
+.nd-act-vacio{padding:26px 0;text-align:center;font-size:12.5px;color:var(--text-soft)}
+/* ===== + Nuevo ===== */
+.qa-wrap{position:relative}
+.qa-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 10px 0 12px;border-radius:10px;border:0;background:var(--blue);color:#fff;font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer;box-shadow:0 8px 20px -10px color-mix(in srgb,var(--blue) 90%,transparent),inset 0 1px 0 rgba(255,255,255,.2);transition:transform .16s ease-out,filter .15s ease}
+@media(hover:hover) and (pointer:fine){.qa-btn:hover{filter:brightness(1.08)}}
+.qa-btn:active{transform:scale(.97)}
+.qa-btn kbd{font:600 10.5px 'Plus Jakarta Sans',sans-serif;background:rgba(255,255,255,.2);border-radius:5px;padding:2px 6px}
+.qa-menu{position:absolute;right:0;top:calc(100% + 8px);width:320px;padding:8px;border-radius:16px;background:var(--white);box-shadow:0 0 0 1px var(--border),0 24px 60px -20px rgba(11,20,48,.45);z-index:900;transform-origin:top right;opacity:0;transform:scale(.96) translateY(-4px);pointer-events:none;transition:opacity .12s ease,transform .12s ease}
+.qa-menu.open{opacity:1;transform:none;pointer-events:auto;transition:opacity .16s cubic-bezier(.23,1,.32,1),transform .2s cubic-bezier(.23,1,.32,1)}
+html.dark .qa-menu{background:#111a2e;box-shadow:0 0 0 1px #1f2b46,0 24px 60px -20px rgba(0,0,0,.8)}
+.qa-h{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);padding:8px 10px 6px}
+.qa-o{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:10px;background:none;cursor:pointer;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;color:var(--black)}
+.qa-o:hover,.qa-o:focus-visible{background:var(--off);outline:none}
+.qa-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;flex-shrink:0}
+.qa-t{flex:1;min-width:0}.qa-t b{display:block;font-size:13.5px}.qa-t small{font-size:11.5px;color:var(--text-soft)}
+.qa-o kbd{font:700 11px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);background:var(--off);border:1px solid var(--border);border-radius:6px;width:22px;height:22px;display:grid;place-items:center}
+.qa-menu hr{border:0;border-top:1px solid var(--border);margin:6px 4px}
+/* barra inferior del celular */
+.tabbar,.qa-sheet,.qa-scrim{display:none}
+@media(max-width:899px){
+  .qa-wrap{display:none}
+  body{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+  .tabbar{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));height:62px;z-index:380;border-radius:22px;align-items:center;justify-content:space-around;background:rgba(11,22,64,.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 18px 40px -16px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06)}
+  .tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;width:58px;border:0;background:none;color:#8e9ac7;font:600 10px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:color .15s ease,transform .12s ease-out}
+  .tabbar button.on{color:#fff}
+  .tabbar button:active{transform:scale(.94)}
+  .tabbar .tb-fab{width:52px;height:52px;border-radius:18px;margin-top:-24px;color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 80%,#fff),var(--blue));box-shadow:0 10px 24px -8px color-mix(in srgb,var(--blue) 90%,transparent),inset 0 1px 0 rgba(255,255,255,.25);display:grid;place-items:center}
+  .qa-scrim{display:block;position:fixed;inset:0;z-index:950;background:rgba(5,10,30,.45);opacity:0;pointer-events:none;transition:opacity .25s ease}
+  .qa-sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:960;background:var(--white);border-radius:26px 26px 0 0;padding:10px 16px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
+  html.dark .qa-sheet{background:#111a2e}
+  body.qa-hoja .qa-scrim{opacity:1;pointer-events:auto}
+  body.qa-hoja .qa-sheet{transform:none}
+  .qa-grab{width:40px;height:5px;border-radius:3px;background:var(--border);margin:0 auto 12px}
+  .qa-sheet-t{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft);margin-bottom:10px}
+  .qa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .qa-grid button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;border:0;border-radius:16px;background:var(--off);color:var(--black);font:600 12px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:transform .12s ease-out}
+  .qa-grid button:active{transform:scale(.96)}
+  .qa-grid .qa-ic{width:44px;height:44px;border-radius:14px}
+  body.menu-open .tabbar{display:none}
+}
+@media(prefers-reduced-motion:reduce){.qa-menu,.qa-menu.open,.qa-sheet,.qa-scrim{transition:none}}
+@media(min-width:900px) and (max-width:1500px){.hdr-search:not([style*="width:36px"]){min-width:200px!important}.qa-btn kbd{display:none}}
+@media(min-width:900px) and (max-width:1180px){.hdr-search:not([style*="width:36px"]){min-width:0!important}.hdr-search:not([style*="width:36px"]) span{display:none}}
+@media(min-width:900px){.header > div:first-child{flex:0 0 auto!important}}
+@media(min-width:900px) and (max-width:1500px){.hz{gap:10px!important;margin:0 4px!important}.hz-lf{display:none}.hz-ls{display:inline!important}.hz-c small{font-size:11px!important}.hdr-search:not([style*="width:36px"]){min-width:170px!important}}
+@media(min-width:900px) and (max-width:1250px){.hz{display:none!important}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3147,6 +3258,10 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <div class="hz-c" data-tz="America/Caracas"><small><span class="hz-lf">Caracas</span><span class="hz-ls">CCS</span></small><b class="hz-t"></b><i class="hz-ap"></i></div>
   </div>
   <div class="header-right">
+    <div class="qa-wrap">
+      <button type="button" class="qa-btn" id="qa-btn" onclick="qaToggle(event)" aria-haspopup="true" aria-expanded="false" title="Crear algo nuevo (N)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span><kbd>N</kbd></button>
+      <div class="qa-menu" id="qa-menu" role="menu" aria-label="Crear"></div>
+    </div>
     <button class="hdr-search" onclick="recargarPanel(this)" title="Actualizar (igual que F5)" aria-label="Actualizar" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     <button class="hdr-search" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
     <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente con IA y automatizaciones"><span class="ai-orb" aria-hidden="true"></span><span class="hide-m ai-lbl">Altair<em class="ai-tag">IA</em></span></button>
@@ -3201,6 +3316,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <button class="nav-toggle" onclick="toggleMenuLateral()" title="Ocultar o mostrar el menú" aria-label="Ocultar o mostrar el menú">
     <i class="fa-solid fa-angles-left"></i><span>Ocultar menú</span>
   </button>
+  <button type="button" class="nav-find" onclick="abrirBuscador()" title="Buscar e ir a cualquier sección (Ctrl+K)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Ir a…</span><kbd>Ctrl K</kbd></button>
   <button type="button" class="nav-group" data-g="resumen" onclick="navGrupo(this)">Resumen<i class="fa-solid fa-chevron-down nav-g-ico"></i></button>
   <div class="nav-sec" data-g="resumen">
   <button class="nav-tab" onclick="switchPage('dashboard', this)">
@@ -3288,6 +3404,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <div class="nav-colores"><span>Color del sistema</span><div><button onclick="setColor('#1438cc')" style="background:#1438cc" title="Azul"></button><button onclick="setColor('#dc2626')" style="background:#dc2626" title="Rojo"></button><button onclick="setColor('#d97706')" style="background:#d97706" title="Amarillo"></button><button onclick="setColor('mono')" class="cm-mono" title="Blanco y negro"></button></div></div>
     <button class="nav-tab" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
   </div>
+  <button type="button" class="nav-user" onclick="toggleMenuUsuario(event)" title="Tu cuenta"><span class="nav-user-av" id="nav-user-av">·</span><span class="nav-user-t"><b id="nav-user-n">Mi cuenta</b><small id="nav-user-r">Conectado</small></span></button>
 </nav>
 <div class="nav-overlay" onclick="cerrarMenuMovil()"></div>
 
@@ -3490,7 +3607,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <div id="dash-resumen" class="rg-grid"></div>
 
     <!-- COBRANZA -->
-    <div class="db-head"><div class="dash-section-label" style="margin:0;">Cobranza</div></div>
+    <div class="db-head"><div class="dash-section-label" style="margin:0;">Movimiento</div></div>
     <div id="dash-cobranza"></div>
 
     <!-- VENTAS (filtradas por período) -->
@@ -9222,6 +9339,61 @@ function setDashPeriod(p, btn) {
 
 
 
+/* ===== Actividad reciente: se arma con lo que ya está cargado (sin lecturas extra) ===== */
+let ndActFiltro = 'todo', ndActTodo = false;
+const ND_ACT = {
+  pago:    { c: '#0e9f6e', i: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', f: 'pagos' },
+  factura: { c: '#1438cc', i: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', f: 'facturas' },
+  cotiz:   { c: '#4f46e5', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/>', f: 'facturas' },
+  vencida: { c: '#d97706', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M12 12v3M12 18h.01"/>', f: 'facturas' },
+  cliente: { c: '#0b1430', i: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>', f: 'clientes' },
+  mensaje: { c: '#16a34a', i: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', f: 'mensajes' }
+};
+function ndActEventos() {
+  const ev = [], lim = Date.now() - 14 * 864e5, hoy = Date.now();
+  try { cbCobros().forEach(({ f, m, d }) => { if (f && f.getTime() >= lim && m > 0) ev.push({ t: 'pago', f, titulo: `Pago recibido · ${d.cli || 'Cliente'}`, sub: [d.docId, d.metodoPago].filter(Boolean).join(' · '), monto: '+' + cbMoney(m), ir: 'facturacion' }); }); } catch (e) {}
+  Object.values(docsMap || {}).forEach(d => {
+    const f = cbFecha(d.createdAt) || cbFecha(d.fecha); if (!f) return;
+    const esCot = d.type === 'cotizacion';
+    if (f.getTime() >= lim && d.type !== 'recibo') ev.push({ t: esCot ? 'cotiz' : 'factura', f, titulo: `${esCot ? 'Cotización' : 'Factura'} creada · ${d.cli || 'Cliente'}`, sub: [d.docId, (d.items && d.items[0] && (d.items[0].desc || d.items[0].descripcion)) || d.servicio].filter(Boolean).join(' · '), monto: cbMoney(d.total || 0), ir: 'facturacion' });
+    const saldo = cbSaldo(d), v30 = new Date(f.getTime() + 30 * 864e5);
+    if (!esCot && saldo > 0.009 && v30.getTime() >= lim && v30.getTime() <= hoy) ev.push({ t: 'vencida', f: v30, titulo: `Cumplió 30 días sin pagar · ${d.cli || 'Cliente'}`, sub: [d.docId, 'debe ' + cbMoney(saldo)].filter(Boolean).join(' · '), monto: cbMoney(saldo), ir: 'facturacion' });
+  });
+  (clientesList || []).forEach(c => { const f = c.createdAt?.toDate ? c.createdAt.toDate() : null; if (f && f.getTime() >= lim) ev.push({ t: 'cliente', f, titulo: `Cliente nuevo · ${[c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || 'Sin nombre'}`, sub: c.origen === 'web' ? 'Llegó por el formulario de la web' : (c.empresa || 'Agregado en el panel'), ir: 'clientes' }); });
+  try { ((typeof _wa !== 'undefined' && _wa.chats) || []).forEach(c => { const lm = c.lastMessage; if (!lm || lm.fromMe || !lm.timestamp) return; const f = new Date(lm.timestamp * 1000); if (f.getTime() < lim) return; ev.push({ t: 'mensaje', f, titulo: `${typeof waNombre === 'function' ? waNombre(c) : 'Contacto'} te escribió`, sub: (lm.body || '').slice(0, 80) || 'Mensaje nuevo', ir: 'whatsapp' }); }); } catch (e) {}
+  return ev.filter(e => e.f.getTime() <= Date.now() + 60e3).sort((a, b) => b.f - a.f);
+}
+function ndHace(f) {
+  const s = Math.max(0, (Date.now() - f.getTime()) / 1000);
+  if (s < 3600) return `hace ${Math.max(1, Math.round(s / 60))} min`;
+  return f.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' });
+}
+function ndDia(f) {
+  const d = new Date(f); d.setHours(0, 0, 0, 0); const h = new Date(); h.setHours(0, 0, 0, 0);
+  const n = Math.round((h - d) / 864e5);
+  return n === 0 ? 'Hoy' : n === 1 ? 'Ayer' : d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short' });
+}
+function ndActividad() {
+  let visto = 0; try { visto = +(localStorage.getItem('dgp-act-visto') || 0); } catch (e) {}
+  const lista = ndActEventos().filter(e => ndActFiltro === 'todo' || ND_ACT[e.t].f === ndActFiltro);
+  const ver = ndActTodo ? lista.slice(0, 40) : lista.slice(0, 7);
+  const filtros = [['todo', 'Todo'], ['pagos', 'Pagos'], ['facturas', 'Facturas'], ['clientes', 'Clientes'], ['mensajes', 'Mensajes']].map(([k, l]) => `<button type="button" class="${ndActFiltro === k ? 'on' : ''}" onclick="ndActFiltrar('${k}')">${l}</button>`).join('');
+  let dia = '', html = '';
+  ver.forEach(e => {
+    const dd = ndDia(e.f);
+    if (dd !== dia) { if (dia) html += '</ul>'; html += `<div class="nd-day">${dd}</div><ul class="nd-tl">`; dia = dd; }
+    const k = ND_ACT[e.t];
+    html += `<li class="${visto && e.f.getTime() > visto ? 'nuevo' : ''}" onclick="irASeccion('${e.ir}')"><span class="nd-tl-dot" style="background:${k.c}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${k.i}</svg></span><span class="nd-tl-t"><b>${esc(e.titulo)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span><span class="nd-tl-r">${e.monto ? `<strong>${e.monto}</strong>` : ''}${ndHace(e.f)}</span></li>`;
+  });
+  if (dia) html += '</ul>';
+  if (!ver.length) html = `<div class="nd-act-vacio">Nada por aquí en los últimos 14 días${ndActFiltro !== 'todo' ? ' con este filtro' : ''}.</div>`;
+  if (document.getElementById('page-dashboard')?.classList.contains('active')) setTimeout(() => { try { localStorage.setItem('dgp-act-visto', Date.now()); } catch (e) {} }, 4000);
+  return `<div class="nd-act-h"><div class="cb-title">Actividad reciente</div>${lista.length > 7 ? `<button type="button" class="nd-act-mas" onclick="ndActTodo=!ndActTodo;ndActPintar()">${ndActTodo ? 'Ver menos' : 'Ver todo (' + lista.length + ')'}</button>` : ''}</div>
+    <div class="nd-act-f" role="group" aria-label="Filtrar actividad">${filtros}</div><div class="nd-act-body">${html}</div>`;
+}
+function ndActPintar() { const el = document.getElementById('nd-act'); if (el) el.innerHTML = ndActividad(); }
+function ndActFiltrar(k) { ndActFiltro = k; ndActTodo = false; ndActPintar(); }
+
 /* ===== Dashboard nuevo: tarjeta principal + tarjetas compactas ===== */
 const ndIco = d => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 function ndMonto(n) { const t = cbMoney(n); const i = t.lastIndexOf('.'); return `<span class="nd-cnt" data-v="${Number(n) || 0}" data-m="1">${t.slice(0, i)}</span><small>${t.slice(i)}</small>`; }
@@ -9262,6 +9434,8 @@ function ndResumen(extra, k) {
   const linea = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
   const ult = pts[pts.length - 1] || [0, H - 4];
   const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/><path d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
+  const proy = hoyD >= 3 && cobrado > 0 ? cobrado / hoyD * diasMes : 0;
+  const proyHTML = proy ? `<span class="nd-proj"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg><span>Al ritmo actual cerrarías el mes en <b>${cbMoney(proy).replace('.00', '')}</b></span>${meta ? `<span class="nd-chip ${proy >= meta ? 'nd-up' : ''}">${proy >= meta ? 'Superas la meta' : 'Faltarían ' + cbMoney(meta - proy).replace('.00', '')}</span>` : ''}</span>` : '';
   const chipVar = varPct === null ? `<span class="nd-chip">Primer mes con datos</span>` : `<span class="nd-chip ${varPct >= 0 ? 'nd-up' : 'nd-down'}">${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs ${MESES[ant.getMonth()]}</span>`;
   // antigüedad de lo que se debe (un solo tono: más oscuro = más antiguo)
   const dias = d => Math.max(0, Math.floor((hoy - (cbFecha(d.createdAt) || cbFecha(d.fecha) || hoy)) / 864e5));
@@ -9290,6 +9464,7 @@ function ndResumen(extra, k) {
       <span class="nd-v nd-big">${ndMonto(cobrado)}</span>
       ${meta ? `<span class="nd-goal"><span class="nd-goal-h"><span>Meta del mes</span><b>${pct}% · ${cbMoney(cobrado).replace('.00', '')} de ${cbMoney(meta).replace('.00', '')}</b></span><span class="nd-bar"><i style="width:${pct}%"></i></span></span>` : ''}
       <span class="nd-curve">${curva}</span>
+      ${proyHTML}
     </button>
     <button type="button" class="nd-c" style="--acc:#d97706" onclick="irASeccion('facturacion')">
       <span class="nd-l"><i></i>Por cobrar</span>
@@ -11989,15 +12164,7 @@ function renderCobranza() {
 
   el.innerHTML = `
     <div class="cb-grid">
-      <div class="cb-card">
-        <div class="cb-title${window._cbAnimado ? '' : ' cb-anim'}">Antigüedad de la deuda</div>
-        <div class="cb-sub">Días desde que se emitió cada factura pendiente</div>
-        ${tramos.map((t, i) => `<div class="cb-age">
-          <span class="cb-age-l">${t.l}</span>
-          <div class="cb-age-track" title="${t.n} factura(s)"><div class="cb-age-bar" style="width:${t.monto ? Math.max(3, t.monto / maxTramo * 100) : 0}%;background:${tonos[i]};"></div></div>
-          <span class="cb-age-v">${cbMoney(t.monto)}<span class="cb-age-c">${t.n} factura${t.n !== 1 ? 's' : ''}</span></span>
-        </div>`).join('')}
-      </div>
+      <div class="cb-card nd-act" id="nd-act">${ndActividad()}</div>
       <div class="cb-card cb-chart${window._cbAnimado ? '' : ' cb-anim'}" id="cb-chart">
         <div class="cb-title">Ingresos cobrados por mes</div>
         <div class="cb-sub">Últimos 12 meses · pagos registrados en facturas</div>
@@ -14729,6 +14896,79 @@ if ('serviceWorker' in navigator) {
   function iniciar(){mejorar(document.body);obs.observe(document.body,{childList:true,subtree:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar);else iniciar();
 })();
+</script>
+
+<script>
+/* Barra lateral: tarjeta de usuario y nombres flotantes cuando está plegada */
+(function(){
+  function syncUser(){
+    const n=(document.getElementById('hdr-menu-nombre')||{}).textContent||'Mi cuenta';
+    const c=(document.getElementById('hdr-menu-correo')||{}).textContent||'';
+    const nb=document.getElementById('nav-user-n'),rb=document.getElementById('nav-user-r'),av=document.getElementById('nav-user-av');
+    if(!nb)return;nb.textContent=n.trim()||'Mi cuenta';rb.textContent=c.trim()||'Conectado';
+    const fuente=document.getElementById('user-avatar-init');const img=fuente&&fuente.querySelector('img');
+    if(img&&img.src){av.style.backgroundImage='url("'+img.src+'")';av.textContent=''}else{av.style.backgroundImage='';av.textContent=(n.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2)||'·').toUpperCase()}
+  }
+  if(typeof pintarPerfil==='function'){const _pp=pintarPerfil;pintarPerfil=function(){const r=_pp.apply(this,arguments);setTimeout(syncUser,0);return r}}
+  document.addEventListener('DOMContentLoaded',syncUser);setTimeout(syncUser,1500);
+})();
+</script>
+<!-- Barra inferior del celular con botón + y hoja de acciones -->
+<nav class="tabbar" id="tabbar" aria-label="Navegación rápida">
+  <button type="button" data-p="dashboard" onclick="irASeccion('dashboard')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Inicio</span></button>
+  <button type="button" data-p="facturacion" onclick="irASeccion('facturacion')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h5"/></svg><span>Facturas</span></button>
+  <button type="button" class="tb-fab" onclick="qaHoja(true)" aria-label="Crear algo nuevo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button type="button" data-p="whatsapp" onclick="irASeccion('whatsapp')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>WhatsApp</span></button>
+  <button type="button" onclick="abrirMenuMovil()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menú</span></button>
+</nav>
+<div class="qa-scrim" id="qa-scrim" onclick="qaHoja(false)"></div>
+<div class="qa-sheet" id="qa-sheet" role="dialog" aria-modal="true" aria-label="Crear"><div class="qa-grab"></div><div class="qa-sheet-t">Crear</div><div class="qa-grid" id="qa-grid"></div></div>
+<script>
+/* ===== Acciones rápidas: + Nuevo ===== */
+const QA = [
+  { k: 'F', l: 'Factura', d: 'Cobrar a un cliente', c: '#1438cc', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h5"/>', fn: () => qaDoc('factura') },
+  { k: 'Q', l: 'Cotización', d: 'Enviar una propuesta', c: '#4f46e5', i: '<path d="M9 11H5v-1a4 4 0 0 1 4-4M19 11h-4v-1a4 4 0 0 1 4-4M5 11v6h4v-6M15 11v6h4v-6"/>', fn: () => qaDoc('cotizacion') },
+  { k: 'P', l: 'Registrar pago', d: 'Elige la factura pendiente', c: '#0e9f6e', i: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', fn: qaPago },
+  { k: 'C', l: 'Cliente', d: 'Agregar a tu cartera', c: '#0b1430', i: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>', fn: () => openClienteModal() },
+  { k: 'L', l: 'Prospecto', d: 'Alguien interesado', c: '#d97706', i: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>', fn: () => { irASeccion('prospectos'); setTimeout(() => { try { prNuevo(); } catch (e) {} }, 250); } },
+  { k: 'W', l: 'Mensaje de WhatsApp', d: 'Escribir a un número', c: '#16a34a', i: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', fn: () => { irASeccion('whatsapp'); setTimeout(() => { const b = document.getElementById('wa-buscar'); if (b) { b.focus(); b.placeholder = 'Escribe el número con código de país'; } }, 350); } }
+];
+function qaIco(x, s) { return `<span class="qa-ic" style="background:${x.c}"><svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x.i}</svg></span>`; }
+function qaDoc(tipo) {
+  irASeccion('facturacion');
+  setTimeout(() => {
+    const b = document.querySelector(`.subtab-btn[onclick*="'nuevo'"]`); if (b) switchSubTab('nuevo', b);
+    const sel = document.getElementById('doc-type'); if (sel) { sel.value = tipo; try { onTypeChange(); } catch (e) {} }
+    const f = document.querySelector('#subtab-nuevo input:not([type=hidden]),#subtab-nuevo select'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 200);
+}
+function qaPago() {
+  irASeccion('facturacion');
+  setTimeout(() => {
+    const b = document.getElementById('tab-historial-btn'); if (b) switchSubTab('historial', b);
+    const f = document.querySelector('.hist-filter-btn[data-filter="factura"]'); if (f) setHistFilter('factura', f);
+    toast('Elige la factura y toca “Abono” o “Pagado”', 'info');
+  }, 200);
+}
+function qaPintar() {
+  const m = document.getElementById('qa-menu'), g = document.getElementById('qa-grid');
+  if (m && !m.childElementCount) m.innerHTML = '<div class="qa-h">Crear</div>' + QA.map((x, i) => `${i === 5 ? '<hr>' : ''}<button type="button" role="menuitem" class="qa-o" onclick="qaUsar(${i})">${qaIco(x, 16)}<span class="qa-t"><b>${x.l}</b><small>${x.d}</small></span><kbd>${x.k}</kbd></button>`).join('');
+  if (g && !g.childElementCount) g.innerHTML = QA.map((x, i) => `<button type="button" onclick="qaUsar(${i})">${qaIco(x, 20)}<span>${x.l === 'Mensaje de WhatsApp' ? 'WhatsApp' : x.l}</span></button>`).join('');
+}
+function qaUsar(i) { qaCerrar(); qaHoja(false); setTimeout(QA[i].fn, 60); }
+function qaToggle(e) { if (e) e.stopPropagation(); qaPintar(); const m = document.getElementById('qa-menu'), b = document.getElementById('qa-btn'); const abrir = !m.classList.contains('open'); m.classList.toggle('open', abrir); b.setAttribute('aria-expanded', abrir); if (abrir) setTimeout(() => m.querySelector('.qa-o')?.focus(), 30); }
+function qaCerrar() { const m = document.getElementById('qa-menu'); if (m) m.classList.remove('open'); document.getElementById('qa-btn')?.setAttribute('aria-expanded', 'false'); }
+function qaHoja(abrir) { qaPintar(); document.body.classList.toggle('qa-hoja', !!abrir); }
+document.addEventListener('click', e => { if (!e.target.closest('.qa-wrap')) qaCerrar(); });
+document.addEventListener('keydown', e => {
+  const t = e.target, escribiendo = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+  const m = document.getElementById('qa-menu'), abierto = m && m.classList.contains('open');
+  if (e.key === 'Escape') { qaCerrar(); qaHoja(false); return; }
+  if (abierto) { const x = QA.findIndex(q => q.k === e.key.toUpperCase()); if (x >= 0 && !e.ctrlKey && !e.metaKey) { e.preventDefault(); qaUsar(x); } return; }
+  if (!escribiendo && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N') && document.getElementById('app-shell')?.style.display !== 'none') { e.preventDefault(); qaToggle(); }
+});
+/* marca la pestaña activa de la barra inferior */
+(function () { const marcar = () => { const act = document.querySelector('.page.active'); const id = act ? act.id.replace('page-', '') : ''; document.querySelectorAll('#tabbar [data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === id)); }; new MutationObserver(marcar).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] }); document.addEventListener('DOMContentLoaded', marcar); })();
 </script>
 </body>
 </html>
