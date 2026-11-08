@@ -3385,7 +3385,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   </div>
   <div class="header-right">
     <div class="qa-wrap">
-      <button type="button" class="qa-btn" id="qa-btn" onclick="qaToggle(event)" aria-haspopup="true" aria-expanded="false" title="Crear algo nuevo (N)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span><kbd>N</kbd></button>
+      <button type="button" class="qa-btn" id="qa-btn" onclick="qaToggle(event)" aria-haspopup="true" aria-expanded="false" title="Crear algo nuevo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span></button>
       <div class="qa-menu" id="qa-menu" role="menu" aria-label="Crear"></div>
     </div>
     <button class="hdr-search hdr-eye" id="btn-enfoque" onclick="toggleEnfoque()" title="Modo enfoque: ocultar montos y nombres (Ctrl+B)" aria-label="Modo enfoque" aria-pressed="false" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.9 17.9A10 10 0 0 1 12 20c-7 0-10-8-10-8a18.5 18.5 0 0 1 5.1-5.9M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2M1 1l22 22"/></svg></button>
@@ -12013,6 +12013,7 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); document.getElementById('bs-over')?.classList.contains('open') ? cerrarBuscador() : abrirBuscador(); return; }
   if (enCampo || document.getElementById('app-shell')?.style.display === 'none') return;
   if (e.key === '/') { e.preventDefault(); abrirBuscador(); }
+  else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) toggleTema();
   else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); _bsAcciones()[0].fn(); }
   else if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); _bsAcciones()[1].fn(); }
   else if (e.key === 'Escape') { cerrarMenuUsuario(); if (document.getElementById('modalPortal')?.classList.contains('show')) closePortalModal(); }
@@ -15107,7 +15108,6 @@ document.addEventListener('keydown', e => {
   const m = document.getElementById('qa-menu'), abierto = m && m.classList.contains('open');
   if (e.key === 'Escape') { qaCerrar(); qaHoja(false); return; }
   if (abierto) { const x = QA.findIndex(q => q.k === e.key.toUpperCase()); if (x >= 0 && !e.ctrlKey && !e.metaKey) { e.preventDefault(); qaUsar(x); } return; }
-  if (!escribiendo && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N') && document.getElementById('app-shell')?.style.display !== 'none') { e.preventDefault(); qaToggle(); }
 });
 /* marca la pestaña activa de la barra inferior */
 (function () { const marcar = () => { const act = document.querySelector('.page.active'); const id = act ? act.id.replace('page-', '') : ''; document.querySelectorAll('#tabbar [data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === id)); }; new MutationObserver(marcar).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] }); document.addEventListener('DOMContentLoaded', marcar); })();
@@ -15194,7 +15194,7 @@ const ATAJOS = [
   ['Ctrl + D', 'Dominios', () => irASeccion('dominios')],
   ['Ctrl + P', 'Panel SMM', () => irASeccion('smm')],
   ['Ctrl + B', 'Modo enfoque (ocultar montos y nombres)', () => toggleEnfoque()],
-  ['Ctrl + K', 'Buscar', null], ['N', 'Crear algo nuevo', null], ['/', 'Buscar', null], ['?', 'Ver esta lista', null], ['Esc', 'Cerrar menús', null]
+  ['Ctrl + K', 'Buscar', null], ['N', 'Modo noche / día', null], ['/', 'Buscar', null], ['?', 'Ver esta lista', null], ['Esc', 'Cerrar menús', null]
 ];
 const ATAJO_TECLA = { ' ': 0, f: 1, s: 2, d: 3, p: 4, b: 5 };
 function verAtajos() {

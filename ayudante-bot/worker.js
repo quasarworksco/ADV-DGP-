@@ -79,8 +79,6 @@ MÉTODOS DE PAGO ACEPTADOS
 ════════════════════════════════════════
 • Zelle (principal para clientes de USA)
 • PayPal
-• USDT TRC20
-• Binance Pay
 • Pago Móvil (Venezuela)
 • Transferencia bancaria USD
 • Western Union
