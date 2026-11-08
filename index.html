@@ -2214,6 +2214,55 @@ html.dark .nd-chip.nd-up{color:#34d399}html.dark .nd-chip.nd-down{color:#f87171}
 .nd-fade,.nd-mas{display:none}
 @media(min-width:900px){body.nd-en-inicio .nd-fade{display:block}body.nd-en-inicio .nd-mas{display:flex}}
 @media(prefers-reduced-motion:reduce){.nd-mas svg{animation:none}}
+
+/* ===== Entrada del inicio: curva que se dibuja, barras que crecen ===== */
+#dash-resumen.nd-anim .nd-line{stroke-dasharray:1;stroke-dashoffset:1;animation:ndTrazo 1.3s cubic-bezier(.65,0,.35,1) .25s forwards}
+#dash-resumen.nd-anim .nd-area{opacity:0;animation:ndFade .7s ease 1.1s forwards}
+#dash-resumen.nd-anim .nd-dot{opacity:0;transform:scale(.4);animation:ndPunto .5s cubic-bezier(.34,1.4,.64,1) 1.5s forwards}
+#dash-resumen.nd-anim .nd-dot::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--blue);animation:ndLatido 1s ease-out 1.9s 1 both}
+@keyframes ndTrazo{to{stroke-dashoffset:0}}
+@keyframes ndFade{to{opacity:1}}
+@keyframes ndPunto{to{opacity:1;transform:none}}
+@keyframes ndLatido{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(2.6)}}
+#dash-resumen.nd-anim .nd-bar i{animation:ndAncho 1s cubic-bezier(.23,1,.32,1) .2s both;transform-origin:left}
+#dash-resumen.nd-anim .nd-aging i{animation:ndAncho .8s cubic-bezier(.23,1,.32,1) both;transform-origin:left}
+#dash-resumen.nd-anim .nd-aging i:nth-child(2){animation-delay:.1s}#dash-resumen.nd-anim .nd-aging i:nth-child(3){animation-delay:.2s}#dash-resumen.nd-anim .nd-aging i:nth-child(4){animation-delay:.3s}
+@keyframes ndAncho{from{transform:scaleX(0)}to{transform:none}}
+#dash-resumen.nd-anim .nd-cbars rect{transform-box:fill-box;transform-origin:bottom;animation:ndAlto .6s cubic-bezier(.23,1,.32,1) both;animation-delay:calc(.35s + var(--i) * 45ms)}
+@keyframes ndAlto{from{transform:scaleY(0)}to{transform:none}}
+#dash-resumen.nd-anim .nd-c{animation:ndSube .5s cubic-bezier(.23,1,.32,1) both}
+#dash-resumen.nd-anim .nd-row1 .nd-c:nth-child(2){animation-delay:.05s}#dash-resumen.nd-anim .nd-row1 .nd-c:nth-child(3){animation-delay:.1s}
+#dash-resumen.nd-anim .nd-row2 .nd-c{animation-delay:calc(.15s + var(--k,0) * 40ms)}
+#dash-resumen.nd-anim .nd-row2 .nd-c:nth-child(2){--k:1}#dash-resumen.nd-anim .nd-row2 .nd-c:nth-child(3){--k:2}#dash-resumen.nd-anim .nd-row2 .nd-c:nth-child(4){--k:3}#dash-resumen.nd-anim .nd-row2 .nd-c:nth-child(5){--k:4}
+@keyframes ndSube{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ===== Skeletons con brillo ===== */
+.nd-c .sk{display:block;border-radius:7px;background:linear-gradient(90deg,var(--off) 0%,color-mix(in srgb,var(--off) 40%,#fff) 50%,var(--off) 100%);background-size:220% 100%;animation:ndSk 1.4s ease-in-out infinite}
+.nd-c .sk-v{height:24px;width:55%;margin-top:10px}.nd-c .sk-n{height:10px;width:75%;margin-top:4px;display:inline-block}
+html.dark .nd-c .sk{background:linear-gradient(90deg,#1a2133 0%,#26304a 50%,#1a2133 100%);background-size:220% 100%}
+@keyframes ndSk{from{background-position:120% 0}to{background-position:-120% 0}}
+/* ===== Saludo según la hora ===== */
+#page-dashboard .dash-saludo{position:relative;isolation:isolate}
+#page-dashboard .dash-saludo::before{content:'';position:absolute;z-index:-1;left:-40px;top:-30px;width:520px;height:150px;border-radius:50%;filter:blur(30px);opacity:.55;pointer-events:none;transition:background 1s ease}
+body.hora-manana #page-dashboard .dash-saludo::before{background:radial-gradient(closest-side,rgba(251,191,36,.45),transparent)}
+body.hora-tarde #page-dashboard .dash-saludo::before{background:radial-gradient(closest-side,rgba(59,130,246,.38),transparent)}
+body.hora-noche #page-dashboard .dash-saludo::before{background:radial-gradient(closest-side,rgba(139,92,246,.40),transparent)}
+html.dark body.hora-manana #page-dashboard .dash-saludo::before{opacity:.3}html.dark body.hora-tarde #page-dashboard .dash-saludo::before,html.dark body.hora-noche #page-dashboard .dash-saludo::before{opacity:.45}
+/* ===== Dock: indicador deslizante y lupa ===== */
+@media(min-width:900px){
+  .dk-ind{position:absolute;top:7px;bottom:7px;left:0;width:0;border-radius:17px;background:#0a0a0c;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -6px rgba(0,0,0,.5);transition:transform .38s cubic-bezier(.32,.72,0,1),width .38s cubic-bezier(.32,.72,0,1);pointer-events:none;z-index:0}
+  html.dark .dk-ind{background:#fafafa;box-shadow:0 6px 14px -6px rgba(0,0,0,.6)}
+  .dock.con-ind .dk-i.on{background:none!important;box-shadow:none!important}
+  .dk-i{z-index:1}
+  .dk-i>i,.dk-i>svg{transition:transform .18s cubic-bezier(.23,1,.32,1);transform:translateY(calc(var(--lupa,0) * -4px)) scale(calc(1 + var(--lupa,0) * .32));transform-origin:center bottom}
+  .dk-i span{transition:transform .18s cubic-bezier(.23,1,.32,1);transform:translateY(calc(var(--lupa,0) * -1px))}
+}
+@media(prefers-reduced-motion:reduce){.dk-ind{transition:none}.dk-i>i,.dk-i>svg{transform:none!important}}
+/* ===== Modo noche más profundo (estilo Linear) ===== */
+html.dark body{background:linear-gradient(180deg,#07080d 0%,#05060a 100%) fixed!important}
+html.dark #app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(79,110,255,.14),transparent 70%),radial-gradient(45% 40% at 5% 105%,rgba(79,110,255,.06),transparent 70%)!important}
+html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{background:linear-gradient(180deg,#141823,#10131c)!important;border-color:rgba(255,255,255,.075)!important}
+html.dark .header{background:rgba(9,11,17,.88)!important;border-bottom-color:rgba(255,255,255,.06)!important}
+html.dark .nd-bar,html.dark .nd-ic,html.dark .nd-act-f button{background:#1b2030!important}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -9607,7 +9656,7 @@ function ndResumen(extra, k) {
   const ptsA = acumAnt.map((v, i) => [acum.length > 1 ? i / (acum.length - 1) * W : W, H - 4 - (v / top) * (H - 12)]);
   const lineaA = accA > 0 ? ptsA.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('') : '';
   const difAnt = accA > 0 ? acc - accA : null;
-  const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/>${lineaA ? `<path d="${lineaA}" fill="none" stroke="var(--text-soft)" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}<path d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>${difAnt !== null ? `<span class="nd-cmp"><i></i>${MESES[ant.getMonth()]} a esta fecha: <b>${cbMoney(accA).replace('.00', '')}</b> · vas <b class="${difAnt >= 0 ? 'up' : 'dn'}">${difAnt >= 0 ? '+' : '−'}${cbMoney(Math.abs(difAnt)).replace('.00', '')}</b></span>` : ''}<span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
+  const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path class="nd-area" d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/>${lineaA ? `<path d="${lineaA}" fill="none" stroke="var(--text-soft)" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}<path class="nd-line" pathLength="1" d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>${difAnt !== null ? `<span class="nd-cmp"><i></i>${MESES[ant.getMonth()]} a esta fecha: <b>${cbMoney(accA).replace('.00', '')}</b> · vas <b class="${difAnt >= 0 ? 'up' : 'dn'}">${difAnt >= 0 ? '+' : '−'}${cbMoney(Math.abs(difAnt)).replace('.00', '')}</b></span>` : ''}<span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
   const proy = hoyD >= 3 && cobrado > 0 ? cobrado / hoyD * diasMes : 0;
   const proyHTML = proy ? `<span class="nd-proj"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg><span>Al ritmo actual cerrarías el mes en <b>${cbMoney(proy).replace('.00', '')}</b></span>${meta ? `<span class="nd-chip ${proy >= meta ? 'nd-up' : ''}">${proy >= meta ? 'Superas la meta' : 'Faltarían ' + cbMoney(meta - proy).replace('.00', '')}</span>` : ''}</span>` : '';
   const chipVar = varPct === null ? `<span class="nd-chip">Primer mes con datos</span>` : `<span class="nd-chip ${varPct >= 0 ? 'nd-up' : 'nd-down'}">${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs ${MESES[ant.getMonth()]}</span>`;
@@ -9624,7 +9673,7 @@ function ndResumen(extra, k) {
   // clientes nuevos por mes (12 meses)
   const nuevos = [...Array(12)].map((_, i) => { const d = new Date(anio, mes - 11 + i, 1); return clientesList.filter(c => { const f = c.createdAt?.toDate ? c.createdAt.toDate() : null; return f && enMes(f, d.getFullYear(), d.getMonth()); }).length; });
   const mxN = Math.max(...nuevos, 1);
-  const barrasCli = `<svg class="nd-cbars" viewBox="0 0 200 54" preserveAspectRatio="none" role="img" aria-label="Clientes nuevos por mes, últimos 12 meses">${nuevos.map((v, i) => `<rect x="${i * 16.67 + 1.5}" y="${54 - Math.max(v ? 4 : 2, v / mxN * 52)}" width="13.6" height="${Math.max(v ? 4 : 2, v / mxN * 52)}" rx="3" class="${i === 11 ? 'on' : ''}"><title>${v} nuevo${v !== 1 ? 's' : ''}</title></rect>`).join('')}</svg>`;
+  const barrasCli = `<svg class="nd-cbars" viewBox="0 0 200 54" preserveAspectRatio="none" role="img" aria-label="Clientes nuevos por mes, últimos 12 meses">${nuevos.map((v, i) => `<rect x="${i * 16.67 + 1.5}" y="${54 - Math.max(v ? 4 : 2, v / mxN * 52)}" width="13.6" height="${Math.max(v ? 4 : 2, v / mxN * 52)}" rx="3" class="${i === 11 ? 'on' : ''}" style="--i:${i}"><title>${v} nuevo${v !== 1 ? 's' : ''}</title></rect>`).join('')}</svg>`;
   const nuevosMes = nuevos[11];
   const recientes = (clientesList || []).filter(c => c.createdAt?.toDate).sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate()).slice(0, 3);
   const ultCli = recientes.length ? `<span class="nd-sub">Últimos agregados</span><ul class="nd-mini">${recientes.map(c => `<li>${ndAv([c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || '?')}<span>${esc([c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || 'Sin nombre')}</span><em>${c.origen === 'web' ? 'web' : ''}</em><b>${c.createdAt.toDate().toLocaleDateString('es', { day: 'numeric', month: 'short' })}</b></li>`).join('')}</ul>` : '';
@@ -9638,9 +9687,9 @@ function ndResumen(extra, k) {
   const tiles = [
     { ir: 'suscripciones', l: 'Suscripciones', ico: '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>', v: ndNum(k.susAct.length), n: k.susVenc ? `<span class="nd-chip nd-down">${k.susVenc} con cobro vencido</span>` : '<span class="nd-chip">Todas al día</span>' },
     { ir: 'suscripciones', l: 'Cobros esta semana', ico: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', v: ndMonto(semana.total), n: semana.n ? `${semana.n} suscripci${semana.n !== 1 ? 'ones' : 'ón'} · ${semana.dias}` : 'Nada vence en 7 días' },
-    { ir: 'whatsapp', l: 'Sin responder', ico: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', v: extra.wa ? ndNum(extra.wa.n) : sk, n: extra.wa ? (extra.wa.n ? `<span class="nd-chip ${(Date.now() / 1000 - extra.wa.viejo) > 86400 ? 'nd-down' : ''}">más antiguo ${ndHaceTs(extra.wa.viejo)}</span>` : '<span class="nd-chip nd-up">Todo respondido</span>') : (extra.waErr ? 'WhatsApp no conectado' : 'Cargando…') },
-    { ir: 'miweb', l: 'Visitas web · 30 d', ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', v: extra.web ? ndNum(extra.web.visitantes) : sk, n: extra.web ? `personas · ${(extra.web.visitas || 0).toLocaleString('en-US')} visitas` : (extra.webErr ? 'Sin datos por ahora' : 'Cargando…') },
-    { ir: 'metaads', l: 'Meta Ads · 30 d', ico: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>', v: extra.meta ? ndMonto(extra.meta.gastado) : sk, n: extra.meta ? `${extra.meta.conversaciones} mensajes recibidos` : (extra.metaErr ? 'Sin datos por ahora' : 'Cargando…') }
+    { ir: 'whatsapp', l: 'Sin responder', ico: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', v: extra.wa ? ndNum(extra.wa.n) : sk, n: extra.wa ? (extra.wa.n ? `<span class="nd-chip ${(Date.now() / 1000 - extra.wa.viejo) > 86400 ? 'nd-down' : ''}">más antiguo ${ndHaceTs(extra.wa.viejo)}</span>` : '<span class="nd-chip nd-up">Todo respondido</span>') : (extra.waErr ? 'WhatsApp no conectado' : '<span class="sk sk-n"></span>') },
+    { ir: 'miweb', l: 'Visitas web · 30 d', ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', v: extra.web ? ndNum(extra.web.visitantes) : sk, n: extra.web ? `personas · ${(extra.web.visitas || 0).toLocaleString('en-US')} visitas` : (extra.webErr ? 'Sin datos por ahora' : '<span class="sk sk-n"></span>') },
+    { ir: 'metaads', l: 'Meta Ads · 30 d', ico: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>', v: extra.meta ? ndMonto(extra.meta.gastado) : sk, n: extra.meta ? `${extra.meta.conversaciones} mensajes recibidos` : (extra.metaErr ? 'Sin datos por ahora' : '<span class="sk sk-n"></span>') }
   ].map(t => `<button type="button" class="nd-c nd-t" onclick="irASeccion('${t.ir}')"><span class="nd-t-top"><span class="nd-l">${t.l}</span><span class="nd-ic">${ndIco(t.ico)}</span></span><span class="nd-v">${t.v}</span><span class="nd-n">${t.n}</span></button>`).join('');
   return `<div class="nd-row1">
     <button type="button" class="nd-c nd-hero" style="--acc:var(--blue)" onclick="irASeccion('facturacion')">
@@ -9708,8 +9757,10 @@ async function renderResumenGeneral() {
   const cliWeb = clientesList.filter(c => c.origen === 'web' && (c.createdAt?.toMillis?.() || 0) >= hace30).length;
   const susAct = suscripcionesList.filter(s => s.estado === 'activa');
   const susVenc = susAct.filter(s => s.proximoPago && s.proximoPago < todayISO()).length;
-  el.className = 'nd';
+  el.classList.remove('rg-grid'); el.classList.add('nd');
+  const primera = !window._ndEntrada && document.getElementById('page-dashboard')?.classList.contains('active') && Object.keys(docsMap || {}).length > 0;
   el.innerHTML = ndResumen(_rgCache, { saldo, porCobrar, cobradoMes, ventasMes, cliNuevos, cliWeb, susAct, susVenc });
+  if (primera && !matchMedia('(prefers-reduced-motion: reduce)').matches) { window._ndEntrada = true; el.classList.add('nd-anim'); setTimeout(() => el.classList.remove('nd-anim'), 2600); }
   ndContar(el);
   if (Date.now() - _rgCache.t < 5 * 60e3) return;   // también si fallaron: se reintenta a los 5 minutos
   // Lo que viene de fuera (reseñas, Databuddy, Meta) se pide aparte y se guarda 5 minutos
@@ -11888,6 +11939,7 @@ function pintarSaludo() {
   if (!t) return;
   const h = new Date().getHours(), n = nombrePerfil();
   const saludo = h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  document.body.classList.remove('hora-manana', 'hora-tarde', 'hora-noche'); document.body.classList.add(h >= 5 && h < 12 ? 'hora-manana' : h >= 12 && h < 19 ? 'hora-tarde' : 'hora-noche');
   t.textContent = n ? `${saludo}, ${n.split(' ')[0]}` : `${saludo}, bienvenido`;
   const f = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   if (sub) sub.textContent = f.charAt(0).toUpperCase() + f.slice(1) + (n ? '' : ' · Pon tu nombre en "Editar perfil"');
@@ -15176,7 +15228,12 @@ document.addEventListener('keydown', e => {
     let h = prim.map(t => { const bd = badge(t.b); return `<button type="button" class="dk-i${t.p === act ? ' on' : ''}" data-p="${t.p}" title="${nombre(t.b)}">${icono(t.b)}<span>${CORTO[t.p] || nombre(t.b)}</span>${bd ? `<em>${bd}</em>` : ''}</button>`; }).join('');
     h += '<span class="dk-sep"></span>';
     h += grupos.map(g => { const on = g.items.some(x => x.p === act); const bd = g.items.map(x => badge(x.b)).filter(Boolean).length; const k = g.g.normalize('NFD').replace(/[^a-z]/g, ''); return `<button type="button" class="dk-i dk-g${on ? ' on' : ''}" data-g="${g.g}" aria-haspopup="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GICO[k] || GICO.trabajo}</svg><span>${g.t.charAt(0) + g.t.slice(1).toLowerCase()}</span>${bd ? '<em class="dot"></em>' : ''}</button>`; }).join('');
-    dock.innerHTML = h;
+    const prev = dock.querySelector('.dk-ind'), px = prev ? getComputedStyle(prev).transform : '', pw = prev ? prev.getBoundingClientRect().width + 'px' : '';
+    dock.innerHTML = '<span class="dk-ind"></span>' + h;
+    const ind = dock.querySelector('.dk-ind'), on = dock.querySelector('.dk-i.on');
+    dock.classList.toggle('con-ind', !!on);
+    if (on) { if (px && px !== 'none') { ind.style.transition = 'none'; ind.style.transform = px; ind.style.width = pw; void ind.offsetWidth; ind.style.transition = ''; }
+      ind.style.transform = `translateX(${on.offsetLeft}px)`; ind.style.width = on.offsetWidth + 'px'; } else ind.style.width = '0';
   }
   function abrirGrupo(btn) {
     const g = grupos.find(x => x.g === btn.dataset.g); if (!g) return;
@@ -15190,6 +15247,10 @@ document.addEventListener('keydown', e => {
   }
   function cerrar() { pop.classList.remove('open'); pop.dataset.g = ''; }
   function ir(p) { const t = tabs.find(x => x.p === p); cerrar(); if (t) t.b.click(); }
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    dock.addEventListener('mousemove', e => { dock.querySelectorAll('.dk-i').forEach(b => { const r = b.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2)); b.style.setProperty('--lupa', Math.max(0, 1 - d / 110).toFixed(3)); }); });
+    dock.addEventListener('mouseleave', () => dock.querySelectorAll('.dk-i').forEach(b => b.style.setProperty('--lupa', 0)));
+  }
   dock.addEventListener('click', e => { const b = e.target.closest('.dk-i'); if (!b) return; e.stopPropagation(); if (b.dataset.p) ir(b.dataset.p); else abrirGrupo(b); });
   pop.addEventListener('click', e => { const b = e.target.closest('.dk-o'); if (b) { e.stopPropagation(); ir(b.dataset.p); } });
   document.addEventListener('click', e => { if (!e.target.closest('#dock-pop')) cerrar(); });
