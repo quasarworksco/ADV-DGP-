@@ -2171,6 +2171,13 @@ body.enfoque #app-shell .page :is(.nd-v,.nd-cnt):hover{filter:blur(7px)}
 html.dark .nd-tl-dot.fav em{box-shadow:0 0 0 2px #111a2e}
 .cl-av.fav{background:#fff!important;box-shadow:0 0 0 1px var(--border)}.cl-av.fav img{width:60%;height:60%;border-radius:4px}
 .nd-mini li .nd-avt{flex:0 0 22px;width:22px;min-width:22px}
+/* Bordes nítidos: borde real + reflejo superior + brillo de acento interior (sin máscara) */
+.nd-c,#page-dashboard .cb-card,#page-dashboard .cb-tile{border:1px solid rgba(11,20,48,.08)!important;background-clip:padding-box!important}
+.nd-c::before,#page-dashboard .cb-card::before,#page-dashboard .cb-tile::before{padding:0!important;-webkit-mask:none!important;mask:none!important;inset:0!important;border-radius:inherit;background:radial-gradient(120% 70% at 0% 0%,color-mix(in oklab,var(--acc,var(--blue)) 9%,transparent),transparent 60%)!important}
+.nd-c::after,#page-dashboard .cb-card::after,#page-dashboard .cb-tile::after{content:'';position:absolute;left:14px;right:14px;top:-1px;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,1) 20%,rgba(255,255,255,1) 80%,transparent);border-radius:1px}
+html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{border-color:rgba(255,255,255,.07)!important}
+html.dark .nd-c::before,html.dark #page-dashboard .cb-card::before,html.dark #page-dashboard .cb-tile::before{background:radial-gradient(120% 70% at 0% 0%,color-mix(in oklab,var(--acc,#5b7cff) 16%,transparent),transparent 60%)!important}
+html.dark .nd-c::after,html.dark #page-dashboard .cb-card::after,html.dark #page-dashboard .cb-tile::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.14) 20%,rgba(255,255,255,.14) 80%,transparent)}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
