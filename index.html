@@ -1868,6 +1868,72 @@ html.dark .ai-tag{color:color-mix(in srgb,var(--blue) 45%,#fff)}
 .tr-ic:hover .tr-lid{transform:translateY(-2px) rotate(-18deg)}
 :where(button,a,[onclick],[role=button]):active>.tr-ic .tr-can{transform:translateY(.5px)}
 @media(prefers-reduced-motion:reduce){.tr-ic .tr-lid,.tr-ic .tr-can{transition:none}}
+
+/* ===== Dashboard premium ===== */
+#dash-resumen.nd{display:block;margin-bottom:28px}
+.nd-row1{display:grid;grid-template-columns:1.5fr 1.05fr .85fr;gap:14px}
+.nd-row2{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
+.nd-c,#page-dashboard .cb-card,#page-dashboard .cb-tile{position:relative;isolation:isolate;background:var(--white)!important;border:0!important;border-radius:18px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(11,20,48,.04),0 12px 32px -18px rgba(11,20,48,.22)}
+html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{background:#111a2e!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -22px rgba(0,0,0,.8)}
+.nd-c::before,#page-dashboard .cb-card::before,#page-dashboard .cb-tile::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:-1;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;background:radial-gradient(60% 50% at 0% 0%,color-mix(in oklab,var(--acc,var(--blue)) 42%,transparent),transparent 70%),linear-gradient(var(--border),var(--border))}
+.nd-c{display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:20px 22px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--black);transition:transform .16s ease-out,box-shadow .2s ease}
+@media(hover:hover) and (pointer:fine){.nd-c:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(11,20,48,.05),0 18px 40px -18px rgba(11,20,48,.3)}html.dark .nd-c:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 22px 44px -20px rgba(0,0,0,.9)}}
+.nd-c:active{transform:scale(.985)}
+.nd-c:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.nd-l{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-mid)}
+.nd-l i{width:7px;height:7px;border-radius:50%;background:var(--acc,var(--blue));flex-shrink:0}
+.nd-v{display:block;font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;margin-top:12px;font-variant-numeric:tabular-nums;color:var(--black)}
+.nd-v small{font-size:.5em;font-weight:600;color:var(--text-soft);letter-spacing:0;margin-left:1px}
+.nd-n{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12.5px;color:var(--text-soft);margin-top:8px}
+.nd-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 8px;background:var(--off);color:var(--text-mid);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nd-up{background:color-mix(in oklab,#0e9f6e 13%,transparent);color:#0b7f58}
+.nd-down{background:color-mix(in oklab,#dc2626 12%,transparent);color:#b91c1c}
+html.dark .nd-up{color:#34d399}html.dark .nd-down{color:#f87171}
+/* principal */
+.nd-hero{padding:22px 24px 16px}
+.nd-hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nd-big{font-size:48px;letter-spacing:-2px;margin-top:14px}
+.nd-goal{display:block;margin-top:16px}
+.nd-goal-h{display:flex;justify-content:space-between;gap:10px;font-size:12px;font-weight:600;color:var(--text-soft)}
+.nd-goal-h b{color:var(--black);font-variant-numeric:tabular-nums}
+.nd-bar{display:block;height:8px;border-radius:8px;background:var(--off);margin-top:8px;overflow:hidden}
+.nd-bar i{display:block;height:100%;border-radius:8px;background:var(--blue);transition:width .8s cubic-bezier(.23,1,.32,1)}
+.nd-curve{position:relative;display:block;margin-top:14px;height:74px}
+.nd-spark{display:block;width:100%;height:74px}
+.nd-vacio{display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-soft);border:1px dashed var(--border);border-radius:12px}
+.nd-dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px var(--white)}
+html.dark .nd-dot{box-shadow:0 0 0 3px #111a2e}
+/* por cobrar */
+.nd-aging{display:flex;gap:2px;height:10px;border-radius:6px;overflow:hidden;margin-top:16px}
+.nd-aging i{display:block;height:100%}
+.nd-aging-ok i{background:color-mix(in oklab,#0e9f6e 30%,transparent)}
+.nd-leg{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px}
+.nd-leg li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-mid)}
+.nd-leg li::before{content:'';width:8px;height:8px;border-radius:3px;background:var(--k);flex-shrink:0}
+.nd-leg b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--black)}
+/* clientes */
+.nd-cbars{display:block;width:100%;height:54px;margin-top:auto;padding-top:14px}
+.nd-cbars rect{fill:#0e9f6e;opacity:.28}.nd-cbars rect.on{opacity:1}
+html.dark .nd-cbars rect{fill:#34d399}
+/* compactas */
+.nd-t{padding:16px 18px}
+.nd-t-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.nd-ic{width:30px;height:30px;border-radius:9px;background:var(--off);display:grid;place-items:center;color:var(--text-mid);flex-shrink:0}
+.nd-t .nd-v{font-size:24px;letter-spacing:-.6px;margin-top:10px}
+.nd-t .sk-v{height:24px;width:60%;margin-top:10px}
+/* resto del dashboard con el mismo acabado */
+#page-dashboard .cb-card{padding:20px 22px!important}
+#page-dashboard .cb-tile{padding:16px 18px!important}
+#page-dashboard .cb-tile-v{font-size:24px;font-weight:700;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+#page-dashboard .cb-title{font-size:15px;font-weight:700;color:var(--black)}
+#page-dashboard .dash-section-label{font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--text-soft);text-transform:none}
+#page-dashboard .cb-tiles,#page-dashboard .db-grid-2,#page-dashboard .cb-grid{gap:14px}
+@media(max-width:1100px){.nd-row1{grid-template-columns:1fr 1fr}.nd-hero{grid-column:1/-1}.nd-row2{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.nd-row1{grid-template-columns:1fr;gap:12px}.nd-row2{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.nd-big{font-size:40px}.nd-c{padding:16px 16px}.nd-t{padding:14px}.nd-t .nd-v{font-size:21px}.nd-row2 .nd-t:last-child{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.nd-bar i{transition:none}}
+html.dark #dash-cobranza svg line:not(.cb-meta line){stroke:#1f2b46}
+html.dark #dash-cobranza .cb-bar text{fill:#a7b1c9}
+html.dark #dash-cobranza svg text[fill="#94a3b8"]{fill:#7c88a6}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3420,7 +3486,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 
     <!-- RESUMEN GENERAL: lo importante de cada sección -->
     <div class="dash-saludo"><div><h2><span id="dash-saludo-t">Bienvenido</span><span class="clima" id="clima" aria-live="polite"></span></h2><p id="dash-saludo-s"></p><div class="pronostico" id="pronostico" hidden></div></div><button class="dash-saludo-btn" onclick="abrirPerfil()" title="Configurar perfil">Editar perfil</button></div>
-    <div class="db-head"><div class="dash-section-label" style="margin:0;">Resumen general</div><span style="font-size:11px;color:var(--text-soft);">Toca una tarjeta para ir a la sección</span></div>
+    <div class="db-head"><div class="dash-section-label" style="margin:0;">Resumen general</div></div>
     <div id="dash-resumen" class="rg-grid"></div>
 
     <!-- COBRANZA -->
@@ -9155,6 +9221,91 @@ function setDashPeriod(p, btn) {
 }
 
 
+
+/* ===== Dashboard nuevo: tarjeta principal + tarjetas compactas ===== */
+const ndIco = d => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+function ndMonto(n) { const t = cbMoney(n); const i = t.lastIndexOf('.'); return `<span class="nd-cnt" data-v="${Number(n) || 0}" data-m="1">${t.slice(0, i)}</span><small>${t.slice(i)}</small>`; }
+function ndNum(n) { return `<span class="nd-cnt" data-v="${Number(n) || 0}">${(Number(n) || 0).toLocaleString('en-US')}</span>`; }
+/* Los números suben desde 0 solo la primera vez que se ve el inicio */
+function ndContar(root) {
+  if (window._ndContado || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!document.getElementById('page-dashboard')?.classList.contains('active')) return;
+  window._ndContado = true;
+  const ease = t => 1 - Math.pow(1 - t, 3), t0 = performance.now(), D = 900;
+  const els = [...root.querySelectorAll('.nd-cnt')];
+  (function paso(now) {
+    const k = ease(Math.min(1, (now - t0) / D));
+    els.forEach(e => { const v = +e.dataset.v * k; e.textContent = e.dataset.m ? cbMoney(v).slice(0, cbMoney(v).lastIndexOf('.')) : Math.round(v).toLocaleString('en-US'); });
+    if (k < 1) requestAnimationFrame(paso); else els.forEach(e => { const v = +e.dataset.v; e.textContent = e.dataset.m ? cbMoney(v).slice(0, cbMoney(v).lastIndexOf('.')) : v.toLocaleString('en-US'); });
+  })(t0);
+}
+function ndResumen(extra, k) {
+  const hoy = new Date(), mes = hoy.getMonth(), anio = hoy.getFullYear();
+  const cobros = cbCobros();
+  // mes anterior y curva acumulada de este mes (con los mismos cobros que usa Cobranza)
+  const ant = new Date(anio, mes - 1, 1);
+  const enMes = (f, y, m) => f && f.getFullYear() === y && f.getMonth() === m;
+  const totMes = cobros.filter(c => enMes(c.f, anio, mes)).reduce((a, c) => a + c.m, 0);
+  const totAnt = cobros.filter(c => enMes(c.f, ant.getFullYear(), ant.getMonth())).reduce((a, c) => a + c.m, 0);
+  const cobrado = totMes || k.cobradoMes;
+  const varPct = totAnt > 0 ? Math.round((cobrado - totAnt) / totAnt * 100) : null;
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const diasMes = new Date(anio, mes + 1, 0).getDate(), hoyD = hoy.getDate();
+  const porDia = Array(diasMes).fill(0);
+  cobros.forEach(c => { if (enMes(c.f, anio, mes)) porDia[c.f.getDate() - 1] += c.m; });
+  let acc = 0; const acum = porDia.slice(0, hoyD).map(v => (acc += v));
+  const meta = typeof metaMensual === 'number' && metaMensual > 0 ? metaMensual : 0;
+  const pct = meta ? Math.min(100, Math.round(cobrado / meta * 100)) : 0;
+  // curva del mes
+  const W = 600, H = 74, top = Math.max(acc, meta * 0.25, 1);
+  const pts = acum.map((v, i) => [acum.length > 1 ? i / (acum.length - 1) * W : W, H - 4 - (v / top) * (H - 12)]);
+  const linea = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
+  const ult = pts[pts.length - 1] || [0, H - 4];
+  const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/><path d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
+  const chipVar = varPct === null ? `<span class="nd-chip">Primer mes con datos</span>` : `<span class="nd-chip ${varPct >= 0 ? 'nd-up' : 'nd-down'}">${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs ${MESES[ant.getMonth()]}</span>`;
+  // antigüedad de lo que se debe (un solo tono: más oscuro = más antiguo)
+  const dias = d => Math.max(0, Math.floor((hoy - (cbFecha(d.createdAt) || cbFecha(d.fecha) || hoy)) / 864e5));
+  const pend = k.porCobrar.map(d => ({ s: cbSaldo(d), dd: dias(d), cli: ptNorm(d.cli || '') }));
+  const tramos = [['0–15 días', 0, 15, '#fcd9a0'], ['16–30 días', 16, 30, '#f5a524'], ['31–60 días', 31, 60, '#c26a05'], ['Más de 60 días', 61, 1e9, '#7c3d02']].map(([l, a, b, c]) => ({ l, c, m: pend.filter(x => x.dd >= a && x.dd <= b).reduce((q, x) => q + x.s, 0) }));
+  const clientesDeuda = new Set(pend.map(x => x.cli)).size;
+  const barraEdad = k.saldo > 0 ? `<div class="nd-aging" role="img" aria-label="Deuda por antigüedad">${tramos.filter(t => t.m > 0).map(t => `<i style="flex:${t.m};background:${t.c}" title="${t.l}: ${cbMoney(t.m)}"></i>`).join('')}</div>` : `<div class="nd-aging nd-aging-ok"><i style="flex:1"></i></div>`;
+  const leyenda = `<ul class="nd-leg">${tramos.map(t => `<li style="--k:${t.c}"><span>${t.l}</span><b>${cbMoney(t.m).replace('.00', '')}</b></li>`).join('')}</ul>`;
+  // clientes nuevos por mes (12 meses)
+  const nuevos = [...Array(12)].map((_, i) => { const d = new Date(anio, mes - 11 + i, 1); return clientesList.filter(c => { const f = c.createdAt?.toDate ? c.createdAt.toDate() : null; return f && enMes(f, d.getFullYear(), d.getMonth()); }).length; });
+  const mxN = Math.max(...nuevos, 1);
+  const barrasCli = `<svg class="nd-cbars" viewBox="0 0 200 54" preserveAspectRatio="none" role="img" aria-label="Clientes nuevos por mes, últimos 12 meses">${nuevos.map((v, i) => `<rect x="${i * 16.67 + 1.5}" y="${54 - Math.max(v ? 4 : 2, v / mxN * 52)}" width="13.6" height="${Math.max(v ? 4 : 2, v / mxN * 52)}" rx="3" class="${i === 11 ? 'on' : ''}"><title>${v} nuevo${v !== 1 ? 's' : ''}</title></rect>`).join('')}</svg>`;
+  const nuevosMes = nuevos[11];
+  // tarjetas compactas
+  const sk = '<div class="sk sk-v"></div>';
+  const tiles = [
+    { ir: 'suscripciones', l: 'Suscripciones', ico: '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>', v: ndNum(k.susAct.length), n: k.susVenc ? `<span class="nd-chip nd-down">${k.susVenc} con cobro vencido</span>` : '<span class="nd-chip">Todas al día</span>' },
+    { ir: 'portal', l: 'Portales', ico: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', v: ndNum(portalesList.length), n: 'Clientes con portal' },
+    { ir: 'resenasweb', l: 'Reseñas web', ico: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>', v: extra.rw ? ndNum(extra.rw.pend) : sk, n: extra.rw ? `por revisar · ${extra.rw.pub} publicadas` : 'Cargando…' },
+    { ir: 'miweb', l: 'Visitas web · 30 d', ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', v: extra.web ? ndNum(extra.web.visitantes) : sk, n: extra.web ? `personas · ${(extra.web.visitas || 0).toLocaleString('en-US')} visitas` : (extra.webErr ? 'Sin datos por ahora' : 'Cargando…') },
+    { ir: 'metaads', l: 'Meta Ads · 30 d', ico: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>', v: extra.meta ? ndMonto(extra.meta.gastado) : sk, n: extra.meta ? `${extra.meta.conversaciones} mensajes recibidos` : (extra.metaErr ? 'Sin datos por ahora' : 'Cargando…') }
+  ].map(t => `<button type="button" class="nd-c nd-t" onclick="irASeccion('${t.ir}')"><span class="nd-t-top"><span class="nd-l">${t.l}</span><span class="nd-ic">${ndIco(t.ico)}</span></span><span class="nd-v">${t.v}</span><span class="nd-n">${t.n}</span></button>`).join('');
+  return `<div class="nd-row1">
+    <button type="button" class="nd-c nd-hero" style="--acc:var(--blue)" onclick="irASeccion('facturacion')">
+      <span class="nd-hero-top"><span class="nd-l"><i></i>Cobrado en ${MESES[mes]}</span>${chipVar}</span>
+      <span class="nd-v nd-big">${ndMonto(cobrado)}</span>
+      ${meta ? `<span class="nd-goal"><span class="nd-goal-h"><span>Meta del mes</span><b>${pct}% · ${cbMoney(cobrado).replace('.00', '')} de ${cbMoney(meta).replace('.00', '')}</b></span><span class="nd-bar"><i style="width:${pct}%"></i></span></span>` : ''}
+      <span class="nd-curve">${curva}</span>
+    </button>
+    <button type="button" class="nd-c" style="--acc:#d97706" onclick="irASeccion('facturacion')">
+      <span class="nd-l"><i></i>Por cobrar</span>
+      <span class="nd-v">${ndMonto(k.saldo)}</span>
+      <span class="nd-n">${k.porCobrar.length} factura${k.porCobrar.length !== 1 ? 's' : ''} · ${clientesDeuda} cliente${clientesDeuda !== 1 ? 's' : ''}</span>
+      ${barraEdad}${leyenda}
+    </button>
+    <button type="button" class="nd-c" style="--acc:#0e9f6e" onclick="irASeccion('clientes')">
+      <span class="nd-l"><i></i>Clientes</span>
+      <span class="nd-v">${ndNum(clientesList.length)}</span>
+      <span class="nd-n"><span class="nd-chip ${nuevosMes ? 'nd-up' : ''}">${nuevosMes ? '+' + nuevosMes : '0'}</span> nuevos este mes${k.cliWeb ? ` · ${k.cliWeb} por la web` : ''}</span>
+      ${barrasCli}
+    </button>
+  </div>
+  <div class="nd-row2">${tiles}</div>`;
+}
 /* Resumen general del Dashboard: un vistazo a cada sección */
 let _rgCache = { t: 0, web: null, meta: null, rw: null };
 const _rgIco = d => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -9196,17 +9347,9 @@ async function renderResumenGeneral() {
   const cliWeb = clientesList.filter(c => c.origen === 'web' && (c.createdAt?.toMillis?.() || 0) >= hace30).length;
   const susAct = suscripcionesList.filter(s => s.estado === 'activa');
   const susVenc = susAct.filter(s => s.proximoPago && s.proximoPago < todayISO()).length;
-  const tarjetas = (extra = {}) => [
-    { ir: 'facturacion', col: '#d97706', dark: '#b45309', monto: true, l: 'Por cobrar', v: cbMoney(saldo), n: `<b>${porCobrar.length}</b> factura${porCobrar.length !== 1 ? 's' : ''} pendiente${porCobrar.length !== 1 ? 's' : ''}`, ico: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>' },
-    { ir: 'facturacion', col: '#059669', dark: '#047857', monto: true, l: 'Cobrado este mes', v: cbMoney(cobradoMes), n: `<b>${ventasMes.length}</b> pago${ventasMes.length !== 1 ? 's' : ''} recibido${ventasMes.length !== 1 ? 's' : ''}`, ico: '<path d="M20 6 9 17l-5-5"/>' },
-    { ir: 'clientes', col: '#1438cc', l: 'Clientes', v: clientesList.length, n: `<b>${cliNuevos}</b> nuevo${cliNuevos !== 1 ? 's' : ''} en 30 días${cliWeb ? ` · ${cliWeb} por la web` : ''}`, ico: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>' },
-    { ir: 'suscripciones', col: '#7c3aed', l: 'Suscripciones activas', v: susAct.length, n: susVenc ? `<b style="color:#b91c1c;">${susVenc}</b> con cobro vencido` : 'Todas al día', ico: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>' },
-    { ir: 'portal', col: '#0891b2', dark: '#0e7490', l: 'Portales de clientes', v: portalesList.length, n: 'Clientes con su portal privado', ico: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' },
-    { ir: 'resenasweb', col: '#db2777', dark: '#be185d', l: 'Reseñas de la web', v: extra.rw ? extra.rw.pend : '…', n: extra.rw ? `por revisar · <b>${extra.rw.pub}</b> publicadas` : 'Cargando…', ico: '<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' },
-    { ir: 'miweb', col: '#0d9488', dark: '#0f766e', l: 'Visitas web (30 días)', v: extra.web ? extra.web.visitantes.toLocaleString('en-US') : '…', n: extra.web ? `personas · <b>${extra.web.visitas.toLocaleString('en-US')}</b> páginas vistas` : (extra.webErr ? 'No disponible' : 'Cargando…'), ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' },
-    { ir: 'metaads', col: '#4f46e5', dark: '#4338ca', l: 'Meta Ads (30 días)', v: extra.meta ? cbMoney(extra.meta.gastado) : '…', n: extra.meta ? `gastado · <b>${extra.meta.conversaciones}</b> mensajes` : (extra.metaErr ? 'No disponible' : 'Cargando…'), ico: '<path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>' }
-  ].map(_rgCard).join('');
-  el.innerHTML = tarjetas(_rgCache);
+  el.className = 'nd';
+  el.innerHTML = ndResumen(_rgCache, { saldo, porCobrar, cobradoMes, ventasMes, cliNuevos, cliWeb, susAct, susVenc });
+  ndContar(el);
   if (Date.now() - _rgCache.t < 5 * 60e3) return;   // también si fallaron: se reintenta a los 5 minutos
   // Lo que viene de fuera (reseñas, Databuddy, Meta) se pide aparte y se guarda 5 minutos
   const extra = { t: Date.now() };
@@ -11799,7 +11942,7 @@ function renderCobranza() {
     .map(([l, a, b]) => { const xs = pendientes.filter(x => x.dias >= a && x.dias <= b); return { l, monto: xs.reduce((s, x) => s + x.saldo, 0), n: xs.length }; });
   const maxTramo = Math.max(...tramos.map(t => t.monto), 1);
   const vencido30 = tramos[2].monto + tramos[3].monto;
-  const tonos = ['#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a8a']; // un solo tono: más oscuro = más antiguo
+  const tonos = ['#fcd9a0', '#f5a524', '#c26a05', '#7c3d02']; // un solo tono (ámbar): más oscuro = más antiguo
 
   // Ingresos por mes (últimos 12)
   const cobros = cbCobros();
@@ -11845,12 +11988,6 @@ function renderCobranza() {
     <text x="${padL - 6}" y="${y(t) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${t >= 1000 ? '$' + (t / 1000).toFixed(t % 1000 ? 1 : 0) + 'k' : '$' + t}</text>`).join('');
 
   el.innerHTML = `
-    <div class="cb-tiles">
-      <div class="cb-tile"><div class="cb-tile-l">Por cobrar</div><div class="cb-tile-v">${cbMoney(totalDeuda)}</div><div class="cb-tile-n">${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''}</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Con más de 30 días</div><div class="cb-tile-v" style="color:${vencido30 > 0 ? '#b91c1c' : 'var(--black)'}">${cbMoney(vencido30)}</div><div class="cb-tile-n">${totalDeuda > 0 ? Math.round(vencido30 / totalDeuda * 100) + '% de la deuda' : 'Nada atrasado'}</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Cobrado este mes</div><div class="cb-tile-v">${cbMoney(esteMes)}</div><div class="cb-tile-n">${variacion === null ? 'Sin datos del mes anterior' : (variacion >= 0 ? '▲ ' : '▼ ') + Math.abs(variacion) + '% vs. ' + NOMBRES[meses[10].m]}</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Clientes con deuda</div><div class="cb-tile-v">${deudores.length}</div><div class="cb-tile-n">${deudores[0] ? 'Mayor: ' + esc(deudores[0].nombre.split(' ')[0]) + ' ' + cbMoney(deudores[0].saldo) : '—'}</div></div>
-    </div>
     <div class="cb-grid">
       <div class="cb-card">
         <div class="cb-title${window._cbAnimado ? '' : ' cb-anim'}">Antigüedad de la deuda</div>
