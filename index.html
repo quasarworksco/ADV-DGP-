@@ -2180,6 +2180,16 @@ html.dark .nd-c::before,html.dark #page-dashboard .cb-card::before,html.dark #pa
 html.dark .nd-c::after,html.dark #page-dashboard .cb-card::after,html.dark #page-dashboard .cb-tile::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.14) 20%,rgba(255,255,255,.14) 80%,transparent)}
 @media(min-width:1251px) and (max-width:1500px){.hz-lf{display:inline!important}.hz-ls{display:none!important}.hz-c small{font-size:12.5px!important}.hz{gap:14px!important;margin:0 10px!important}.hdr-search:not([style*="width:36px"]){min-width:230px!important}}
 @media(min-width:900px){.header-right{gap:8px}}
+/* Ventanas: fondo oscuro sin desenfoque y apertura rápida */
+.modal-overlay,.bs-over{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.modal-overlay{background:rgba(8,12,24,.52)!important}
+.modal-overlay.show{animation:ovIn .14s cubic-bezier(.23,1,.32,1) both!important}
+.bs-over.open{animation:ovIn .12s cubic-bezier(.23,1,.32,1) both}
+.edit-sheet,.doc-sheet{animation:sheetIn .2s cubic-bezier(.23,1,.32,1) both!important}
+.modal-box{animation:sheetIn .2s cubic-bezier(.23,1,.32,1) both!important}
+@keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-width:899px){.edit-sheet,.doc-sheet{animation:sheetUp .24s cubic-bezier(.32,.72,0,1) both!important}@keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}}
+@media(prefers-reduced-motion:reduce){.modal-overlay.show,.edit-sheet,.doc-sheet,.modal-box{animation-duration:.01s!important}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
