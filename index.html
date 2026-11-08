@@ -2138,6 +2138,39 @@ html.dark #app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(79
 html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(0,0,0,.35),0 10px 22px -8px rgba(0,0,0,.55),0 30px 60px -26px rgba(0,0,0,.9)!important}
 @media(hover:hover) and (pointer:fine){.nd-c{transition:transform .2s cubic-bezier(.23,1,.32,1),box-shadow .2s ease}.nd-c:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 0 0 1px rgba(11,20,48,.06),0 4px 8px -2px rgba(11,20,48,.08),0 16px 30px -10px rgba(11,20,48,.18),0 40px 70px -28px rgba(11,20,48,.35)!important}}
 #page-dashboard .dash-saludo h2{text-shadow:0 1px 0 rgba(255,255,255,.8)}
+/* comparación con el mes pasado */
+.nd-cmp{position:absolute;left:0;top:-2px;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-soft)}
+.nd-cmp i{width:14px;height:0;border-top:1.5px dashed var(--text-soft);opacity:.7}
+.nd-cmp b{color:var(--black);font-variant-numeric:tabular-nums}.nd-cmp b.up{color:#0b7f58}.nd-cmp b.dn{color:#b91c1c}
+html.dark .nd-cmp b.up{color:#34d399}html.dark .nd-cmp b.dn{color:#f87171}
+/* aviso elegante */
+#nd-avisos{position:fixed;top:84px;right:20px;z-index:99000;display:grid;gap:10px;pointer-events:none}
+.nd-aviso{display:flex;align-items:center;gap:12px;min-width:270px;padding:12px 16px 12px 12px;border-radius:16px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);border:1px solid rgba(255,255,255,.8);box-shadow:0 0 0 1px rgba(11,20,48,.06),0 20px 44px -18px rgba(11,20,48,.4);font-family:'Plus Jakarta Sans',sans-serif;opacity:0;transform:translateY(-8px) scale(.98);transition:opacity .3s cubic-bezier(.23,1,.32,1),transform .35s cubic-bezier(.23,1,.32,1)}
+.nd-aviso.in{opacity:1;transform:none}.nd-aviso.out{opacity:0;transform:translateY(-6px);transition-duration:.25s}
+.nd-aviso b{display:block;font-size:13.5px;color:#0b1430}.nd-aviso small{font-size:12.5px;color:#4a5573}
+.nd-av-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;background:#0e9f6e;flex-shrink:0}
+.nd-aviso.meta .nd-av-ic{background:linear-gradient(135deg,#1438cc,#4f6bff)}
+html.dark .nd-aviso{background:rgba(24,30,48,.85);border-color:rgba(255,255,255,.08)}html.dark .nd-aviso b{color:#fff}html.dark .nd-aviso small{color:#a7b1c9}
+/* meta alcanzada: la barra brilla */
+.nd-hero.nd-meta-ok .nd-bar i,.nd-bar i[style*="width:100%"]{background:linear-gradient(90deg,#1438cc,#4f6bff 40%,#b9ccff 50%,#4f6bff 60%,#1438cc);background-size:250% 100%;animation:ndBrillo 2.4s cubic-bezier(.4,0,.2,1) 3}
+@keyframes ndBrillo{from{background-position:100% 0}to{background-position:-50% 0}}
+@media(prefers-reduced-motion:reduce){.nd-bar i{animation:none!important}.nd-aviso{transition:opacity .2s}}
+/* modo enfoque */
+.hdr-eye[aria-pressed="true"]{background:var(--black)!important;color:var(--white)!important}
+body.enfoque #app-shell .page :is(.nd-v,.nd-cnt,.nd-mini li span,.nd-mini li b,.nd-leg b,.nd-tl-t b,.nd-tl-t small,.nd-tl-r strong,.nd-goal-h b,.nd-proj b,.nd-cmp b,.cb-tile-v,.cb-age-v,.dash-top-name,.dash-top-amt,svg text,td,.amount-value,[class*="-amt"],[class*="-monto"],[class*="-cli"],.cl-nombre,.cl-av,.nd-avt,h3,.rg-v),
+body.enfoque #nd-avisos small{filter:blur(7px);transition:filter .2s ease}
+body.enfoque #app-shell .page :is(.nd-v,.nd-cnt):hover{filter:blur(7px)}
+/* atajos */
+.atj{display:grid;gap:4px}.atj>div{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 4px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--black)}
+.atj kbd{display:flex;align-items:center;gap:4px;font:inherit}.atj kbd b{font:700 11.5px 'Plus Jakarta Sans',sans-serif;min-width:24px;text-align:center;padding:3px 7px;border-radius:7px;background:var(--off);border:1px solid var(--border);box-shadow:0 1px 0 var(--border)}.atj kbd i{font-style:normal;color:var(--text-soft);font-size:11px}
+/* avatares con favicon */
+.nd-avt{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;overflow:hidden;color:#fff;font:700 9.5px 'Plus Jakarta Sans',sans-serif;box-shadow:0 0 0 1px var(--border)}
+.nd-avt img{width:16px;height:16px;display:block}
+.nd-tl-dot.fav{background:#fff!important;position:relative}.nd-tl-dot.fav img{width:18px;height:18px;border-radius:4px}
+.nd-tl-dot.fav em{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;color:#fff;box-shadow:0 0 0 2px var(--white)}
+html.dark .nd-tl-dot.fav em{box-shadow:0 0 0 2px #111a2e}
+.cl-av.fav{background:#fff!important;box-shadow:0 0 0 1px var(--border)}.cl-av.fav img{width:60%;height:60%;border-radius:4px}
+.nd-mini li .nd-avt{flex:0 0 22px;width:22px;min-width:22px}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -3355,6 +3388,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <button type="button" class="qa-btn" id="qa-btn" onclick="qaToggle(event)" aria-haspopup="true" aria-expanded="false" title="Crear algo nuevo (N)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span><kbd>N</kbd></button>
       <div class="qa-menu" id="qa-menu" role="menu" aria-label="Crear"></div>
     </div>
+    <button class="hdr-search hdr-eye" id="btn-enfoque" onclick="toggleEnfoque()" title="Modo enfoque: ocultar montos y nombres (Ctrl+B)" aria-label="Modo enfoque" aria-pressed="false" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.9 17.9A10 10 0 0 1 12 20c-7 0-10-8-10-8a18.5 18.5 0 0 1 5.1-5.9M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2M1 1l22 22"/></svg></button>
     <button class="hdr-search" onclick="recargarPanel(this)" title="Actualizar (igual que F5)" aria-label="Actualizar" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     <button class="hdr-search" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
     <button class="btn-logout altair-btn" onclick="abrirAltair()" title="Altair: tu asistente con IA y automatizaciones"><span class="ai-orb" aria-hidden="true"></span><span class="hide-m ai-lbl">Altair<em class="ai-tag">IA</em></span></button>
@@ -3395,6 +3429,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         </div></div>
         <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirDiagnostico()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Probar sistema</span></button>
         <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();abrirBuscador()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Buscar</span><kbd>Ctrl K</kbd></button>
+        <button class="hdr-mi" role="menuitem" onclick="cerrarMenuUsuario();verAtajos()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg><span>Atajos de teclado</span></button>
+        <button class="hdr-mi" role="menuitem" onclick="cambiarAuto('chaching', !chachingActivo());toast(chachingActivo() ? 'Sonido al cobrar activado' : 'Sonido al cobrar apagado');cerrarMenuUsuario()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span>Sonido al cobrar (encender/apagar)</span></button>
         <button class="hdr-mi" id="hdr-temporada" role="menuitem" hidden onclick="toggleTemporada()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19"/></svg><span>Detalles navideños</span></button>
         <div class="hdr-menu-sep"></div>
         <button class="hdr-mi danger" role="menuitem" onclick="logoutUser()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Salir</span></button>
@@ -9410,7 +9446,7 @@ function renderMetaBar() {
   if (porcentaje >= 100 && totalMes > 0) {
     const clave = 'dgp-meta-' + new Date().toISOString().slice(0, 7);
     let ya = true; try { ya = localStorage.getItem(clave) === '1'; if (!ya) localStorage.setItem(clave, '1'); } catch (e) {}
-    if (!ya) setTimeout(() => { try { lanzarConfeti(); } catch (e) {} toast('¡Meta del mes alcanzada! Excelente trabajo'); }, 600);
+    if (!ya) setTimeout(() => { try { ndCelebrarMeta(totalMes); } catch (e) {} }, 600);
   }
   bar.style.background = porcentaje >= 100 ? 'var(--green-dark)' : 'var(--blue)';
   pct.textContent   = porcentaje.toFixed(0) + '%';
@@ -9442,13 +9478,13 @@ const ND_ACT = {
 };
 function ndActEventos() {
   const ev = [], lim = Date.now() - 14 * 864e5, hoy = Date.now();
-  try { cbCobros().forEach(({ f, m, d }) => { if (f && f.getTime() >= lim && m > 0) ev.push({ t: 'pago', f, titulo: `Pago recibido · ${d.cli || 'Cliente'}`, sub: [d.docId, d.metodoPago].filter(Boolean).join(' · '), monto: '+' + cbMoney(m), ir: 'facturacion' }); }); } catch (e) {}
+  try { cbCobros().forEach(({ f, m, d }) => { if (f && f.getTime() >= lim && m > 0) ev.push({ t: 'pago', f, cli: d.cli, titulo: `Pago recibido · ${d.cli || 'Cliente'}`, sub: [d.docId, d.metodoPago].filter(Boolean).join(' · '), monto: '+' + cbMoney(m), ir: 'facturacion' }); }); } catch (e) {}
   Object.values(docsMap || {}).forEach(d => {
     const f = cbFecha(d.createdAt) || cbFecha(d.fecha); if (!f) return;
     const esCot = d.type === 'cotizacion';
-    if (f.getTime() >= lim && d.type !== 'recibo') ev.push({ t: esCot ? 'cotiz' : 'factura', f, titulo: `${esCot ? 'Cotización' : 'Factura'} creada · ${d.cli || 'Cliente'}`, sub: [d.docId, (d.items && d.items[0] && (d.items[0].desc || d.items[0].descripcion)) || d.servicio].filter(Boolean).join(' · '), monto: cbMoney(d.total || 0), ir: 'facturacion' });
+    if (f.getTime() >= lim && d.type !== 'recibo') ev.push({ t: esCot ? 'cotiz' : 'factura', f, cli: d.cli, titulo: `${esCot ? 'Cotización' : 'Factura'} creada · ${d.cli || 'Cliente'}`, sub: [d.docId, (d.items && d.items[0] && (d.items[0].desc || d.items[0].descripcion)) || d.servicio].filter(Boolean).join(' · '), monto: cbMoney(d.total || 0), ir: 'facturacion' });
     const saldo = cbSaldo(d), v30 = new Date(f.getTime() + 30 * 864e5);
-    if (!esCot && saldo > 0.009 && v30.getTime() >= lim && v30.getTime() <= hoy) ev.push({ t: 'vencida', f: v30, titulo: `Cumplió 30 días sin pagar · ${d.cli || 'Cliente'}`, sub: [d.docId, 'debe ' + cbMoney(saldo)].filter(Boolean).join(' · '), monto: cbMoney(saldo), ir: 'facturacion' });
+    if (!esCot && saldo > 0.009 && v30.getTime() >= lim && v30.getTime() <= hoy) ev.push({ t: 'vencida', f: v30, cli: d.cli, titulo: `Cumplió 30 días sin pagar · ${d.cli || 'Cliente'}`, sub: [d.docId, 'debe ' + cbMoney(saldo)].filter(Boolean).join(' · '), monto: cbMoney(saldo), ir: 'facturacion' });
   });
   (clientesList || []).forEach(c => { const f = c.createdAt?.toDate ? c.createdAt.toDate() : null; if (f && f.getTime() >= lim) ev.push({ t: 'cliente', f, titulo: `Cliente nuevo · ${[c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || 'Sin nombre'}`, sub: c.origen === 'web' ? 'Llegó por el formulario de la web' : (c.empresa || 'Agregado en el panel'), ir: 'clientes' }); });
   try { ((typeof _wa !== 'undefined' && _wa.chats) || []).forEach(c => { const lm = c.lastMessage; if (!lm || lm.fromMe || !lm.timestamp) return; const f = new Date(lm.timestamp * 1000); if (f.getTime() < lim) return; ev.push({ t: 'mensaje', f, titulo: `${typeof waNombre === 'function' ? waNombre(c) : 'Contacto'} te escribió`, sub: (lm.body || '').slice(0, 80) || 'Mensaje nuevo', ir: 'whatsapp' }); }); } catch (e) {}
@@ -9474,7 +9510,7 @@ function ndActividad() {
     const dd = ndDia(e.f);
     if (dd !== dia) { if (dia) html += '</ul>'; html += `<div class="nd-day">${dd}</div><ul class="nd-tl">`; dia = dd; }
     const k = ND_ACT[e.t];
-    html += `<li class="${visto && e.f.getTime() > visto ? 'nuevo' : ''}" onclick="irASeccion('${e.ir}')"><span class="nd-tl-dot" style="background:${k.c}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${k.i}</svg></span><span class="nd-tl-t"><b>${esc(e.titulo)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span><span class="nd-tl-r">${e.monto ? `<strong>${e.monto}</strong>` : ''}${ndHace(e.f)}</span></li>`;
+    html += `<li class="${visto && e.f.getTime() > visto ? 'nuevo' : ''}" onclick="irASeccion('${e.ir}')">${(() => { const dom = e.cli && ndFavDe(e.cli); return dom ? `<span class="nd-tl-dot fav"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" loading="lazy"><em style="background:${k.c}"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${k.i}</svg></em></span>` : `<span class="nd-tl-dot" style="background:${k.c}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${k.i}</svg></span>`; })()}<span class="nd-tl-t"><b>${esc(e.titulo)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span><span class="nd-tl-r">${e.monto ? `<strong>${e.monto}</strong>` : ''}${ndHace(e.f)}</span></li>`;
   });
   if (dia) html += '</ul>';
   if (!ver.length) html = `<div class="nd-act-vacio">Nada por aquí en los últimos 14 días${ndActFiltro !== 'todo' ? ' con este filtro' : ''}.</div>`;
@@ -9504,6 +9540,7 @@ function ndContar(root) {
 }
 function ndHaceTs(ts) { const h = (Date.now() / 1000 - ts) / 3600; return h < 1 ? 'hace ' + Math.max(1, Math.round(h * 60)) + ' min' : h < 24 ? 'hace ' + Math.round(h) + ' h' : 'hace ' + Math.round(h / 24) + ' d'; }
 function ndResumen(extra, k) {
+  ndFavCargar();
   const hoy = new Date(), mes = hoy.getMonth(), anio = hoy.getFullYear();
   const cobros = cbCobros();
   // mes anterior y curva acumulada de este mes (con los mismos cobros que usa Cobranza)
@@ -9518,14 +9555,20 @@ function ndResumen(extra, k) {
   const porDia = Array(diasMes).fill(0);
   cobros.forEach(c => { if (enMes(c.f, anio, mes)) porDia[c.f.getDate() - 1] += c.m; });
   let acc = 0; const acum = porDia.slice(0, hoyD).map(v => (acc += v));
+  const diasAnt = new Date(anio, mes, 0).getDate(), porDiaAnt = Array(diasAnt).fill(0);
+  cobros.forEach(c => { if (enMes(c.f, ant.getFullYear(), ant.getMonth())) porDiaAnt[c.f.getDate() - 1] += c.m; });
+  let accA = 0; const acumAnt = porDiaAnt.slice(0, Math.min(hoyD, diasAnt)).map(v => (accA += v));
   const meta = typeof metaMensual === 'number' && metaMensual > 0 ? metaMensual : 0;
   const pct = meta ? Math.min(100, Math.round(cobrado / meta * 100)) : 0;
   // curva del mes
-  const W = 600, H = 74, top = Math.max(acc, meta * 0.25, 1);
+  const W = 600, H = 74, top = Math.max(acc, accA, meta * 0.25, 1);
   const pts = acum.map((v, i) => [acum.length > 1 ? i / (acum.length - 1) * W : W, H - 4 - (v / top) * (H - 12)]);
   const linea = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
   const ult = pts[pts.length - 1] || [0, H - 4];
-  const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/><path d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
+  const ptsA = acumAnt.map((v, i) => [acum.length > 1 ? i / (acum.length - 1) * W : W, H - 4 - (v / top) * (H - 12)]);
+  const lineaA = accA > 0 ? ptsA.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('') : '';
+  const difAnt = accA > 0 ? acc - accA : null;
+  const curva = acc > 0 ? `<svg class="nd-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cobros acumulados de ${MESES[mes]}"><defs><linearGradient id="ndg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".22"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><path d="${linea}L${ult[0].toFixed(1)},${H}L0,${H}Z" fill="url(#ndg)"/>${lineaA ? `<path d="${lineaA}" fill="none" stroke="var(--text-soft)" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}<path d="${linea}" fill="none" stroke="var(--blue)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>${difAnt !== null ? `<span class="nd-cmp"><i></i>${MESES[ant.getMonth()]} a esta fecha: <b>${cbMoney(accA).replace('.00', '')}</b> · vas <b class="${difAnt >= 0 ? 'up' : 'dn'}">${difAnt >= 0 ? '+' : '−'}${cbMoney(Math.abs(difAnt)).replace('.00', '')}</b></span>` : ''}<span class="nd-dot" style="left:${(ult[0] / W * 100).toFixed(2)}%;top:${(ult[1] / H * 100).toFixed(2)}%"></span>` : `<div class="nd-spark nd-vacio">Aún no hay cobros este mes</div>`;
   const proy = hoyD >= 3 && cobrado > 0 ? cobrado / hoyD * diasMes : 0;
   const proyHTML = proy ? `<span class="nd-proj"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg><span>Al ritmo actual cerrarías el mes en <b>${cbMoney(proy).replace('.00', '')}</b></span>${meta ? `<span class="nd-chip ${proy >= meta ? 'nd-up' : ''}">${proy >= meta ? 'Superas la meta' : 'Faltarían ' + cbMoney(meta - proy).replace('.00', '')}</span>` : ''}</span>` : '';
   const chipVar = varPct === null ? `<span class="nd-chip">Primer mes con datos</span>` : `<span class="nd-chip ${varPct >= 0 ? 'nd-up' : 'nd-down'}">${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs ${MESES[ant.getMonth()]}</span>`;
@@ -9537,7 +9580,7 @@ function ndResumen(extra, k) {
   const barraEdad = k.saldo > 0 ? `<div class="nd-aging" role="img" aria-label="Deuda por antigüedad">${tramos.filter(t => t.m > 0).map(t => `<i style="flex:${t.m};background:${t.c}" title="${t.l}: ${cbMoney(t.m)}"></i>`).join('')}</div>` : `<div class="nd-aging nd-aging-ok"><i style="flex:1"></i></div>`;
   const porCli = {}; pend.forEach((x, j) => { const d = k.porCobrar[j]; const n = d.cli || 'Cliente'; if (!porCli[x.cli]) porCli[x.cli] = { n, s: 0, dd: 0 }; porCli[x.cli].s += x.s; porCli[x.cli].dd = Math.max(porCli[x.cli].dd, x.dd); });
   const tops = Object.values(porCli).sort((a, b) => b.s - a.s).slice(0, 3);
-  const topDeuda = tops.length ? `<span class="nd-sub">Deben más</span><ul class="nd-mini">${tops.map(t => `<li><span>${esc(t.n)}</span><em class="${t.dd > 30 ? 'tarde' : ''}">${t.dd} d</em><b>${cbMoney(t.s).replace('.00', '')}</b></li>`).join('')}</ul>` : '';
+  const topDeuda = tops.length ? `<span class="nd-sub">Deben más</span><ul class="nd-mini">${tops.map(t => `<li>${ndAv(t.n)}<span>${esc(t.n)}</span><em class="${t.dd > 30 ? 'tarde' : ''}">${t.dd} d</em><b>${cbMoney(t.s).replace('.00', '')}</b></li>`).join('')}</ul>` : '';
   const leyenda = `<ul class="nd-leg">${tramos.map(t => `<li style="--k:${t.c}"><span>${t.l}</span><b>${cbMoney(t.m).replace('.00', '')}</b></li>`).join('')}</ul>`;
   // clientes nuevos por mes (12 meses)
   const nuevos = [...Array(12)].map((_, i) => { const d = new Date(anio, mes - 11 + i, 1); return clientesList.filter(c => { const f = c.createdAt?.toDate ? c.createdAt.toDate() : null; return f && enMes(f, d.getFullYear(), d.getMonth()); }).length; });
@@ -9545,7 +9588,7 @@ function ndResumen(extra, k) {
   const barrasCli = `<svg class="nd-cbars" viewBox="0 0 200 54" preserveAspectRatio="none" role="img" aria-label="Clientes nuevos por mes, últimos 12 meses">${nuevos.map((v, i) => `<rect x="${i * 16.67 + 1.5}" y="${54 - Math.max(v ? 4 : 2, v / mxN * 52)}" width="13.6" height="${Math.max(v ? 4 : 2, v / mxN * 52)}" rx="3" class="${i === 11 ? 'on' : ''}"><title>${v} nuevo${v !== 1 ? 's' : ''}</title></rect>`).join('')}</svg>`;
   const nuevosMes = nuevos[11];
   const recientes = (clientesList || []).filter(c => c.createdAt?.toDate).sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate()).slice(0, 3);
-  const ultCli = recientes.length ? `<span class="nd-sub">Últimos agregados</span><ul class="nd-mini">${recientes.map(c => `<li><span>${esc([c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || 'Sin nombre')}</span><em>${c.origen === 'web' ? 'web' : ''}</em><b>${c.createdAt.toDate().toLocaleDateString('es', { day: 'numeric', month: 'short' })}</b></li>`).join('')}</ul>` : '';
+  const ultCli = recientes.length ? `<span class="nd-sub">Últimos agregados</span><ul class="nd-mini">${recientes.map(c => `<li>${ndAv([c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || '?')}<span>${esc([c.nombre, c.apellido].filter(Boolean).join(' ') || c.empresa || 'Sin nombre')}</span><em>${c.origen === 'web' ? 'web' : ''}</em><b>${c.createdAt.toDate().toLocaleDateString('es', { day: 'numeric', month: 'short' })}</b></li>`).join('')}</ul>` : '';
   // cobros de suscripciones en los próximos 7 días
   const hoyISO = todayISO(), en7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const prox = (suscripcionesList || []).filter(x => x.estado === 'activa' && x.proximoPago && x.proximoPago >= hoyISO && x.proximoPago <= en7);
@@ -10575,7 +10618,7 @@ function renderClientes() {
     const x = st(c);
     const tel = String(c.telefono || '').replace(/[^0-9]/g, '');
     return `<div class="cl-row" onclick="abrirFichaCliente('${esc(c._id)}')">
-      <div class="cl-av" style="background:${clColor(nombre)};">${esc(clIniciales(nombre))}</div>
+      ${(() => { ndFavCargar(); const dom = ndFavDe(nombre); return dom ? `<div class="cl-av fav"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" loading="lazy"></div>` : `<div class="cl-av" style="background:${clColor(nombre)};">${esc(clIniciales(nombre))}</div>`; })()}
       <div class="hr-main">
         <div class="hr-top"><span class="hr-cli" style="white-space:normal;">${esc(nombre)}</span>${clEtiquetas(c, x)}${c.portalCodigo ? '<span class="emisor-tag" style="margin:0;">Portal</span>' : ''}${(c.tags || []).map(t => `<span class="cl-tag" style="margin:0;" onclick="event.stopPropagation();setClTagFiltro(this.dataset.t)" data-t="${esc(t)}">${esc(t)}</span>`).join('')}</div>
         <div class="hr-srv">${[c.telefono, c.correo, c.empresa].filter(Boolean).map(esc).join(' · ') || 'Sin datos de contacto'}</div>
@@ -11972,7 +12015,6 @@ document.addEventListener('keydown', e => {
   if (e.key === '/') { e.preventDefault(); abrirBuscador(); }
   else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); _bsAcciones()[0].fn(); }
   else if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); _bsAcciones()[1].fn(); }
-  else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) toggleTema();
   else if (e.key === 'Escape') { cerrarMenuUsuario(); if (document.getElementById('modalPortal')?.classList.contains('show')) closePortalModal(); }
 });
 
@@ -13545,16 +13587,12 @@ let _audioCtx = null;
 function sonarChaching() {
   try {
     _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const ctx = _audioCtx, t0 = ctx.currentTime;
-    const nota = (f, t, d, tipo = 'triangle', vol = .18) => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = tipo; o.frequency.setValueAtTime(f, t0 + t);
-      g.gain.setValueAtTime(0, t0 + t); g.gain.linearRampToValueAtTime(vol, t0 + t + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + t + d);
-      o.connect(g).connect(ctx.destination); o.start(t0 + t); o.stop(t0 + t + d + .05);
-    };
-    // "cha" (golpe metálico) + "ching" (campanita de caja registradora)
-    nota(180, 0, .08, 'square', .12); nota(140, .05, .1, 'square', .1);
-    nota(1318, .16, .6); nota(1760, .2, .7); nota(2637, .24, .9, 'sine', .12);
+    const ctx = _audioCtx, t0 = ctx.currentTime + .02, out = ctx.createGain(); out.gain.value = .55; out.connect(ctx.destination);
+    // dos campanitas suaves (quinta ascendente) con un brillo agudo muy leve
+    const nota = (f, t, d, vol) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, t0 + t);
+      g.gain.setValueAtTime(0, t0 + t); g.gain.linearRampToValueAtTime(vol, t0 + t + .012); g.gain.exponentialRampToValueAtTime(.0001, t0 + t + d);
+      o.connect(g).connect(out); o.start(t0 + t); o.stop(t0 + t + d + .05); };
+    nota(1046.5, 0, .9, .16); nota(2093, 0, .5, .03); nota(1568, .11, 1.1, .14); nota(3136, .11, .55, .025);
   } catch (e) {}
 }
 function lanzarConfeti() {
@@ -13576,9 +13614,8 @@ function lanzarConfeti() {
 function celebrarPago(doc, prev) {
   if (!chachingActivo()) return;
   const monto = (doc.pagado || doc.type === 'recibo') ? (Number(doc.total) || 0) - (Number(prev.montoPagado) || 0) : (Number(doc.montoPagado) || 0) - (Number(prev.montoPagado) || 0);
-  sonarChaching(); lanzarConfeti();
-  const frases = ['¡Cha-ching!', '¡Brutal!', '¡Eso es!', '¡Vamos con todo!', '¡Así se hace!'];
-  toast(`${frases[Math.floor(Math.random() * frases.length)]} Entró ${cbMoney(monto > 0 ? monto : doc.total)} de ${doc.cli || 'un cliente'} 💰`);
+  sonarChaching();
+  ndAviso('Pago recibido', `${cbMoney(monto > 0 ? monto : doc.total)} de ${doc.cli || 'un cliente'}`, 'pago');
 }
 
 /* Panel de Altair: interruptores (config/automatizaciones) */
@@ -13612,10 +13649,10 @@ function abrirAltair() {
     ${fila('susCorreo', 'Factura de suscripción por correo', '5 días antes del vencimiento se crea la factura y le llega al cliente por correo. Te queda el botón de WhatsApp en Telegram; a los 15 días sin pagar te avisa para pausar el servicio.')}
     ${fila('bienvenida', 'Bienvenida al pagar', 'Quien paga una página web o un registro de empresa recibe un correo con los pasos, el enlace al brief y la fecha estimada de entrega.')}
     ${fila('resenaAuto', 'Pedir reseña en Google', 'A los 3 días de marcar un proyecto como completado, el cliente recibe un correo con el enlace directo para dejar su reseña.')}
-    ${fila('chaching', 'Cha-ching al cobrar', 'Sonido de caja registradora y confeti en este panel cuando entra un pago.')}
+    ${fila('chaching', 'Sonido al cobrar', 'Un sonido suave y un aviso en este panel cuando entra un pago.')}
     <div class="alt-acts">
       <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>
-      <button class="alt-act" onclick="sonarChaching();lanzarConfeti();"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
+      <button class="alt-act" onclick="sonarChaching();ndAviso('Pago recibido','Así suena cuando entra un pago','pago');"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
     </div>`);
   pushEstadoHTML();
 }
@@ -13624,7 +13661,7 @@ async function cambiarAutoValor(k, v) {
   try { await db.collection('config').doc('automatizaciones').set({ [k]: v, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast('Guardado ✅'); } catch (e) { toast('No se pudo guardar.', 'err'); }
 }
 async function cambiarAuto(k, on) {
-  if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) { sonarChaching(); lanzarConfeti(); } return; }
+  if (k === 'chaching') { try { localStorage.setItem('dgp-chaching', on ? '1' : '0'); } catch (e) {} if (on) sonarChaching(); return; }
   _auto[k] = on;
   try { await db.collection('config').doc('automatizaciones').set({ [k]: on, actualizadoPor: currentUser?.email || '' }, { merge: true }); toast(on ? 'Activado ✅' : 'Desactivado'); }
   catch (e) { toast('No se pudo guardar.', 'err'); }
@@ -15124,6 +15161,67 @@ document.addEventListener('keydown', e => {
   document.querySelectorAll('.page').forEach(pg => new MutationObserver(rep).observe(pg, { attributes: true, attributeFilter: ['class'] }));
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pintar); else pintar();
 })();
+</script>
+<script>
+/* ===== Aviso elegante (pagos y meta) ===== */
+function ndAviso(t, d, tipo) {
+  let box = document.getElementById('nd-avisos'); if (!box) { box = document.createElement('div'); box.id = 'nd-avisos'; document.body.appendChild(box); }
+  const el = document.createElement('div'); el.className = 'nd-aviso ' + (tipo || '');
+  const ic = tipo === 'meta' ? '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>' : '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>';
+  el.innerHTML = `<span class="nd-av-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic}</svg></span><span><b>${esc(t)}</b><small>${esc(d)}</small></span>`;
+  box.appendChild(el); requestAnimationFrame(() => el.classList.add('in'));
+  setTimeout(() => { el.classList.remove('in'); el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 5200);
+}
+function ndCelebrarMeta(total) {
+  try { sonarChaching(); } catch (e) {}
+  document.querySelector('.nd-hero')?.classList.add('nd-meta-ok');
+  ndAviso('Meta del mes alcanzada', `Llevas ${cbMoney(total).replace('.00', '')} cobrados este mes`, 'meta');
+}
+/* ===== Modo enfoque: oculta montos y nombres ===== */
+function toggleEnfoque(forzar) {
+  const on = typeof forzar === 'boolean' ? forzar : !document.body.classList.contains('enfoque');
+  document.body.classList.toggle('enfoque', on);
+  try { localStorage.setItem('dgp-enfoque', on ? '1' : '0'); } catch (e) {}
+  document.getElementById('btn-enfoque')?.setAttribute('aria-pressed', on);
+  toast(on ? 'Modo enfoque: montos y nombres ocultos' : 'Modo enfoque desactivado');
+}
+try { if (localStorage.getItem('dgp-enfoque') === '1') document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('enfoque'); document.getElementById('btn-enfoque')?.setAttribute('aria-pressed', 'true'); }); } catch (e) {}
+/* ===== Atajos de teclado ===== */
+const ATAJOS = [
+  ['Ctrl + Espacio', 'Volver al inicio', () => irASeccion('dashboard')],
+  ['Ctrl + F', 'Facturación', () => irASeccion('facturacion')],
+  ['Ctrl + S', 'Suscripciones', () => irASeccion('suscripciones')],
+  ['Ctrl + D', 'Dominios', () => irASeccion('dominios')],
+  ['Ctrl + P', 'Panel SMM', () => irASeccion('smm')],
+  ['Ctrl + B', 'Modo enfoque (ocultar montos y nombres)', () => toggleEnfoque()],
+  ['Ctrl + K', 'Buscar', null], ['N', 'Crear algo nuevo', null], ['/', 'Buscar', null], ['?', 'Ver esta lista', null], ['Esc', 'Cerrar menús', null]
+];
+const ATAJO_TECLA = { ' ': 0, f: 1, s: 2, d: 3, p: 4, b: 5 };
+function verAtajos() {
+  ptModal('Atajos de teclado', 'Funcionan en cualquier sección del panel', `<div class="atj">${ATAJOS.map(([k, d]) => `<div><span>${d}</span><kbd>${k.split(' + ').map(x => `<b>${x}</b>`).join('<i>+</i>')}</kbd></div>`).join('')}</div>`);
+}
+document.addEventListener('keydown', e => {
+  if (document.getElementById('app-shell')?.style.display === 'none') return;
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+    const k = e.key === ' ' || e.code === 'Space' ? ' ' : e.key.toLowerCase();
+    if (k in ATAJO_TECLA) { e.preventDefault(); e.stopPropagation(); ATAJOS[ATAJO_TECLA[k]][2](); return; }
+  }
+  const t = e.target, escribiendo = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+  if (!escribiendo && e.key === '?') { e.preventDefault(); verAtajos(); }
+}, true);
+/* ===== Favicon de la web del cliente como avatar ===== */
+let _ndFav = null;
+function ndFavCargar() {
+  if (_ndFav) return;
+  try { const c = JSON.parse(localStorage.getItem('dgp-fav') || 'null'); if (c && Date.now() - c.t < 864e5) { _ndFav = c.m; return; } } catch (e) {}
+  _ndFav = {};
+  db.collection('webs').get().then(sn => { const m = {}; sn.docs.forEach(d => { const w = d.data(); if (w.cliente && w.dominio && w.activo !== false) m[ptNorm(w.cliente)] = String(w.dominio).replace(/^https?:\/\//, '').replace(/\/.*$/, ''); }); _ndFav = m; try { localStorage.setItem('dgp-fav', JSON.stringify({ t: Date.now(), m })); } catch (e) {} if (document.getElementById('page-dashboard')?.classList.contains('active')) renderResumenGeneral(); }).catch(() => {});
+}
+function ndFavDe(nombre) { if (!_ndFav || !nombre) return ''; const k = ptNorm(nombre); if (_ndFav[k]) return _ndFav[k]; const hit = Object.keys(_ndFav).find(x => x && (k.startsWith(x) || x.startsWith(k))); return hit ? _ndFav[hit] : ''; }
+function ndAv(nombre, cls) {
+  const dom = ndFavDe(nombre), ini = esc(clIniciales(nombre || '?')), col = clColor(nombre || '?');
+  return dom ? `<span class="nd-avt ${cls || ''}" style="background:#fff"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" loading="lazy" onerror="this.parentNode.style.background='${col}';this.replaceWith(document.createTextNode('${ini}'))"></span>` : `<span class="nd-avt ${cls || ''}" style="background:${col}">${ini}</span>`;
+}
 </script>
 </body>
 </html>
