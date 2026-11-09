@@ -14431,7 +14431,12 @@ async function renderWebs(fresco) {
   const el = document.getElementById('wb-lista'); if (!el) return;
   if (!_wb.lista || fresco) {
     if (!_wb.lista) el.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
-    try { const s = await db.collection('webs').get(); _wb.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })).filter(w => w.activo !== false).sort((a, b) => String(a.cliente || '').localeCompare(String(b.cliente || ''))); }
+    try { const s = await db.collection('webs').get(); let _todas = s.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // Limpieza: si un mismo repositorio quedó anotado dos veces, se queda la del dominio real y se borra la de github.io
+      const _dup = _todas.filter(w => w.repo && /\.github\.io/i.test(w.dominio || '') && _todas.some(x => x !== w && x.repo === w.repo && x.dominio && !/\.github\.io/i.test(x.dominio)));
+      for (const w of _dup) { try { await db.collection('webs').doc(w._id).delete(); } catch (e) {} }
+      if (_dup.length) _todas = _todas.filter(w => !_dup.includes(w));
+      _wb.lista = _todas.filter(w => w.activo !== false).sort((a, b) => String(a.cliente || '').localeCompare(String(b.cliente || ''))); }
     catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
   }
   wbPintar();

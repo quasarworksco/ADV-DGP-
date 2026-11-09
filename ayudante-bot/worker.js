@@ -1327,7 +1327,10 @@ async function gdConectar(env, token, dominio, repo, email) {
   if (!r.ok) return r;
   if (repo) await ghPonerDominio(env, repo, dominio);
   const webs = await fsList(env, 'webs', token).catch(() => []);
-  if (!webs.some(w => String(w.dominio || '').replace(/^www\./, '') === dominio)) await fsCreate(env, 'webs', { cliente: repo || dominio, dominio, activo: true, repo: repo ? `${GH_ORG}/${repo}` : '', creado: new Date(), por: email || 'panel' }, token).catch(() => {});
+  const mismoRepo = repo ? webs.find(w => w.repo === `${GH_ORG}/${repo}`) : null;
+  if (webs.some(w => String(w.dominio || '').replace(/^www\./, '') === dominio)) {}
+  else if (mismoRepo) await fsUpdate(env, `webs/${mismoRepo._id}`, { dominio, estado: null, caidaDesde: null }, ['dominio', 'estado', 'caidaDesde'], token).catch(() => {});
+  else await fsCreate(env, 'webs', { cliente: repo || dominio, dominio, activo: true, repo: repo ? `${GH_ORG}/${repo}` : '', creado: new Date(), por: email || 'panel' }, token).catch(() => {});
   return { ok: true };
 }
 // Dominios recién comprados: GoDaddy tarda unos minutos en activarlos; cada hora se reintenta conectarlos
@@ -1598,7 +1601,7 @@ async function crearSitio(env, token, b, email) {
   let dnsAuto = null;
   if (dominio && env.GODADDY_KEY && env.GODADDY_SECRET) dnsAuto = await gdApuntarPages(env, dominio).catch(e => ({ ok: false, motivo: e.message }));
   const url = dominio ? `https://${dominio}` : `https://${GH_ORG}.github.io/${repo}/`;
-  await fsCreate(env, 'webs', { cliente: d.cliente || d.titulo, dominio: dominio || `${GH_ORG}.github.io/${repo}`, activo: true, repo: `${GH_ORG}/${repo}`, creado: new Date(), por: email || 'panel' }, token).catch(() => {});
+  await fsCreate(env, 'webs', { cliente: d.titulo || d.cliente, ...(d.cliente && d.cliente !== d.titulo ? { encargo: d.cliente } : {}), dominio: dominio || `${GH_ORG}.github.io/${repo}`, activo: true, repo: `${GH_ORG}/${repo}`, creado: new Date(), por: email || 'panel' }, token).catch(() => {});
   return { ok: true, repo: `${GH_ORG}/${repo}`, repoUrl: `https://github.com/${GH_ORG}/${repo}`, url, pagesError: pages?.error || null, dnsAuto, kit,
     dns: dominio && !dnsAuto?.ok ? (dominio.split('.').length > 2 ? [{ tipo: 'CNAME', nombre: dominio.split('.')[0], valor: `${GH_ORG}.github.io` }] : [{ tipo: 'A', nombre: '@', valor: '185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153' }, { tipo: 'CNAME', nombre: 'www', valor: `${GH_ORG}.github.io` }]) : [] };
 }
