@@ -1921,6 +1921,24 @@ html.dark .nd-cbars rect{fill:#34d399}
 .nd-ic{width:30px;height:30px;border-radius:9px;background:var(--off);display:grid;place-items:center;color:var(--text-mid);flex-shrink:0}
 .nd-t .nd-v{font-size:24px;letter-spacing:-.6px;margin-top:10px}
 .nd-t .sk-v{height:24px;width:60%;margin-top:10px}
+/* embudo de ventas */
+.emb-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.emb-h .nd-act-f{margin:0}
+.emb{display:grid;gap:6px;margin-top:14px}
+.emb-r{display:grid;grid-template-columns:150px 1fr 110px;align-items:center;gap:14px}
+.emb-l{font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--black)}
+.emb-l small{display:block;font-weight:500;font-size:11px;color:var(--text-soft);margin-top:1px}
+.emb-b{height:38px;border-radius:10px;background:var(--off);position:relative;overflow:hidden}
+.emb-b i{position:absolute;inset:0 auto 0 0;border-radius:10px;background:var(--blue);opacity:var(--o);min-width:6px;transition:width .6s cubic-bezier(.23,1,.32,1)}
+.emb-b b{position:absolute;left:12px;top:50%;transform:translateY(-50%);font:700 15px 'Plus Jakarta Sans',sans-serif;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(11,20,48,.35)}
+.emb-b b.fuera{color:var(--black);text-shadow:none}
+.emb-m{font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--text-mid);text-align:right;font-variant-numeric:tabular-nums}
+.emb-p{display:grid;grid-template-columns:150px 1fr 110px;gap:14px;font:600 11px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft)}
+.emb-p span{grid-column:2;padding-left:12px}
+.emb-p span.bajo{color:#d97706}
+.emb-n{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font:500 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-mid)}
+html.dark .emb-b i{background:#6f8cff}
+@media(max-width:640px){.emb-r,.emb-p{grid-template-columns:104px 1fr;gap:10px}.emb-m{display:none}.emb-l{font-size:12px}}
 /* resto del dashboard con el mismo acabado */
 #page-dashboard .cb-card{padding:20px 22px!important}
 #page-dashboard .cb-tile{padding:16px 18px!important}
@@ -2263,6 +2281,7 @@ html.dark #app-shell .page{background:radial-gradient(55% 45% at 88% -5%,rgba(79
 html.dark .nd-c,html.dark #page-dashboard .cb-card,html.dark #page-dashboard .cb-tile{background:linear-gradient(180deg,#141823,#10131c)!important;border-color:rgba(255,255,255,.075)!important}
 html.dark .header{background:rgba(9,11,17,.88)!important;border-bottom-color:rgba(255,255,255,.06)!important}
 html.dark .nd-bar,html.dark .nd-ic,html.dark .nd-act-f button{background:#1b2030!important}
+html.dark .nd-act-f button.on{background:#e6ebf5!important;color:#0b1221}
 /* Lupa del dock: crece dentro del dock sin recortarse */
 @media(min-width:900px){
   .dock,.dk-i{overflow:visible!important}
@@ -3997,6 +4016,8 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         <div id="dash-top-services"></div>
       </div>
     </div>
+
+    <div class="cb-card" id="dash-embudo" style="margin-bottom:14px;"></div>
 
     <!-- HISTÓRICO -->
     <div class="db-head"><div class="dash-section-label" style="margin:0;">Histórico de facturación</div></div>
@@ -9927,7 +9948,59 @@ async function renderResumenGeneral() {
   // Se vuelve a calcular con los datos de ahora (las facturas pudieron cargar mientras se esperaba la web y Meta)
   if (document.getElementById('page-dashboard').classList.contains('active')) renderResumenGeneral();
 }
+/* ===== Embudo de ventas: contactos → cotizaciones → aceptadas → cobradas =====
+   Sigue a las cotizaciones creadas en el período hasta el cobro de su factura. */
+let _emb = { dias: 90, prosp: null, cargando: false };
+function embSet(d) { _emb.dias = d; renderEmbudo(); }
+function renderEmbudo() {
+  const el = document.getElementById('dash-embudo');
+  if (!el) return;
+  // Los prospectos solo se cargan al abrir su página: aquí se piden una vez, en segundo plano
+  if (!_pr.lista && !_emb.prosp && !_emb.cargando) {
+    _emb.cargando = true;
+    db.collection('prospectos').orderBy('createdAt', 'desc').limit(500).get()
+      .then(s => { _emb.prosp = s.docs.map(d => d.data()); })
+      .catch(() => { _emb.prosp = []; })
+      .finally(() => { _emb.cargando = false; renderEmbudo(); });
+  }
+  const lim = _emb.dias ? Date.now() - _emb.dias * 864e5 : 0;
+  const ms = v => { const f = cbFecha(v); return f ? f.getTime() : 0; };
+  const prosp = (_pr.lista || _emb.prosp || []).filter(p => p.origen && ms(p.createdAt) >= lim);
+  const cots = (cotizacionesList || []).filter(c => ms(c.createdAt) >= lim);
+  const acept = cots.filter(c => ['aceptada', 'facturada'].includes(c.estado));
+  const cobr = acept.filter(c => { const d = c.facturaId && docsMap[c.facturaId]; return d && (d.pagado || d.type === 'recibo'); });
+  const suma = L => L.reduce((a, c) => a + (Number(c.total) || 0), 0);
+  const pasos = [
+    { l: 'Contactos nuevos', s: 'Web, chat y WhatsApp', n: prosp.length, m: null },
+    { l: 'Cotizaciones', s: 'Enviadas al cliente', n: cots.length, m: suma(cots) },
+    { l: 'Aceptadas', s: 'El cliente dijo que sí', n: acept.length, m: suma(acept) },
+    { l: 'Cobradas', s: 'Factura pagada completa', n: cobr.length, m: suma(cobr) }
+  ];
+  const max = Math.max(...pasos.map(p => p.n), 1);
+  const filas = pasos.map((p, i) => {
+    const w = p.n ? Math.max(4, p.n / max * 100) : 0;
+    const ant = i ? pasos[i - 1].n : 0;
+    const pct = i && ant ? Math.round(p.n / ant * 100) : null;
+    return `${pct !== null ? `<div class="emb-p"><span class="${pct < 30 ? 'bajo' : ''}">↓ ${pct}% ${['', 'pidió cotización', 'la aceptó', 'ya pagó'][i]}</span></div>` : ''}
+      <div class="emb-r"><div class="emb-l">${p.l}<small>${p.s}</small></div>
+        <div class="emb-b"><i style="width:${w}%;--o:${1 - i * .17}"></i><b class="${w < 14 ? 'fuera' : ''}" ${w < 14 ? `style="left:calc(${w}% + 10px)"` : ''}>${p.n}</b></div>
+        <div class="emb-m">${p.m === null ? '' : cbMoney(p.m)}</div></div>`;
+  }).join('');
+  // Dónde se pierden más clientes (el paso con peor conversión)
+  const caidas = pasos.slice(1).map((p, i) => ({ i, de: pasos[i], a: p, pct: pasos[i].n ? p.n / pasos[i].n : null })).filter(x => x.pct !== null && x.de.n >= 3);
+  const peor = caidas.sort((a, b) => a.pct - b.pct)[0];
+  const consejo = ['Muchos contactos no llegan a recibir cotización: respóndeles más rápido.', 'Muchas cotizaciones quedan sin respuesta: dales seguimiento.', 'Hay cotizaciones aceptadas sin cobrar: revisa esas facturas.'];
+  const nota = !cots.length && !prosp.length ? 'Todavía no hay contactos ni cotizaciones en este período.'
+    : peor && peor.pct < .5 ? consejo[peor.i]
+    : cots.length ? `De cada 10 cotizaciones, ${Math.round(cobr.length / cots.length * 10)} terminan cobradas.` : '';
+  const pills = [[30, '30 días'], [90, '90 días'], [365, '12 meses'], [0, 'Todo']].map(([d, t]) => `<button type="button" class="${_emb.dias === d ? 'on' : ''}" onclick="embSet(${d})">${t}</button>`).join('');
+  el.innerHTML = `<div class="emb-h"><div><div class="cb-title">Embudo de ventas</div><div class="cb-sub">De cada contacto, cuántos terminan pagando</div></div>
+      <div class="nd-act-f" role="group" aria-label="Período del embudo">${pills}</div></div>
+    <div class="emb">${filas}</div>${nota ? `<div class="emb-n">${nota}</div>` : ''}`;
+}
+
 function renderDashboard() {
+  renderEmbudo();
   pintarSaludo();
   setTimeout(pintarPronostico, 0);
   renderResumenGeneral();
@@ -12313,6 +12386,7 @@ function initCotizaciones() {
     const pendientes = cotizacionesList.filter(c => c.estado === 'aceptada').length;
     const b = document.getElementById('cot-badge');
     if (b) { b.textContent = pendientes; b.style.display = pendientes ? 'inline' : 'none'; }
+    renderEmbudo();
     if (document.getElementById('subtab-cotizaciones').style.display !== 'none') renderCotizaciones();
   }, err => console.error('Cotizaciones:', err));
 }
