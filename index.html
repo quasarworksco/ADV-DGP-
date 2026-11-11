@@ -23,14 +23,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  <!-- Íconos: se cargan sin frenar el primer pintado (la pantalla de inicio los cubre mientras llegan) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
   <!-- Firebase SDK (compat v10) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <!-- Firebase Storage removido — imágenes via Cloudinary -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- html2pdf (≈900 KB) se carga solo al descargar un PDF: ver cargarHtml2pdf() -->
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -10376,11 +10381,28 @@ function renderEncuestas(fresco) {
 /* ═══════════════════════════════════════════════════════
    COMPARTIR FACTURA — WhatsApp / Email
 ═══════════════════════════════════════════════════════ */
-function descargarPDF(fsId) {
+/* La librería de PDF pesa mucho: se descarga la primera vez que se pide un PDF, no al abrir el panel */
+let _html2pdfCarga = null;
+function cargarHtml2pdf() {
+  if (window.html2pdf) return Promise.resolve();
+  if (!_html2pdfCarga) _html2pdfCarga = new Promise((ok, mal) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    sc.onload = ok;
+    sc.onerror = () => { _html2pdfCarga = null; sc.remove(); mal(new Error('sin conexión')); };
+    document.head.appendChild(sc);
+  });
+  return _html2pdfCarga;
+}
+async function descargarPDF(fsId) {
   const doc = docsMap[fsId];
   if (!doc) return;
   const el = document.querySelector('.doc-sheet');
   if (!el) return;
+  if (!window.html2pdf) {
+    toast('Preparando el PDF…');
+    try { await cargarHtml2pdf(); } catch (e) { toast('No se pudo preparar el PDF. Revisa tu conexión e inténtalo de nuevo.', 'err'); return; }
+  }
   const actions = document.getElementById('sheet-actions');
   actions.style.display = 'none';
   const opt = {
@@ -10392,7 +10414,7 @@ function descargarPDF(fsId) {
   };
   html2pdf().set(opt).from(el).save().then(() => {
     actions.style.display = '';
-  });
+  }).catch(() => { actions.style.display = ''; toast('No se pudo crear el PDF.', 'err'); });
 }
 
 
