@@ -1922,6 +1922,35 @@ html.dark .nd-cbars rect{fill:#34d399}
 .nd-t .nd-v{font-size:24px;letter-spacing:-.6px;margin-top:10px}
 .nd-t .sk-v{height:24px;width:60%;margin-top:10px}
 #page-dashboard .db-hist-col{grid-template-columns:1fr!important;margin:0;align-content:start}
+/* un color por significado: verde = cobrado · ámbar = pendiente · rojo = vencido · azul = lo demás */
+html:not(.mono) .nd-hero,html:not(.mono) #cb-chart{--blue:#0e9f6e}
+html.dark:not(.mono) .nd-hero,html.dark:not(.mono) #cb-chart{--blue:#34d399}
+html:not(.mono) .nd-hero.nd-meta-ok .nd-bar i,html:not(.mono) .nd-hero .nd-bar i[style*="width:100%"]{background:linear-gradient(90deg,#0e9f6e,#34d399 40%,#bbf7d0 50%,#34d399 60%,#0e9f6e);background-size:250% 100%}
+html:not(.mono) .dash-main .cal-day.has-sales{background:color-mix(in srgb,#0e9f6e 10%,transparent)}
+html:not(.mono) .dash-main .cal-day-amount{color:var(--green-dark)}
+html.dark:not(.mono) .dash-main .cal-day-amount{color:#34d399}
+html:not(.mono) .emb-b.ok i{background:#0e9f6e}html.dark:not(.mono) .emb-b.ok i{background:#34d399}
+html.dark #dash-total-ventas,html.dark #dash-cobrado{color:#34d399!important}
+/* minigráficas de las tarjetas de Ventas (tendencia de 30 días) */
+.vt-spark{display:block;width:100%;height:34px;margin-top:10px;overflow:visible;--c:var(--blue)}
+.vt-spark.g{--c:#0e9f6e}
+html.dark .vt-spark{--c:#6f8cff}html.dark .vt-spark.g{--c:#34d399}
+.vt-spark path.l{fill:none;stroke:var(--c);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0}
+.vt-spark path.a{fill:var(--c);opacity:.1}
+.vt-spark circle{fill:var(--c)}
+.vt-spark circle.p{fill:none;stroke:var(--c);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:vtLatido 2.4s ease-out infinite}
+.vt-spark.viva path.l{animation:vtTrazo 1.1s cubic-bezier(.23,1,.32,1) both}
+.vt-spark.viva path.a{animation:vtArea .9s ease .5s both}
+.vt-spark.viva circle.d{animation:vtArea .3s ease 1s both;opacity:1}
+@keyframes vtTrazo{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes vtArea{from{opacity:0}}
+@keyframes vtLatido{0%{transform:scale(.7);opacity:.9}70%,100%{transform:scale(2.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.vt-spark.viva path,.vt-spark.viva circle,.vt-spark circle.p{animation:none}}
+/* encabezados de sección livianos: título pequeño + línea fina, más aire */
+#page-dashboard .db-head{margin:44px 0 16px}
+#page-dashboard .db-head .dash-section-label{flex:1;display:flex;align-items:center;gap:14px;font-size:12px!important;font-weight:600!important;color:var(--text-soft)!important;white-space:nowrap}
+#page-dashboard .db-head .dash-section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--text-soft) 30%,transparent),transparent 85%)}
+@media(max-width:900px){#page-dashboard .db-head{margin:30px 0 12px!important}}
 /* embudo de ventas */
 .emb-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .emb-h .nd-act-f{margin:0}
@@ -3992,9 +4021,9 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       </div>
     </div>
     <div class="cb-tiles">
-      <div class="cb-tile"><div class="cb-tile-l">Monto total</div><div class="cb-tile-v" id="dash-total-ventas">$0.00</div><div class="cb-tile-n">Facturas cobradas en el período</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">N° de ventas</div><div class="cb-tile-v" id="dash-num-ventas">0</div><div class="cb-tile-n">Facturas con pago</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Promedio por venta</div><div class="cb-tile-v" id="dash-avg-venta">$0.00</div><div class="cb-tile-n">Ticket promedio</div></div>
+      <div class="cb-tile"><div class="cb-tile-l">Monto total</div><div class="cb-tile-v" id="dash-total-ventas" style="color:var(--green-dark);">$0.00</div><div class="cb-tile-n">Facturas cobradas en el período</div><svg class="vt-spark g" id="spark-monto" viewBox="0 0 120 34" role="img"></svg></div>
+      <div class="cb-tile"><div class="cb-tile-l">N° de ventas</div><div class="cb-tile-v" id="dash-num-ventas">0</div><div class="cb-tile-n">Facturas con pago</div><svg class="vt-spark" id="spark-num" viewBox="0 0 120 34" role="img"></svg></div>
+      <div class="cb-tile"><div class="cb-tile-l">Promedio por venta</div><div class="cb-tile-v" id="dash-avg-venta">$0.00</div><div class="cb-tile-n">Ticket promedio</div><svg class="vt-spark" id="spark-avg" viewBox="0 0 120 34" role="img"></svg></div>
       <div class="cb-tile">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
           <div class="cb-tile-l">Meta del mes</div>
@@ -4035,7 +4064,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
           </div>
         </div>
         <div class="cal-grid" id="cal-grid"></div>
-        <div class="cal-legend"><span class="cal-dot" style="background:var(--blue);"></span> Día con ventas</div>
+        <div class="cal-legend"><span class="cal-dot" style="background:#0e9f6e;"></span> Día con cobros</div>
       </div>
       <div class="cb-tiles db-hist-col">
         <div class="cb-tile"><div class="cb-tile-l">Facturas emitidas</div><div class="cb-tile-v" id="dash-total-facturas">0</div><div class="cb-tile-n">Desde el inicio</div></div>
@@ -9714,10 +9743,10 @@ let ndActFiltro = 'todo', ndActTodo = false;
 const ND_ACT = {
   pago:    { c: '#0e9f6e', i: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', f: 'pagos' },
   factura: { c: '#1438cc', i: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', f: 'facturas' },
-  cotiz:   { c: '#4f46e5', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/>', f: 'facturas' },
-  vencida: { c: '#d97706', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M12 12v3M12 18h.01"/>', f: 'facturas' },
-  cliente: { c: '#0b1430', i: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>', f: 'clientes' },
-  mensaje: { c: '#16a34a', i: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', f: 'mensajes' }
+  cotiz:   { c: '#1438cc', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/>', f: 'facturas' },
+  vencida: { c: '#dc2626', i: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M12 12v3M12 18h.01"/>', f: 'facturas' },
+  cliente: { c: '#1438cc', i: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>', f: 'clientes' },
+  mensaje: { c: '#1438cc', i: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', f: 'mensajes' }
 };
 function ndActEventos() {
   const ev = [], lim = Date.now() - 14 * 864e5, hoy = Date.now();
@@ -9817,10 +9846,10 @@ function ndResumen(extra, k) {
   const proy = hoyD >= 3 && cobrado > 0 ? cobrado / hoyD * diasMes : 0;
   const proyHTML = proy ? `<span class="nd-proj"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg><span>Al ritmo actual cerrarías el mes en <b>${cbMoney(proy).replace('.00', '')}</b></span>${meta ? `<span class="nd-chip ${proy >= meta ? 'nd-up' : ''}">${proy >= meta ? 'Superas la meta' : 'Faltarían ' + cbMoney(meta - proy).replace('.00', '')}</span>` : ''}</span>` : '';
   const chipVar = varPct === null ? `<span class="nd-chip">Primer mes con datos</span>` : `<span class="nd-chip ${varPct >= 0 ? 'nd-up' : 'nd-down'}"><i class="nd-flecha ${varPct >= 0 ? 'sube' : 'baja'}">${varPct >= 0 ? '▲' : '▼'}</i> ${Math.abs(varPct)}% vs ${MESES[ant.getMonth()]}</span>`;
-  // antigüedad de lo que se debe (un solo tono: más oscuro = más antiguo)
+  // antigüedad de lo que se debe: ámbar = pendiente, rojo = vencido (más de 30 días)
   const dias = d => Math.max(0, Math.floor((hoy - (cbFecha(d.createdAt) || cbFecha(d.fecha) || hoy)) / 864e5));
   const pend = k.porCobrar.map(d => ({ s: cbSaldo(d), dd: dias(d), cli: ptNorm(d.cli || '') }));
-  const tramos = [['0–15 días', 0, 15, '#fcd9a0'], ['16–30 días', 16, 30, '#f5a524'], ['31–60 días', 31, 60, '#c26a05'], ['Más de 60 días', 61, 1e9, '#7c3d02']].map(([l, a, b, c]) => ({ l, c, m: pend.filter(x => x.dd >= a && x.dd <= b).reduce((q, x) => q + x.s, 0) }));
+  const tramos = [['0–15 días', 0, 15, '#fcd9a0'], ['16–30 días', 16, 30, '#f5a524'], ['31–60 días', 31, 60, '#f87171'], ['Más de 60 días', 61, 1e9, '#b91c1c']].map(([l, a, b, c]) => ({ l, c, m: pend.filter(x => x.dd >= a && x.dd <= b).reduce((q, x) => q + x.s, 0) }));
   const clientesDeuda = new Set(pend.map(x => x.cli)).size;
   const barraEdad = k.saldo > 0 ? `<div class="nd-aging" role="img" aria-label="Deuda por antigüedad">${tramos.filter(t => t.m > 0).map(t => `<i style="flex:${t.m};background:${t.c}" title="${t.l}: ${cbMoney(t.m)}"></i>`).join('')}</div>` : `<div class="nd-aging nd-aging-ok"><i style="flex:1"></i></div>`;
   const porCli = {}; pend.forEach((x, j) => { const d = k.porCobrar[j]; const n = d.cli || 'Cliente'; if (!porCli[x.cli]) porCli[x.cli] = { n, s: 0, dd: 0 }; porCli[x.cli].s += x.s; porCli[x.cli].dd = Math.max(porCli[x.cli].dd, x.dd); });
@@ -9863,7 +9892,7 @@ function ndResumen(extra, k) {
       ${barraEdad}${leyenda}
       ${topDeuda}
     </button>
-    <button type="button" class="nd-c" data-k="clientes" style="--acc:#0e9f6e" onclick="irASeccion('clientes')">
+    <button type="button" class="nd-c" data-k="clientes" style="--acc:var(--blue)" onclick="irASeccion('clientes')">
       <span class="nd-l"><i></i>Clientes</span>
       <span class="nd-v">${ndNum(clientesList.length)}</span>
       <span class="nd-n"><span class="nd-chip ${nuevosMes ? 'nd-up' : ''}">${nuevosMes ? '+' + nuevosMes : '0'}</span> nuevos este mes${k.cliWeb ? ` · ${k.cliWeb} por la web` : ''}</span>
@@ -9945,6 +9974,40 @@ async function renderResumenGeneral() {
   // Se vuelve a calcular con los datos de ahora (las facturas pudieron cargar mientras se esperaba la web y Meta)
   if (document.getElementById('page-dashboard').classList.contains('active')) renderResumenGeneral();
 }
+/* ===== Minigráficas de Ventas: tendencia de los últimos 30 días (cada punto = los 7 días anteriores) ===== */
+let _vtFirma = '';
+function renderVentasSparks() {
+  const hoy = new Date(); hoy.setHours(23, 59, 59, 999);
+  const porDia = Array.from({ length: 37 }, () => ({ m: 0, n: 0 }));
+  cbCobros().forEach(({ f, m }) => { if (!f || m <= 0) return; const i = 36 - Math.floor((hoy - f) / 864e5); if (i >= 0 && i < 37) { porDia[i].m += m; porDia[i].n++; } });
+  const serie = { monto: [], num: [], avg: [] };
+  for (let i = 7; i < 37; i++) {
+    const v = porDia.slice(i - 6, i + 1), m = v.reduce((a, x) => a + x.m, 0), n = v.reduce((a, x) => a + x.n, 0);
+    serie.monto.push(m); serie.num.push(n); serie.avg.push(n ? m / n : 0);
+  }
+  const firma = JSON.stringify(serie);
+  const animar = firma !== _vtFirma; _vtFirma = firma;
+  Object.entries(serie).forEach(([k, vals]) => {
+    const svg = document.getElementById('spark-' + k);
+    if (!svg) return;
+    const max = Math.max(...vals);
+    if (!(max > 0)) { svg.innerHTML = ''; svg.style.display = 'none'; return; }
+    svg.style.display = '';
+    // se dibuja al tamaño real de la tarjeta para que el trazo no se deforme
+    const W = Math.max(svg.clientWidth || 0, 120) - 5, H = 34;
+    svg.setAttribute('viewBox', `0 0 ${W + 5} ${H}`);
+    const pts = vals.map((v, i) => [i / (vals.length - 1) * W, H - 5 - v / max * (H - 10)]);
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2; d += ` C${cx.toFixed(1)},${y0.toFixed(1)} ${cx.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`; }
+    const [ux, uy] = pts[pts.length - 1];
+    // el último punto late: es el valor de hoy
+    svg.innerHTML = `<path class="a" d="${d} L${W},${H} L0,${H} Z"></path><path class="l" pathLength="1" d="${d}"></path><circle class="p" cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" r="3.2"></circle><circle class="d" cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" r="3.2"></circle>`;
+    if (animar) { svg.classList.remove('viva'); void svg.getBoundingClientRect(); svg.classList.add('viva'); }
+    const a = vals[vals.length - 1], b = vals[vals.length - 8] || 0;
+    svg.setAttribute('aria-label', a > b ? 'Subiendo en los últimos 30 días' : a < b ? 'Bajando en los últimos 30 días' : 'Estable en los últimos 30 días');
+  });
+}
+
 /* ===== Embudo de ventas: contactos → cotizaciones → aceptadas → cobradas =====
    Sigue a las cotizaciones creadas en el período hasta el cobro de su factura. */
 let _emb = { dias: 90, prosp: null, cargando: false };
@@ -9980,7 +10043,7 @@ function renderEmbudo() {
     const pct = i && ant ? Math.round(p.n / ant * 100) : null;
     return `${pct !== null ? `<div class="emb-p"><span class="${pct < 30 ? 'bajo' : ''}">↓ ${pct}% ${['', 'pidió cotización', 'la aceptó', 'ya pagó'][i]}</span></div>` : ''}
       <div class="emb-r"><div class="emb-l">${p.l}<small>${p.s}</small></div>
-        <div class="emb-b"><i style="width:${w}%;--o:${1 - i * .17}"></i><b class="${w < 14 ? 'fuera' : ''}" ${w < 14 ? `style="left:calc(${w}% + 10px)"` : ''}>${p.n}</b></div>
+        <div class="emb-b${i === 3 ? ' ok' : ''}"><i style="width:${w}%;--o:${i === 3 ? 1 : 1 - i * .17}"></i><b class="${w < 14 ? 'fuera' : ''}" ${w < 14 ? `style="left:calc(${w}% + 10px)"` : ''}>${p.n}</b></div>
         <div class="emb-m">${p.m === null ? '' : cbMoney(p.m)}</div></div>`;
   }).join('');
   // Dónde se pierden más clientes (el paso con peor conversión)
@@ -9998,6 +10061,7 @@ function renderEmbudo() {
 
 function renderDashboard() {
   renderEmbudo();
+  requestAnimationFrame(renderVentasSparks);
   pintarSaludo();
   setTimeout(pintarPronostico, 0);
   renderResumenGeneral();
@@ -12579,7 +12643,7 @@ function renderCobranza() {
     .map(([l, a, b]) => { const xs = pendientes.filter(x => x.dias >= a && x.dias <= b); return { l, monto: xs.reduce((s, x) => s + x.saldo, 0), n: xs.length }; });
   const maxTramo = Math.max(...tramos.map(t => t.monto), 1);
   const vencido30 = tramos[2].monto + tramos[3].monto;
-  const tonos = ['#fcd9a0', '#f5a524', '#c26a05', '#7c3d02']; // un solo tono (ámbar): más oscuro = más antiguo
+  const tonos = ['#fcd9a0', '#f5a524', '#f87171', '#b91c1c']; // ámbar = pendiente, rojo = vencido (más de 30 días)
 
   // Ingresos por mes (últimos 12)
   const cobros = cbCobros();
