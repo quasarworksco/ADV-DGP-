@@ -1921,6 +1921,7 @@ html.dark .nd-cbars rect{fill:#34d399}
 .nd-ic{width:30px;height:30px;border-radius:9px;background:var(--off);display:grid;place-items:center;color:var(--text-mid);flex-shrink:0}
 .nd-t .nd-v{font-size:24px;letter-spacing:-.6px;margin-top:10px}
 .nd-t .sk-v{height:24px;width:60%;margin-top:10px}
+#page-dashboard .db-hist-col{grid-template-columns:1fr!important;margin:0;align-content:start}
 /* embudo de ventas */
 .emb-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .emb-h .nd-act-f{margin:0}
@@ -3999,9 +4000,10 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
           <div class="cb-tile-l">Meta del mes</div>
           <label class="db-meta-input" title="Editar meta">$<input type="number" id="meta-input" min="0" step="100" onchange="guardarMeta(this.value)" oninput="actualizarMeta(this.value)"></label>
         </div>
-        <div class="cb-tile-v" id="meta-pct-label">0%</div>
-        <div class="db-meta-track"><div id="meta-bar" style="height:100%;background:var(--blue);border-radius:6px;width:0%;transition:width .4s ease;"></div></div>
-        <div class="cb-tile-n"><span id="meta-amt-label">$0 / $0</span> · <span id="meta-msg"></span></div>
+        <div class="cb-tile-v" id="meta-pct-label" hidden>0%</div>
+        <div class="db-meta-track" hidden><div id="meta-bar" style="height:100%;background:var(--blue);border-radius:6px;width:0%;transition:width .4s ease;"></div></div>
+        <div class="cb-tile-v" id="meta-amt-label" style="font-size:17px!important;letter-spacing:-.3px;">$0 / $0</div>
+        <div class="cb-tile-n"><span id="meta-msg"></span></div>
       </div>
     </div>
     <div class="db-grid-2">
@@ -4021,11 +4023,6 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
 
     <!-- HISTÓRICO -->
     <div class="db-head"><div class="dash-section-label" style="margin:0;">Histórico de facturación</div></div>
-    <div class="cb-tiles" style="grid-template-columns:repeat(3,1fr);">
-      <div class="cb-tile"><div class="cb-tile-l">Facturas emitidas</div><div class="cb-tile-v" id="dash-total-facturas">0</div><div class="cb-tile-n">Desde el inicio</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Cobrado en total</div><div class="cb-tile-v" id="dash-cobrado" style="color:var(--green-dark);">$0.00</div><div class="cb-tile-n">Pagos completos y parciales</div></div>
-      <div class="cb-tile"><div class="cb-tile-l">Con pago parcial</div><div class="cb-tile-v" id="dash-parciales">0</div><div class="cb-tile-n">Facturas abonadas a medias</div></div>
-    </div>
     <span id="dash-pendiente" hidden></span>
     <div class="db-grid-2">
       <div class="cb-card">
@@ -4040,10 +4037,10 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         <div class="cal-grid" id="cal-grid"></div>
         <div class="cal-legend"><span class="cal-dot" style="background:var(--blue);"></span> Día con ventas</div>
       </div>
-      <div class="cb-card">
-        <div class="cb-title">Actividad reciente</div>
-        <div class="cb-sub">Últimos movimientos del equipo</div>
-        <div id="actividad-list" style="max-height:380px;overflow-y:auto;"><div style="text-align:center;color:var(--text-soft);font-size:12px;padding:16px;">Cargando...</div></div>
+      <div class="cb-tiles db-hist-col">
+        <div class="cb-tile"><div class="cb-tile-l">Facturas emitidas</div><div class="cb-tile-v" id="dash-total-facturas">0</div><div class="cb-tile-n">Desde el inicio</div></div>
+        <div class="cb-tile"><div class="cb-tile-l">Cobrado en total</div><div class="cb-tile-v" id="dash-cobrado" style="color:var(--green-dark);">$0.00</div><div class="cb-tile-n">Pagos completos y parciales</div></div>
+        <div class="cb-tile"><div class="cb-tile-l">Con pago parcial</div><div class="cb-tile-v" id="dash-parciales">0</div><div class="cb-tile-n">Facturas abonadas a medias</div></div>
       </div>
     </div>
 
