@@ -3899,7 +3899,7 @@ WEB DESIGN: Landing Page from $280 one-time (24-48h delivery) | Standard Site up
 GRAPHIC DESIGN: Visual Identity (logo + brand guidelines) from $185 | Business Card from $26 | Social Media Posts/Flyers from $15 each.
 PACKAGES (one-time): Basic $320 (logo, brand guidelines, social media review, 1,000 followers, business card; 48h) | Intermediate $480 (adds 3,000 followers and 10 Instagram posts; 72h) | Advanced $840 (5,000 followers, 10 posts, invoice and business card design, One Page website, admin panel with CRM; 72h).
 CUSTOM SYSTEMS: CRM, admin panels, inventory, custom software — custom quote.
-CONTACT: WhatsApp +1 (346) 537-2353 | Email info@dgpglobalgroup.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
+CONTACT: WhatsApp +1 (239) 823-1738 | Email info@dgpglobalgroup.com | Website dgpglobalgroup.com | Instagram @dgpgroup.us
 
 GUIDELINES:
 1. Always end with a question or call to action that moves toward a consultation or quote.
@@ -3980,7 +3980,7 @@ async function handleChatIA(request, env) {
   // Responde en el idioma en que escribe el cliente (no el de la página)
   const idm = idiomaTexto(ultimo.content) || (/^en/i.test(String(b.idioma || '')) ? 'en' : 'es');
   const en = idm === 'en';
-  const WA = en ? 'please message us on WhatsApp at +1 (346) 537-2353' : 'escríbenos por WhatsApp al +1 (346) 537-2353';
+  const WA = en ? 'please message us on WhatsApp at +1 (239) 823-1738' : 'escríbenos por WhatsApp al +1 (239) 823-1738';
   if (msgs.filter(m => m.role === 'user').length > CHAT_MAX_TURNOS)
     return resp({ respuesta: en ? `To keep helping you personally, ${WA} and our team will reply right away.` : `Para seguir ayudándote de forma personal, ${WA} y el equipo te responde enseguida.` });
   if (await superaLimite(request, 'chat-ia', 40, 3600))
