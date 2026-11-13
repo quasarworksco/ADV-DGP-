@@ -2449,7 +2449,7 @@ async function handleWAWebhook(request, env, ctx) {
   const tarea = (async () => {
     const p = ev.payload || {};
     if (/@(g\.us|newsletter|broadcast)$/.test(String(p.from || p.to || '')) || /@(g\.us|newsletter|broadcast)$/.test(String(p.to || ''))) return;   // grupos: nunca se procesan
-    if (ev.event === 'message.any' && p.fromMe) { await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
+    if (ev.event === 'message.any' && p.fromMe) { if (env.CACHE && p.to) await env.CACHE.put('waSil:' + String(p.to), '1', { expirationTtl: 12 * 3600 }).catch(() => {}); await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
       if (!/@(c\.us|lid)$/.test(de)) return;   // grupos, canales y estados no avisan (serían demasiados)
@@ -2463,6 +2463,7 @@ async function handleWAWebhook(request, env, ctx) {
       const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; })
         .then(() => waProspectoAuto(env, de, p, nombre, String(p.body || '')).catch(e => console.warn('Prospecto WA', e)));
       if (ctx?.waitUntil) ctx.waitUntil(atendido);
+      if (env.CACHE && await env.CACHE.get('waSil:' + de).catch(() => null)) return;   // ya le estás respondiendo: 12 h sin avisos de ese chat
       if (await waEsConocido(env, de, p).catch(() => false)) return;   // clientes y contactos guardados: sin aviso (solo números nuevos)
       const clave = 'waAviso:' + de;
       if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
