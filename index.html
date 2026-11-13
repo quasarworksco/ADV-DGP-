@@ -4242,7 +4242,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
   <div class="wa-app" id="wa-app">
     <aside class="wa-izq">
       <div class="wa-top"><div><b>WhatsApp</b><small id="wa-yo">Conectando…</small></div>
-        <div style="display:flex;gap:6px"><button class="wa-ico" title="Actualizar" onclick="waCargarChats(true)"><i class="fa-solid fa-rotate"></i></button><button class="wa-ico" title="Opciones" onclick="waOpciones()"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
+        <div style="display:flex;gap:6px"><button class="wa-ico" title="Actualizar chats y mensajes" onclick="waCargarChats(true);if(_wa.chat)waCargarMensajes()"><i class="fa-solid fa-rotate"></i></button><button class="wa-ico" title="Opciones" onclick="waOpciones()"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
       <div class="wa-buscar-c"><i class="fa-solid fa-magnifying-glass"></i><input class="wa-buscar" id="wa-buscar" placeholder="Buscar o escribir un número con código de país" oninput="waPintarLista()"></div>
       <div class="wa-tabs" id="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="nl" onclick="waTab('nl',this)">No leídos</button><button data-t="grupos" onclick="waTab('grupos',this)" hidden>Grupos</button></div>
       <div class="wa-lista" id="wa-lista"></div>
@@ -9973,7 +9973,7 @@ async function renderResumenGeneral() {
   await Promise.all([
     rwTodas().then(s => { const d = s.docs.map(x => x.data()); extra.rw = { pend: d.filter(r => r.estado === 'pendiente').length, pub: d.filter(r => r.estado === 'aprobada').length }; }).catch(() => {}),
     fetch(`${RW_WORKER}/web-stats?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.resumen) extra.web = d.resumen; else extra.webErr = true; }).catch(() => { extra.webErr = true; }),
-    waApi('chats', { limit: 60 }).then(d => { const L = Array.isArray(d.chats) ? d.chats : []; if (typeof _wa !== 'undefined' && !(_wa.chats || []).length) _wa.chats = L; const lim = Date.now() / 1000 - 7 * 86400; const S = L.filter(c => !/@g\.us$/.test(c.id) && c.lastMessage && !c.lastMessage.fromMe && (c.lastMessage.timestamp || 0) >= lim); extra.wa = { n: S.length, viejo: S.reduce((m, c) => Math.min(m, c.lastMessage.timestamp), Infinity), nombres: S.slice(0, 3).map(c => waNombre(c)) }; }).catch(() => { extra.waErr = true; }),
+    (Date.now() - (window._rgWaT || 0) < 30 * 60e3 && window._rgWaUlt ? Promise.resolve(window._rgWaUlt) : waApi('chats', { limit: 60 }).then(d => { window._rgWaT = Date.now(); window._rgWaUlt = d; return d; })).then(d => { const L = Array.isArray(d.chats) ? d.chats : []; if (typeof _wa !== 'undefined' && !(_wa.chats || []).length) _wa.chats = L; const lim = Date.now() / 1000 - 7 * 86400; const S = L.filter(c => !/@g\.us$/.test(c.id) && c.lastMessage && !c.lastMessage.fromMe && (c.lastMessage.timestamp || 0) >= lim); extra.wa = { n: S.length, viejo: S.reduce((m, c) => Math.min(m, c.lastMessage.timestamp), Infinity), nombres: S.slice(0, 3).map(c => waNombre(c)) }; }).catch(() => { extra.waErr = true; }),
     fetch(`${RW_WORKER}/meta-ads?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.total) extra.meta = d.total; else extra.metaErr = true; }).catch(() => { extra.metaErr = true; })
   ]);
   _rgCache = extra;
@@ -14093,7 +14093,7 @@ function waAbrir() {
   clearInterval(_wa.timer); _wa.autoIni = true; window.scrollTo(0, 0);
   try { document.getElementById('wa-app').classList.toggle('sin-ficha', localStorage.getItem('dgp-wa-ficha') === '0'); } catch (e) {} waAjustar(); setTimeout(waAjustar, 300);
   waRevisar();
-  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } else { if (_wa.chat) waCargarMensajes(); if (_wa.n % 4 === 0) waCargarChats(); } }, 6000);
+  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } /* conectado: no se piden chats ni mensajes solos (cada consulta hace que el celular sincronice); se actualiza al entrar o con el botón */ }, 6000);
 }
 function waNuevoQR() { const q = document.getElementById('wa-qr'); if (q) q.innerHTML = '<div class="au-spin"></div>'; waApi('iniciar').then(() => setTimeout(waRevisar, 4000)).catch(e => toast(e.message, 'err')); }
 function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; }
