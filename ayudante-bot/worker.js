@@ -2463,6 +2463,7 @@ async function handleWAWebhook(request, env, ctx) {
       const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; })
         .then(() => waProspectoAuto(env, de, p, nombre, String(p.body || '')).catch(e => console.warn('Prospecto WA', e)));
       if (ctx?.waitUntil) ctx.waitUntil(atendido);
+      return;   // WhatsApp está en el celular principal de Andrés: los mensajes no se avisan por Telegram
       if (env.CACHE && await env.CACHE.get('waSil:' + de).catch(() => null)) return;   // ya le estás respondiendo: 12 h sin avisos de ese chat
       if (await waEsConocido(env, de, p).catch(() => false)) return;   // clientes y contactos guardados: sin aviso (solo números nuevos)
       const clave = 'waAviso:' + de;
