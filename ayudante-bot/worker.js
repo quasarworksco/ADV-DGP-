@@ -815,6 +815,13 @@ async function handleDiagnostico(request, env, firebaseLogin) {
   }
   }
   out.checks.workersai = env.AI ? { ok: true } : { ok: false, error: 'Falta la conexión a Workers AI (binding AI en wrangler.toml)' };
+  if (env.WA_URL && env.WA_KEY) {
+    try {
+      const [ses, srv] = await Promise.all([waJSON(env, `/api/sessions/${WA_SESION}`).catch(e => ({ error: e.message })), waJSON(env, '/api/server/status').catch(e => ({ error: e.message }))]);
+      const rec = env.CACHE ? await env.CACHE.get('waReconex', 'json').catch(() => null) : null;
+      out.checks.whatsapp = { ok: ses?.status === 'WORKING', estado: ses?.status || ses?.error, ignora: ses?.config?.ignore || null, servidorDesde: srv?.startTimestamp ? new Date(srv.startTimestamp).toISOString() : (srv?.error || null), optimizado: env.CACHE ? !!(await env.CACHE.get('waOpt:v1').catch(() => null)) : null, reconexiones24h: rec ? rec.filter(t => Date.now() - t < 864e5).length : 0 };
+    } catch (e) { out.checks.whatsapp = { ok: false, error: e.message }; }
+  }
   if (q.get('ia')) {
     try {
       const { lectura, modelo } = await leerComprobante(env, IMG_PRUEBA);
@@ -2493,6 +2500,7 @@ async function handleWAWebhook(request, env, ctx) {
       const cfg = await fsGet(env, 'config/whatsapp', token).catch(() => null) || {};
       if (st === cfg.estado) return;
       await fsGuardar(env, 'config/whatsapp', { estado: st, fecha: new Date().toISOString(), yo: ev.me?.id || cfg.yo || '' }, token).catch(() => {});
+      if (st === 'WORKING' && env.CACHE) { const r = (await env.CACHE.get('waReconex', 'json').catch(() => null) || []).filter(t => Date.now() - t < 864e5); r.push(Date.now()); await env.CACHE.put('waReconex', JSON.stringify(r.slice(-200))).catch(() => {}); }
       if (st === 'WORKING') await waOptimizar(env).catch(e => console.warn('WA optimizar', e));
       if (st === 'WORKING' && cfg.estado !== 'STARTING') await tgEnviar(env, `💬 <b>WhatsApp conectado</b>${ev.me?.id ? ` · +${escHtml(String(ev.me.id).split('@')[0])}` : ''}. Ya puedes usarlo desde el panel.`).catch(() => {});
       else if (['SCAN_QR_CODE', 'FAILED', 'STOPPED'].includes(st) && cfg.estado === 'WORKING') await tgEnviar(env, `⚠️ <b>WhatsApp se desconectó</b> (${escHtml(st)}). Entra al panel → WhatsApp y vuelve a escanear el código QR.`).catch(() => {});
