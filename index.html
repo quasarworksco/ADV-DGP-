@@ -4244,7 +4244,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
       <div class="wa-top"><div><b>WhatsApp</b><small id="wa-yo">Conectando…</small></div>
         <div style="display:flex;gap:6px"><button class="wa-ico" title="Actualizar" onclick="waCargarChats(true)"><i class="fa-solid fa-rotate"></i></button><button class="wa-ico" title="Opciones" onclick="waOpciones()"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></div>
       <div class="wa-buscar-c"><i class="fa-solid fa-magnifying-glass"></i><input class="wa-buscar" id="wa-buscar" placeholder="Buscar o escribir un número con código de país" oninput="waPintarLista()"></div>
-      <div class="wa-tabs" id="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="nl" onclick="waTab('nl',this)">No leídos</button><button data-t="grupos" onclick="waTab('grupos',this)">Grupos</button></div>
+      <div class="wa-tabs" id="wa-tabs"><button class="on" data-t="chats" onclick="waTab('chats',this)">Chats</button><button data-t="nl" onclick="waTab('nl',this)">No leídos</button><button data-t="grupos" onclick="waTab('grupos',this)" hidden>Grupos</button></div>
       <div class="wa-lista" id="wa-lista"></div>
     </aside>
     <section class="wa-der" id="wa-der"></section>
@@ -14127,7 +14127,8 @@ function waPintarLista() {
   const el = document.getElementById('wa-lista'); if (!el) return;
   const raw = document.getElementById('wa-buscar').value || '', q = ptNorm(raw);
   if (_wa.estado !== 'WORKING') { el.innerHTML = '<div class="wa-vacio">Conecta tu WhatsApp para ver los chats.</div>'; return; }
-  const visibles = _wa.chats.filter(c => /@(c\.us|lid|g\.us)$/.test(c.id || '') && !(_wa.borrados || []).includes(c.id));
+  if (_wa.tab === 'grupos') _wa.tab = 'chats';
+  const visibles = _wa.chats.filter(c => /@(c\.us|lid)$/.test(c.id || '') && !(_wa.borrados || []).includes(c.id));   // los grupos no se muestran
   const personas = visibles.filter(c => !waEsGrupo(c.id)), grupos = visibles.filter(c => waEsGrupo(c.id));
   const nl = personas.filter(c => waNoLeidos(c) > 0).length, nlg = grupos.filter(c => waNoLeidos(c) > 0).length;
   const tabs = document.querySelectorAll('#wa-tabs button');

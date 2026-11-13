@@ -2163,7 +2163,7 @@ async function handleWA(request, env) {
         const buf = new Uint8Array(await r.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
         return json(request, { qr: `data:image/png;base64,${btoa(bin)}` });
       }
-      case 'chats': return json(request, { chats: await waJSON(env, `/api/${S}/chats/overview?limit=${Math.min(Number(b.limit) || 60, 200)}&offset=${Number(b.offset) || 0}`) });
+      case 'chats': { const L = await waJSON(env, `/api/${S}/chats/overview?limit=${Math.min(Number(b.limit) || 60, 200)}&offset=${Number(b.offset) || 0}`); return json(request, { chats: (Array.isArray(L) ? L : []).filter(c => /@(c\.us|lid)$/.test(String(c.id || ''))) }); }   // sin grupos, canales ni estados
       case 'mensajes': return json(request, { mensajes: await waJSON(env, `/api/${S}/chats/${waChat(chat)}/messages?limit=${Math.min(Number(b.limit) || 50, 200)}&downloadMedia=false`) });
       case 'factura': {
         const id = String(b.fsId || ''); if (!/^[A-Za-z0-9_-]{6,40}$/.test(id)) return json(request, { error: 'Factura no válida' }, 400);
@@ -2431,6 +2431,7 @@ async function handleWAWebhook(request, env, ctx) {
   let ev = {}; try { ev = JSON.parse(cuerpo); } catch (e) { return new Response('ok'); }
   const tarea = (async () => {
     const p = ev.payload || {};
+    if (/@(g\.us|newsletter|broadcast)$/.test(String(p.from || p.to || '')) || /@(g\.us|newsletter|broadcast)$/.test(String(p.to || ''))) return;   // grupos: nunca se procesan
     if (ev.event === 'message.any' && p.fromMe) { await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
