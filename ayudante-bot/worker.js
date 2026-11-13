@@ -2438,6 +2438,17 @@ async function waPausarAsistente(env, chat, msgId) {
   st.pausa = true;
   await env.CACHE.put('waBot:' + chat, JSON.stringify(st), { expirationTtl: 14 * 3600 }).catch(() => {});
 }
+/* Sesión liviana: WhatsApp no carga grupos, canales ni estados (evita reinicios y resincronizaciones por memoria). Se aplica una sola vez. */
+async function waOptimizar(env) {
+  if (!env.CACHE || await env.CACHE.get('waOpt:v1').catch(() => null)) return;
+  const ses = await waJSON(env, `/api/sessions/${WA_SESION}`);
+  const cfg = ses?.config || {};
+  const ign = cfg.ignore || {};
+  if (ign.groups && ign.status && ign.channels) { await env.CACHE.put('waOpt:v1', '1').catch(() => {}); return; }
+  const nuevo = { ...cfg, ignore: { ...ign, status: true, groups: true, channels: true } };
+  await waJSON(env, `/api/sessions/${WA_SESION}`, { method: 'PUT', body: JSON.stringify({ name: WA_SESION, config: nuevo }) });
+  await env.CACHE.put('waOpt:v1', '1').catch(() => {});
+}
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
   if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
@@ -2482,7 +2493,8 @@ async function handleWAWebhook(request, env, ctx) {
       const cfg = await fsGet(env, 'config/whatsapp', token).catch(() => null) || {};
       if (st === cfg.estado) return;
       await fsGuardar(env, 'config/whatsapp', { estado: st, fecha: new Date().toISOString(), yo: ev.me?.id || cfg.yo || '' }, token).catch(() => {});
-      if (st === 'WORKING') await tgEnviar(env, `💬 <b>WhatsApp conectado</b>${ev.me?.id ? ` · +${escHtml(String(ev.me.id).split('@')[0])}` : ''}. Ya puedes usarlo desde el panel.`).catch(() => {});
+      if (st === 'WORKING') await waOptimizar(env).catch(e => console.warn('WA optimizar', e));
+      if (st === 'WORKING' && cfg.estado !== 'STARTING') await tgEnviar(env, `💬 <b>WhatsApp conectado</b>${ev.me?.id ? ` · +${escHtml(String(ev.me.id).split('@')[0])}` : ''}. Ya puedes usarlo desde el panel.`).catch(() => {});
       else if (['SCAN_QR_CODE', 'FAILED', 'STOPPED'].includes(st) && cfg.estado === 'WORKING') await tgEnviar(env, `⚠️ <b>WhatsApp se desconectó</b> (${escHtml(st)}). Entra al panel → WhatsApp y vuelve a escanear el código QR.`).catch(() => {});
     }
   })().catch(e => console.warn('wa webhook', e));
