@@ -2372,6 +2372,23 @@ function waNumeroReal(de, p) {
   const m = JSON.stringify(p?._data || {}).match(/"(\d{8,15})(?::\d+)?@s\.whatsapp\.net"/);
   return m ? m[1] : '';
 }
+/* ¿El número es de alguien que ya conozco? (contacto guardado en el teléfono, cliente, portal o aliado) → no se avisa */
+async function waEsConocido(env, de, p) {
+  const num = waNumeroReal(de, p); if (!num || !env.CACHE) return false;
+  if ((await env.CACHE.get('waCon:' + num).catch(() => null)) === 'conocido') return true;
+  let mio = await env.CACHE.get('waMio:' + num).catch(() => null);
+  if (mio === null) {
+    let c = null; try { c = await waJSON(env, `/api/contacts?contactId=${encodeURIComponent(de)}&session=default`); } catch (e) {}
+    mio = c && (c.isMyContact || c.isSaved || (c.name && c.name !== c.pushname && c.name !== c.pushName)) ? '1' : '0';
+    await env.CACHE.put('waMio:' + num, mio, { expirationTtl: 86400 }).catch(() => {});
+  }
+  if (mio === '1') return true;
+  const token = await firebaseLogin(env);
+  const [cl, po, al] = await Promise.all(['clientes', 'portal', 'aliados'].map(c => fsList(env, c, token).catch(() => [])));
+  const igual = x => { const d = String(x || '').replace(/\D/g, ''); return d.length >= 7 && (num.endsWith(d.slice(-10)) || d.endsWith(num.slice(-10))); };
+  if ([...cl, ...po, ...al].some(x => igual(x.telefono) || igual(x.whatsapp))) { await env.CACHE.put('waCon:' + num, 'conocido', { expirationTtl: 7 * 86400 }).catch(() => {}); return true; }
+  return false;
+}
 async function waProspectoAuto(env, de, p, nombreWA, texto) {
   if (!env.CACHE || !/@(c\.us|lid)$/.test(de)) return;
   const t = String(texto || '').trim(), enlaces = (t.match(/https?:\/\/\S+/g) || []).length;
@@ -2446,6 +2463,7 @@ async function handleWAWebhook(request, env, ctx) {
       const atendido = waAsistente(env, ctx, de, nombre, String(p.body || '')).catch(e => { console.warn('Altair WA', e); return false; })
         .then(() => waProspectoAuto(env, de, p, nombre, String(p.body || '')).catch(e => console.warn('Prospecto WA', e)));
       if (ctx?.waitUntil) ctx.waitUntil(atendido);
+      if (await waEsConocido(env, de, p).catch(() => false)) return;   // clientes y contactos guardados: sin aviso (solo números nuevos)
       const clave = 'waAviso:' + de;
       if (env.CACHE && await env.CACHE.get(clave).catch(() => null)) return;
       if (env.CACHE) await env.CACHE.put(clave, '1', { expirationTtl: 180 }).catch(() => {});
