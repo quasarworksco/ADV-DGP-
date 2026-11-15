@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15c';
+const WORKER_VERSION = '2026-11-15d';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5838,7 +5838,7 @@ function pzCorreo(p, cfg) {
       : `When people need a ${c[2]}${ciudad ? ' in ' + ciudad : ''}, the first thing they do is search online. If they can't find you, they call the next one on the list.`;
     const cuerpo = [`Hi ${pila || 'there'},`, '', intro, '', gancho, '',
       `Here's what we can do for you, for $295 total:`, '',
-      `- A professional website designed for your ${c[2]}`, `- Your own web address: ${sub}`, `- One full year of hosting and security (SSL) included`,
+      `- A professional website designed for your ${c[2]}`, `- Your own custom domain`, `- One full year of hosting and security (SSL) included`,
       `- Built for phones, with click-to-call and WhatsApp buttons`, `- ${c[3][0].toUpperCase() + c[3].slice(1)}`, '',
       `And here's the part nobody else does: we build it first. You review it, and you only pay if you like it. No deposit, no risk.`, '',
       `Just reply "YES" to this email and we'll get started. Your website will be ready to review in ${entrega} hours.`, '',
@@ -5853,7 +5853,7 @@ function pzCorreo(p, cfg) {
     : `Cuando alguien${ciudad ? ' en ' + ciudad : ''} necesita un negocio como el tuyo, lo primero que hace es buscarlo en internet. Si no te encuentra, llama al siguiente de la lista.`;
   const cuerpo = [`Hola${pila ? ' ' + pila : ''},`, '', intro, '', gancho, '',
     `Esto es lo que te ofrecemos, por $295 en total:`, '',
-    `- Una página web profesional diseñada para tu negocio`, `- Tu propia dirección web: ${sub}`, `- 1 año completo de hosting y seguridad (candado SSL) incluido`,
+    `- Una página web profesional diseñada para tu negocio`, `- Tu propio dominio personalizado`, `- 1 año completo de hosting y seguridad (candado SSL) incluido`,
     `- Lista para celular, con botones de llamada y WhatsApp`, `- ${c[1][0].toUpperCase() + c[1].slice(1)}`, '',
     `Y lo que nadie más hace: la hacemos primero. Tú la revisas y pagas solo si te gusta. Sin depósito y sin riesgo.`, '',
     `Solo responde "SÍ" a este correo y empezamos. En ${entrega} horas tendrás tu página lista para revisar.`, '',
@@ -5914,6 +5914,7 @@ async function pzEnviarUno(env, p, cfg, token) {
   if (await pzEsBaja(env, correo)) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'baja' }, ['estado'], token).catch(() => {}); return { ok: false, error: 'Se dio de baja' }; }
   if (!String(cfg.direccion || '').trim()) return { ok: false, error: 'Falta tu dirección física en Ajustes (la ley la exige en cada correo)' };
   const en = (p.correo?.idioma || p.idioma) !== 'es';
+  if (/\.dgp-link\.com/.test(p.correo?.cuerpo || '')) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con "dominio personalizado"
   const asunto = p.correo?.asunto || pzCorreo(p, cfg).asunto, cuerpo = p.correo?.cuerpo || pzCorreo(p, cfg).cuerpo;
   const enlace = `${BOT_URL}/baja?e=${encodeURIComponent(correo)}&f=${await pzFirma(env, correo)}`;
   const pie = en
@@ -6003,7 +6004,9 @@ async function handleProspeccion(request, env) {
           if (p.email && await pzEsBaja(env, p.email)) { claves.push(p.clave); continue; }
           // Con correo → listo para enviar. Si ya tiene una web sin problemas, mejor revisarlo a mano.
           const webBuena = p.web && p.webInfo?.ok && p.webInfo.https && p.webInfo.celular && !(p.webInfo.anio && p.webInfo.anio < new Date().getFullYear() - 3);
-          p.estado = p.email ? (webBuena ? 'revisar' : 'listo') : 'sinCorreo';
+          // Solo sirven los que tienen correo y necesitan una web (no tienen, o la suya tiene fallas)
+          if (!p.email || webBuena) { claves.push(p.clave); continue; }
+          p.estado = 'listo';
           p.correo = pzCorreo(p, cfg);
           await fsGuardar(env, `prospeccion/${p.clave}`, p, token).then(() => { guardados++; claves.push(p.clave); }).catch(e => console.warn('pz guardar', e.message));
         }
@@ -6012,6 +6015,7 @@ async function handleProspeccion(request, env) {
       }
       if (b.accion === 'fin') {
         if (b.ultimoSunbiz && /^\d{8}c\.txt$/.test(b.ultimoSunbiz)) await env.CACHE.put('pz:sunbiz', b.ultimoSunbiz);
+        for (const est of ['sinCorreo', 'revisar']) for (const x of await pzPorEstado(env, est, 200, token).catch(() => [])) await fsBorrar(env, `prospeccion/${x._id}`, token);
         const r = b.resumen || {};
         await env.CACHE.put('pz:resumen', JSON.stringify({ ...r, fecha: new Date().toISOString() }), { expirationTtl: 30 * 86400 });
         const cfg = await pzConfig(env, token), cupo = await pzCupoHoy(env, cfg);
