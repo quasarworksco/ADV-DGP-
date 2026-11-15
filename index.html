@@ -6271,7 +6271,7 @@ async function pzEstado(id, estado, extra) {
 }
 function pzVerCorreo(id) {
   const p = pzBusca(id); if (!p) return;
-  if ((p.correo?.v || 0) < 3 && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
+  if ((p.correo?.v || 0) < 4 && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
   const c = p.correo || {}, editable = ['listo', 'revisar'].includes(p.estado);
   ptModal(p.nombre, `Para: ${p.email}`, `
     <input id="pz-m-asunto" class="pz-mail-in" value="${esc(c.asunto || '')}" ${editable ? '' : 'readonly'}>

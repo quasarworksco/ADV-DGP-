@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15j';
+const WORKER_VERSION = '2026-11-15k';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5806,13 +5806,13 @@ const PZ_CAT = {
   general: ['negocio', 'un formulario de contacto para que tus clientes te escriban a cualquier hora', 'business', 'a contact form so customers can reach you 24/7'],
 };
 const PZ_ESTADO = { FL: 'Florida', TX: 'Texas', CT: 'Connecticut' };
-const PZ_V = 3;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
+const PZ_V = 4;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
 // Trabajos reales del portafolio, por tipo de negocio (si no hay uno parecido, va el portafolio completo)
 const PZ_EJEMPLO = {
   limpieza: 'smellingcleanfl.com', construccion: 'caiboconstruction.com', pintura: 'caiboconstruction.com', handyman: 'caiboconstruction.com',
   jardineria: 'caiboconstruction.com', piscinas: 'pinawatersystem.com', electricidad: 'caiboconstruction.com', plomeria: 'pinawatersystem.com',
   aire: 'appliancesolution901.com', autos: 'casanovacarcare.com', transporte: 'valpatruck.dgp-link.com', mudanzas: 'valpatruck.dgp-link.com',
-  salud: 'orangeultrasound.dgp-link.com', tienda: 'mqstore.dgp-link.com', restaurante: 'buythesweetzone.com', tecnologia: 'jfnetworksolutions.com',
+  salud: 'orangeultrasound.dgp-link.com', tienda: 'mqstore.dgp-link.com', tecnologia: 'jfnetworksolutions.com',
 };
 function pzProblemas(w, en) {
   if (!w) return [];
