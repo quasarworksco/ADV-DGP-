@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15g';
+const WORKER_VERSION = '2026-11-15h';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1836,7 +1836,7 @@ function correoBotHTML({ icono = 'estrellas', titulo, texto, boton, link, nota =
     ${nota ? `<div class="tx2" style="font-size:12px;color:#94a3b8;margin-top:16px;">${escHtmlR(nota)}</div>` : ''}
   </td></tr>
   <tr><td align="center" class="tx2" style="padding-top:24px;font-size:12px;color:#64748b;line-height:1.7;">
-    <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a><br>
+    <a href="https://dgpglobalgroup.com" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">dgpglobalgroup.com</a> · <a href="https://wa.me/12398231738" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">WhatsApp +1 (239) 823-1738</a> · <a href="tel:+19453022923" class="lk" style="color:#166baf;text-decoration:none;font-weight:600;">Llamadas +1 (945) 302-2923</a><br>
     <span style="${f}font-size:10.5px;letter-spacing:2.5px;color:#94a3b8;font-weight:600;">DGP GLOBAL GROUP</span>
   </td></tr>
 </table></td></tr></table></body></html>`;
@@ -5724,7 +5724,7 @@ const PZ_DEF = {
   zipsTX: ['750', '751', '752', '753', '770', '772', '773', '774', '775'],
   ciudadesTX: ['HOUSTON', 'DALLAS', 'KATY', 'SUGAR LAND', 'PASADENA', 'PEARLAND', 'SPRING', 'HUMBLE', 'IRVING', 'GARLAND', 'MESQUITE', 'GRAND PRAIRIE', 'RICHARDSON', 'CARROLLTON'],
   estadosFMCSA: ['FL', 'TX'], connecticut: true, zonasOSM: null,
-  autoEnvio: true, limiteDia: 60, direccion: '8431 NW 7th Ave, Miami, FL 33150', firma: 'Paúl Andrés Espina', entrega: '72',
+  autoEnvio: true, limiteDia: 60, direccion: '8431 NW 7th Ave, Miami, FL 33150', firma: 'Paúl Andrés Espina', entrega: '24',
 };
 async function pzConfig(env, token) {
   const c = await fsGet(env, 'config/prospeccion', token).catch(() => null) || {};
@@ -5829,7 +5829,7 @@ function pzCorreo(p, cfg) {
   const probs = host ? pzProblemas(p.webInfo, en) : [];
   const n = (p.clave || neg).split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);   // variante estable por negocio
   const elegir = L => L[n % L.length];
-  const entrega = String(cfg.entrega || '72');
+  const entrega = String(cfg.entrega || '24');
   const pila = p.nombrePila || '';
   if (en) {
     const asunto = probs.length ? elegir([`Quick idea for ${neg}'s website`, `${neg}: a better website, built before you pay`, `About the ${neg} website`])
@@ -5844,7 +5844,7 @@ function pzCorreo(p, cfg) {
       `- Built for phones, with click-to-call and WhatsApp buttons`, `- ${c[3][0].toUpperCase() + c[3].slice(1)}`, '',
       `And here's the part nobody else does: we build it first. You review it, and you only pay if you like it. No deposit, no risk.`, '',
       `Just reply "YES" to this email and we'll get started. Your website will be ready to review in ${entrega} hours.`, '',
-      cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', '(239) 823-1738 · dgpglobalgroup.com'].join('\n');
+      cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Calls: +1 (945) 302-2923', 'dgpglobalgroup.com'].join('\n');
     return { asunto, cuerpo, idioma: 'en' };
   }
   const asunto = probs.length ? elegir([`Una idea para la web de ${neg}`, `${neg}: una web mejor, hecha antes de que pagues`, `Sobre la página de ${neg}`])
@@ -5859,7 +5859,7 @@ function pzCorreo(p, cfg) {
     `- Lista para celular, con botones de llamada y WhatsApp`, `- ${c[1][0].toUpperCase() + c[1].slice(1)}`, '',
     `Y lo que nadie más hace: la hacemos primero. Tú la revisas y pagas solo si te gusta. Sin depósito y sin riesgo.`, '',
     `Solo responde "SÍ" a este correo y empezamos. En ${entrega} horas tendrás tu página lista para revisar.`, '',
-    cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', '(239) 823-1738 · dgpglobalgroup.com'].join('\n');
+    cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Llamadas: +1 (945) 302-2923', 'dgpglobalgroup.com'].join('\n');
   return { asunto, cuerpo, idioma: 'es' };
 }
 
@@ -5919,7 +5919,7 @@ async function pzEnviarUno(env, p, cfg, token) {
   const yaEnv = await env.CACHE.get('pz:mail:' + correo);
   if (yaEnv) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'enviado', enviadoEn: yaEnv, duplicado: true }, ['estado', 'enviadoEn', 'duplicado'], token).catch(() => {}); return { ok: false, error: 'A este correo ya se le escribió el ' + yaEnv.slice(0, 10) }; }
   const en = (p.correo?.idioma || p.idioma) !== 'es';
-  if (/\.dgp-link\.com/.test(p.correo?.cuerpo || '')) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con "dominio personalizado"
+  if (/\.dgp-link\.com|72 hours|72 horas|^\(239\) 823-1738 · /m.test(p.correo?.cuerpo || '')) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con "dominio personalizado"
   const asunto = p.correo?.asunto || pzCorreo(p, cfg).asunto, cuerpo = p.correo?.cuerpo || pzCorreo(p, cfg).cuerpo;
   const enlace = `${BOT_URL}/baja?e=${encodeURIComponent(correo)}&f=${await pzFirma(env, correo)}`;
   const pie = en
