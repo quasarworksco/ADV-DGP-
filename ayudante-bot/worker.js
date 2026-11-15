@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15b';
+const WORKER_VERSION = '2026-11-15c';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5736,21 +5736,25 @@ async function pzVerificarOIDC(request, env) {
   try {
     const t = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     const [h, p, s] = t.split('.');
-    if (!s) return false;
-    const dec = x => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(x.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))));
+    if (!s) return 'sin token';
+    const b64 = x => { x = x.replace(/-/g, '+').replace(/_/g, '/'); while (x.length % 4) x += '='; return Uint8Array.from(atob(x), c => c.charCodeAt(0)); };
+    const dec = x => JSON.parse(new TextDecoder().decode(b64(x)));
     const head = dec(h), cl = dec(p);
-    if (cl.iss !== 'https://token.actions.githubusercontent.com' || cl.aud !== 'dgp-prospeccion' || cl.repository !== 'quasarworksco/dgpglobal' || !(cl.exp * 1000 > Date.now())) return false;
+    if (cl.iss !== 'https://token.actions.githubusercontent.com') return 'iss';
+    if (cl.aud !== 'dgp-prospeccion' && !(Array.isArray(cl.aud) && cl.aud.includes('dgp-prospeccion'))) return 'aud';
+    if (String(cl.repository || '').toLowerCase() !== 'quasarworksco/dgpglobal') return 'repo';
+    if (!(cl.exp * 1000 > Date.now())) return 'exp';
     let jwks = await env.CACHE?.get('gh:jwks', 'json');
     if (!jwks?.keys?.some(k => k.kid === head.kid)) {
       jwks = await (await fetch('https://token.actions.githubusercontent.com/.well-known/jwks')).json();
       await env.CACHE?.put('gh:jwks', JSON.stringify(jwks), { expirationTtl: 86400 });
     }
     const jwk = jwks.keys.find(k => k.kid === head.kid);
-    if (!jwk) return false;
-    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-    const firma = Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-    return await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, firma, new TextEncoder().encode(`${h}.${p}`));
-  } catch (e) { return false; }
+    if (!jwk) return 'kid';
+    const key = await crypto.subtle.importKey('jwk', { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+    const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64(s), new TextEncoder().encode(`${h}.${p}`));
+    return ok ? true : 'firma';
+  } catch (e) { return 'error: ' + e.message; }
 }
 
 /* ── Ya vistos: un bloque por mes en KV (pocas escrituras) ── */
@@ -5967,7 +5971,8 @@ async function handleProspeccion(request, env) {
   try {
     // 1) La tarea diaria de GitHub
     if (['config', 'filtrar', 'guardar', 'vistos', 'fin'].includes(b.accion)) {
-      if (!await pzVerificarOIDC(request, env)) return json(request, { error: 'No autorizado' }, 401);
+      const vo = await pzVerificarOIDC(request, env);
+      if (vo !== true) return json(request, { error: 'No autorizado (' + vo + ')' }, 401);
       const token = await firebaseLogin(env);
       if (b.accion === 'config') {
         const cfg = await pzConfig(env, token);
