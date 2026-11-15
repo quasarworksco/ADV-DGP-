@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15f';
+const WORKER_VERSION = '2026-11-15g';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5915,6 +5915,9 @@ async function pzEnviarUno(env, p, cfg, token) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { ok: false, error: 'Sin correo válido' };
   if (await pzEsBaja(env, correo)) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'baja' }, ['estado'], token).catch(() => {}); return { ok: false, error: 'Se dio de baja' }; }
   if (!String(cfg.direccion || '').trim()) return { ok: false, error: 'Falta tu dirección física en Ajustes (la ley la exige en cada correo)' };
+  // Nunca dos veces al mismo correo (aunque venga de otra fuente o ya se haya enviado a mano)
+  const yaEnv = await env.CACHE.get('pz:mail:' + correo);
+  if (yaEnv) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'enviado', enviadoEn: yaEnv, duplicado: true }, ['estado', 'enviadoEn', 'duplicado'], token).catch(() => {}); return { ok: false, error: 'A este correo ya se le escribió el ' + yaEnv.slice(0, 10) }; }
   const en = (p.correo?.idioma || p.idioma) !== 'es';
   if (/\.dgp-link\.com/.test(p.correo?.cuerpo || '')) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con "dominio personalizado"
   const asunto = p.correo?.asunto || pzCorreo(p, cfg).asunto, cuerpo = p.correo?.cuerpo || pzCorreo(p, cfg).cuerpo;
@@ -5930,7 +5933,9 @@ async function pzEnviarUno(env, p, cfg, token) {
     body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto, texto, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
   const r = await res.json().catch(() => ({ ok: false, error: 'Respuesta inesperada de Google' }));
   if (!r.ok) return { ok: false, error: r.error || 'No se pudo enviar' };
-  await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'enviado', enviadoEn: new Date().toISOString(), asuntoEnviado: asunto }, ['estado', 'enviadoEn', 'asuntoEnviado'], token);
+  const ahoraIso = new Date().toISOString();
+  await env.CACHE.put('pz:mail:' + correo, ahoraIso);   // sin vencimiento: no se repite nunca
+  await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'enviado', enviadoEn: ahoraIso, asuntoEnviado: asunto }, ['estado', 'enviadoEn', 'asuntoEnviado'], token);
   const dia = hoyVE(), kd = 'pz:env:' + dia;
   await env.CACHE.put(kd, String((Number(await env.CACHE.get(kd)) || 0) + 1), { expirationTtl: 3 * 86400 });
   return { ok: true, restantes: r.restantes ?? null };
@@ -5991,6 +5996,10 @@ async function handleProspeccion(request, env) {
         const cfg = await pzConfig(env, token);
         const items = (Array.isArray(b.items) ? b.items : []).slice(0, 30);
         const claves = []; let guardados = 0;
+        // Correos de clientes actuales y prospectos que ya te escribieron: no se les manda la oferta
+        const correosCli = new Set((await Promise.all(['clientes', 'prospectos'].map(c => fsList(env, c, token).catch(() => []))))
+          .flat().map(c => String(c.correo || c.email || '').toLowerCase()).filter(Boolean));
+        const vistosLote = new Set();
         for (const x of items) {
           if (!x || typeof x.clave !== 'string' || !/^[a-z]{2,4}-[A-Za-z0-9-]{1,40}$/.test(x.clave)) continue;
           const lim = (v, n) => String(v ?? '').slice(0, n);
@@ -6003,7 +6012,8 @@ async function handleProspeccion(request, env) {
             subdominio: lim(x.subdominio, 40).replace(/[^a-z0-9-]/g, ''), idioma: x.idioma === 'es' ? 'es' : 'en', puntaje: Number(x.puntaje) || 0, creado: new Date().toISOString(), dia: hoyVE(),
           };
           delete p.estado_;
-          if (p.email && await pzEsBaja(env, p.email)) { claves.push(p.clave); continue; }
+          if (p.email && (await pzEsBaja(env, p.email) || await env.CACHE.get('pz:mail:' + p.email) || correosCli.has(p.email) || vistosLote.has(p.email))) { claves.push(p.clave); continue; }
+          if (p.email) vistosLote.add(p.email);
           // Con correo → listo para enviar. Si ya tiene una web sin problemas, mejor revisarlo a mano.
           const webBuena = p.web && p.webInfo?.ok && p.webInfo.https && p.webInfo.celular && !(p.webInfo.anio && p.webInfo.anio < new Date().getFullYear() - 3);
           // Solo sirven los que tienen correo y necesitan una web (no tienen, o la suya tiene fallas)
