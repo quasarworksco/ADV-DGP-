@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15d';
+const WORKER_VERSION = '2026-11-15e';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5724,11 +5724,13 @@ const PZ_DEF = {
   zipsTX: ['750', '751', '752', '753', '770', '772', '773', '774', '775'],
   ciudadesTX: ['HOUSTON', 'DALLAS', 'KATY', 'SUGAR LAND', 'PASADENA', 'PEARLAND', 'SPRING', 'HUMBLE', 'IRVING', 'GARLAND', 'MESQUITE', 'GRAND PRAIRIE', 'RICHARDSON', 'CARROLLTON'],
   estadosFMCSA: ['FL', 'TX'], connecticut: true, zonasOSM: null,
-  autoEnvio: true, limiteDia: 60, direccion: '', firma: 'Paúl Andrés Espina', entrega: '72',
+  autoEnvio: true, limiteDia: 60, direccion: '8431 NW 7th Ave, Miami, FL 33150', firma: 'Paúl Andrés Espina', entrega: '72',
 };
 async function pzConfig(env, token) {
   const c = await fsGet(env, 'config/prospeccion', token).catch(() => null) || {};
-  return { ...PZ_DEF, ...c };
+  const r = { ...PZ_DEF, ...c };
+  if (!String(r.direccion || '').trim()) r.direccion = PZ_DEF.direccion;
+  return r;
 }
 
 /* ── Token OIDC de GitHub Actions: solo la tarea de quasarworksco/dgpglobal ── */
