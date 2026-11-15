@@ -2454,6 +2454,8 @@ html.dark body.ver-atajos [data-atajo]::after{background:#f4f6fb;color:#0b1430}
 @keyframes ndPart{0%{opacity:0}10%{opacity:.85}85%{opacity:.85}100%{opacity:0}}
 html.dark .nd-part{stroke:#8fa8ff}
 @media(prefers-reduced-motion:reduce){.nd-part{display:none}.nd-flecha,.nd-destello{animation:none!important}}
+.wb-cert{display:inline-flex;align-items:center;gap:6px}.wb-cert i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:icGlobo .9s linear infinite}
+@media(prefers-reduced-motion:reduce){.wb-cert i{animation:none}}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -14675,7 +14677,7 @@ function wbPintar() {
         <td style="padding:12px 16px"><span style="display:inline-flex;align-items:center;gap:6px;background:${e[1]};color:${e[2]};font-weight:700;font-size:11px;border-radius:20px;padding:4px 10px;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:${e[2]}"></span>${e[0]}</span></td>
         <td><b>${esc(w.cliente || '—')}</b><div><a href="https://${esc(wbHost(w.dominio))}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11.5px;text-decoration:none">${esc(wbHost(w.dominio))}</a></div>${nota ? `<div style="color:${w.estado === 'caida' ? '#b91c1c' : '#b45309'};font-size:11px">${nota}</div>` : ''}${w.revisado ? `<div style="color:var(--text-soft);font-size:10.5px">Revisada ${hace(w.revisado)}</div>` : ''}</td>
         <td>${w.ms ? (w.ms / 1000).toFixed(1) + ' s' : '—'}</td>
-        <td style="color:${w.candado === false ? '#b91c1c' : w.candado ? '#047857' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}">${w.candado === false ? 'Candado falla' : w.candado ? '✓ Candado activo' : '—'}</td>
+        <td style="color:${w.candado === false && !['pendiente', 'activado'].includes(w.certEstado) ? '#b91c1c' : w.candado ? '#047857' : w.candado === false ? '#b45309' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}" title="${esc(w.certDetalle || '')}">${w.candado ? '✓ Candado activo' : w.candado === false ? (w.certEstado === 'pendiente' ? '<span class="wb-cert"><i></i>Candado en proceso</span><small style="display:block;font-weight:500;color:var(--text-soft)">Se activa solo</small>' : w.certEstado === 'activado' ? '✓ Activado · verificando' : w.certEstado === 'error' ? 'Candado falla<small style="display:block;font-weight:500;color:var(--text-soft)">Revisar DNS</small>' : 'Candado falla') : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
         <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> <button class="hr-ico" title="Instalar el kit de diseño (skills de Claude) en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}

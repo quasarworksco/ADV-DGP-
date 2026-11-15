@@ -4355,6 +4355,25 @@ async function informesWeb(env, token, op = {}) {
   }
   return { enviados, detalle };
 }
+/* Certificado (candado) de un sitio en GitHub Pages: revisa su estado y activa "Enforce HTTPS" cuando ya está listo */
+async function candadoPages(env, w) {
+  if (!env.GITHUB_TOKEN && !env.GH_TOKEN) return null;
+  const host = String(w.dominio || '').replace(/^https?:\/\//i, '').replace(/[\/?#].*$/, '').toLowerCase();
+  let repo = String(w.repo || '').split('/').pop();
+  if (!repo) { const g = String(w.dominio || '').match(/\.github\.io\/([^\/?#]+)/i); if (g) repo = g[1]; }
+  if (!repo && w.cliente) repo = String(w.cliente).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!repo) return null;
+  let p; try { p = await gh(env, 'GET', `/repos/${GH_ORG}/${repo}/pages`); } catch (e) { return null; }   // no es un sitio de GitHub Pages
+  if (p.cname && host && p.cname.toLowerCase() !== host) return null;
+  const st = p.https_certificate?.state || '';
+  if (p.https_enforced) return { estado: 'activo', repo: `${GH_ORG}/${repo}` };
+  if (st === 'approved') {
+    await gh(env, 'PUT', `/repos/${GH_ORG}/${repo}/pages`, { cname: p.cname || host, https_enforced: true, source: p.source || { branch: 'main', path: '/' } });
+    return { estado: 'activado', detalle: 'Candado activado automáticamente', repo: `${GH_ORG}/${repo}` };
+  }
+  if (['errored', 'bad_authz', 'destroy_pending', 'dns_changed'].includes(st)) return { estado: 'error', detalle: p.https_certificate?.description || st, repo: `${GH_ORG}/${repo}` };
+  return { estado: 'pendiente', detalle: st ? `GitHub emitiendo el certificado (${st})` : 'Esperando el certificado de GitHub', repo: `${GH_ORG}/${repo}` };
+}
 async function revisarWebs(env, manual) {
   const token = await firebaseLogin(env);
   const webs = (await fsList(env, 'webs', token).catch(() => [])).filter(w => w.activo !== false && w.dominio);
@@ -4381,6 +4400,11 @@ async function revisarWebs(env, manual) {
     Object.keys(dias).forEach(k => { if (diasEntre(k, hoy) > 31) delete dias[k]; });
     const ahora = new Date().toISOString();
     const upd = { estado: r.estado, ms: r.ms ?? null, codigo: r.codigo ?? null, error: r.error || '', candado: r.candado, revisado: ahora, dias };
+    // Candado en GitHub Pages: si falla, se revisa el certificado y se activa solo apenas GitHub lo entrega
+    if (r.candado === false || w.certEstado && w.certEstado !== 'activo') {
+      const c = await candadoPages(env, w).catch(e => ({ estado: 'error', detalle: e.message }));
+      if (c) { upd.certEstado = c.estado; upd.certDetalle = c.detalle || ''; upd.certRevisado = ahora; if (c.repo && !w.repo) upd.repo = c.repo; }
+    }
     const quien = `<b>${escHtml(w.cliente || w.dominio)}</b> · ${escHtml(w.dominio)}`;
     // Registro de incidentes para el panel (los últimos 20)
     const ev = [];
