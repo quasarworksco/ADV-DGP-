@@ -2456,6 +2456,13 @@ html.dark .nd-part{stroke:#8fa8ff}
 @media(prefers-reduced-motion:reduce){.nd-part{display:none}.nd-flecha,.nd-destello{animation:none!important}}
 .wb-cert{display:inline-flex;align-items:center;gap:6px}.wb-cert i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:icGlobo .9s linear infinite}
 @media(prefers-reduced-motion:reduce){.wb-cert i{animation:none}}
+/* tarjeta Internet */
+.nd-red-v{display:flex;align-items:baseline;gap:3px;font-variant-numeric:tabular-nums}
+.nd-red-v b{font-size:.6em;color:#0b7f58;font-weight:800}.nd-red-v b.sub{color:var(--blue);margin-left:10px}
+html.dark .nd-red-v b{color:#34d399}html.dark .nd-red-v b.sub{color:#8fa8ff}
+.nd-red-v small{font-size:.42em;color:var(--text-soft);font-weight:600;letter-spacing:0;margin-left:1px}
+.nd-red-v>small:only-child,.nd-red-spin+small{font-size:14px;font-weight:600}
+.nd-red-spin{width:16px;height:16px;border-radius:50%;border:2.5px solid var(--off);border-top-color:var(--blue);animation:icGlobo .8s linear infinite;align-self:center;margin-right:6px}
 </style>
 <style id="modo-noche">
 /* ═══ MODO NOCHE ═══ base (variables y ajustes a mano) */
@@ -9801,6 +9808,46 @@ function ndActividad() {
 function ndActPintar() { const el = document.getElementById('nd-act'); if (el) el.innerHTML = ndActividad(); }
 function ndActFiltrar(k) { ndActFiltro = k; ndActTodo = false; ndActPintar(); }
 
+
+/* ===== Velocidad de internet (Cloudflare speed test, desde este navegador) ===== */
+let _ndRed = (() => { try { return JSON.parse(localStorage.getItem('dgp-red') || 'null'); } catch (e) { return null; } })(), _ndRedMidiendo = false, _ndRedFase = '';
+function ndRedCalidad(d) { return d >= 50 ? ['Excelente', 'nd-up'] : d >= 15 ? ['Buena', 'nd-up'] : d >= 5 ? ['Regular', ''] : ['Lenta', 'nd-down']; }
+function ndRedValor() {
+  if (_ndRedMidiendo) return `<span class="nd-red-v"><span class="nd-red-spin"></span><small>${_ndRedFase}</small></span>`;
+  if (!_ndRed) return '<span class="nd-red-v"><small>Toca para medir</small></span>';
+  return `<span class="nd-red-v"><b>↓</b>${_ndRed.down.toFixed(_ndRed.down < 10 ? 1 : 0)}<small>Mbps</small><b class="sub">↑</b>${_ndRed.up.toFixed(_ndRed.up < 10 ? 1 : 0)}<small>Mbps</small></span>`;
+}
+function ndRedNota() {
+  if (!navigator.onLine) return '<span class="nd-chip nd-down">Sin conexión</span>';
+  if (_ndRedMidiendo || !_ndRed) return 'Carga, descarga y latencia';
+  const [q, c] = ndRedCalidad(_ndRed.down), min = Math.round((Date.now() - _ndRed.t) / 60000);
+  return `<span class="nd-chip ${c}">${q}</span> · ${_ndRed.ping} ms${_ndRed.lugar ? ' · ' + esc(_ndRed.lugar) : ''} · ${min < 1 ? 'ahora' : 'hace ' + min + ' min'}`;
+}
+function ndRedPintar() { const c = document.querySelector('#dash-resumen .nd-red'); if (!c) return; const v = c.querySelector('.nd-v'), n = c.querySelector('.nd-n'); if (v) v.innerHTML = ndRedValor(); if (n) n.innerHTML = ndRedNota(); }
+async function ndRedMedir(forzar) {
+  if (_ndRedMidiendo || !navigator.onLine) { ndRedPintar(); return; }
+  if (!forzar && _ndRed && Date.now() - _ndRed.t < 30 * 60e3) { ndRedPintar(); return; }   // automático: como mucho cada 30 min
+  _ndRedMidiendo = true; const U = 'https://speed.cloudflare.com';
+  try {
+    _ndRedFase = 'Conexión…'; ndRedPintar();
+    const pings = []; let lugar = '';
+    for (let i = 0; i < 5; i++) { const t0 = performance.now(); const r = await fetch(`${U}/__down?bytes=0&r=${Math.random()}`, { cache: 'no-store' }); await r.arrayBuffer(); pings.push(performance.now() - t0); if (!lugar) lugar = r.headers.get('cf-meta-city') || ''; }
+    pings.sort((a, b) => a - b); const ping = Math.round(pings[2]);
+    _ndRedFase = 'Descarga…'; ndRedPintar();
+    let bytes = 0, t0 = performance.now();
+    for (const n of [1e6, 5e6, 10e6]) { const r = await fetch(`${U}/__down?bytes=${n}&r=${Math.random()}`, { cache: 'no-store' }); bytes += (await r.arrayBuffer()).byteLength; if (performance.now() - t0 > 6000) break; }
+    const down = bytes * 8 / ((performance.now() - t0) / 1000) / 1e6;
+    _ndRedFase = 'Subida…'; ndRedPintar();
+    const blob = new Uint8Array(2e6); let ub = 0; const t1 = performance.now();
+    for (let i = 0; i < 2; i++) { await fetch(`${U}/__up?r=${Math.random()}`, { method: 'POST', body: blob }); ub += blob.byteLength; if (performance.now() - t1 > 6000) break; }
+    const up = ub * 8 / ((performance.now() - t1) / 1000) / 1e6;
+    _ndRed = { down, up, ping, lugar, t: Date.now() };
+    try { localStorage.setItem('dgp-red', JSON.stringify(_ndRed)); } catch (e) {}
+  } catch (e) { _ndRedFase = ''; }
+  _ndRedMidiendo = false; ndRedPintar();
+  const v = document.querySelector('#dash-resumen .nd-red .nd-v'); if (v && !matchMedia('(prefers-reduced-motion: reduce)').matches) { v.classList.add('nd-destello'); setTimeout(() => v.classList.remove('nd-destello'), 1200); }
+}
+addEventListener('online', ndRedPintar); addEventListener('offline', ndRedPintar);
 /* ===== Dashboard nuevo: tarjeta principal + tarjetas compactas ===== */
 const ndIco = d => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 function ndMonto(n) { const t = cbMoney(n); const i = t.lastIndexOf('.'); return `<span class="nd-cnt" data-v="${Number(n) || 0}" data-m="1">${t.slice(0, i)}</span><small>${t.slice(i)}</small>`; }
@@ -9881,10 +9928,10 @@ function ndResumen(extra, k) {
   const tiles = [
     { ir: 'suscripciones', l: 'Suscripciones', ico: '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>', v: ndNum(k.susAct.length), n: k.susVenc ? `<span class="nd-chip nd-down">${k.susVenc} con cobro vencido</span>` : '<span class="nd-chip">Todas al día</span>' },
     { ir: 'suscripciones', l: 'Cobros esta semana', ico: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', v: ndMonto(semana.total), n: semana.n ? `${semana.n} suscripci${semana.n !== 1 ? 'ones' : 'ón'} · ${semana.dias}` : 'Nada vence en 7 días' },
-    { ir: 'whatsapp', l: 'Sin responder', ico: '<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>', v: extra.wa ? ndNum(extra.wa.n) : sk, n: extra.wa ? (extra.wa.n ? `<span class="nd-chip ${(Date.now() / 1000 - extra.wa.viejo) > 86400 ? 'nd-down' : ''}">más antiguo ${ndHaceTs(extra.wa.viejo)}</span>` : '<span class="nd-chip nd-up">Todo respondido</span>') : (extra.waErr ? 'WhatsApp no conectado' : '<span class="sk sk-n"></span>') },
+    { ir: '', red: true, l: 'Internet', ico: '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/>', v: ndRedValor(), n: ndRedNota() },
     { ir: 'miweb', l: 'Visitas web · 30 d', ico: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', v: extra.web ? ndNum(extra.web.visitantes) : sk, n: extra.web ? `personas · ${(extra.web.visitas || 0).toLocaleString('en-US')} visitas` : (extra.webErr ? 'Sin datos por ahora' : '<span class="sk sk-n"></span>') },
     { ir: 'metaads', l: 'Meta Ads · 30 d', ico: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>', v: extra.meta ? ndMonto(extra.meta.gastado) : sk, n: extra.meta ? `${extra.meta.conversaciones} mensajes recibidos` : (extra.metaErr ? 'Sin datos por ahora' : '<span class="sk sk-n"></span>') }
-  ].map(t => `<button type="button" class="nd-c nd-t" data-k="${t.l}" onclick="irASeccion('${t.ir}')"><span class="nd-t-top"><span class="nd-l">${t.l}</span><span class="nd-ic">${ndIco(t.ico)}</span></span><span class="nd-v">${t.v}</span><span class="nd-n">${t.n}</span></button>`).join('');
+  ].map(t => `<button type="button" class="nd-c nd-t${t.red ? ' nd-red' : ''}" data-k="${t.l}" onclick="${t.red ? 'ndRedMedir(true)' : `irASeccion('${t.ir}')`}"${t.red ? ' title="Toca para medir de nuevo"' : ''}><span class="nd-t-top"><span class="nd-l">${t.l}</span><span class="nd-ic">${ndIco(t.ico)}</span></span><span class="nd-v">${t.v}</span><span class="nd-n">${t.n}</span></button>`).join('');
   return `<div class="nd-row1">
     <button type="button" class="nd-c nd-hero" data-k="cobrado" style="--acc:var(--blue)" onclick="irASeccion('facturacion')"><span class="nd-shine" aria-hidden="true"></span>
       <span class="nd-hero-top"><span class="nd-l"><i></i>Cobrado en ${MESES[mes]}</span>${chipVar}</span>
@@ -9957,6 +10004,7 @@ async function renderResumenGeneral() {
   el.innerHTML = ndResumen(_rgCache, { saldo, porCobrar, cobradoMes, ventasMes, cliNuevos, cliWeb, susAct, susVenc });
   if (primera && !matchMedia('(prefers-reduced-motion: reduce)').matches) { window._ndEntrada = true; el.classList.add('nd-anim'); setTimeout(() => el.classList.remove('nd-anim'), 2600); }
   ndOrdenAplicar(el);
+  setTimeout(() => ndRedMedir(false), 1500);
   if (Object.keys(_antes).length && !matchMedia('(prefers-reduced-motion: reduce)').matches) el.querySelectorAll('.nd-c[data-k]').forEach(c => { const a = _antes[c.dataset.k]; if (!a) return;
     const v = c.querySelector('.nd-v'); if (v && a.v && v.textContent !== a.v && c.dataset.k !== 'cobrado') { v.classList.add('nd-destello'); setTimeout(() => v.classList.remove('nd-destello'), 1200); }
     const fl = c.querySelector('.nd-flecha'), p = c.querySelector('.nd-hero-top .nd-chip'); if (fl && p && a.p && p.textContent !== a.p) fl.classList.add('rebota'); });
@@ -9975,7 +10023,6 @@ async function renderResumenGeneral() {
   await Promise.all([
     rwTodas().then(s => { const d = s.docs.map(x => x.data()); extra.rw = { pend: d.filter(r => r.estado === 'pendiente').length, pub: d.filter(r => r.estado === 'aprobada').length }; }).catch(() => {}),
     fetch(`${RW_WORKER}/web-stats?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.resumen) extra.web = d.resumen; else extra.webErr = true; }).catch(() => { extra.webErr = true; }),
-    (Date.now() - (window._rgWaT || 0) < 30 * 60e3 && window._rgWaUlt ? Promise.resolve(window._rgWaUlt) : waApi('chats', { limit: 60 }).then(d => { window._rgWaT = Date.now(); window._rgWaUlt = d; return d; })).then(d => { const L = Array.isArray(d.chats) ? d.chats : []; if (typeof _wa !== 'undefined' && !(_wa.chats || []).length) _wa.chats = L; const lim = Date.now() / 1000 - 7 * 86400; const S = L.filter(c => !/@g\.us$/.test(c.id) && c.lastMessage && !c.lastMessage.fromMe && (c.lastMessage.timestamp || 0) >= lim); extra.wa = { n: S.length, viejo: S.reduce((m, c) => Math.min(m, c.lastMessage.timestamp), Infinity), nombres: S.slice(0, 3).map(c => waNombre(c)) }; }).catch(() => { extra.waErr = true; }),
     fetch(`${RW_WORKER}/meta-ads?periodo=last_30d`, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()).then(d => { if (d.total) extra.meta = d.total; else extra.metaErr = true; }).catch(() => { extra.metaErr = true; })
   ]);
   _rgCache = extra;
