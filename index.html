@@ -6253,7 +6253,7 @@ function pzCard(p) {
     <div class="pz-chips">${chips.map(([t, c]) => `<span class="pz-chip ${c}">${esc(t)}</span>`).join('')}</div>
     ${p.correo?.asunto && p.email ? `<div class="pz-asunto">Asunto: ${esc(p.correo.asunto)}</div>` : ''}
     <div class="pr-acts">
-      <span class="pr-pill" style="color:${eC};border-color:${eC}55">${eL}${p.enviadoEn ? ' · ' + esc(cbFecha ? cbFecha(p.enviadoEn.slice(0, 10)) : p.enviadoEn.slice(0, 10)) : ''}</span>
+      <span class="pr-pill" style="color:${eC};border-color:${eC}55">${eL}${p.enviadoEn ? ' · ' + esc(cbFecha ? cbFecha(p.enviadoEn.slice(0, 10)) : p.enviadoEn.slice(0, 10)) : ''}</span>${p.seguimientoEn ? `<span class="pr-pill" style="color:#64748b;border-color:#64748b55">Seguimiento · ${esc(cbFecha(p.seguimientoEn.slice(0, 10)))}</span>` : p.estado === 'enviado' && !p.duplicado ? '<span class="pz-chip">Seguimiento a los 4 días si no responde</span>' : ''}
       ${p.email && ['listo', 'revisar'].includes(p.estado) ? `<button class="btn-nuevo-cliente" style="padding:7px 12px;font-size:12px" onclick="pzVerCorreo('${id}')">Ver y enviar correo</button>` : p.email && p.correo ? `<button class="hr-btn" onclick="pzVerCorreo('${id}')">Ver correo</button>` : ''}
       ${p.estado === 'sinCorreo' ? `<button class="hr-btn" onclick="pzPonerCorreo('${id}')">Agregar correo</button>` : ''}
       ${!['prospecto', 'baja'].includes(p.estado) ? `<button class="hr-btn" onclick="pzAProspectos('${id}')">Pasar a prospectos</button>` : ''}
@@ -6271,7 +6271,7 @@ async function pzEstado(id, estado, extra) {
 }
 function pzVerCorreo(id) {
   const p = pzBusca(id); if (!p) return;
-  if (/\.dgp-link\.com|72 hours|72 horas/.test(p.correo?.cuerpo || '') && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
+  if ((p.correo?.v || 0) < 3 && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
   const c = p.correo || {}, editable = ['listo', 'revisar'].includes(p.estado);
   ptModal(p.nombre, `Para: ${p.email}`, `
     <input id="pz-m-asunto" class="pz-mail-in" value="${esc(c.asunto || '')}" ${editable ? '' : 'readonly'}>
@@ -6335,13 +6335,14 @@ function pzAjustes() {
     <label>Máximo de correos por día</label><input type="number" id="pz-a-limiteDia" value="${c.limiteDia || 60}" min="5" max="150"><small>Empieza en 15 y sube 5 cada 2 días hasta este número. Así Gmail se acostumbra y no te manda a spam.</small>
     ${sw('autoEnvio', 'Enviar solos, todos los días de 9 a 5 (hora de Florida)')}
     ${sw('connecticut', 'Incluir empresas nuevas de Connecticut (casi todas traen correo)')}
+    <label class="pz-sw"><input type="checkbox" id="pz-a-seguimiento" ${c.seguimiento === false ? '' : 'checked'}> Un seguimiento a los 4 días si no responde (solo uno)</label>
     ${sw('pausado', 'Pausar todo (ni busca ni envía)')}
     <button class="btn-nuevo-cliente" style="margin-top:18px;width:100%" onclick="pzGuardarAjustes()">Guardar</button></div>`);
 }
 async function pzGuardarAjustes() {
   const v = k => document.getElementById('pz-a-' + k), num = (k, d) => Math.max(1, Number(v(k).value) || d);
   const datos = { direccion: v('direccion').value.trim(), firma: v('firma').value.trim() || 'Paúl Andrés Espina', entrega: String(num('entrega', 24)), porDia: num('porDia', 80), limiteDia: num('limiteDia', 60),
-    autoEnvio: v('autoEnvio').checked, connecticut: v('connecticut').checked, pausado: v('pausado').checked };
+    autoEnvio: v('autoEnvio').checked, connecticut: v('connecticut').checked, seguimiento: v('pz-a-seguimiento'.replace('pz-a-', '')).checked, pausado: v('pausado').checked };
   try { await db.collection('config').doc('prospeccion').set(datos, { merge: true }); closePortalModal(); toast('Ajustes guardados', 'ok'); _pz.info = { ...(_pz.info || {}), config: { ...((_pz.info || {}).config || {}), ...datos } }; pzPintarEstado(); }
   catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }

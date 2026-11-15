@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15i';
+const WORKER_VERSION = '2026-11-15j';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5806,6 +5806,14 @@ const PZ_CAT = {
   general: ['negocio', 'un formulario de contacto para que tus clientes te escriban a cualquier hora', 'business', 'a contact form so customers can reach you 24/7'],
 };
 const PZ_ESTADO = { FL: 'Florida', TX: 'Texas', CT: 'Connecticut' };
+const PZ_V = 3;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
+// Trabajos reales del portafolio, por tipo de negocio (si no hay uno parecido, va el portafolio completo)
+const PZ_EJEMPLO = {
+  limpieza: 'smellingcleanfl.com', construccion: 'caiboconstruction.com', pintura: 'caiboconstruction.com', handyman: 'caiboconstruction.com',
+  jardineria: 'caiboconstruction.com', piscinas: 'pinawatersystem.com', electricidad: 'caiboconstruction.com', plomeria: 'pinawatersystem.com',
+  aire: 'appliancesolution901.com', autos: 'casanovacarcare.com', transporte: 'valpatruck.dgp-link.com', mudanzas: 'valpatruck.dgp-link.com',
+  salud: 'orangeultrasound.dgp-link.com', tienda: 'mqstore.dgp-link.com', restaurante: 'buythesweetzone.com', tecnologia: 'jfnetworksolutions.com',
+};
 function pzProblemas(w, en) {
   if (!w) return [];
   const L = [];
@@ -5842,10 +5850,11 @@ function pzCorreo(p, cfg) {
       `Here's what we can do for you, for $295 total:`, '',
       `- A professional website designed for your ${c[2]}`, `- Your own custom domain`, `- One full year of hosting and security (SSL) included`,
       `- Built for phones, with click-to-call and WhatsApp buttons`, `- ${c[3][0].toUpperCase() + c[3].slice(1)}`, '',
+      PZ_EJEMPLO[p.categoria] ? `Here's a real one we built for another ${c[2]}: ${PZ_EJEMPLO[p.categoria]}` : `You can see real websites we've built here: dgpglobalgroup.com/en/portfolio`, '',
       `And here's the part nobody else does: we build it first. You review it, and you only pay if you like it. No deposit, no risk.`, '',
       `Just reply "YES" to this email and we'll get started. Your website will be ready to review in ${entrega} hours.`, '',
       cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Calls: +1 (945) 302-2923', 'dgpglobalgroup.com'].join('\n');
-    return { asunto, cuerpo, idioma: 'en' };
+    return { asunto, cuerpo, idioma: 'en', v: PZ_V };
   }
   const asunto = probs.length ? elegir([`Una idea para la web de ${neg}`, `${neg}: una web mejor, hecha antes de que pagues`, `Sobre la página de ${neg}`])
     : elegir([`${neg}: tu página web, hecha antes de que pagues`, `¿Página web para ${neg}?`, `Una idea para ${neg}`]);
@@ -5857,10 +5866,11 @@ function pzCorreo(p, cfg) {
     `Esto es lo que te ofrecemos, por $295 en total:`, '',
     `- Una página web profesional diseñada para tu negocio`, `- Tu propio dominio personalizado`, `- 1 año completo de hosting y seguridad (candado SSL) incluido`,
     `- Lista para celular, con botones de llamada y WhatsApp`, `- ${c[1][0].toUpperCase() + c[1].slice(1)}`, '',
+    PZ_EJEMPLO[p.categoria] ? `Mira una que hicimos para otro negocio como el tuyo: ${PZ_EJEMPLO[p.categoria]}` : `Puedes ver páginas reales que hemos hecho aquí: dgpglobalgroup.com/portafolio`, '',
     `Y lo que nadie más hace: la hacemos primero. Tú la revisas y pagas solo si te gusta. Sin depósito y sin riesgo.`, '',
     `Solo responde "SÍ" a este correo y empezamos. En ${entrega} horas tendrás tu página lista para revisar.`, '',
     cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Llamadas: +1 (945) 302-2923', 'dgpglobalgroup.com'].join('\n');
-  return { asunto, cuerpo, idioma: 'es' };
+  return { asunto, cuerpo, idioma: 'es', v: PZ_V };
 }
 
 /* ── Baja (unsubscribe) firmada ── */
@@ -5919,7 +5929,7 @@ async function pzEnviarUno(env, p, cfg, token) {
   const yaEnv = await env.CACHE.get('pz:mail:' + correo);
   if (yaEnv) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'enviado', enviadoEn: yaEnv, duplicado: true }, ['estado', 'enviadoEn', 'duplicado'], token).catch(() => {}); return { ok: false, error: 'A este correo ya se le escribió el ' + yaEnv.slice(0, 10) }; }
   const en = (p.correo?.idioma || p.idioma) !== 'es';
-  if (/\.dgp-link\.com|72 hours|72 horas|^\(239\) 823-1738 · /m.test(p.correo?.cuerpo || '')) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con "dominio personalizado"
+  if ((p.correo?.v || 0) < PZ_V) p.correo = pzCorreo(p, cfg);   // textos viejos: se rehacen con la plantilla actual   // textos viejos: se rehacen con "dominio personalizado"
   const asunto = p.correo?.asunto || pzCorreo(p, cfg).asunto, cuerpo = p.correo?.cuerpo || pzCorreo(p, cfg).cuerpo;
   const enlace = `${BOT_URL}/baja?e=${encodeURIComponent(correo)}&f=${await pzFirma(env, correo)}`;
   const pie = en
@@ -5939,6 +5949,48 @@ async function pzEnviarUno(env, p, cfg, token) {
   const dia = hoyVE(), kd = 'pz:env:' + dia;
   await env.CACHE.put(kd, String((Number(await env.CACHE.get(kd)) || 0) + 1), { expirationTtl: 3 * 86400 });
   return { ok: true, restantes: r.restantes ?? null };
+}
+
+/* ── Seguimiento: un solo recordatorio a los 4 días si no respondió ── */
+function pzSeguimientoTexto(p, cfg) {
+  const en = (p.correo?.idioma || p.idioma) !== 'es', pila = p.nombrePila || '', entrega = String(cfg.entrega || '24');
+  const ej = PZ_EJEMPLO[p.categoria];
+  const asunto = 'Re: ' + String(p.asuntoEnviado || p.correo?.asunto || '').replace(/^re:\s*/i, '');
+  const cuerpo = en
+    ? [`Hi ${pila || 'there'},`, '', `Just checking that you saw my message below. The offer still stands: we build your website first, ready in ${entrega} hours, and you only pay $295 if you like it.`, '',
+      ej ? `Here's an example of our work: ${ej}` : `You can see our work here: dgpglobalgroup.com/en/portfolio`, '', `Just reply "YES" and we'll get started.`, '',
+      cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Calls: +1 (945) 302-2923'].join('\n')
+    : [`Hola${pila ? ' ' + pila : ''},`, '', `Solo quería saber si viste mi mensaje de abajo. La oferta sigue en pie: te hacemos la página primero, lista en ${entrega} horas, y solo pagas $295 si te gusta.`, '',
+      ej ? `Aquí puedes ver un trabajo nuestro: ${ej}` : `Puedes ver nuestros trabajos aquí: dgpglobalgroup.com/portafolio`, '', `Solo responde "SÍ" y empezamos.`, '',
+      cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Llamadas: +1 (945) 302-2923'].join('\n');
+  const fecha = String(p.enviadoEn || '').slice(0, 10);
+  const original = String(p.correo?.cuerpo || '').split('\n').map(l => '> ' + l).join('\n');
+  const cita = original ? `\n\n${en ? `On ${fecha}, ${cfg.firma || 'Paúl Andrés Espina'} wrote:` : `El ${fecha}, ${cfg.firma || 'Paúl Andrés Espina'} escribió:`}\n${original}` : '';
+  return { asunto, cuerpo, cita, en };
+}
+async function pzEnviarSeguimiento(env, p, cfg, token) {
+  const correo = String(p.email || '').toLowerCase();
+  if (!correo || p.seguimientoEn || p.duplicado) return { ok: false, error: 'No aplica' };
+  if (await pzEsBaja(env, correo)) { await fsUpdate(env, `prospeccion/${p._id}`, { estado: 'baja' }, ['estado'], token).catch(() => {}); return { ok: false, error: 'Se dio de baja' }; }
+  if (await env.CACHE.get('pz:seg:' + correo)) return { ok: false, error: 'Ya tuvo seguimiento' };
+  const { asunto, cuerpo, cita, en } = pzSeguimientoTexto(p, cfg);
+  const enlace = `${BOT_URL}/baja?e=${encodeURIComponent(correo)}&f=${await pzFirma(env, correo)}`;
+  const pie = en ? `DGP Global Group · ${cfg.direccion}\nIf you'd prefer not to hear from us again, reply "unsubscribe" or use this link: ${enlace}`
+    : `DGP Global Group · ${cfg.direccion}\nSi prefieres que no te escribamos más, responde "baja" o usa este enlace: ${enlace}`;
+  const esc = t => escHtml(t).replace(/\n/g, '<br>');
+  const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}`
+    + `<p style="margin:22px 0 0;font-size:12px;line-height:1.5;color:#777;border-top:1px solid #e5e5e5;padding-top:12px">DGP Global Group · ${escHtml(cfg.direccion)}<br>${en ? `If you'd prefer not to hear from us again, reply "unsubscribe" or <a href="${enlace}" style="color:#777">unsubscribe here</a>.` : `Si prefieres que no te escribamos más, responde "baja" o <a href="${enlace}" style="color:#777">date de baja aquí</a>.`}</p>`
+    + (cita ? `<blockquote style="margin:18px 0 0;padding-left:12px;border-left:3px solid #ddd;color:#666;font-size:13px">${esc(cita.trim().split('\n').slice(1).map(l => l.replace(/^> ?/, '')).join('\n'))}</blockquote>` : '') + `</div>`;
+  const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto, texto: `${cuerpo}\n\n--\n${pie}${cita}`, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
+  const r = await res.json().catch(() => ({ ok: false, error: 'Respuesta inesperada de Google' }));
+  if (!r.ok) return { ok: false, error: r.error || 'No se pudo enviar' };
+  const ahora = new Date().toISOString();
+  await env.CACHE.put('pz:seg:' + correo, ahora);
+  await fsUpdate(env, `prospeccion/${p._id}`, { seguimientoEn: ahora }, ['seguimientoEn'], token);
+  const kd = 'pz:env:' + hoyVE();
+  await env.CACHE.put(kd, String((Number(await env.CACHE.get(kd)) || 0) + 1), { expirationTtl: 3 * 86400 });
+  return { ok: true };
 }
 /* Cupo de hoy: empieza en 15 y sube 5 cada 2 días hábiles hasta el límite (calentamiento del correo) */
 async function pzCupoHoy(env, cfg) {
@@ -5961,9 +6013,19 @@ async function pzEnvioAutomatico(env) {
   const { quedan } = await pzCupoHoy(env, cfg);
   if (!quedan) return;
   const n = Math.min(quedan, Math.ceil(quedan / (17 - h)), 12);
-  const listos = (await pzPorEstado(env, 'listo', 60, token)).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0) || String(a.creado || '').localeCompare(String(b.creado || '')));
+  const limite = Date.now() - 4 * 864e5;
+  const segs = cfg.seguimiento === false ? [] : (await pzPorEstado(env, 'enviado', 300, token))
+    .filter(p => !p.seguimientoEn && !p.duplicado && p.enviadoEn && Date.parse(p.enviadoEn) < limite).sort((a, b) => String(a.enviadoEn).localeCompare(String(b.enviadoEn)));
   let ok = 0;
-  for (const p of listos.slice(0, n)) {
+  const nSeg = Math.min(segs.length, Math.ceil(n / 2));
+  for (const p of segs.slice(0, nSeg)) {
+    const r = await pzEnviarSeguimiento(env, p, cfg, token).catch(e => ({ ok: false, error: e.message }));
+    if (r.ok) ok++;
+    else if (/cuota|quota|limit/i.test(r.error || '')) return ok;
+    await new Promise(res => setTimeout(res, 2500 + Math.random() * 4000));
+  }
+  const listos = (await pzPorEstado(env, 'listo', 60, token)).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0) || String(a.creado || '').localeCompare(String(b.creado || '')));
+  for (const p of listos.slice(0, Math.max(0, n - ok))) {
     const r = await pzEnviarUno(env, p, cfg, token).catch(e => ({ ok: false, error: e.message }));
     if (r.ok) ok++;
     else if (/cuota|quota|limit/i.test(r.error || '')) break;
@@ -5994,7 +6056,7 @@ async function handleProspeccion(request, env) {
       if (b.accion === 'rehacer') {
         // Rehace los correos guardados con textos viejos (de a 20 por llamada)
         const cfg = await pzConfig(env, token);
-        const viejo = x => !x.correo?.cuerpo || /\.dgp-link\.com|72 hours|72 horas|^\(239\) 823-1738 · /m.test(x.correo.cuerpo) || !/945\) 302-2923/.test(x.correo.cuerpo);
+        const viejo = x => (x.correo?.v || 0) < PZ_V;
         const L = (await pzPorEstado(env, 'listo', 300, token)).filter(viejo);
         let rehechos = 0;
         for (const x of L.slice(0, 20)) { await fsUpdate(env, `prospeccion/${x._id}`, { correo: pzCorreo(x, cfg) }, ['correo'], token).then(() => rehechos++).catch(() => {}); }
