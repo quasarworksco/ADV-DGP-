@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15e';
+const WORKER_VERSION = '2026-11-15f';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5951,8 +5951,8 @@ async function pzEnvioAutomatico(env) {
   const cfg = await pzConfig(env, token);
   if (!cfg.autoEnvio || cfg.pausado || !String(cfg.direccion || '').trim()) return;
   const fl = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const h = fl.getHours(), dow = fl.getDay();
-  if (dow === 0 || dow === 6 || h < 9 || h > 16) return;
+  const h = fl.getHours();
+  if (h < 9 || h > 16) return;   // todos los días, de 9 a 5 (hora de Florida)
   const { quedan } = await pzCupoHoy(env, cfg);
   if (!quedan) return;
   const n = Math.min(quedan, Math.ceil(quedan / (17 - h)), 12);

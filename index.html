@@ -6204,7 +6204,7 @@ function pzPintarEstado() {
   if (!c.autoEnvio || c.pausado) { el.className = 'pz-estado off'; el.innerHTML = `<span class="pz-dot"></span><span><b>Envío automático ${c.pausado ? 'en pausa' : 'apagado'}.</b> Puedes enviar uno por uno desde cada tarjeta.</span><button class="btn-logout" style="margin-left:auto" onclick="pzAjustes()">Ajustes</button>`; return; }
   const pct = cu.cupo ? Math.min(100, Math.round(cu.enviados / cu.cupo * 100)) : 0;
   el.className = 'pz-estado';
-  el.innerHTML = `<span class="pz-dot"></span><span><b>Envío automático activo</b> · hoy ${cu.enviados || 0} de ${cu.cupo || 0} correos · lunes a viernes de 9 a 5</span><span class="pz-barra"><i style="width:${pct}%"></i></span>`;
+  el.innerHTML = `<span class="pz-dot"></span><span><b>Envío automático activo</b> · hoy ${cu.enviados || 0} de ${cu.cupo || 0} correos · todos los días de 9 a 5</span><span class="pz-barra"><i style="width:${pct}%"></i></span>`;
 }
 function pzPintar() {
   const L = _pz.lista || [], hoy = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
@@ -6333,7 +6333,7 @@ function pzAjustes() {
     <label>Tiempo de entrega que prometes (horas)</label><input type="number" id="pz-a-entrega" value="${esc(c.entrega || '72')}" min="12" max="240">
     <label>Negocios con correo por día</label><input type="number" id="pz-a-porDia" value="${c.porDia || 80}" min="10" max="300"><small>Solo se guardan los que tienen correo y necesitan una página web.</small>
     <label>Máximo de correos por día</label><input type="number" id="pz-a-limiteDia" value="${c.limiteDia || 60}" min="5" max="150"><small>Empieza en 15 y sube 5 cada 2 días hasta este número. Así Gmail se acostumbra y no te manda a spam.</small>
-    ${sw('autoEnvio', 'Enviar solos, de lunes a viernes de 9 a 5 (hora de Florida)')}
+    ${sw('autoEnvio', 'Enviar solos, todos los días de 9 a 5 (hora de Florida)')}
     ${sw('connecticut', 'Incluir empresas nuevas de Connecticut (casi todas traen correo)')}
     ${sw('pausado', 'Pausar todo (ni busca ni envía)')}
     <button class="btn-nuevo-cliente" style="margin-top:18px;width:100%" onclick="pzGuardarAjustes()">Guardar</button></div>`);
