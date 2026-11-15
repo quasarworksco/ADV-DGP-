@@ -225,6 +225,7 @@ export default {
     if (ruta === '/tarea') return handleTarea(request, env);
     if (ruta === '/prospeccion') return handleProspeccion(request, env);
     if (ruta === '/baja') return handleBaja(request, env);
+    if (ruta === '/ver') return handleVer(request, env);
     if (ruta === '/tarjeta') return handleTarjeta(request, env);
     if (ruta === '/email') return handleEmail(request, env);
     if (ruta === '/resena') return handleResena(request, env);
@@ -744,7 +745,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15k';
+const WORKER_VERSION = '2026-11-15l';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5808,6 +5809,10 @@ const PZ_CAT = {
 const PZ_ESTADO = { FL: 'Florida', TX: 'Texas', CT: 'Connecticut' };
 const PZ_V = 4;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
 // Trabajos reales del portafolio, por tipo de negocio (si no hay uno parecido, va el portafolio completo)
+const PZ_EJ_NOMBRE = { 'smellingcleanfl.com': 'Smelling Clean', 'caiboconstruction.com': 'Caibo Construction', 'pinawatersystem.com': 'Pina Water System',
+  'appliancesolution901.com': 'Appliance Solutions 901', 'casanovacarcare.com': 'Casanova Car Care', 'valpatruck.dgp-link.com': 'Valpa Truck',
+  'orangeultrasound.dgp-link.com': 'Orange Ultrasound', 'mqstore.dgp-link.com': 'MQ Store', 'jfnetworksolutions.com': 'JF Network Solutions',
+  'dgpglobalgroup.com/portafolio': 'nuestro portafolio', 'dgpglobalgroup.com/en/portfolio': 'our portfolio' };
 const PZ_EJEMPLO = {
   limpieza: 'smellingcleanfl.com', construccion: 'caiboconstruction.com', pintura: 'caiboconstruction.com', handyman: 'caiboconstruction.com',
   jardineria: 'caiboconstruction.com', piscinas: 'pinawatersystem.com', electricidad: 'caiboconstruction.com', plomeria: 'pinawatersystem.com',
@@ -5935,9 +5940,10 @@ async function pzEnviarUno(env, p, cfg, token) {
   const pie = en
     ? `DGP Global Group · ${cfg.direccion}\nYou're receiving this message because ${p.nombre} appears in public business records. If you'd prefer not to hear from us again, reply "unsubscribe" or use this link: ${enlace}`
     : `DGP Global Group · ${cfg.direccion}\nRecibes este mensaje porque ${p.nombre} aparece en registros públicos de empresas. Si prefieres que no te escribamos más, responde "baja" o usa este enlace: ${enlace}`;
-  const texto = `${cuerpo}\n\n--\n${pie}`;
+  const conLink = await pzConEnlaces(env, p, cuerpo);
+  const texto = `${conLink.texto}\n\n--\n${pie}`;
   const esc = t => escHtml(t).replace(/\n/g, '<br>');
-  const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}`
+  const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${conLink.html || cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}`
     + `<p style="margin:26px 0 0;font-size:12px;line-height:1.5;color:#777;border-top:1px solid #e5e5e5;padding-top:12px">DGP Global Group · ${escHtml(cfg.direccion)}<br>${en ? `You're receiving this message because ${escHtml(p.nombre)} appears in public business records. If you'd prefer not to hear from us again, reply "unsubscribe" or <a href="${enlace}" style="color:#777">unsubscribe here</a>.` : `Recibes este mensaje porque ${escHtml(p.nombre)} aparece en registros públicos de empresas. Si prefieres que no te escribamos más, responde "baja" o <a href="${enlace}" style="color:#777">date de baja aquí</a>.`}</p></div>`;
   const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
     body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto, texto, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
@@ -5978,11 +5984,12 @@ async function pzEnviarSeguimiento(env, p, cfg, token) {
   const pie = en ? `DGP Global Group · ${cfg.direccion}\nIf you'd prefer not to hear from us again, reply "unsubscribe" or use this link: ${enlace}`
     : `DGP Global Group · ${cfg.direccion}\nSi prefieres que no te escribamos más, responde "baja" o usa este enlace: ${enlace}`;
   const esc = t => escHtml(t).replace(/\n/g, '<br>');
-  const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}`
+  const conLink = await pzConEnlaces(env, p, cuerpo);
+  const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${conLink.html || cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}`
     + `<p style="margin:22px 0 0;font-size:12px;line-height:1.5;color:#777;border-top:1px solid #e5e5e5;padding-top:12px">DGP Global Group · ${escHtml(cfg.direccion)}<br>${en ? `If you'd prefer not to hear from us again, reply "unsubscribe" or <a href="${enlace}" style="color:#777">unsubscribe here</a>.` : `Si prefieres que no te escribamos más, responde "baja" o <a href="${enlace}" style="color:#777">date de baja aquí</a>.`}</p>`
     + (cita ? `<blockquote style="margin:18px 0 0;padding-left:12px;border-left:3px solid #ddd;color:#666;font-size:13px">${esc(cita.trim().split('\n').slice(1).map(l => l.replace(/^> ?/, '')).join('\n'))}</blockquote>` : '') + `</div>`;
   const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
-    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto, texto: `${cuerpo}\n\n--\n${pie}${cita}`, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
+    body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: correo, asunto, texto: `${conLink.texto}\n\n--\n${pie}${cita}`, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
   const r = await res.json().catch(() => ({ ok: false, error: 'Respuesta inesperada de Google' }));
   if (!r.ok) return { ok: false, error: r.error || 'No se pudo enviar' };
   const ahora = new Date().toISOString();
@@ -5991,6 +5998,102 @@ async function pzEnviarSeguimiento(env, p, cfg, token) {
   const kd = 'pz:env:' + hoyVE();
   await env.CACHE.put(kd, String((Number(await env.CACHE.get(kd)) || 0) + 1), { expirationTtl: 3 * 86400 });
   return { ok: true };
+}
+
+/* ── "Saber quién se interesó": los enlaces pasan por dgpglobalgroup.com/ver/ y el bot avisa ── */
+async function pzFirmaVer(env, clave) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('ver:' + (env.EMAIL_CLAVE || 'dgp')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const s = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(clave)));
+  return [...s.slice(0, 5)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+// Cambia el dominio del ejemplo por el enlace con aviso (texto) y por un enlace con el nombre del trabajo (HTML)
+async function pzConEnlaces(env, p, cuerpo) {
+  const destinos = Object.keys(PZ_EJ_NOMBRE).sort((a, b) => b.length - a.length).filter(d => cuerpo.includes(d));
+  if (!destinos.length) return { texto: cuerpo, html: null };
+  const url = `https://dgpglobalgroup.com/ver/?k=${encodeURIComponent(p._id)}&f=${await pzFirmaVer(env, p._id)}`;
+  let texto = cuerpo; destinos.forEach(d => { texto = texto.split(d).join(url); });
+  const esc = t => escHtml(t).replace(/\n/g, '<br>');
+  let html = cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('');
+  destinos.forEach(d => { html = html.split(escHtml(d)).join(`<a href="${url}" style="color:#1438cc;font-weight:600">${escHtml(PZ_EJ_NOMBRE[d])}</a>`); });
+  return { texto, html };
+}
+async function handleVer(request, env) {
+  const H = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
+  const u = new URL(request.url), k = String(u.searchParams.get('k') || ''), f = u.searchParams.get('f') || '';
+  const porDefecto = 'https://dgpglobalgroup.com/portafolio/';
+  if (!/^[a-z]{2,4}-[A-Za-z0-9-]{1,40}$/.test(k) || f !== await pzFirmaVer(env, k)) return new Response(JSON.stringify({ url: porDefecto }), { headers: H });
+  const token = await firebaseLogin(env);
+  const p = await fsGet(env, `prospeccion/${k}`, token).catch(() => null);
+  if (!p) return new Response(JSON.stringify({ url: porDefecto }), { headers: H });
+  const en = (p.correo?.idioma || p.idioma) !== 'es';
+  const dom = PZ_EJEMPLO[p.categoria];
+  const url = dom ? `https://${dom}/` : (en ? 'https://dgpglobalgroup.com/en/portfolio/' : porDefecto);
+  const ahora = new Date().toISOString();
+  await fsUpdate(env, `prospeccion/${k}`, { clics: (Number(p.clics) || 0) + 1, ultimoClic: ahora }, ['clics', 'ultimoClic'], token).catch(() => {});
+  // Aviso por Telegram (una vez cada 12 horas por negocio)
+  if (!await env.CACHE.get('pz:clic:' + k)) {
+    await env.CACHE.put('pz:clic:' + k, ahora, { expirationTtl: 12 * 3600 });
+    await tgEnviar(env, [`👀 <b>${escHtml(p.nombre)}</b> abrió tu ejemplo`, [p.ciudad, p.estadoUS].filter(Boolean).map(escHtml).join(', '),
+      p.email ? `✉️ ${escHtml(p.email)}` : '', p.telefono ? `📞 ${escHtml(p.telefono)}` : '', p.contacto ? `👤 ${escHtml(p.contacto)}` : '',
+      '', p.telefono ? 'Es buen momento para llamarle.' : 'Es buen momento para escribirle.'].filter(x => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n')).catch(() => {});
+  }
+  return new Response(JSON.stringify({ url }), { headers: H });
+}
+
+/* ── Recuperar: cotizaciones tuyas sin aceptar y prospectos que dejaron de responder (>30 días). Una sola vez por persona. ── */
+async function pzRecuperar(env, cfg, token, maximo) {
+  if (!maximo) return 0;
+  const [cots, pros, clientes, susc, aliados] = await Promise.all(['cotizaciones', 'prospectos', 'clientes', 'suscripciones', 'aliados'].map(c => fsList(env, c, token).catch(() => [])));
+  const minus = t => String(t || '').trim().toLowerCase();
+  // Nunca a clientes de aliados ni a los aliados
+  const cliAliado = new Set(susc.filter(x => x.aliadoId).map(x => minus(x.cliente)));
+  const correosAliado = new Set([...aliados.map(a => minus(a.correo)), ...clientes.filter(c => c.aliadoId || cliAliado.has(minus([c.nombre, c.apellido].filter(Boolean).join(' '))) || cliAliado.has(minus(c.nombre))).map(c => minus(c.correo))].filter(Boolean));
+  const fecha = d => { const v = fechaISO(d); return v ? Date.parse(v) : 0; };
+  const hace = (t, dias) => t && Date.now() - t > dias * 864e5 && Date.now() - t < 180 * 864e5;
+  const L = [];
+  for (const c of cots) {
+    const correo = minus(c.clienteCorreo);
+    const est = c.estado === 'enviada' && c.venceEl && c.venceEl < hoyVE() ? 'vencida' : (c.estado || 'enviada');
+    if (!correo || !['enviada', 'vencida'].includes(est) || c.aliadoId || c.aliado || /kevin|angel|ángel/i.test(c.emisor || '') || correosAliado.has(correo)) continue;
+    if (!hace(fecha(c.createdAt), 30)) continue;
+    L.push({ tipo: 'cot', correo, nombre: String(c.cli || '').split(/\s+/)[0], ref: c.docId || '', en: c.idioma === 'en' || c.lang === 'en' });
+  }
+  for (const x of pros) {
+    const correo = minus(x.correo);
+    if (!correo || ['cliente', 'descartado', 'perdido', 'noInteresa'].includes(x.estado) || x.origen === 'prospeccion' || correosAliado.has(correo)) continue;
+    const ultima = Math.max(fecha(x.contactadoAt), fecha(x.updatedAt), fecha(x.ultimoContactoWeb), fecha(x.createdAt));
+    if (!hace(ultima, 30)) continue;
+    L.push({ tipo: 'pro', correo, nombre: String(x.nombre || '').split(/\s+/)[0], servicio: x.servicio || '', en: x.idioma === 'en' });
+  }
+  let ok = 0;
+  for (const r of L) {
+    if (ok >= maximo) break;
+    if (await env.CACHE.get('pz:rec:' + r.correo) || await pzEsBaja(env, r.correo)) continue;
+    const web = r.tipo === 'cot' || /web|p[aá]gina|sitio|landing|tienda/i.test(r.servicio);
+    const n = r.nombre ? ' ' + r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1).toLowerCase() : '';
+    const asunto = r.en ? 'Still thinking about it?' : '¿Sigues pensándolo?';
+    const cuerpo = r.en
+      ? [`Hi${n},`, '', r.tipo === 'cot' ? `A few weeks ago we sent you a quote${r.ref ? ' (' + r.ref + ')' : ''}. Are you still thinking about your project?` : `A while ago you reached out to us${r.servicio ? ' about ' + r.servicio.toLowerCase() : ''}. Are you still interested?`, '',
+        web ? `This week we can have your website ready in ${cfg.entrega || 24} hours. We build it first and you only pay if you like it.` : `We'd be happy to pick it up this week.`, '',
+        'Just reply to this email and we\'ll take it from there.', '', cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Calls: +1 (945) 302-2923'].join('\n')
+      : [`Hola${n},`, '', r.tipo === 'cot' ? `Hace unas semanas te enviamos una cotización${r.ref ? ' (' + r.ref + ')' : ''}. ¿Sigues pensando en tu proyecto?` : `Hace un tiempo nos escribiste${r.servicio ? ' sobre ' + r.servicio.toLowerCase() : ''}. ¿Sigues interesado?`, '',
+        web ? `Esta semana te podemos tener tu página lista en ${cfg.entrega || 24} horas. La hacemos primero y pagas solo si te gusta.` : 'Con gusto lo retomamos esta semana.', '',
+        'Solo responde este correo y seguimos.', '', cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Llamadas: +1 (945) 302-2923'].join('\n');
+    const enlace = `${BOT_URL}/baja?e=${encodeURIComponent(r.correo)}&f=${await pzFirma(env, r.correo)}`;
+    const pie = r.en ? `DGP Global Group · ${cfg.direccion}\nIf you'd prefer not to hear from us again: ${enlace}` : `DGP Global Group · ${cfg.direccion}\nSi prefieres que no te escribamos más: ${enlace}`;
+    const esc = t => escHtml(t).replace(/\n/g, '<br>');
+    const html = `<div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:600px">${cuerpo.split(/\n{2,}/).map(b => `<p style="margin:0 0 14px">${esc(b)}</p>`).join('')}<p style="margin:22px 0 0;font-size:12px;color:#777;border-top:1px solid #e5e5e5;padding-top:12px">DGP Global Group · ${escHtml(cfg.direccion)}<br><a href="${enlace}" style="color:#777">${r.en ? 'Unsubscribe' : 'Darme de baja'}</a></p></div>`;
+    const res = await fetch(env.EMAIL_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'follow',
+      body: JSON.stringify({ clave: env.EMAIL_CLAVE, para: r.correo, asunto, texto: `${cuerpo}\n\n--\n${pie}`, html, nombre: (cfg.firma || 'Paúl Andrés Espina') + ' · DGP Global Group', responderA: 'info@dgpglobalgroup.com' }) });
+    const j = await res.json().catch(() => ({}));
+    if (!j.ok) break;
+    await env.CACHE.put('pz:rec:' + r.correo, new Date().toISOString());
+    const kd = 'pz:env:' + hoyVE(); await env.CACHE.put(kd, String((Number(await env.CACHE.get(kd)) || 0) + 1), { expirationTtl: 3 * 86400 });
+    ok++;
+    await new Promise(res2 => setTimeout(res2, 3000 + Math.random() * 3000));
+  }
+  if (ok) await tgEnviar(env, `🔁 <b>Recuperar</b>: escribí a ${ok} ${ok === 1 ? 'persona' : 'personas'} que ya te conocían (cotizaciones sin aceptar o prospectos sin respuesta). Si contestan, te aviso.`).catch(() => {});
+  return ok;
 }
 /* Cupo de hoy: empieza en 15 y sube 5 cada 2 días hábiles hasta el límite (calentamiento del correo) */
 async function pzCupoHoy(env, cfg) {
@@ -6023,6 +6126,11 @@ async function pzEnvioAutomatico(env) {
     if (r.ok) ok++;
     else if (/cuota|quota|limit/i.test(r.error || '')) return ok;
     await new Promise(res => setTimeout(res, 2500 + Math.random() * 4000));
+  }
+  if (cfg.recuperar !== false && ok < n) {
+    const kr = 'pz:recHoy:' + hoyVE(), yaHoy = Number(await env.CACHE.get(kr)) || 0;
+    const r = await pzRecuperar(env, cfg, token, Math.min(3, 8 - yaHoy, n - ok)).catch(e => { console.warn('recuperar', e.message); return 0; });
+    if (r) { ok += r; await env.CACHE.put(kr, String(yaHoy + r), { expirationTtl: 2 * 86400 }); }
   }
   const listos = (await pzPorEstado(env, 'listo', 60, token)).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0) || String(a.creado || '').localeCompare(String(b.creado || '')));
   for (const p of listos.slice(0, Math.max(0, n - ok))) {
