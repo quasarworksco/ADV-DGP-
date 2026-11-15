@@ -14499,7 +14499,8 @@ async function auEnviarCorreo() {
    El plan de hosting y el dominio salen de Suscripciones (mismo dominio).
 ═══════════════════════════════════════════════════════ */
 let _wb = { lista: null, filtro: 'todas', hist: null };
-const wbHost = d => String(d || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+// Dominio de la web; en GitHub Pages (usuario.github.io/repositorio) se conserva la carpeta del repositorio
+const wbHost = d => { const t = String(d || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, ''); const host = t.replace(/[\/?#].*$/, ''); const seg = (t.slice(host.length).match(/^\/([^\/?#]+)/) || [])[1]; return /\.github\.io$/.test(host) && seg ? `${host}/${seg}` : host; };
 // Su plan: por la suscripción con la que se agregó, por el mismo dominio o por el mismo cliente
 function wbSubs(w) {
   const h = wbHost(w.dominio), c = ptNorm(w.cliente);
@@ -14510,7 +14511,7 @@ function wbSubs(w) {
   const dominio = del.find(s => s.tipo === 'dominio') || delCli.find(s => s.tipo === 'dominio') || null;
   return { hosting, dominio };
 }
-const wbEsDominio = d => /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(wbHost(d));
+const wbEsDominio = d => /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(wbHost(d).split('/')[0]);
 function wbFecha(iso) { const d = ptDate(iso); return d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) }) : ''; }
 const wbPronto = iso => { const d = ptDate(iso); return d && (d - new Date()) / 864e5 <= 30; };
 /* ── Nuevo sitio web: crea el repositorio en quasarworksco con la plantilla base (index.html + CLAUDE.md),
@@ -14595,6 +14596,15 @@ async function renderWebs(fresco) {
       const _dup = _todas.filter(w => w.repo && /\.github\.io/i.test(w.dominio || '') && _todas.some(x => x !== w && x.repo === w.repo && x.dominio && !/\.github\.io/i.test(x.dominio)));
       for (const w of _dup) { try { await db.collection('webs').doc(w._id).delete(); } catch (e) {} }
       if (_dup.length) _todas = _todas.filter(w => !_dup.includes(w));
+      // Reparación: webs de GitHub Pages guardadas sin la carpeta del repositorio (usuario.github.io → usuario.github.io/repositorio)
+      for (const w of _todas) {
+        const d = String(w.dominio || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        if (!/^[a-z0-9-]+\.github\.io$/.test(d)) continue;
+        const repo = String(w.repo || '').split('/').pop() || ptNorm(w.cliente || '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (!repo) continue;
+        const nuevo = `${d}/${repo}`;
+        try { await db.collection('webs').doc(w._id).update({ dominio: nuevo, estado: null, caidaDesde: null }); w.dominio = nuevo; w.estado = null; } catch (e) {}
+      }
       _wb.lista = _todas.filter(w => w.activo !== false).sort((a, b) => String(a.cliente || '').localeCompare(String(b.cliente || ''))); }
     catch (e) { el.innerHTML = `<div class="pt-empty" style="color:#b91c1c">No se pudieron cargar: ${esc(e.message)}</div>`; return; }
   }

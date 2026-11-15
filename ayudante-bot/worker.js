@@ -4294,7 +4294,8 @@ async function handlePush(request, env, ctx) {
 ══════════════════════════════════════════════════════════════ */
 const WEB_ORDEN = { ok: 0, lenta: 1, caida: 2 };
 async function chequearWeb(dominio) {
-  const host = String(dominio || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+  const _t = String(dominio || '').trim().replace(/^https?:\/\//i, '').toLowerCase(), _h = _t.replace(/[\/?#].*$/, ''), _seg = (_t.slice(_h.length).match(/^\/([^\/?#]+)/) || [])[1];
+  const host = /\.github\.io$/.test(_h) && _seg ? `${_h}/${_seg}` : _h;   // GitHub Pages: se revisa la carpeta del repositorio
   if (!host) return { estado: 'caida', error: 'Sin dominio' };
   const prueba = async url => {
     const t0 = Date.now();
