@@ -6216,11 +6216,11 @@ function pzPintar() {
     <div class="cb-tile"><div class="cb-tile-l">Listos para enviar</div><div class="cb-tile-v">${n('listo')}</div><div class="cb-tile-n">Salen solos en horario de oficina</div></div>
     <div class="cb-tile"><div class="cb-tile-l">Enviados</div><div class="cb-tile-v">${n('enviado') + n('respondio')}</div><div class="cb-tile-n">En total</div></div>
     <div class="cb-tile"><div class="cb-tile-l">Respondieron</div><div class="cb-tile-v" style="color:var(--green-dark)">${n('respondio')}</div><div class="cb-tile-n">Contéstales desde Respuestas</div></div>`;
-  const filtros = [['listo', 'Listos'], ['enviado', 'Enviados'], ['abrio', 'Abrieron tu ejemplo'], ['respondio', 'Respondieron'], ['todos', 'Todos']];
-  document.getElementById('pz-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_pz.filtro === k ? 'active' : ''}" onclick="_pz.filtro='${k}';pzPintar()">${v}${k === 'abrio' ? (L.filter(p => p.clics > 0).length ? ` · ${L.filter(p => p.clics > 0).length}` : '') : k !== 'todos' && n(k) ? ` · ${n(k)}` : ''}</button>`).join('') +
+  const filtros = [['listo', 'Listos'], ['enviado', 'Enviados'], ['abrio', 'Abrieron tu ejemplo'], ['respondio', 'Respondieron'], ['aliado', 'Posibles aliados'], ['todos', 'Todos']];
+  document.getElementById('pz-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_pz.filtro === k ? 'active' : ''}" onclick="_pz.filtro='${k}';pzPintar()">${v}${k === 'aliado' ? (L.filter(p => p.segmento === 'aliado').length ? ` · ${L.filter(p => p.segmento === 'aliado').length}` : '') : k === 'abrio' ? (L.filter(p => p.clics > 0).length ? ` · ${L.filter(p => p.clics > 0).length}` : '') : k !== 'todos' && n(k) ? ` · ${n(k)}` : ''}</button>`).join('') +
     `<select onchange="_pz.fuente=this.value;pzPintar()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:100px;font:600 11px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--text-mid);"><option value="">Todas las fuentes</option>${Object.entries(PZ_FUENTE).map(([k, v]) => `<option value="${k}" ${_pz.fuente === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>`;
   const q = ptNorm(_pz.q);
-  const vis = L.filter(p => (_pz.filtro === 'todos' ? !['descartado', 'baja'].includes(p.estado) : _pz.filtro === 'abrio' ? p.clics > 0 : p.estado === _pz.filtro) && (!_pz.fuente || p.fuente === _pz.fuente)
+  const vis = L.filter(p => (_pz.filtro === 'todos' ? !['descartado', 'baja'].includes(p.estado) : _pz.filtro === 'abrio' ? p.clics > 0 : _pz.filtro === 'aliado' ? p.segmento === 'aliado' && !['descartado', 'baja'].includes(p.estado) : p.estado === _pz.filtro) && (!_pz.fuente || p.fuente === _pz.fuente)
     && (!q || ptNorm([p.nombre, p.ciudad, p.email, p.estadoUS, PZ_CATN[p.categoria], p.contacto].join(' ')).includes(q)));
   const body = document.getElementById('pz-body');
   if (!L.length) { body.innerHTML = '<div class="pt-empty">Todavía no hay negocios. La búsqueda corre sola cada mañana a las 6 am y aquí aparecerán los nuevos, con su correo listo para enviar.</div>'; return; }
@@ -6240,6 +6240,7 @@ function pzCard(p) {
     if (w.constructor) chips.push(['Hecha en ' + w.constructor, '']);
   }
   if (p.clics) chips.unshift([`Abrió tu ejemplo${p.clics > 1 ? ` ${p.clics} veces` : ''}${p.ultimoClic ? ' · ' + cbFecha(p.ultimoClic.slice(0, 10)) : ''}`, 'bien']);
+  if (p.segmento === 'aliado') chips.unshift(['Posible aliado (revendedor)', 'bien']);
   chips.push([p.idioma === 'es' ? 'Correo en español' : 'Correo en inglés', '']);
   const id = esc(p._id), g = encodeURIComponent(`${p.nombre} ${p.ciudad || ''} ${p.estadoUS || ''}`);
   return `<div class="pr-card">

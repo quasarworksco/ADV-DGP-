@@ -745,7 +745,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15m';
+const WORKER_VERSION = '2026-11-15n';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -4564,7 +4564,7 @@ async function revisarRespuestas(env, token, avisar) {
           const baja = /\b(unsubscribe|remove me|stop|no (me )?escrib|baja|no gracias|not interested|no interesad)/i.test(m.texto || '');
           if (baja) await pzDarBaja(env, correo, token);
           else await fsUpdate(env, `prospeccion/${pz._id}`, { estado: 'respondio', respondioEn: new Date().toISOString() }, ['estado', 'respondioEn'], token).catch(() => {});
-          m.asunto = (baja ? '[Prospección · baja] ' : '🎯 [Prospección] ') + (m.asunto || '');
+          m.asunto = (baja ? '[Prospección · baja] ' : pz.segmento === 'aliado' ? '🤝 [Posible aliado] ' : '🎯 [Prospección] ') + (m.asunto || '');
           m._pz = pz.nombre;
         }
       }
@@ -5886,7 +5886,27 @@ function pzProblemas(w, en) {
 }
 const pzNombreCorto = n => String(n || '').replace(/[,.]?\s+(l\.?l\.?c\.?|inc\.?|corp\.?|corporation|co\.?|p\.?a\.?|pllc|llp|lp|ltd\.?)\s*$/i, '').trim() || String(n || '');
 const pzLista = (L, y) => L.length < 2 ? (L[0] || '') : L.slice(0, -1).join(', ') + ` ${y} ` + L[L.length - 1];
+function pzCorreoAliado(p, cfg) {
+  const en = p.idioma !== 'es', neg = pzNombreCorto(p.nombre), pila = p.nombrePila || '', entrega = String(cfg.entrega || '24');
+  const tipoEn = p.categoria === 'seguros' ? 'insurance agency' : 'office', tipoEs = p.categoria === 'seguros' ? 'agencia de seguros' : 'oficina';
+  const firma = [cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', en ? 'Calls: +1 (945) 302-2923' : 'Llamadas: +1 (945) 302-2923', 'dgpglobalgroup.com'];
+  if (en) return { asunto: `Partnership idea for ${neg}`, idioma: 'en', v: PZ_V, cuerpo: [`Hi ${pila || 'there'},`, '',
+    `I'm ${String(cfg.firma || 'Paúl').split(' ')[0]} from DGP Global Group, a web design agency in Florida.`, '',
+    `Your ${tipoEn} works every day with people who are starting or growing a business, and almost all of them need a website. We'd like to be your web partner:`, '',
+    `- Special partner pricing, so you can offer websites to your clients with your own margin`, `- We deliver in ${entrega} hours, in English and Spanish, with custom domain, hosting and SSL included`,
+    `- Your clients stay your clients: we never contact them directly`, `- No cost and no commitment to join`, '',
+    `You can see our work here: dgpglobalgroup.com/en/portfolio`, '',
+    `If you're interested, just reply "PARTNER" and I'll send you our partner price list.`, '', ...firma].join('\n') };
+  return { asunto: `Una alianza para ${neg}`, idioma: 'es', v: PZ_V, cuerpo: [`Hola${pila ? ' ' + pila : ''},`, '',
+    `Soy ${String(cfg.firma || 'Paúl').split(' ')[0]}, de DGP Global Group, una agencia de páginas web en Florida.`, '',
+    `Tu ${tipoEs} trabaja todos los días con personas que abren o hacen crecer un negocio, y casi todas necesitan una página web. Nos gustaría ser tu aliado web:`, '',
+    `- Precios especiales de aliado, para que ofrezcas páginas web a tus clientes con tu propia ganancia`, `- Entregamos en ${entrega} horas, en español e inglés, con dominio personalizado, hosting y candado SSL incluidos`,
+    `- Tus clientes siguen siendo tuyos: nunca los contactamos directamente`, `- Sin costo y sin compromiso para unirte`, '',
+    `Puedes ver nuestros trabajos aquí: dgpglobalgroup.com/portafolio`, '',
+    `Si te interesa, responde "ALIADO" y te envío nuestra lista de precios para aliados.`, '', ...firma].join('\n') };
+}
 function pzCorreo(p, cfg) {
+  if (p.segmento === 'aliado') return pzCorreoAliado(p, cfg);
   const en = p.idioma !== 'es';
   const c = PZ_CAT[p.categoria] || PZ_CAT.general;
   const neg = pzNombreCorto(p.nombre), ciudad = p.ciudad || PZ_ESTADO[p.estadoUS] || '', sub = `${p.subdominio || 'tunegocio'}.dgp-link.com`;
@@ -6016,6 +6036,13 @@ function pzSeguimientoTexto(p, cfg) {
   const en = (p.correo?.idioma || p.idioma) !== 'es', pila = p.nombrePila || '', entrega = String(cfg.entrega || '24');
   const ej = PZ_EJEMPLO[p.categoria];
   const asunto = 'Re: ' + String(p.asuntoEnviado || p.correo?.asunto || '').replace(/^re:\s*/i, '');
+  if (p.segmento === 'aliado') {
+    const c2 = en
+      ? [`Hi ${pila || 'there'},`, '', `Just checking that you saw my message below. Our partner program is free to join: special pricing so you can offer websites to your clients, delivered in ${entrega} hours.`, '', `Reply "PARTNER" and I'll send you the price list.`, '', cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Calls: +1 (945) 302-2923'].join('\n')
+      : [`Hola${pila ? ' ' + pila : ''},`, '', `Solo quería saber si viste mi mensaje de abajo. Unirte como aliado no tiene costo: precios especiales para que ofrezcas páginas web a tus clientes, entregadas en ${entrega} horas.`, '', `Responde "ALIADO" y te envío la lista de precios.`, '', cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', 'Llamadas: +1 (945) 302-2923'].join('\n');
+    const fecha0 = String(p.enviadoEn || '').slice(0, 10), orig = String(p.correo?.cuerpo || '').split('\n').map(l => '> ' + l).join('\n');
+    return { asunto, cuerpo: c2, cita: orig ? `\n\n${en ? `On ${fecha0}, ${cfg.firma || 'Paúl Andrés Espina'} wrote:` : `El ${fecha0}, ${cfg.firma || 'Paúl Andrés Espina'} escribió:`}\n${orig}` : '', en };
+  }
   const cuerpo = en
     ? [`Hi ${pila || 'there'},`, '', `Just checking that you saw my message below. The offer still stands: we build your website first, ready in ${entrega} hours, and you only pay $295 if you like it.`, '',
       ej ? `Here's an example of our work: ${ej}` : `You can see our work here: dgpglobalgroup.com/en/portfolio`, '', `Just reply "YES" and we'll get started.`, '',
@@ -6242,6 +6269,7 @@ async function handleProspeccion(request, env) {
             email: lim(x.email, 120).toLowerCase(), correosExtra: (x.correosExtra || []).slice(0, 2).map(c => lim(c, 120)), telefono: lim(x.telefono, 30), web: lim(x.web, 200),
             webInfo: x.webInfo ? { ok: !!x.webInfo.ok, https: !!x.webInfo.https, celular: !!x.webInfo.celular, anio: Number(x.webInfo.anio) || null, constructor: lim(x.webInfo.constructor, 20) } : null,
             facebook: lim(x.facebook, 200), instagram: lim(x.instagram, 200), razonSocial: lim(x.razonSocial, 140), naics: lim(x.naics, 8),
+            segmento: x.segmento === 'aliado' ? 'aliado' : '',
             subdominio: lim(x.subdominio, 40).replace(/[^a-z0-9-]/g, ''), idioma: x.idioma === 'es' ? 'es' : 'en', puntaje: Number(x.puntaje) || 0, creado: new Date().toISOString(), dia: hoyVE(),
           };
           delete p.estado_;
@@ -6250,7 +6278,7 @@ async function handleProspeccion(request, env) {
           // Con correo → listo para enviar. Si ya tiene una web sin problemas, mejor revisarlo a mano.
           const webBuena = p.web && p.webInfo?.ok && p.webInfo.https && p.webInfo.celular && !(p.webInfo.anio && p.webInfo.anio < new Date().getFullYear() - 3);
           // Solo sirven los que tienen correo y necesitan una web (no tienen, o la suya tiene fallas)
-          if (!p.email || webBuena) { claves.push(p.clave); continue; }
+          if (!p.email || (webBuena && p.segmento !== 'aliado')) { claves.push(p.clave); continue; }
           p.estado = 'listo';
           p.correo = pzCorreo(p, cfg);
           await fsGuardar(env, `prospeccion/${p.clave}`, p, token).then(() => { guardados++; claves.push(p.clave); }).catch(e => console.warn('pz guardar', e.message));
