@@ -741,7 +741,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-13a';
+const WORKER_VERSION = '2026-11-15a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -4366,13 +4366,41 @@ async function candadoPages(env, w) {
   let p; try { p = await gh(env, 'GET', `/repos/${GH_ORG}/${repo}/pages`); } catch (e) { return null; }   // no es un sitio de GitHub Pages
   if (p.cname && host && p.cname.toLowerCase() !== host) return null;
   const st = p.https_certificate?.state || '';
-  if (p.https_enforced) return { estado: 'activo', repo: `${GH_ORG}/${repo}` };
+  if (p.https_enforced) { await env.CACHE?.delete('cand:' + repo); return { estado: 'activo', repo: `${GH_ORG}/${repo}` }; }
   if (st === 'approved') {
+    await env.CACHE?.delete('cand:' + repo);
     await gh(env, 'PUT', `/repos/${GH_ORG}/${repo}/pages`, { cname: p.cname || host, https_enforced: true, source: p.source || { branch: 'main', path: '/' } });
     return { estado: 'activado', detalle: 'Candado activado automáticamente', repo: `${GH_ORG}/${repo}` };
   }
-  if (['errored', 'bad_authz', 'destroy_pending', 'dns_changed'].includes(st)) return { estado: 'error', detalle: p.https_certificate?.description || st, repo: `${GH_ORG}/${repo}` };
-  return { estado: 'pendiente', detalle: st ? `GitHub emitiendo el certificado (${st})` : 'Esperando el certificado de GitHub', repo: `${GH_ORG}/${repo}` };
+  // Si GitHub se queda trabado (pasa a veces con dominios recién creados), se le vuelve a pedir el certificado:
+  // se quita el dominio y se pone de nuevo. Solo si el DNS ya apunta bien, como mucho cada 90 min y 6 veces.
+  const R = `${GH_ORG}/${repo}`, K = 'cand:' + repo, ahoraMs = Date.now();
+  let k = {}; try { k = JSON.parse(await env.CACHE?.get(K) || '{}'); } catch (e) {}
+  if (!k.desde) k.desde = w.certEstado === 'pendiente' ? 1 : ahoraMs;   // ya venía en proceso: se puede reintentar enseguida
+  const hostP = p.cname || host, dnsOk = await dnsApuntaGithub(hostP);
+  if (!dnsOk) { await env.CACHE?.put(K, JSON.stringify(k), { expirationTtl: 7 * 86400 }); return { estado: 'error', detalle: 'El DNS del dominio todavía no apunta a GitHub', repo: R }; }
+  const trabado = ahoraMs - k.desde > 45 * 60e3 && ahoraMs - (k.ultimo || 0) > 90 * 60e3 && (k.intentos || 0) < 6;
+  if (trabado && hostP) {
+    try {
+      await gh(env, 'PUT', `/repos/${GH_ORG}/${repo}/pages`, { cname: null, source: p.source || { branch: 'main', path: '/' } });
+      await new Promise(r => setTimeout(r, 4000));
+      await gh(env, 'PUT', `/repos/${GH_ORG}/${repo}/pages`, { cname: hostP, source: p.source || { branch: 'main', path: '/' } });
+      k.ultimo = ahoraMs; k.intentos = (k.intentos || 0) + 1;
+    } catch (e) { console.warn('candado reintento', repo, e.message); }
+  }
+  await env.CACHE?.put(K, JSON.stringify(k), { expirationTtl: 7 * 86400 });
+  const extra = k.intentos ? ` · pedido de nuevo ${k.intentos} ${k.intentos === 1 ? 'vez' : 'veces'}` : '';
+  if (['errored', 'bad_authz', 'destroy_pending', 'dns_changed'].includes(st) && (k.intentos || 0) >= 6) return { estado: 'error', detalle: (p.https_certificate?.description || st) + extra, repo: R };
+  return { estado: 'pendiente', detalle: (st ? `GitHub emitiendo el certificado (${st})` : 'Esperando el certificado de GitHub') + extra, repo: R };
+}
+// ¿El dominio ya apunta a GitHub Pages? (CNAME a *.github.io o las IPs 185.199.108-111.153)
+async function dnsApuntaGithub(host) {
+  if (!host) return false;
+  try {
+    const q = async t => (await (await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${t}`, { headers: { accept: 'application/dns-json' }, signal: AbortSignal.timeout(6000) })).json()).Answer || [];
+    const A = await q('A');
+    return A.some(a => /\.github\.io\.?$/i.test(a.data) || /^185\.199\.(108|109|110|111)\.153$/.test(a.data));
+  } catch (e) { return true; }   // si la consulta falla, no bloquear
 }
 async function revisarWebs(env, manual) {
   const token = await firebaseLogin(env);
