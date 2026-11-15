@@ -745,7 +745,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15l';
+const WORKER_VERSION = '2026-11-15m';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -1938,6 +1938,58 @@ async function waReciboPago(env, token, fsId, monto, global) {
   await waEnviarTexto(env, t + '@c.us', texto + lineaG);
   return { ok: true, tel: t, para };
 }
+
+/* ══════════════════════════════════════════════════════════════
+   REFERIDOS DE CLIENTES
+   · Primer pago de un cliente → correo de gracias + reseña en Google + su código para referir.
+   · Si un cliente nuevo tiene "Referido por" y paga su primera factura → al que lo refirió
+     se le abonan $40 (saldo a favor, se aplica solo a su próxima factura). Solo si el referido compra.
+══════════════════════════════════════════════════════════════ */
+const REF_MONTO = 40;
+const refCodigo = id => 'R-' + [...String(id)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36).toUpperCase().slice(-4).padStart(4, 'X');
+async function refAlPagar(env, token, fsId) {
+  const doc = await fsGet(env, `documentos/${fsId}`, token).catch(() => null);
+  if (!doc || esAliado(doc) || doc.aliado || doc.paqueteAliado || doc.suscripcionId) return null;
+  if (!(doc.pagado || doc.type === 'recibo' || doc.pagadoParcial)) return null;
+  const clientes = await fsList(env, 'clientes', token).catch(() => []);
+  const norm = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const nom = c => [c.nombre, c.apellido].filter(Boolean).join(' ');
+  const cli = clientes.find(c => norm(nom(c)) === norm(doc.cli)) || clientes.find(c => norm(c.nombre) === norm(doc.cli));
+  if (!cli || cli.aliadoId) return null;
+  const out = {};
+  // 1) Premio al que lo refirió (una sola vez por cliente referido)
+  if (cli.referidoPor && !cli.referidoPremiado && !(await env.CACHE.get('ref:premio:' + cli._id))) {
+    const padrino = clientes.find(c => c._id === cli.referidoPor);
+    if (padrino && !padrino.aliadoId) {
+      await env.CACHE.put('ref:premio:' + cli._id, new Date().toISOString());
+      await fsCreate(env, 'saldosFavor', { cliente: nom(padrino), monto: REF_MONTO, motivo: `Referido: ${nom(cli)}`, creado: new Date().toISOString() }, token);
+      await fsUpdate(env, `clientes/${cli._id}`, { referidoPremiado: true }, ['referidoPremiado'], token).catch(() => {});
+      out.premio = nom(padrino);
+      await tgEnviar(env, `🎁 <b>${escHtml(nom(padrino))}</b> ganó $${REF_MONTO} por referir a <b>${escHtml(nom(cli))}</b>.\nSe le descontarán solos de su próxima factura.`).catch(() => {});
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(padrino.correo || '') && env.EMAIL_WEBHOOK) {
+        const n = String(padrino.nombre || '').split(' ')[0];
+        const html = correoBotHTML({ icono: 'encuesta', titulo: `¡Gracias, ${n}!`, texto: `${nom(cli)} contrató con nosotros gracias a tu recomendación. Te ganaste $${REF_MONTO} de descuento, que se aplica solo a tu próxima factura. Si conoces a otro negocio que necesite una página web, sigue refiriéndonos: cada uno que contrate te da $${REF_MONTO} más.`, boton: 'Escribirnos por WhatsApp', link: 'https://wa.me/12398231738', nota: 'DGP Global Group · WhatsApp +1 (239) 823-1738 · Llamadas +1 (945) 302-2923' });
+        await enviarCorreoBot(env, padrino.correo, `¡Ganaste $${REF_MONTO}, ${n}!`, html, `¡Gracias, ${n}! ${nom(cli)} contrató gracias a tu recomendación. Te ganaste $${REF_MONTO} de descuento en tu próxima factura.`).catch(() => {});
+      }
+    }
+  }
+  // 2) Invitación a referir + reseña (solo la primera vez que el cliente paga)
+  if (!cli.refInvitado && !(await env.CACHE.get('ref:inv:' + cli._id))) {
+    const correo = String(cli.correo || doc.clienteCorreo || '').trim();
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) && env.EMAIL_WEBHOOK) {
+      await env.CACHE.put('ref:inv:' + cli._id, new Date().toISOString());
+      const cod = refCodigo(cli._id), en = doc.idioma === 'en', n = String(cli.nombre || doc.cli || '').split(' ')[0];
+      const wa = `https://wa.me/12398231738?text=${encodeURIComponent(en ? `Hi! ${nom(cli)} referred me (code ${cod}). I'd like information about a website.` : `¡Hola! Me refirió ${nom(cli)} (código ${cod}). Quiero información sobre una página web.`)}`;
+      const html = correoBotHTML(en
+        ? { icono: 'encuesta', titulo: `Thank you, ${n}!`, texto: `Thank you for trusting DGP Global Group. Two quick things:\n\n1) If you're happy with our work, a Google review helps us a lot (30 seconds).\n\n2) Know another business that needs a website? Refer them with your code ${cod}. When they hire us, you get $${REF_MONTO} off your next invoice. No limit.`, boton: 'Leave a Google review', link: GOOGLE_RESENA, nota: `Share this link with them so they message us with your code: ${wa}` }
+        : { icono: 'encuesta', titulo: `¡Gracias, ${n}!`, texto: `Gracias por confiar en DGP Global Group. Dos cositas rápidas:\n\n1) Si te gustó nuestro trabajo, una reseña en Google nos ayuda muchísimo (30 segundos).\n\n2) ¿Conoces otro negocio que necesite página web? Refiérelo con tu código ${cod}. Cuando nos contrate, te descontamos $${REF_MONTO} de tu próxima factura. Sin límite.`, boton: 'Dejar mi reseña en Google', link: GOOGLE_RESENA, nota: `Compártele este enlace para que nos escriba con tu código: ${wa}` });
+      const ok = await enviarCorreoBot(env, correo, en ? `Thank you, ${n}! (and $${REF_MONTO} for you)` : `¡Gracias, ${n}! (y $${REF_MONTO} para ti)`, html,
+        en ? `Thank you, ${n}! Google review: ${GOOGLE_RESENA}\nRefer a business with your code ${cod} and get $${REF_MONTO} off when they hire us: ${wa}` : `¡Gracias, ${n}! Reseña en Google: ${GOOGLE_RESENA}\nRefiere un negocio con tu código ${cod} y te descontamos $${REF_MONTO} cuando nos contrate: ${wa}`).catch(() => false);
+      if (ok) { await fsUpdate(env, `clientes/${cli._id}`, { refInvitado: true, codigoRef: cod }, ['refInvitado', 'codigoRef'], token).catch(() => {}); out.invitado = correo; }
+    }
+  }
+  return out;
+}
 async function correoPagoCliente(env, token, fsId, monto, por) {
   const r = await correoPagoCliente0(env, token, fsId, monto, por);
   const docG = await fsGet(env, `documentos/${fsId}`, token).catch(() => null);
@@ -1950,6 +2002,8 @@ async function correoPagoCliente(env, token, fsId, monto, por) {
     const b = await bienvenidaCliente(env, token, fsId).catch(e => { console.warn('Bienvenida', e); return null; });
     if (b?.enviado) r.bienvenida = b.correo;
   }
+  const rf = await refAlPagar(env, token, fsId).catch(e => { console.warn('Referidos', e); return null; });
+  if (rf?.premio) r.referido = rf.premio;
   return r;
 }
 async function correoPagoCliente0(env, token, fsId, monto, por) {

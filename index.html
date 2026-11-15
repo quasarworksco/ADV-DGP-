@@ -4794,6 +4794,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         <div class="ff"><label>Cumpleaños (opcional)</label><input type="date" id="cl-cumple" title="Le llega un correo de felicitación ese día"></div>
       </div>
       <div class="ff"><label>Etiquetas (separadas por coma)</label><input type="text" id="cl-tags" placeholder="Ej. VIP, Web, Seguidores" autocomplete="off"><div class="cl-tag-sug" id="cl-tag-sug"></div></div>
+      <div class="ff"><label>Referido por (opcional)</label><input type="text" id="cl-referido" list="cl-referido-lista" placeholder="Escribe el nombre del cliente que lo refirió" autocomplete="off"><datalist id="cl-referido-lista"></datalist><div style="font-size:10.5px;color:var(--text-soft);margin-top:4px;line-height:1.4">Cuando este cliente pague su primera factura, al que lo refirió se le abonan $40 en su próxima factura.</div></div>
       <div class="ff"><label>Notas</label><textarea id="cl-notas" placeholder="Notas internas sobre este cliente..." style="height:70px;resize:none;"></textarea></div>
       <button class="btn-edit-save" onclick="saveCliente2()" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cliente</button>
       <button class="btn-edit-cancel" onclick="closeClienteModal()">Cancelar</button>
@@ -11362,6 +11363,10 @@ function openClienteModal(id) {
   document.getElementById('cl-empresa').value  = c?.empresa  || '';
   document.getElementById('cl-cumple').value   = c?.cumpleanos || '';
   document.getElementById('cl-notas').value    = c?.notas    || '';
+  { const nom = x => [x.nombre, x.apellido].filter(Boolean).join(' ');
+    document.getElementById('cl-referido-lista').innerHTML = clientesList.filter(x => !c || x._id !== c._id).map(x => `<option value="${esc(nom(x))}">`).join('');
+    const r = c?.referidoPor ? clientesList.find(x => x._id === c.referidoPor) : null;
+    document.getElementById('cl-referido').value = r ? nom(r) : (c?.referidoPorNombre || ''); }
   document.getElementById('cl-tags').value     = (c?.tags || []).join(', ');
   const sug = clTodasEtiquetas().map(([t]) => t);
   document.getElementById('cl-tag-sug').innerHTML = sug.length
@@ -11387,7 +11392,10 @@ async function saveCliente2() {
   if (yaExiste && !confirm(`Ya existe un cliente llamado "${[yaExiste.nombre, yaExiste.apellido].filter(Boolean).join(' ')}". ¿Guardar de todas formas?`)) return;
   const tags     = clParseTags(document.getElementById('cl-tags').value);
   const cumpleanos = document.getElementById('cl-cumple').value || '';
-  const data = { nombre, apellido, telefono, correo, empresa, notas, tags, cumpleanos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const refTxt = (document.getElementById('cl-referido')?.value || '').trim();
+  const refCli = refTxt ? clientesList.find(x => ptNorm([x.nombre, x.apellido].filter(Boolean).join(' ')) === ptNorm(refTxt)) : null;
+  if (refTxt && !refCli) { toast('No encontré un cliente con ese nombre en "Referido por". Elígelo de la lista.', 'err'); return; }
+  const data = { nombre, apellido, telefono, correo, empresa, notas, tags, cumpleanos, referidoPor: refCli ? refCli._id : '', referidoPorNombre: refCli ? [refCli.nombre, refCli.apellido].filter(Boolean).join(' ') : '', updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     if (editClienteId) {
       await db.collection('clientes').doc(editClienteId).update(data);
