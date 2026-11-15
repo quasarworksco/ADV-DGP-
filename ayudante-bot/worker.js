@@ -4362,6 +4362,16 @@ async function revisarWebs(env, manual) {
   const hoy = hoyVE(), L = [];
   let caidas = 0;
   for (const w of webs) {
+    // GitHub Pages con dominio propio: si usuario.github.io/repo redirige a otro dominio, se guarda ese dominio real
+    if (/\.github\.io/i.test(w.dominio)) {
+      try {
+        const u = String(w.dominio).replace(/^https?:\/\//i, '').replace(/\/*$/, '/');
+        const rr = await fetch('https://' + u, { redirect: 'manual', signal: AbortSignal.timeout(10000) });
+        const loc = rr.headers.get('location') || '';
+        const h = loc ? new URL(loc, 'https://' + u).hostname.replace(/^www\./, '') : '';
+        if (h && !/\.github\.io$/i.test(h)) { await fsUpdate(env, `webs/${w._id}`, { dominio: h }, ['dominio'], token).catch(() => {}); w.dominio = h; }
+      } catch (e) {}
+    }
     let r = await chequearWeb(w.dominio);
     // Antes de decir que se cayó: dos pruebas más separadas (evita avisos falsos por un corte de segundos)
     for (const espera of [5000, 20000]) { if (r.estado !== 'caida') break; await new Promise(x => setTimeout(x, espera)); r = await chequearWeb(w.dominio); }
