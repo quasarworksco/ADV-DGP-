@@ -2462,6 +2462,20 @@ html.dark .nd-part{stroke:#8fa8ff}
 html.dark .nd-red-v b{color:#34d399}html.dark .nd-red-v b.sub{color:#8fa8ff}
 .nd-red-v small{font-size:.42em;color:var(--text-soft);font-weight:600;letter-spacing:0;margin-left:1px}
 .nd-red-v>small:only-child,.nd-red-spin+small{font-size:14px;font-weight:600}
+.pz-tabs{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:var(--off);border:1px solid var(--border);margin:2px 0 14px}
+.pz-tab{border:0;background:transparent;font:700 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-mid);padding:8px 14px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .2s,color .2s}
+.pz-tab.active{background:var(--white);color:var(--black);box-shadow:0 1px 3px rgba(15,23,42,.1)}
+.pz-tab-n{font-size:10.5px;font-weight:800;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px}.pz-tab-n:empty{display:none}
+.pz-estado{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--white);font-size:12.5px;color:var(--text-mid);margin-bottom:14px}
+.pz-estado b{color:var(--black)}.pz-estado .pz-dot{width:8px;height:8px;border-radius:50%;background:#10b981;flex:none}.pz-estado.off .pz-dot{background:#f59e0b}
+.pz-estado .pz-barra{flex:1;min-width:120px;height:6px;border-radius:99px;background:var(--off);overflow:hidden}.pz-estado .pz-barra i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.pz-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pz-chip{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--off);color:var(--text-mid)}
+.pz-chip.mal{background:rgba(220,38,38,.08);color:#b91c1c}.pz-chip.bien{background:rgba(5,150,105,.09);color:#047857}
+.pz-asunto{font-weight:700;font-size:12.5px;color:var(--black);margin-top:8px}
+.pz-mail-ta{width:100%;min-height:330px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font:13px/1.55 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);resize:vertical}
+.pz-mail-in{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font:600 13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);margin-bottom:8px}
+.pz-aj label{display:block;font-size:11.5px;font-weight:700;color:var(--text-mid);margin:12px 0 5px}.pz-aj input[type=text],.pz-aj input[type=number]{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font:13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black)}
+.pz-aj .pz-sw{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;color:var(--black);margin-top:12px;cursor:pointer}.pz-aj small{display:block;font-size:11px;color:var(--text-soft);margin-top:4px;line-height:1.45}
 .nd-vivo{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:6px;vertical-align:1px;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:ndVivo 2s ease-out infinite}@keyframes ndVivo{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%,100%{box-shadow:0 0 0 6px rgba(16,185,129,0)}}@media(prefers-reduced-motion:reduce){.nd-vivo{animation:none}}
 .nd-red-spin{width:16px;height:16px;border-radius:50%;border:2.5px solid var(--off);border-top-color:var(--blue);animation:icGlobo .8s linear infinite;align-self:center;margin-right:6px}
 </style>
@@ -4435,12 +4449,29 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
         <button class="btn-nuevo-cliente" onclick="prNuevo()">+ Agregar prospecto</button>
       </div>
     </div>
+    <div class="pz-tabs" role="tablist">
+      <button type="button" class="pz-tab active" data-v="escribieron" onclick="pzVista('escribieron')">Te escribieron</button>
+      <button type="button" class="pz-tab" data-v="pz" onclick="pzVista('pz')">Prospección <span class="pz-tab-n" id="pz-tab-n"></span></button>
+    </div>
+    <div id="pr-vista-escribieron">
     <div id="pr-stats" class="cb-tiles" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
       <input type="search" placeholder="Buscar por nombre, teléfono, correo o mensaje..." oninput="_pr.q=this.value;prPintar()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font:13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);">
     </div>
     <div class="db-pills" id="pr-filtros" style="margin-bottom:14px;flex-wrap:wrap;display:flex;gap:6px;align-items:center;"></div>
     <div id="pr-body"></div>
+    </div>
+    <div id="pr-vista-pz" hidden>
+      <div id="pz-estado" class="pz-estado"></div>
+      <div id="pz-stats" class="cb-tiles" style="margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+        <input type="search" placeholder="Buscar negocio, ciudad, correo o tipo..." oninput="_pz.q=this.value;pzPintar()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font:13px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--black);">
+        <button class="btn-logout" onclick="pzCargar(true)">Actualizar</button>
+        <button class="btn-logout" onclick="pzAjustes()">Ajustes</button>
+      </div>
+      <div class="db-pills" id="pz-filtros" style="margin-bottom:14px;flex-wrap:wrap;display:flex;gap:6px;align-items:center;"></div>
+      <div id="pz-body"></div>
+    </div>
   </div>
 </div>
 
@@ -6051,12 +6082,13 @@ const PR_ESTADOS = {
   cliente:    ['Ganado', '#059669'],
   descartado: ['Descartado', '#94a3b8']
 };
-const PR_ORIGEN = { web: ['Formulario web', '#1438cc'], chat: ['Chat de Altair', '#7c3aed'], manual: ['Agregado a mano', '#64748b'], whatsapp: ['WhatsApp', '#00a884'] };
+const PR_ORIGEN = { web: ['Formulario web', '#1438cc'], chat: ['Chat de Altair', '#7c3aed'], manual: ['Agregado a mano', '#64748b'], whatsapp: ['WhatsApp', '#00a884'], prospeccion: ['Prospección', '#0e7490'] };
 let _pr = { lista: null, filtro: 'activos', origen: '', q: '', t: 0 };
 
 async function renderProspectos(fresco) {
   const body = document.getElementById('pr-body');
   if (!body) return;
+  if (!_pz.init) { _pz.init = true; let v = ''; try { v = localStorage.getItem('dgp-pr-vista') || ''; } catch (e) {} if (v === 'pz') pzVista('pz'); }
   if (!_pr.lista || fresco) {
     body.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
     try {
@@ -6131,6 +6163,186 @@ function prPintar() {
     return;
   }
   body.innerHTML = vis.length ? `<div class="pr-list">${vis.map(prCard).join('')}</div>` : '<div class="pt-empty">No hay prospectos con este filtro.</div>';
+}
+
+
+/* ══ PROSPECCIÓN: negocios nuevos que encuentra la tarea diaria ══ */
+const PZ_FUENTE = { sunbiz: ['Sunbiz FL', '#0e7490'], texas: ['Texas', '#b45309'], osm: ['Mapa', '#4f46e5'], fmcsa: ['Transporte (DOT)', '#7c3aed'], connecticut: ['Connecticut', '#be185d'] };
+const PZ_EST = { listo: ['Listo para enviar', '#1438cc'], enviado: ['Enviado', '#64748b'], respondio: ['Respondió', '#059669'], revisar: ['Revisar a mano', '#b45309'], sinCorreo: ['Sin correo', '#94a3b8'], descartado: ['Descartado', '#94a3b8'], baja: ['Se dio de baja', '#b91c1c'], prospecto: ['En prospectos', '#059669'] };
+const PZ_CATN = { limpieza: 'Limpieza', jardineria: 'Jardinería', construccion: 'Construcción', plomeria: 'Plomería', electricidad: 'Electricidad', aire: 'Aire acondicionado', pintura: 'Pintura', piscinas: 'Piscinas', mudanzas: 'Mudanzas', transporte: 'Transporte', autos: 'Autos', restaurante: 'Comida', belleza: 'Belleza', fitness: 'Fitness', salud: 'Salud', bienes_raices: 'Bienes raíces', seguros: 'Seguros', legal: 'Legal', contabilidad: 'Impuestos', eventos: 'Eventos', mascotas: 'Mascotas', tienda: 'Tienda', educacion: 'Educación', tecnologia: 'Tecnología', consultoria: 'Consultoría', handyman: 'Hogar', general: 'Negocio' };
+let _pz = { lista: null, filtro: 'listo', fuente: '', q: '', info: null };
+function pzVista(v) {
+  document.querySelectorAll('.pz-tab').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  document.getElementById('pr-vista-escribieron').hidden = v !== 'escribieron';
+  document.getElementById('pr-vista-pz').hidden = v !== 'pz';
+  try { localStorage.setItem('dgp-pr-vista', v); } catch (e) {}
+  if (v === 'pz') pzCargar();
+}
+async function pzBot(datos) {
+  const tok = await currentUser.getIdToken();
+  const r = await fetch(`${RW_WORKER}/prospeccion`, { method: 'POST', headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, body: JSON.stringify(datos) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok && !d.resultados) throw new Error(d.error || 'El bot no respondió');
+  return d;
+}
+async function pzCargar(fresco) {
+  const body = document.getElementById('pz-body');
+  if (!_pz.lista || fresco) {
+    body.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
+    try { const s = await db.collection('prospeccion').orderBy('creado', 'desc').limit(400).get(); _pz.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })); }
+    catch (e) { _pz.lista = []; }
+  }
+  pzPintar();
+  pzBot({ accion: 'estado' }).then(d => { _pz.info = d; pzPintarEstado(); }).catch(() => { _pz.info = null; pzPintarEstado(); });
+}
+function pzPintarEstado() {
+  const el = document.getElementById('pz-estado'); if (!el) return;
+  const i = _pz.info;
+  if (!i) { el.className = 'pz-estado off'; el.innerHTML = '<span class="pz-dot"></span>No pude consultar el envío automático.'; return; }
+  const c = i.config || {}, cu = i.cupo || {};
+  if (!String(c.direccion || '').trim()) { el.className = 'pz-estado off'; el.innerHTML = `<span class="pz-dot"></span><span><b>Falta tu dirección física.</b> La ley exige ponerla en cada correo; sin ella no se envía nada.</span><button class="btn-nuevo-cliente" style="margin-left:auto" onclick="pzAjustes()">Agregar dirección</button>`; return; }
+  if (!c.autoEnvio || c.pausado) { el.className = 'pz-estado off'; el.innerHTML = `<span class="pz-dot"></span><span><b>Envío automático ${c.pausado ? 'en pausa' : 'apagado'}.</b> Puedes enviar uno por uno desde cada tarjeta.</span><button class="btn-logout" style="margin-left:auto" onclick="pzAjustes()">Ajustes</button>`; return; }
+  const pct = cu.cupo ? Math.min(100, Math.round(cu.enviados / cu.cupo * 100)) : 0;
+  el.className = 'pz-estado';
+  el.innerHTML = `<span class="pz-dot"></span><span><b>Envío automático activo</b> · hoy ${cu.enviados || 0} de ${cu.cupo || 0} correos · lunes a viernes de 9 a 5</span><span class="pz-barra"><i style="width:${pct}%"></i></span>`;
+}
+function pzPintar() {
+  const L = _pz.lista || [], hoy = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
+  const n = e => L.filter(p => p.estado === e).length;
+  document.getElementById('pz-tab-n').textContent = n('respondio') || '';
+  document.getElementById('pz-stats').innerHTML = `
+    <div class="cb-tile"><div class="cb-tile-l">Encontrados hoy</div><div class="cb-tile-v">${L.filter(p => p.dia === hoy).length}</div><div class="cb-tile-n">${L.filter(p => p.dia === hoy && p.email).length} con correo</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Listos para enviar</div><div class="cb-tile-v">${n('listo')}</div><div class="cb-tile-n">Salen solos en horario de oficina</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Enviados</div><div class="cb-tile-v">${n('enviado') + n('respondio')}</div><div class="cb-tile-n">En total</div></div>
+    <div class="cb-tile"><div class="cb-tile-l">Respondieron</div><div class="cb-tile-v" style="color:var(--green-dark)">${n('respondio')}</div><div class="cb-tile-n">Contéstales desde Respuestas</div></div>`;
+  const filtros = [['listo', 'Listos'], ['enviado', 'Enviados'], ['respondio', 'Respondieron'], ['revisar', 'Revisar'], ['sinCorreo', 'Sin correo'], ['todos', 'Todos']];
+  document.getElementById('pz-filtros').innerHTML = filtros.map(([k, v]) => `<button class="dash-period-btn ${_pz.filtro === k ? 'active' : ''}" onclick="_pz.filtro='${k}';pzPintar()">${v}${k !== 'todos' && n(k) ? ` · ${n(k)}` : ''}</button>`).join('') +
+    `<select onchange="_pz.fuente=this.value;pzPintar()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:100px;font:600 11px 'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--text-mid);"><option value="">Todas las fuentes</option>${Object.entries(PZ_FUENTE).map(([k, v]) => `<option value="${k}" ${_pz.fuente === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>`;
+  const q = ptNorm(_pz.q);
+  const vis = L.filter(p => (_pz.filtro === 'todos' ? !['descartado', 'baja'].includes(p.estado) : p.estado === _pz.filtro) && (!_pz.fuente || p.fuente === _pz.fuente)
+    && (!q || ptNorm([p.nombre, p.ciudad, p.email, p.estadoUS, PZ_CATN[p.categoria], p.contacto].join(' ')).includes(q)));
+  const body = document.getElementById('pz-body');
+  if (!L.length) { body.innerHTML = '<div class="pt-empty">Todavía no hay negocios. La búsqueda corre sola cada mañana a las 6 am y aquí aparecerán los nuevos, con su correo listo para enviar.</div>'; return; }
+  body.innerHTML = vis.length ? `<div class="pr-list">${vis.slice(0, 150).map(pzCard).join('')}</div>${vis.length > 150 ? `<div class="pt-empty">Mostrando 150 de ${vis.length}. Usa el buscador para encontrar otros.</div>` : ''}` : '<div class="pt-empty">No hay negocios con este filtro.</div>';
+}
+function pzCard(p) {
+  const [fL, fC] = PZ_FUENTE[p.fuente] || ['Otra', '#64748b'], [eL, eC] = PZ_EST[p.estado] || ['—', '#64748b'];
+  const dias = p.registro ? Math.round((Date.now() - Date.parse(p.registro)) / 864e5) : null;
+  const reg = dias === null ? '' : dias < 0 ? 'Abre pronto' : dias === 0 ? 'Registrada hoy' : dias < 60 ? `Registrada hace ${dias} día${dias === 1 ? '' : 's'}` : '';
+  const w = p.webInfo, chips = [];
+  if (!p.web) chips.push(['Sin página web', 'bien']);
+  else if (w) {
+    if (w.ok === false) chips.push(['Su web no carga', 'mal']);
+    if (w.ok !== false && !w.https) chips.push(['Web sin candado', 'mal']);
+    if (w.ok !== false && !w.celular) chips.push(['No se ve bien en celular', 'mal']);
+    if (w.anio && w.anio < new Date().getFullYear() - 3) chips.push([`Web desactualizada (© ${w.anio})`, 'mal']);
+    if (w.constructor) chips.push(['Hecha en ' + w.constructor, '']);
+  }
+  chips.push([p.idioma === 'es' ? 'Correo en español' : 'Correo en inglés', '']);
+  const id = esc(p._id), g = encodeURIComponent(`${p.nombre} ${p.ciudad || ''} ${p.estadoUS || ''}`);
+  return `<div class="pr-card">
+    <div class="pr-top">
+      <div class="pr-av" style="background:${clColor(p.nombre || '?')}">${esc(clIniciales(p.nombre || '?'))}</div>
+      <div style="flex:1;min-width:0">
+        <div class="pr-name">${esc(p.nombre || '—')}</div>
+        <div class="pr-sub">${esc([PZ_CATN[p.categoria] || 'Negocio', [p.ciudad, p.estadoUS].filter(Boolean).join(', '), p.contacto, reg].filter(Boolean).join(' · '))}</div>
+      </div>
+      <span class="pr-pill" style="color:${fC};border-color:${fC}55">${fL}</span>
+    </div>
+    <div class="pr-links">${p.email ? `<a href="mailto:${esc(p.email)}" class="pr-link">${esc(p.email)}</a>` : '<span style="color:var(--text-soft)">Sin correo</span>'}${p.telefono ? `<span>${esc(p.telefono)}</span>` : ''}${p.web ? `<a href="${esc(p.web)}" target="_blank" rel="noopener" class="pr-link">Su web</a>` : ''}<a href="https://www.google.com/search?q=${g}" target="_blank" rel="noopener" class="pr-link">Buscar en Google</a></div>
+    <div class="pz-chips">${chips.map(([t, c]) => `<span class="pz-chip ${c}">${esc(t)}</span>`).join('')}</div>
+    ${p.correo?.asunto && p.email ? `<div class="pz-asunto">Asunto: ${esc(p.correo.asunto)}</div>` : ''}
+    <div class="pr-acts">
+      <span class="pr-pill" style="color:${eC};border-color:${eC}55">${eL}${p.enviadoEn ? ' · ' + esc(cbFecha ? cbFecha(p.enviadoEn.slice(0, 10)) : p.enviadoEn.slice(0, 10)) : ''}</span>
+      ${p.email && ['listo', 'revisar'].includes(p.estado) ? `<button class="btn-nuevo-cliente" style="padding:7px 12px;font-size:12px" onclick="pzVerCorreo('${id}')">Ver y enviar correo</button>` : p.email && p.correo ? `<button class="hr-btn" onclick="pzVerCorreo('${id}')">Ver correo</button>` : ''}
+      ${p.estado === 'sinCorreo' ? `<button class="hr-btn" onclick="pzPonerCorreo('${id}')">Agregar correo</button>` : ''}
+      ${!['prospecto', 'baja'].includes(p.estado) ? `<button class="hr-btn" onclick="pzAProspectos('${id}')">Pasar a prospectos</button>` : ''}
+      ${!['descartado', 'baja', 'prospecto'].includes(p.estado) ? `<button class="hr-btn" onclick="pzEstado('${id}','descartado')">Descartar</button>` : ''}
+    </div>
+  </div>`;
+}
+const pzBusca = id => (_pz.lista || []).find(x => x._id === id);
+async function pzEstado(id, estado, extra) {
+  const p = pzBusca(id); if (!p) return;
+  const antes = p.estado;
+  try { await db.collection('prospeccion').doc(id).update({ estado, ...(extra || {}) }); Object.assign(p, { estado, ...(extra || {}) }); pzPintar();
+    if (estado === 'descartado') toastAccion('Descartado', 'Deshacer', () => pzEstado(id, antes)); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
+}
+function pzVerCorreo(id) {
+  const p = pzBusca(id); if (!p) return;
+  const c = p.correo || {}, editable = ['listo', 'revisar'].includes(p.estado);
+  ptModal(p.nombre, `Para: ${p.email}`, `
+    <input id="pz-m-asunto" class="pz-mail-in" value="${esc(c.asunto || '')}" ${editable ? '' : 'readonly'}>
+    <textarea id="pz-m-cuerpo" class="pz-mail-ta" ${editable ? '' : 'readonly'}>${esc(c.cuerpo || '')}</textarea>
+    <div style="font-size:11px;color:var(--text-soft);margin:6px 0 12px;line-height:1.45">Al final se agrega solo tu dirección y el enlace para darse de baja. Sin imágenes ni rastreo, para que llegue a la bandeja principal.</div>
+    ${editable ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="hr-btn" onclick="pzRegenerar('${esc(id)}','${p.idioma === 'es' ? 'en' : 'es'}')">Cambiar a ${p.idioma === 'es' ? 'inglés' : 'español'}</button>
+      <button class="hr-btn" onclick="pzGuardarCorreo('${esc(id)}')">Guardar cambios</button>
+      <button class="btn-nuevo-cliente" style="margin-left:auto" id="pz-m-env" onclick="pzEnviar('${esc(id)}')">Enviar ahora</button></div>` : ''}`);
+  document.querySelector('#modalPortal .edit-sheet').style.maxWidth = '640px';
+}
+async function pzGuardarCorreo(id, callado) {
+  const p = pzBusca(id); if (!p) return;
+  const correo = { ...(p.correo || {}), asunto: document.getElementById('pz-m-asunto').value.trim(), cuerpo: document.getElementById('pz-m-cuerpo').value.trim() };
+  await db.collection('prospeccion').doc(id).update({ correo }); p.correo = correo;
+  if (!callado) { toast('Correo guardado', 'ok'); closePortalModal(); pzPintar(); }
+}
+async function pzRegenerar(id, idioma) {
+  try { const d = await pzBot({ accion: 'regenerar', id, idioma }); const p = pzBusca(id); p.correo = d.correo; p.idioma = idioma; pzVerCorreo(id); }
+  catch (e) { toast(e.message, 'err'); }
+}
+async function pzEnviar(id) {
+  const b = document.getElementById('pz-m-env'); if (b) { b.disabled = true; b.textContent = 'Enviando…'; }
+  try {
+    await pzGuardarCorreo(id, true);
+    const d = await pzBot({ accion: 'enviar', id });
+    const r = (d.resultados || [])[0] || {};
+    if (!r.ok) throw new Error(r.error || 'No se pudo enviar');
+    const p = pzBusca(id); p.estado = 'enviado'; p.enviadoEn = new Date().toISOString();
+    closePortalModal(); pzPintar(); toast(`Correo enviado a ${p.email}`, 'ok');
+    if (d.cupo) { _pz.info = { ...(_pz.info || {}), cupo: d.cupo }; pzPintarEstado(); }
+  } catch (e) { toast(e.message, 'err'); if (b) { b.disabled = false; b.textContent = 'Enviar ahora'; } }
+}
+function pzPonerCorreo(id) {
+  const p = pzBusca(id); if (!p) return;
+  ptModal('Agregar correo', p.nombre, `<input id="pz-m-mail" class="pz-mail-in" type="email" placeholder="correo@negocio.com"><div style="font-size:11px;color:var(--text-soft);margin-bottom:12px">Si lo encontraste en Google, Facebook o su web, ponlo aquí y quedará listo para enviar.</div><button class="btn-nuevo-cliente" onclick="pzGuardarMail('${esc(id)}')">Guardar</button>`);
+  setTimeout(() => document.getElementById('pz-m-mail')?.focus(), 50);
+}
+async function pzGuardarMail(id) {
+  const v = document.getElementById('pz-m-mail').value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('Ese correo no parece válido', 'err');
+  await pzEstado(id, 'listo', { email: v }); closePortalModal(); toast('Listo para enviar', 'ok');
+}
+async function pzAProspectos(id) {
+  const p = pzBusca(id); if (!p) return;
+  try {
+    await db.collection('prospectos').add({ nombre: p.contacto || p.nombre, negocio: p.nombre, correo: p.email || '', telefono: p.telefono || '', web: p.web || '', origen: 'prospeccion', estado: 'nuevo',
+      notas: [PZ_CATN[p.categoria], [p.ciudad, p.estadoUS].filter(Boolean).join(', '), p.estado === 'enviado' || p.estado === 'respondio' ? 'Se le envió la oferta de $295' : ''].filter(Boolean).join(' · '),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await pzEstado(id, 'prospecto'); _pr.lista = null; toast('Pasado a Prospectos', 'ok');
+  } catch (e) { toast('No se pudo: ' + e.message, 'err'); }
+}
+function pzAjustes() {
+  const c = (_pz.info && _pz.info.config) || {};
+  const sw = (k, t) => `<label class="pz-sw"><input type="checkbox" id="pz-a-${k}" ${c[k] ? 'checked' : ''}> ${t}</label>`;
+  ptModal('Ajustes de prospección', 'Cuántos busca, cuántos envía y qué dice el correo', `<div class="pz-aj">
+    <label>Tu dirección física (obligatoria por ley en cada correo)</label><input type="text" id="pz-a-direccion" value="${esc(c.direccion || '')}" placeholder="Ej: 1234 Main St, Fort Myers, FL 33901 o un PO Box">
+    <label>Firma del correo</label><input type="text" id="pz-a-firma" value="${esc(c.firma || 'Paúl Andrés Espina')}">
+    <label>Tiempo de entrega que prometes (horas)</label><input type="number" id="pz-a-entrega" value="${esc(c.entrega || '72')}" min="12" max="240">
+    <label>Negocios por día a buscar</label><input type="number" id="pz-a-porDia" value="${c.porDia || 80}" min="10" max="300"><small>Primero los que tienen correo; los demás quedan en "Sin correo".</small>
+    <label>Máximo de correos por día</label><input type="number" id="pz-a-limiteDia" value="${c.limiteDia || 60}" min="5" max="150"><small>Empieza en 15 y sube 5 cada 2 días hasta este número. Así Gmail se acostumbra y no te manda a spam.</small>
+    ${sw('autoEnvio', 'Enviar solos, de lunes a viernes de 9 a 5 (hora de Florida)')}
+    ${sw('connecticut', 'Incluir empresas nuevas de Connecticut (casi todas traen correo)')}
+    ${sw('pausado', 'Pausar todo (ni busca ni envía)')}
+    <button class="btn-nuevo-cliente" style="margin-top:18px;width:100%" onclick="pzGuardarAjustes()">Guardar</button></div>`);
+}
+async function pzGuardarAjustes() {
+  const v = k => document.getElementById('pz-a-' + k), num = (k, d) => Math.max(1, Number(v(k).value) || d);
+  const datos = { direccion: v('direccion').value.trim(), firma: v('firma').value.trim() || 'Paúl Andrés Espina', entrega: String(num('entrega', 72)), porDia: num('porDia', 80), limiteDia: num('limiteDia', 60),
+    autoEnvio: v('autoEnvio').checked, connecticut: v('connecticut').checked, pausado: v('pausado').checked };
+  try { await db.collection('config').doc('prospeccion').set(datos, { merge: true }); closePortalModal(); toast('Ajustes guardados', 'ok'); _pz.info = { ...(_pz.info || {}), config: { ...((_pz.info || {}).config || {}), ...datos } }; pzPintarEstado(); }
+  catch (e) { toast('No se pudo guardar: ' + e.message, 'err'); }
 }
 
 function prCard(p) {
