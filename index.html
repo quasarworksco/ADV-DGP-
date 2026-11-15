@@ -2462,6 +2462,7 @@ html.dark .nd-part{stroke:#8fa8ff}
 html.dark .nd-red-v b{color:#34d399}html.dark .nd-red-v b.sub{color:#8fa8ff}
 .nd-red-v small{font-size:.42em;color:var(--text-soft);font-weight:600;letter-spacing:0;margin-left:1px}
 .nd-red-v>small:only-child,.nd-red-spin+small{font-size:14px;font-weight:600}
+.nd-vivo{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:6px;vertical-align:1px;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:ndVivo 2s ease-out infinite}@keyframes ndVivo{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%,100%{box-shadow:0 0 0 6px rgba(16,185,129,0)}}@media(prefers-reduced-motion:reduce){.nd-vivo{animation:none}}
 .nd-red-spin{width:16px;height:16px;border-radius:50%;border:2.5px solid var(--off);border-top-color:var(--blue);animation:icGlobo .8s linear infinite;align-self:center;margin-right:6px}
 </style>
 <style id="modo-noche">
@@ -9820,34 +9821,49 @@ function ndRedValor() {
 function ndRedNota() {
   if (!navigator.onLine) return '<span class="nd-chip nd-down">Sin conexión</span>';
   if (_ndRedMidiendo || !_ndRed) return 'Carga, descarga y latencia';
-  const [q, c] = ndRedCalidad(_ndRed.down), min = Math.round((Date.now() - _ndRed.t) / 60000);
-  return `<span class="nd-chip ${c}">${q}</span> · ${_ndRed.ping} ms${_ndRed.lugar ? ' · ' + esc(_ndRed.lugar) : ''} · ${min < 1 ? 'ahora' : 'hace ' + min + ' min'}`;
+  const [q, c] = ndRedCalidad(_ndRed.down), seg = Math.round((Date.now() - _ndRed.t) / 1000), vivo = seg < 90 && !document.hidden;
+  const hace = seg < 10 ? 'ahora' : seg < 60 ? 'hace ' + seg + ' s' : 'hace ' + Math.round(seg / 60) + ' min';
+  return `${vivo ? '<span class="nd-vivo" title="Midiendo en vivo"></span>' : ''}<span class="nd-chip ${c}">${q}</span> · ${_ndRed.ping} ms${_ndRed.lugar ? ' · ' + esc(_ndRed.lugar) : ''} · ${hace}`;
 }
 function ndRedPintar() { const c = document.querySelector('#dash-resumen .nd-red'); if (!c) return; const v = c.querySelector('.nd-v'), n = c.querySelector('.nd-n'); if (v) v.innerHTML = ndRedValor(); if (n) n.innerHTML = ndRedNota(); }
-async function ndRedMedir(forzar) {
-  if (_ndRedMidiendo || !navigator.onLine) { ndRedPintar(); return; }
-  if (!forzar && _ndRed && Date.now() - _ndRed.t < 30 * 60e3) { ndRedPintar(); return; }   // automático: como mucho cada 30 min
-  _ndRedMidiendo = true; const U = 'https://speed.cloudflare.com';
+// ligero = medición corta en segundo plano (sin spinner): mantiene el card en vivo
+async function ndRedMedir(forzar, ligero) {
+  if (_ndRedMidiendo || _ndRedFondo || !navigator.onLine) { ndRedPintar(); return; }
+  if (!forzar && !ligero && _ndRed && Date.now() - _ndRed.t < 30 * 60e3) { ndRedPintar(); return; }
+  const U = 'https://speed.cloudflare.com', lim = ligero ? 2500 : 6000;
+  if (ligero) _ndRedFondo = true; else _ndRedMidiendo = true;
+  const fase = f => { if (!ligero) { _ndRedFase = f; ndRedPintar(); } };
   try {
-    _ndRedFase = 'Conexión…'; ndRedPintar();
+    fase('Conexión…');
     const pings = []; let lugar = '';
-    for (let i = 0; i < 5; i++) { const t0 = performance.now(); const r = await fetch(`${U}/__down?bytes=0&r=${Math.random()}`, { cache: 'no-store' }); await r.arrayBuffer(); pings.push(performance.now() - t0); if (!lugar) lugar = r.headers.get('cf-meta-city') || ''; }
-    pings.sort((a, b) => a - b); const ping = Math.round(pings[2]);
-    _ndRedFase = 'Descarga…'; ndRedPintar();
+    for (let i = 0; i < (ligero ? 3 : 5); i++) { const t0 = performance.now(); const r = await fetch(`${U}/__down?bytes=0&r=${Math.random()}`, { cache: 'no-store' }); await r.arrayBuffer(); pings.push(performance.now() - t0); if (!lugar) lugar = r.headers.get('cf-meta-city') || ''; }
+    pings.sort((a, b) => a - b); const ping = Math.round(pings[pings.length >> 1]);
+    fase('Descarga…');
     let bytes = 0, t0 = performance.now();
-    for (const n of [1e6, 5e6, 10e6]) { const r = await fetch(`${U}/__down?bytes=${n}&r=${Math.random()}`, { cache: 'no-store' }); bytes += (await r.arrayBuffer()).byteLength; if (performance.now() - t0 > 6000) break; }
+    for (const n of ligero ? [1e6, 3e6] : [1e6, 5e6, 10e6]) { const r = await fetch(`${U}/__down?bytes=${n}&r=${Math.random()}`, { cache: 'no-store' }); bytes += (await r.arrayBuffer()).byteLength; if (performance.now() - t0 > lim) break; }
     const down = bytes * 8 / ((performance.now() - t0) / 1000) / 1e6;
-    _ndRedFase = 'Subida…'; ndRedPintar();
-    const blob = new Uint8Array(2e6); let ub = 0; const t1 = performance.now();
-    for (let i = 0; i < 2; i++) { await fetch(`${U}/__up?r=${Math.random()}`, { method: 'POST', body: blob }); ub += blob.byteLength; if (performance.now() - t1 > 6000) break; }
+    fase('Subida…');
+    const blob = new Uint8Array(ligero ? 1e6 : 2e6); let ub = 0; const t1 = performance.now();
+    for (let i = 0; i < 2; i++) { await fetch(`${U}/__up?r=${Math.random()}`, { method: 'POST', body: blob }); ub += blob.byteLength; if (performance.now() - t1 > lim) break; }
     const up = ub * 8 / ((performance.now() - t1) / 1000) / 1e6;
-    _ndRed = { down, up, ping, lugar, t: Date.now() };
+    _ndRed = { down, up, ping, lugar: lugar || (_ndRed && _ndRed.lugar) || '', t: Date.now() };
     try { localStorage.setItem('dgp-red', JSON.stringify(_ndRed)); } catch (e) {}
   } catch (e) { _ndRedFase = ''; }
-  _ndRedMidiendo = false; ndRedPintar();
+  _ndRedMidiendo = false; _ndRedFondo = false; ndRedPintar();
   const v = document.querySelector('#dash-resumen .nd-red .nd-v'); if (v && !matchMedia('(prefers-reduced-motion: reduce)').matches) { v.classList.add('nd-destello'); setTimeout(() => v.classList.remove('nd-destello'), 1200); }
 }
-addEventListener('online', ndRedPintar); addEventListener('offline', ndRedPintar);
+// En vivo: mientras el dashboard está a la vista, mide cada 45 s y refresca el "hace X s" cada 5 s.
+// Si la pestaña está oculta o el card no se ve, no mide (no gasta datos).
+let _ndRedFondo = false;
+setInterval(() => {
+  const c = document.querySelector('#dash-resumen .nd-red');
+  if (!c || document.hidden || !c.offsetParent) return;
+  if (!_ndRed || Date.now() - _ndRed.t > 45e3) ndRedMedir(false, true);
+  else if (!_ndRedMidiendo) { const n = c.querySelector('.nd-n'); if (n) n.innerHTML = ndRedNota(); }
+}, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && document.querySelector('#dash-resumen .nd-red') && (!_ndRed || Date.now() - _ndRed.t > 45e3)) ndRedMedir(false, true); });
+if (navigator.connection && navigator.connection.addEventListener) navigator.connection.addEventListener('change', () => { if (document.querySelector('#dash-resumen .nd-red')) setTimeout(() => ndRedMedir(false, true), 1500); });
+addEventListener('online', () => { ndRedPintar(); setTimeout(() => ndRedMedir(false, true), 1500); }); addEventListener('offline', ndRedPintar);
 /* ===== Dashboard nuevo: tarjeta principal + tarjetas compactas ===== */
 const ndIco = d => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 function ndMonto(n) { const t = cbMoney(n); const i = t.lastIndexOf('.'); return `<span class="nd-cnt" data-v="${Number(n) || 0}" data-m="1">${t.slice(0, i)}</span><small>${t.slice(i)}</small>`; }
@@ -10004,7 +10020,7 @@ async function renderResumenGeneral() {
   el.innerHTML = ndResumen(_rgCache, { saldo, porCobrar, cobradoMes, ventasMes, cliNuevos, cliWeb, susAct, susVenc });
   if (primera && !matchMedia('(prefers-reduced-motion: reduce)').matches) { window._ndEntrada = true; el.classList.add('nd-anim'); setTimeout(() => el.classList.remove('nd-anim'), 2600); }
   ndOrdenAplicar(el);
-  setTimeout(() => ndRedMedir(false), 1500);
+  setTimeout(() => (!_ndRed || Date.now() - _ndRed.t > 30 * 60e3) ? ndRedMedir(false) : ndRedMedir(false, true), 1500);
   if (Object.keys(_antes).length && !matchMedia('(prefers-reduced-motion: reduce)').matches) el.querySelectorAll('.nd-c[data-k]').forEach(c => { const a = _antes[c.dataset.k]; if (!a) return;
     const v = c.querySelector('.nd-v'); if (v && a.v && v.textContent !== a.v && c.dataset.k !== 'cobrado') { v.classList.add('nd-destello'); setTimeout(() => v.classList.remove('nd-destello'), 1200); }
     const fl = c.querySelector('.nd-flecha'), p = c.querySelector('.nd-hero-top .nd-chip'); if (fl && p && a.p && p.textContent !== a.p) fl.classList.add('rebota'); });
