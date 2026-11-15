@@ -744,7 +744,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15h';
+const WORKER_VERSION = '2026-11-15i';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5978,7 +5978,7 @@ async function handleProspeccion(request, env) {
   const b = await request.json().catch(() => ({}));
   try {
     // 1) La tarea diaria de GitHub
-    if (['config', 'filtrar', 'guardar', 'vistos', 'fin'].includes(b.accion)) {
+    if (['config', 'filtrar', 'guardar', 'vistos', 'fin', 'rehacer'].includes(b.accion)) {
       const vo = await pzVerificarOIDC(request, env);
       if (vo !== true) return json(request, { error: 'No autorizado (' + vo + ')' }, 401);
       const token = await firebaseLogin(env);
@@ -5990,6 +5990,15 @@ async function handleProspeccion(request, env) {
       if (b.accion === 'filtrar') {
         const vistos = await pzVistos(env);
         return json(request, { ok: true, nuevas: (b.claves || []).filter(k => typeof k === 'string' && !vistos.has(k)) });
+      }
+      if (b.accion === 'rehacer') {
+        // Rehace los correos guardados con textos viejos (de a 20 por llamada)
+        const cfg = await pzConfig(env, token);
+        const viejo = x => !x.correo?.cuerpo || /\.dgp-link\.com|72 hours|72 horas|^\(239\) 823-1738 · /m.test(x.correo.cuerpo) || !/945\) 302-2923/.test(x.correo.cuerpo);
+        const L = (await pzPorEstado(env, 'listo', 300, token)).filter(viejo);
+        let rehechos = 0;
+        for (const x of L.slice(0, 20)) { await fsUpdate(env, `prospeccion/${x._id}`, { correo: pzCorreo(x, cfg) }, ['correo'], token).then(() => rehechos++).catch(() => {}); }
+        return json(request, { ok: true, rehechos, quedan: Math.max(0, L.length - rehechos), listos: (await pzPorEstado(env, 'listo', 300, token)).length });
       }
       if (b.accion === 'vistos') { await pzMarcarVistos(env, (b.claves || []).filter(k => typeof k === 'string').slice(0, 3000)); return json(request, { ok: true }); }
       if (b.accion === 'guardar') {
