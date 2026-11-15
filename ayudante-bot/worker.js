@@ -5944,7 +5944,7 @@ async function pzCupoHoy(env, cfg) {
   const enviados = Number(await env.CACHE.get('pz:env:' + hoyVE())) || 0;
   return { cupo, enviados, quedan: Math.max(0, cupo - enviados) };
 }
-/* Cron cada hora: reparte el cupo del día entre 9:00 y 16:59 (hora de Florida), lunes a viernes */
+/* Cron cada hora: reparte el cupo del día entre 9:00 y 16:59 (hora de Florida), todos los días */
 async function pzEnvioAutomatico(env) {
   if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return;
   const token = await firebaseLogin(env);
