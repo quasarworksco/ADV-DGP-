@@ -6188,9 +6188,11 @@ async function pzBot(datos) {
 }
 async function pzCargar(fresco) {
   const body = document.getElementById('pz-body');
-  if (!_pz.lista || fresco) {
-    body.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
-    try { const s = await db.collection('prospeccion').orderBy('creado', 'desc').limit(400).get(); _pz.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => p.email && !['sinCorreo', 'revisar'].includes(p.estado)); }
+  // Siempre datos frescos del servidor (si pasó más de 1 minuto o se pidió actualizar)
+  if (!_pz.lista || fresco || Date.now() - (_pz.t || 0) > 60e3) {
+    if (!_pz.lista) body.innerHTML = '<div class="sk-list"><div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div></div>';
+    _pz.t = Date.now();
+    try { const q = db.collection('prospeccion').orderBy('creado', 'desc').limit(600); const s = await q.get({ source: 'server' }).catch(() => q.get()); _pz.lista = s.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => p.email && !['sinCorreo', 'revisar'].includes(p.estado)); }
     catch (e) { _pz.lista = []; }
   }
   pzPintar();
