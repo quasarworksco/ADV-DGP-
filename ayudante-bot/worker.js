@@ -745,7 +745,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-16a';
+const WORKER_VERSION = '2026-11-16b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -5861,7 +5861,7 @@ const PZ_CAT = {
   general: ['negocio', 'un formulario de contacto para que tus clientes te escriban a cualquier hora', 'business', 'a contact form so customers can reach you 24/7'],
 };
 const PZ_ESTADO = { FL: 'Florida', TX: 'Texas', CT: 'Connecticut' };
-const PZ_V = 4;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
+const PZ_V = 5;   // versión de la plantilla: si cambia, los correos guardados se rehacen solos
 // Trabajos reales del portafolio, por tipo de negocio (si no hay uno parecido, va el portafolio completo)
 const PZ_EJ_NOMBRE = { 'smellingcleanfl.com': 'Smelling Clean', 'caiboconstruction.com': 'Caibo Construction', 'pinawatersystem.com': 'Pina Water System',
   'appliancesolution901.com': 'Appliance Solutions 901', 'casanovacarcare.com': 'Casanova Car Care', 'valpatruck.dgp-link.com': 'Valpa Truck',
@@ -5888,18 +5888,18 @@ const pzNombreCorto = n => String(n || '').replace(/[,.]?\s+(l\.?l\.?c\.?|inc\.?
 const pzLista = (L, y) => L.length < 2 ? (L[0] || '') : L.slice(0, -1).join(', ') + ` ${y} ` + L[L.length - 1];
 function pzCorreoAliado(p, cfg) {
   const en = p.idioma !== 'es', neg = pzNombreCorto(p.nombre), pila = p.nombrePila || '', entrega = String(cfg.entrega || '24');
-  const tipoEn = p.categoria === 'seguros' ? 'insurance agency' : 'office', tipoEs = p.categoria === 'seguros' ? 'agencia de seguros' : 'oficina';
+  const tipoEn = p.aliadoTipo?.en || (p.categoria === 'seguros' ? 'insurance agency' : 'office'), tipoEs = p.aliadoTipo?.es || (p.categoria === 'seguros' ? 'agencia de seguros' : 'oficina');
   const firma = [cfg.firma || 'Paúl Andrés Espina', 'DGP Global Group', 'WhatsApp: +1 (239) 823-1738', en ? 'Calls: +1 (945) 302-2923' : 'Llamadas: +1 (945) 302-2923', 'dgpglobalgroup.com'];
   if (en) return { asunto: `Partnership idea for ${neg}`, idioma: 'en', v: PZ_V, cuerpo: [`Hi ${pila || 'there'},`, '',
     `I'm ${String(cfg.firma || 'Paúl').split(' ')[0]} from DGP Global Group, a web design agency in Florida.`, '',
-    `Your ${tipoEn} works every day with people who are starting or growing a business, and almost all of them need a website. We'd like to be your web partner:`, '',
+    `Your ${tipoEn.replace(/ office$/, '') === tipoEn ? tipoEn : tipoEn} works every day with people who are starting or growing a business, and almost all of them need a website. We'd like to be your web partner:`, '',
     `- Special partner pricing, so you can offer websites to your clients with your own margin`, `- We deliver in ${entrega} hours, in English and Spanish, with custom domain, hosting and SSL included`,
     `- Your clients stay your clients: we never contact them directly`, `- No cost and no commitment to join`, '',
     `You can see our work here: dgpglobalgroup.com/en/portfolio`, '',
     `If you're interested, just reply "PARTNER" and I'll send you our partner price list.`, '', ...firma].join('\n') };
   return { asunto: `Una alianza para ${neg}`, idioma: 'es', v: PZ_V, cuerpo: [`Hola${pila ? ' ' + pila : ''},`, '',
     `Soy ${String(cfg.firma || 'Paúl').split(' ')[0]}, de DGP Global Group, una agencia de páginas web en Florida.`, '',
-    `Tu ${tipoEs} trabaja todos los días con personas que abren o hacen crecer un negocio, y casi todas necesitan una página web. Nos gustaría ser tu aliado web:`, '',
+    `${/^(imprenta|empresa|agencia|oficina)/.test(tipoEs) ? 'Tu' : 'Tu'} ${tipoEs} trabaja todos los días con personas que abren o hacen crecer un negocio, y casi todas necesitan una página web. Nos gustaría ser tu aliado web:`, '',
     `- Precios especiales de aliado, para que ofrezcas páginas web a tus clientes con tu propia ganancia`, `- Entregamos en ${entrega} horas, en español e inglés, con dominio personalizado, hosting y candado SSL incluidos`,
     `- Tus clientes siguen siendo tuyos: nunca los contactamos directamente`, `- Sin costo y sin compromiso para unirte`, '',
     `Puedes ver nuestros trabajos aquí: dgpglobalgroup.com/portafolio`, '',
@@ -5922,7 +5922,12 @@ function pzCorreo(p, cfg) {
     const asunto = probs.length ? elegir([`Quick idea for ${neg}'s website`, `${neg}: a better website, built before you pay`, `About the ${neg} website`])
       : elegir([`${neg}: your website, built before you pay`, `Website for ${neg}?`, `Quick idea for ${neg}`]);
     const intro = nuevo ? `Congratulations on starting ${neg}!` : `I came across ${neg}${ciudad ? ' in ' + ciudad : ''} and wanted to reach out.`;
-    const gancho = probs.length
+    const red = /instagram/i.test(p.webSocial || '') ? 'Instagram' : /facebook|fb\./i.test(p.webSocial || '') ? 'Facebook' : 'social media';
+    const gancho = p.webTipo === 'social'
+      ? `I noticed your website link goes to your ${red} page. Many customers don't trust a business without its own website, and Google ranks real websites much higher when people search for a ${c[2]}${ciudad ? ' in ' + ciudad : ''}.`
+      : p.webTipo === 'gratis' && host
+      ? `I took a look at ${host}. Free website builders are a good start, but without your own domain it can look less professional, and customers notice.`
+      : probs.length
       ? `I took a quick look at ${host} and noticed that ${pzLista(probs, 'and')}. That can cost you customers, because most people now look businesses up on their phone before they call.`
       : `When people need a ${c[2]}${ciudad ? ' in ' + ciudad : ''}, the first thing they do is search online. If they can't find you, they call the next one on the list.`;
     const cuerpo = [`Hi ${pila || 'there'},`, '', intro, '', gancho, '',
@@ -5938,7 +5943,12 @@ function pzCorreo(p, cfg) {
   const asunto = probs.length ? elegir([`Una idea para la web de ${neg}`, `${neg}: una web mejor, hecha antes de que pagues`, `Sobre la página de ${neg}`])
     : elegir([`${neg}: tu página web, hecha antes de que pagues`, `¿Página web para ${neg}?`, `Una idea para ${neg}`]);
   const intro = nuevo ? `¡Felicidades por abrir ${neg}!` : `Encontré ${neg}${ciudad ? ' en ' + ciudad : ''} y quise escribirte.`;
-  const gancho = probs.length
+  const redEs = /instagram/i.test(p.webSocial || '') ? 'Instagram' : /facebook|fb\./i.test(p.webSocial || '') ? 'Facebook' : 'redes sociales';
+  const gancho = p.webTipo === 'social'
+    ? `Vi que el enlace de tu página web lleva a tu ${redEs}. Muchos clientes no confían en un negocio sin página propia, y Google muestra primero a los negocios con web real cuando alguien busca${ciudad ? ' en ' + ciudad : ''}.`
+    : p.webTipo === 'gratis' && host
+    ? `Revisé ${host}. Las páginas gratuitas son un buen comienzo, pero sin dominio propio se ven menos profesionales, y los clientes lo notan.`
+    : probs.length
     ? `Revisé ${host} y vi que ${pzLista(probs, 'y')}. Eso te puede costar clientes, porque hoy casi todos buscan el negocio en el celular antes de llamar.`
     : `Cuando alguien${ciudad ? ' en ' + ciudad : ''} necesita un negocio como el tuyo, lo primero que hace es buscarlo en internet. Si no te encuentra, llama al siguiente de la lista.`;
   const cuerpo = [`Hola${pila ? ' ' + pila : ''},`, '', intro, '', gancho, '',
@@ -6293,13 +6303,15 @@ async function handleProspeccion(request, env) {
             webInfo: x.webInfo ? { ok: !!x.webInfo.ok, https: !!x.webInfo.https, celular: !!x.webInfo.celular, anio: Number(x.webInfo.anio) || null, constructor: lim(x.webInfo.constructor, 20) } : null,
             facebook: lim(x.facebook, 200), instagram: lim(x.instagram, 200), razonSocial: lim(x.razonSocial, 140), naics: lim(x.naics, 8),
             segmento: x.segmento === 'aliado' ? 'aliado' : '',
+            webTipo: ['social', 'gratis', 'propia'].includes(x.webTipo) ? x.webTipo : '', webSocial: lim(x.webSocial, 200),
+            aliadoTipo: x.aliadoTipo && typeof x.aliadoTipo === 'object' ? { k: lim(x.aliadoTipo.k, 20), es: lim(x.aliadoTipo.es, 60), en: lim(x.aliadoTipo.en, 60) } : null,
             subdominio: lim(x.subdominio, 40).replace(/[^a-z0-9-]/g, ''), idioma: x.idioma === 'es' ? 'es' : 'en', puntaje: Number(x.puntaje) || 0, creado: new Date().toISOString(), dia: hoyVE(),
           };
           delete p.estado_;
           if (p.email && (await pzEsBaja(env, p.email) || await env.CACHE.get('pz:mail:' + p.email) || correosCli.has(p.email) || vistosLote.has(p.email))) { claves.push(p.clave); continue; }
           if (p.email) vistosLote.add(p.email);
           // Con correo → listo para enviar. Si ya tiene una web sin problemas, mejor revisarlo a mano.
-          const webBuena = p.web && p.webInfo?.ok && p.webInfo.https && p.webInfo.celular && !(p.webInfo.anio && p.webInfo.anio < new Date().getFullYear() - 3);
+          const webBuena = p.webTipo !== 'gratis' && p.web && p.webInfo?.ok && p.webInfo.https && p.webInfo.celular && !(p.webInfo.anio && p.webInfo.anio < new Date().getFullYear() - 3);
           // Solo sirven los que tienen correo y necesitan una web (no tienen, o la suya tiene fallas)
           if (!p.email || (webBuena && p.segmento !== 'aliado')) { claves.push(p.clave); continue; }
           p.estado = 'listo';

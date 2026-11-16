@@ -6233,7 +6233,9 @@ function pzCard(p) {
   const dias = p.registro ? Math.round((Date.now() - Date.parse(p.registro)) / 864e5) : null;
   const reg = dias === null ? '' : dias < 0 ? 'Abre pronto' : dias === 0 ? 'Registrada hoy' : dias < 60 ? `Registrada hace ${dias} día${dias === 1 ? '' : 's'}` : '';
   const w = p.webInfo, chips = [];
-  if (!p.web) chips.push(['Sin página web', 'bien']);
+  if (p.webTipo === 'social') chips.push([`Su web es su ${/instagram/i.test(p.webSocial || '') ? 'Instagram' : 'Facebook'}`, 'bien']);
+  else if (p.webTipo === 'gratis') chips.push(['Web gratuita sin dominio propio', 'bien']);
+  else if (!p.web) chips.push(['Sin página web', 'bien']);
   else if (w) {
     if (w.ok === false) chips.push(['Su web no carga', 'mal']);
     if (w.ok !== false && !w.https) chips.push(['Web sin candado', 'mal']);
@@ -6242,7 +6244,7 @@ function pzCard(p) {
     if (w.constructor) chips.push(['Hecha en ' + w.constructor, '']);
   }
   if (p.clics) chips.unshift([`Abrió tu ejemplo${p.clics > 1 ? ` ${p.clics} veces` : ''}${p.ultimoClic ? ' · ' + cbFecha(p.ultimoClic.slice(0, 10)) : ''}`, 'bien']);
-  if (p.segmento === 'aliado') chips.unshift(['Posible aliado (revendedor)', 'bien']);
+  if (p.segmento === 'aliado') chips.unshift([`Posible aliado${p.aliadoTipo?.es ? ' · ' + p.aliadoTipo.es : ''}`, 'bien']);
   chips.push([p.idioma === 'es' ? 'Correo en español' : 'Correo en inglés', '']);
   const id = esc(p._id), g = encodeURIComponent(`${p.nombre} ${p.ciudad || ''} ${p.estadoUS || ''}`);
   return `<div class="pr-card">
@@ -6276,7 +6278,7 @@ async function pzEstado(id, estado, extra) {
 }
 function pzVerCorreo(id) {
   const p = pzBusca(id); if (!p) return;
-  if ((p.correo?.v || 0) < 4 && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
+  if ((p.correo?.v || 0) < 5 && ['listo', 'revisar'].includes(p.estado) && !p._regen) { p._regen = true; return pzRegenerar(id, p.idioma || 'en'); }
   const c = p.correo || {}, editable = ['listo', 'revisar'].includes(p.estado);
   ptModal(p.nombre, `Para: ${p.email}`, `
     <input id="pz-m-asunto" class="pz-mail-in" value="${esc(c.asunto || '')}" ${editable ? '' : 'readonly'}>
