@@ -5774,7 +5774,7 @@ async function handleRedes(request, env, ctx) {
      calentamiento gradual, límite diario y enlace de baja (CAN-SPAM).
 ══════════════════════════════════════════════════════════════ */
 const PZ_DEF = {
-  porDia: 80, sinCorreo: 20, maxRevisar: 900, pausado: false,
+  porDia: 80, sinCorreo: 20, maxRevisar: 1300, pausado: false,
   zipsFL: ['327', '328', '330', '331', '332', '333', '334', '335', '336', '337', '338', '339', '341', '342', '347', '349'],
   zipsTX: ['750', '751', '752', '753', '770', '772', '773', '774', '775'],
   ciudadesTX: ['HOUSTON', 'DALLAS', 'KATY', 'SUGAR LAND', 'PASADENA', 'PEARLAND', 'SPRING', 'HUMBLE', 'IRVING', 'GARLAND', 'MESQUITE', 'GRAND PRAIRIE', 'RICHARDSON', 'CARROLLTON'],
