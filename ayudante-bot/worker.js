@@ -195,6 +195,7 @@ export default {
       ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
       ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
     }
+    else if (event.cron === '45 * * * *') ctx.waitUntil(pzEnvioAutomatico(env).catch(async e => { await env.CACHE.put('pz:cron', JSON.stringify({ t: new Date().toISOString(), paso: 'error', error: String(e.message || e) })).catch(() => {}); await avisoError(env, 'Correos de prospección', e); }));
     else if (event.cron === '30 * * * *') {
       ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
       ctx.waitUntil(gdPendientes(env).catch(e => console.warn('Dominios pendientes', e)));
@@ -202,7 +203,6 @@ export default {
         const t = await firebaseLogin(env); const L = await aplicarSaldosFavor(env, t, null); if (L.length) await tgEnviar(env, ['💵 <b>Saldos a favor aplicados</b> (sobrantes que no se habían abonado)', ...L].join('\n')); })().catch(e => console.warn('fix saldos', e)));
       if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
       ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
-      ctx.waitUntil(pzEnvioAutomatico(env).catch(e => avisoError(env, 'Correos de prospección', e)));
       if (new Date().getUTCHours() === 15) ctx.waitUntil(recordatoriosWA(env).catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
       if (new Date().getUTCHours() === 12) ctx.waitUntil(resumenMananaPush(env).catch(e => console.warn('Resumen de la mañana', e)));
       if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
@@ -745,7 +745,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-15n';
+const WORKER_VERSION = '2026-11-16a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
@@ -6186,41 +6186,55 @@ async function pzCupoHoy(env, cfg) {
   return { cupo, enviados, quedan: Math.max(0, cupo - enviados) };
 }
 /* Cron cada hora: reparte el cupo del día entre 9:00 y 16:59 (hora de Florida), todos los días */
-async function pzEnvioAutomatico(env) {
-  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) return;
+async function pzEnvioAutomatico(env, forzar) {
+  const reg = { t: new Date().toISOString(), paso: 'inicio' };
+  const guardar = () => env.CACHE.put('pz:cron', JSON.stringify(reg)).catch(() => {});
+  if (!env.EMAIL_WEBHOOK || !env.EMAIL_CLAVE) { reg.paso = 'sin correo configurado'; await guardar(); return reg; }
   const token = await firebaseLogin(env);
   const cfg = await pzConfig(env, token);
-  if (!cfg.autoEnvio || cfg.pausado || !String(cfg.direccion || '').trim()) return;
+  if (!cfg.autoEnvio || cfg.pausado || !String(cfg.direccion || '').trim()) { reg.paso = 'apagado o sin dirección'; await guardar(); return reg; }
   const fl = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const h = fl.getHours();
-  if (h < 9 || h > 16) return;   // todos los días, de 9 a 5 (hora de Florida)
-  const { quedan } = await pzCupoHoy(env, cfg);
-  if (!quedan) return;
-  const n = Math.min(quedan, Math.ceil(quedan / (17 - h)), 12);
+  reg.horaFL = h;
+  if (!forzar && (h < 9 || h > 16)) { reg.paso = 'fuera de horario'; await guardar(); return reg; }
+  const { quedan, cupo, enviados } = await pzCupoHoy(env, cfg);
+  Object.assign(reg, { cupo, enviadosAntes: enviados });
+  if (!quedan) { reg.paso = 'cupo del día completo'; await guardar(); return reg; }
+  const n = Math.min(quedan, Math.ceil(quedan / Math.max(1, 17 - h)), 12);
+  reg.n = n; reg.paso = 'enviando'; await guardar();
+  let ok = 0; const errores = [];
+  // a) Seguimientos vencidos (hasta la mitad del turno)
   const limite = Date.now() - 4 * 864e5;
   const segs = cfg.seguimiento === false ? [] : (await pzPorEstado(env, 'enviado', 300, token))
     .filter(p => !p.seguimientoEn && !p.duplicado && p.enviadoEn && Date.parse(p.enviadoEn) < limite).sort((a, b) => String(a.enviadoEn).localeCompare(String(b.enviadoEn)));
-  let ok = 0;
-  const nSeg = Math.min(segs.length, Math.ceil(n / 2));
-  for (const p of segs.slice(0, nSeg)) {
+  for (const p of segs.slice(0, Math.min(segs.length, Math.ceil(n / 2)))) {
     const r = await pzEnviarSeguimiento(env, p, cfg, token).catch(e => ({ ok: false, error: e.message }));
-    if (r.ok) ok++;
-    else if (/cuota|quota|limit/i.test(r.error || '')) return ok;
-    await new Promise(res => setTimeout(res, 2500 + Math.random() * 4000));
+    if (r.ok) ok++; else errores.push('seg: ' + r.error);
+    if (/cuota|quota|limit/i.test(r.error || '')) break;
+    await new Promise(res => setTimeout(res, 2000 + Math.random() * 3000));
   }
+  reg.seguimientos = ok;
+  // b) Prospectos nuevos
+  const listos = (await pzPorEstado(env, 'listo', 60, token)).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0) || String(a.creado || '').localeCompare(String(b.creado || '')));
+  reg.listos = listos.length;
+  let nuevos = 0;
+  for (const p of listos) {
+    if (ok >= n) break;
+    const r = await pzEnviarUno(env, p, cfg, token).catch(e => ({ ok: false, error: e.message }));
+    if (r.ok) { ok++; nuevos++; } else errores.push(r.error);
+    if (/cuota|quota|limit/i.test(r.error || '')) break;
+    await new Promise(res => setTimeout(res, 2000 + Math.random() * 3000));
+  }
+  reg.nuevos = nuevos; reg.paso = 'prospectos enviados'; reg.errores = errores.slice(0, 5); await guardar();
+  // c) Recuperar (al final, y solo si sobra cupo en esta hora)
   if (cfg.recuperar !== false && ok < n) {
     const kr = 'pz:recHoy:' + hoyVE(), yaHoy = Number(await env.CACHE.get(kr)) || 0;
-    const r = await pzRecuperar(env, cfg, token, Math.min(3, 8 - yaHoy, n - ok)).catch(e => { console.warn('recuperar', e.message); return 0; });
+    const r = await pzRecuperar(env, cfg, token, Math.min(3, 8 - yaHoy, n - ok)).catch(e => { errores.push('recuperar: ' + e.message); return 0; });
     if (r) { ok += r; await env.CACHE.put(kr, String(yaHoy + r), { expirationTtl: 2 * 86400 }); }
+    reg.recuperados = r;
   }
-  const listos = (await pzPorEstado(env, 'listo', 60, token)).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0) || String(a.creado || '').localeCompare(String(b.creado || '')));
-  for (const p of listos.slice(0, Math.max(0, n - ok))) {
-    const r = await pzEnviarUno(env, p, cfg, token).catch(e => ({ ok: false, error: e.message }));
-    if (r.ok) ok++;
-    else if (/cuota|quota|limit/i.test(r.error || '')) break;
-    await new Promise(res => setTimeout(res, 2500 + Math.random() * 4000));   // espaciado, no en ráfaga
-  }
-  return ok;
+  reg.paso = 'fin'; reg.total = ok; reg.errores = errores.slice(0, 5); await guardar();
+  return reg;
 }
 
 async function handleProspeccion(request, env) {
@@ -6229,7 +6243,7 @@ async function handleProspeccion(request, env) {
   const b = await request.json().catch(() => ({}));
   try {
     // 1) La tarea diaria de GitHub
-    if (['config', 'filtrar', 'guardar', 'vistos', 'fin', 'rehacer'].includes(b.accion)) {
+    if (['config', 'filtrar', 'guardar', 'vistos', 'fin', 'rehacer', 'diag'].includes(b.accion)) {
       const vo = await pzVerificarOIDC(request, env);
       if (vo !== true) return json(request, { error: 'No autorizado (' + vo + ')' }, 401);
       const token = await firebaseLogin(env);
@@ -6241,6 +6255,15 @@ async function handleProspeccion(request, env) {
       if (b.accion === 'filtrar') {
         const vistos = await pzVistos(env);
         return json(request, { ok: true, nuevas: (b.claves || []).filter(k => typeof k === 'string' && !vistos.has(k)) });
+      }
+      if (b.accion === 'diag') {
+        const dias = [0, 1, 2].map(i => new Date(Date.now() - 4 * 3600e3 - i * 864e5).toISOString().slice(0, 10));
+        const env3 = {}; for (const d of dias) env3[d] = Number(await env.CACHE.get('pz:env:' + d)) || 0;
+        const out = { ultimaCorrida: await env.CACHE.get('pz:cron', 'json'), enviadosPorDia: env3, inicio: await env.CACHE.get('pz:inicio'),
+          correosMarcados: (await env.CACHE.list({ prefix: 'pz:mail:' })).keys.length, recuperados: (await env.CACHE.list({ prefix: 'pz:rec:' })).keys.length,
+          listos: (await pzPorEstado(env, 'listo', 300, token)).length, enviados: (await pzPorEstado(env, 'enviado', 300, token)).length };
+        if (b.forzar) out.prueba = await pzEnvioAutomatico(env, true).catch(e => ({ error: e.message, stack: String(e.stack || '').slice(0, 300) }));
+        return json(request, { ok: true, ...out });
       }
       if (b.accion === 'rehacer') {
         // Rehace los correos guardados con textos viejos (de a 20 por llamada)
