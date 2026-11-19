@@ -190,8 +190,9 @@ export default {
     _tgCtx = null;
     // Cron (UTC): mensual el día 1 · diario 11:00 (7:00 Venezuela) · domingo 12:00 (8:00 Venezuela)
     if (event.cron === '0 11 * * *') ctx.waitUntil(tareaDiaria(env).catch(e => avisoError(env, 'Resumen diario', e)));
-    else if (event.cron === '0 12 * * MON') ctx.waitUntil((async () => { const t = await firebaseLogin(env); if ((await automatizaciones(env, t)).briefing) await briefingLunes(env); })().catch(e => avisoError(env, 'Briefing del lunes', e)));
-    else if (event.cron === '0 12 * * SUN') {
+    // Domingo y lunes comparten un solo horario (el plan gratis de Cloudflare permite 5): se distingue por el día
+    else if (event.cron === '0 12 * * SUN,MON' && new Date().getUTCDay() === 1) ctx.waitUntil((async () => { const t = await firebaseLogin(env); if ((await automatizaciones(env, t)).briefing) await briefingLunes(env); })().catch(e => avisoError(env, 'Briefing del lunes', e)));
+    else if (event.cron === '0 12 * * SUN,MON') {
       ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
       ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
     }
@@ -745,7 +746,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-16b';
+const WORKER_VERSION = '2026-11-19a';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {
