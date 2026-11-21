@@ -1508,6 +1508,7 @@ Este repositorio trae el kit de diseño de DGP en \`.agents/skills/\` (Codex) y 
 5. Antes de entregar: los comandos \`critique\` y \`audit\` de impeccable y **review-animations**; corrige lo que salga P0/P1. Revisa el sitio en el navegador a 390 px y a escritorio.
 
 ## Reglas de diseño (obligatorias)
+- **Todo el sitio con un solo sistema visual:** las páginas nuevas (\`/admin\`, \`/entrega\` u otras) reutilizan los colores, fuentes, componentes, animaciones y transiciones de la página principal (ver "Coherencia visual" en \`CONTEXTO-DGP.md\`). Documenta ese sistema en \`DESIGN.md\` en cuanto la página principal esté lista.
 - **Diseño premium basado en el logo:** saca la paleta de colores, el estilo y la personalidad del logo (\`${d.logo || 'assets/logo'}\`). El sitio debe sentirse hecho a la medida de esa marca.
 - **Sin emojis.** Solo **iconos SVG** (inline o de una librería de iconos), consistentes en estilo y grosor.
 - Tipografías de Google Fonts que combinen con la marca; jerarquía clara y mucho aire.

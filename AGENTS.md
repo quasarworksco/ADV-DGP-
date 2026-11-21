@@ -12,6 +12,7 @@
 - Lee primero `CONTEXTO-DGP.md`: resume el negocio, los sistemas y cómo prefiere trabajar el dueño. Respóndele en español sencillo.
 - Decide sin darle menús de opciones al dueño; pregunta solo lo que no se puede inventar (ver "Decide sin preguntar de más" en `CONTEXTO-DGP.md`).
 - **Panel** (https://adv.dgp-link.com): `index.html` es una sola página con todo el CSS y JS. No tiene paso de compilación. GitHub Pages publica la rama `main`.
+- **Diseño del panel:** sigue `DESIGN.md`, que tiene los tokens, tarjetas, ventanas, avisos y animaciones que ya existen. Toda sección nueva reutiliza esas piezas; no crees estilos paralelos.
 - **Páginas públicas:** `factura-publica.html`, `cotizacion.html`, `portal.html`, `encuesta.html`, `contacto.html` y `auditoria.html`. Los clientes las abren con un `?id=` en el enlace.
 - **Bot:** `ayudante-bot/worker.js` es el Cloudflare Worker `ayudante-dgp-bot`. Cloudflare Workers Builds lo publica al unir a `main`.
   - Hay dos configuraciones: `ayudante-bot/wrangler.toml` y `wrangler.toml` en la raíz, que apunta al mismo worker. Si cambias una, cambia la otra igual: bindings, KV y `crons`.

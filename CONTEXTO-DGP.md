@@ -63,9 +63,23 @@ El dueño se cansa cuando el asistente le da muchas opciones. Por eso:
 - **No ofrezcas menús de opciones** ("¿A, B o C?") para diseño, estructura, colores, textos o tecnología. Si de verdad hay dos caminos con consecuencias distintas, recomienda uno y explica en una frase por qué.
 - Si una skill (por ejemplo, la entrevista de `init` o `shape` de Impeccable) pide preguntar, saca las respuestas del brief, de este archivo y del sitio. Pregunta como máximo una vez y solo lo imprescindible.
 
+## Coherencia visual: una página nueva es parte del mismo sitio
+Cualquier página o sección nueva (`/admin`, `/entrega`, una sección del panel, una landing) debe verse y moverse igual que la página principal. **No inventes un estilo nuevo.**
+1. **Antes de diseñar,** abre la página principal y saca su sistema:
+   - variables CSS (colores, radios, sombras),
+   - fuentes,
+   - componentes (botones, tarjetas, encabezados, formularios, ventanas),
+   - `@keyframes`, transiciones y curvas de movimiento.
+
+   Si existe `DESIGN.md`, síguelo. Si no existe, créalo con eso antes de construir.
+2. **Reutiliza esas mismas piezas.** Si el sitio tiene el CSS dentro de `index.html`, mueve lo compartido a `assets/estilos.css` (y el movimiento a `assets/animaciones.js`) y cárgalo en las dos páginas, para no copiarlo a mano.
+3. **Lleva también las animaciones y los flujos:** entradas al hacer scroll, hover, transiciones entre vistas, números que suben, estados de carga con skeleton y avisos (toasts). Un panel `/admin` no es una tabla plana: tarjetas, transiciones suaves y modo noche si el sitio lo tiene.
+4. **Al terminar,** compara lado a lado la página nueva con la principal, en celular y en escritorio. Si se nota que son de "otro sitio", corrígelo.
+
 ## Recetas por defecto (úsalas salvo que el repositorio ya haga otra cosa)
 - **Panel `/admin` de un sitio de cliente** (es el "panel admin con CRM" que se vende en el Paquete Avanzado):
-  - **Archivo:** `admin/index.html`, con el mismo diseño y colores del sitio, en el idioma del sitio. Lleva `noindex` y no aparece en el menú.
+  - **Archivo:** `admin/index.html`, en el idioma del sitio. Lleva `noindex` y no aparece en el menú.
+  - **Diseño:** el mismo sistema visual del sitio principal (ver "Coherencia visual"): sus colores, fuentes, tarjetas, botones, animaciones y transiciones.
   - **Acceso:** inicio de sesión con correo y contraseña (Firebase Authentication).
   - **Datos:** Firestore; imágenes en Cloudinary.
   - **Secciones:**
