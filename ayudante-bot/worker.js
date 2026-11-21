@@ -1471,21 +1471,20 @@ async function gh(env, metodo, ruta, cuerpo) {
 }
 const b64 = t => { const u = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
 function plantillaAgentes(d) {
-  const L = (t, v) => `- **${t}:** ${v || '_pendiente: pregúntalo antes de diseñar_'}`;
+  const L = (t, v) => `- **${t}:** ${v || '_sin definir_'}`;
   return `# ${d.titulo} · sitio web de DGP Global Group
 
 Este repositorio es el sitio web de **${d.titulo}**${d.cliente ? ` (cliente: ${d.cliente})` : ''}. Lo publica GitHub Pages desde la rama \`main\`${d.dominio ? ` en **${d.dominio}**` : ''}.
 
 Estas instrucciones valen para Codex, Claude o cualquier asistente. Lee también \`CONTEXTO-DGP.md\`: explica quién es DGP Global Group, sus servicios y cómo prefiere trabajar el dueño. Respóndele en español sencillo.
 
-## Antes de escribir código: pregunta lo que falte
-Haz estas preguntas **en un solo mensaje** y espera la respuesta. No inventes datos de contacto ni de la empresa.
-1. **Estilo visual:** ¿glassmorphism, minimalista, oscuro tecnológico, elegante/lujo, corporativo, colorido u otro?
-2. **Página de ejemplo:** ¿hay algún sitio de referencia que le guste al cliente? (si da enlaces, revísalos y toma ideas de estructura, no copies diseño ni textos)
-3. **Contacto:** correo, teléfono, WhatsApp, dirección y horario (solo lo que exista).
-4. **Redes sociales:** Instagram, Facebook, TikTok, LinkedIn, YouTube, Google Business (solo las que tenga).
-5. **Servicios o productos** principales, y la ciudad o zona que atiende.
-6. **Idiomas:** ¿solo español, solo inglés o bilingüe ES/EN con botón para cambiar?
+## Cómo empezar: decide tú, pregunta lo mínimo
+Cuando te digan "empecemos", **empieza a construir** con los datos de abajo, el logo y el rubro. No le des al dueño menús de opciones.
+- **Estilo visual, estructura, colores, fuentes y textos:** si no están definidos, decídelos tú a partir del logo y del rubro (usa ui-ux-pro-max para elegir). Di en una línea qué elegiste.
+- **Página de ejemplo:** si hay enlaces, revísalos y toma ideas de estructura, sin copiar diseño ni textos. Si no hay, sigue sin ella.
+- **Idiomas:** si no se indicó, usa el idioma del rubro y del cliente (español por defecto) y deja el sitio listo para agregar inglés.
+- **Lo único que no puedes inventar:** contacto (correo, teléfono, WhatsApp, dirección, horario), redes sociales, y servicios con precios reales. Si falta, pídelo en **un solo mensaje corto**, o termina el sitio con lo que haya (sin datos falsos, ocultando lo que no exista) y al final haz la lista de lo que falta.
+- Para pedidos típicos (panel \`/admin\`, formulario, bilingüe, \`/entrega\`) sigue las recetas de \`CONTEXTO-DGP.md\` sin preguntar.
 
 ## Datos que ya tenemos
 ${L('Empresa', d.titulo)}
@@ -1497,11 +1496,11 @@ ${L('Teléfono / WhatsApp', d.telefono)}
 ${L('Redes sociales', d.redes)}
 ${L('Idiomas', d.idiomas)}
 ${L('Notas', d.notas)}
-${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: pídelo_'}
+${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: usa el nombre como logotipo tipográfico y pídelo en la lista de lo que falta_'}
 
 ## Skills de diseño instaladas (úsalas)
 Este repositorio trae el kit de diseño de DGP en \`.agents/skills/\` (Codex) y en \`.claude/skills/\` (Claude Code); es el mismo contenido. Si tu herramienta no muestra una skill, abre su \`SKILL.md\` y sigue sus instrucciones. Úsalo en este orden:
-1. **impeccable** → empieza con su comando \`init\` (\`./.agents/skills/impeccable/scripts/impeccable context\` muestra el contexto): hace las preguntas del negocio (para quién es, qué necesita lograr) y guarda PRODUCT.md. Junta esas preguntas con las de arriba en una sola ronda.
+1. **impeccable** → empieza con su comando \`init\` (\`./.agents/skills/impeccable/scripts/impeccable context\` muestra el contexto) para guardar PRODUCT.md. Las respuestas a su entrevista (para quién es, qué necesita lograr) sácalas de este archivo, de \`CONTEXTO-DGP.md\` y del rubro; no hagas una ronda de preguntas aparte.
    Para consultar estilos, paletas y fuentes: \`python3 .agents/skills/ui-ux-pro-max/scripts/search.py "<tipo de negocio>"\`.
 2. **ui-ux-pro-max** → busca el estilo, la paleta, las fuentes y los íconos recomendados para este tipo de negocio antes de decidir el diseño.
 3. **frontend-design** y **taste-skill** → dirección visual distintiva, sin plantillas genéricas ni "AI slop".

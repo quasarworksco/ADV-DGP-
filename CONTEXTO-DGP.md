@@ -56,6 +56,28 @@ Cada una tiene su interruptor en el panel (Altair → Automatizaciones).
 - Prefiere que le propongan ideas y él elige. Ya **descartó**: la tarjeta "Qué hacer hoy", bots que lean grupos de Facebook, el buscador con clave de Google Places, listas de grupos y secuencias de seguimiento de prospectos.
 - En el panel, los colores tienen significado: verde = cobrado, ámbar = pendiente, rojo = vencido, azul = lo demás.
 
+## Decide sin preguntar de más
+El dueño se cansa cuando el asistente le da muchas opciones. Por eso:
+- **Decide tú** con lo que ya está en el repositorio, en este archivo, en el `AGENTS.md`, en el logo y en las recetas de abajo. Elige la mejor opción y di en una línea cuál elegiste, para que pueda cambiarla si quiere.
+- **Pregunta solo lo que no se puede inventar:** datos de contacto, precios del cliente, accesos o claves. Junta todo en un solo mensaje corto, o termina el trabajo con lo que hay y al final haz una lista de lo que falta.
+- **No ofrezcas menús de opciones** ("¿A, B o C?") para diseño, estructura, colores, textos o tecnología. Si de verdad hay dos caminos con consecuencias distintas, recomienda uno y explica en una frase por qué.
+- Si una skill (por ejemplo, la entrevista de `init` o `shape` de Impeccable) pide preguntar, saca las respuestas del brief, de este archivo y del sitio. Pregunta como máximo una vez y solo lo imprescindible.
+
+## Recetas por defecto (úsalas salvo que el repositorio ya haga otra cosa)
+- **Panel `/admin` de un sitio de cliente** (es el "panel admin con CRM" que se vende en el Paquete Avanzado):
+  - **Archivo:** `admin/index.html`, con el mismo diseño y colores del sitio, en el idioma del sitio. Lleva `noindex` y no aparece en el menú.
+  - **Acceso:** inicio de sesión con correo y contraseña (Firebase Authentication).
+  - **Datos:** Firestore; imágenes en Cloudinary.
+  - **Secciones:**
+    1. **Resumen:** mensajes nuevos de la semana y accesos rápidos.
+    2. **Mensajes / CRM:** cada envío del formulario de contacto, con estado (nuevo, contactado, cliente o descartado), notas y botón de WhatsApp.
+    3. **Contenido:** textos principales, servicios o productos con precio, y galería, que el sitio público lee y muestra.
+    4. **Ajustes:** teléfono, WhatsApp, correo, dirección, horario y redes.
+  - **Configuración pendiente:** el proyecto de Firebase y las cuentas de acceso las crea el dueño. Deja la configuración en un solo lugar (`admin/config.js`) y al final explica en pasos cortos qué debe pegar ahí. Las reglas de Firestore deben permitir leer solo el contenido público y escribir solo con sesión.
+- **Formulario de contacto:** guarda en la colección `mensajes` de Firestore si el sitio tiene `/admin`. Si no, usa un enlace de WhatsApp con el mensaje armado.
+- **Sitio bilingüe:** botón ES/EN que recuerda la elección y textos traducidos de verdad, no con traductor automático.
+- **Página `/entrega`:** sigue lo que diga el `AGENTS.md` del sitio.
+
 ## Reglas para los sitios de clientes
 - Diseño premium basado en el logo del cliente, **sin emojis** (solo íconos SVG), mobile first, SEO básico, botón de WhatsApp.
 - Pie de página: "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
