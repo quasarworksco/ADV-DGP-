@@ -14814,7 +14814,7 @@ function nsAbrir(pre) {
   if (typeof pre !== 'string') pre = '';
   const dl = clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('');
   const f = (id, lab, ph = '', extra = '') => `<div class="ff" style="margin:0"><label>${lab}</label><input id="${id}" placeholder="${ph}" ${extra}></div>`;
-  ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco listo para trabajar con Codex o Claude. Lo que dejes vacío, el asistente lo pregunta antes de diseñar.', `<div class="rd-form" style="display:grid;gap:10px">
+  ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco listo para trabajar con Codex o Claude. Lo que dejes vacío lo decide el asistente; solo te pedirá los datos de contacto que falten.', `<div class="rd-form" style="display:grid;gap:10px">
     <details${pre ? '' : ''}><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--blue)">Pegar datos del brief (desde Proyectos)</summary>
       <textarea id="ns-pegar" rows="5" style="width:100%;box-sizing:border-box;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12.5px" placeholder="Empresa: …&#10;Correo: …&#10;Teléfono / WhatsApp: …"></textarea>
       <button class="btn-logout" style="margin-top:6px" onclick="nsRellenar(document.getElementById('ns-pegar').value)">Rellenar el formulario</button></details>
@@ -14828,8 +14828,8 @@ function nsAbrir(pre) {
     </div>
     <div class="ff" style="margin:0"><label>Logo</label><input id="ns-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><input id="ns-logourl" type="hidden"><div id="ns-logoinfo" style="font-size:11.5px;color:var(--text-soft);margin-top:4px"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que el asistente pregunte</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
-      <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que el asistente pregunte</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
+      <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que lo decida el asistente</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
+      <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que lo decida el asistente</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
     </div>
     ${f('ns-ej', 'Página de ejemplo (opcional)', 'https://…')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">

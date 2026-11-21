@@ -56,6 +56,42 @@ Cada una tiene su interruptor en el panel (Altair → Automatizaciones).
 - Prefiere que le propongan ideas y él elige. Ya **descartó**: la tarjeta "Qué hacer hoy", bots que lean grupos de Facebook, el buscador con clave de Google Places, listas de grupos y secuencias de seguimiento de prospectos.
 - En el panel, los colores tienen significado: verde = cobrado, ámbar = pendiente, rojo = vencido, azul = lo demás.
 
+## Decide sin preguntar de más
+El dueño se cansa cuando el asistente le da muchas opciones. Por eso:
+- **Decide tú** con lo que ya está en el repositorio, en este archivo, en el `AGENTS.md`, en el logo y en las recetas de abajo. Elige la mejor opción y di en una línea cuál elegiste, para que pueda cambiarla si quiere.
+- **Pregunta solo lo que no se puede inventar:** datos de contacto, precios del cliente, accesos o claves. Junta todo en un solo mensaje corto, o termina el trabajo con lo que hay y al final haz una lista de lo que falta.
+- **No ofrezcas menús de opciones** ("¿A, B o C?") para diseño, estructura, colores, textos o tecnología. Si de verdad hay dos caminos con consecuencias distintas, recomienda uno y explica en una frase por qué.
+- Si una skill (por ejemplo, la entrevista de `init` o `shape` de Impeccable) pide preguntar, saca las respuestas del brief, de este archivo y del sitio. Pregunta como máximo una vez y solo lo imprescindible.
+
+## Coherencia visual: una página nueva es parte del mismo sitio
+Cualquier página o sección nueva (`/admin`, `/entrega`, una sección del panel, una landing) debe verse y moverse igual que la página principal. **No inventes un estilo nuevo.**
+1. **Antes de diseñar,** abre la página principal y saca su sistema:
+   - variables CSS (colores, radios, sombras),
+   - fuentes,
+   - componentes (botones, tarjetas, encabezados, formularios, ventanas),
+   - `@keyframes`, transiciones y curvas de movimiento.
+
+   Si existe `DESIGN.md`, síguelo. Si no existe, créalo con eso antes de construir.
+2. **Reutiliza esas mismas piezas.** Si el sitio tiene el CSS dentro de `index.html`, mueve lo compartido a `assets/estilos.css` (y el movimiento a `assets/animaciones.js`) y cárgalo en las dos páginas, para no copiarlo a mano.
+3. **Lleva también las animaciones y los flujos:** entradas al hacer scroll, hover, transiciones entre vistas, números que suben, estados de carga con skeleton y avisos (toasts). Un panel `/admin` no es una tabla plana: tarjetas, transiciones suaves y modo noche si el sitio lo tiene.
+4. **Al terminar,** compara lado a lado la página nueva con la principal, en celular y en escritorio. Si se nota que son de "otro sitio", corrígelo.
+
+## Recetas por defecto (úsalas salvo que el repositorio ya haga otra cosa)
+- **Panel `/admin` de un sitio de cliente** (es el "panel admin con CRM" que se vende en el Paquete Avanzado):
+  - **Archivo:** `admin/index.html`, en el idioma del sitio. Lleva `noindex` y no aparece en el menú.
+  - **Diseño:** el mismo sistema visual del sitio principal (ver "Coherencia visual"): sus colores, fuentes, tarjetas, botones, animaciones y transiciones.
+  - **Acceso:** inicio de sesión con correo y contraseña (Firebase Authentication).
+  - **Datos:** Firestore; imágenes en Cloudinary.
+  - **Secciones:**
+    1. **Resumen:** mensajes nuevos de la semana y accesos rápidos.
+    2. **Mensajes / CRM:** cada envío del formulario de contacto, con estado (nuevo, contactado, cliente o descartado), notas y botón de WhatsApp.
+    3. **Contenido:** textos principales, servicios o productos con precio, y galería, que el sitio público lee y muestra.
+    4. **Ajustes:** teléfono, WhatsApp, correo, dirección, horario y redes.
+  - **Configuración pendiente:** el proyecto de Firebase y las cuentas de acceso las crea el dueño. Deja la configuración en un solo lugar (`admin/config.js`) y al final explica en pasos cortos qué debe pegar ahí. Las reglas de Firestore deben permitir leer solo el contenido público y escribir solo con sesión.
+- **Formulario de contacto:** guarda en la colección `mensajes` de Firestore si el sitio tiene `/admin`. Si no, usa un enlace de WhatsApp con el mensaje armado.
+- **Sitio bilingüe:** botón ES/EN que recuerda la elección y textos traducidos de verdad, no con traductor automático.
+- **Página `/entrega`:** sigue lo que diga el `AGENTS.md` del sitio.
+
 ## Reglas para los sitios de clientes
 - Diseño premium basado en el logo del cliente, **sin emojis** (solo íconos SVG), mobile first, SEO básico, botón de WhatsApp.
 - Pie de página: "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
