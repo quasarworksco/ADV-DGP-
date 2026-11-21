@@ -47,6 +47,7 @@ Cada una tiene su interruptor en el panel (Altair → Automatizaciones).
 - Encuesta después de cada proyecto, invitación a reseña en Google, felicitaciones de aniversario y cumpleaños con descuento.
 - Prospección: busca cada día negocios de Florida y Texas sin web (o con web de Facebook o gratuita), les envía un correo personalizado con un ejemplo del portafolio y hace seguimiento.
 - Factura nueva por WhatsApp, renovación de suscripciones y hosting de aliados.
+- Cerrar y abrir un sitio de cliente desde **Sitios web** (botón del candado). Muestra un aviso de "sitio temporalmente cerrado" sin borrar nada; GitHub Pages publica la rama `sitio-cerrado` y, al abrir, vuelve a la rama de antes.
 
 ## Cómo trabaja el dueño (preferencias)
 - Habla en español informal y escribe rápido, con errores de tipeo: interpreta la intención. Responde en español sencillo, sin jerga técnica.
