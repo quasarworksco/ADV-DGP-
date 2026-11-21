@@ -1470,11 +1470,13 @@ async function gh(env, metodo, ruta, cuerpo) {
   return d;
 }
 const b64 = t => { const u = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
-function plantillaClaude(d) {
+function plantillaAgentes(d) {
   const L = (t, v) => `- **${t}:** ${v || '_pendiente: pregúntalo antes de diseñar_'}`;
   return `# ${d.titulo} · sitio web de DGP Global Group
 
 Este repositorio es el sitio web de **${d.titulo}**${d.cliente ? ` (cliente: ${d.cliente})` : ''}. Lo publica GitHub Pages desde la rama \`main\`${d.dominio ? ` en **${d.dominio}**` : ''}.
+
+Estas instrucciones valen para Codex, Claude o cualquier asistente. Lee también \`CONTEXTO-DGP.md\`: explica quién es DGP Global Group, sus servicios y cómo prefiere trabajar el dueño. Respóndele en español sencillo.
 
 ## Antes de escribir código: pregunta lo que falte
 Haz estas preguntas **en un solo mensaje** y espera la respuesta. No inventes datos de contacto ni de la empresa.
@@ -1498,12 +1500,13 @@ ${L('Notas', d.notas)}
 ${d.logo ? `- **Logo:** \`${d.logo}\`` : '- **Logo:** _no se subió: pídelo_'}
 
 ## Skills de diseño instaladas (úsalas)
-Este repositorio trae en \`.claude/skills/\` el kit de diseño de DGP. Úsalo en este orden:
-1. **impeccable** → empieza con \`/impeccable init\`: hace las preguntas del negocio (para quién es, qué necesita lograr) y guarda PRODUCT.md. Junta esas preguntas con las de arriba en una sola ronda.
+Este repositorio trae el kit de diseño de DGP en \`.agents/skills/\` (Codex) y en \`.claude/skills/\` (Claude Code); es el mismo contenido. Si tu herramienta no muestra una skill, abre su \`SKILL.md\` y sigue sus instrucciones. Úsalo en este orden:
+1. **impeccable** → empieza con su comando \`init\` (\`./.agents/skills/impeccable/scripts/impeccable context\` muestra el contexto): hace las preguntas del negocio (para quién es, qué necesita lograr) y guarda PRODUCT.md. Junta esas preguntas con las de arriba en una sola ronda.
+   Para consultar estilos, paletas y fuentes: \`python3 .agents/skills/ui-ux-pro-max/scripts/search.py "<tipo de negocio>"\`.
 2. **ui-ux-pro-max** → busca el estilo, la paleta, las fuentes y los íconos recomendados para este tipo de negocio antes de decidir el diseño.
 3. **frontend-design** y **taste-skill** → dirección visual distintiva, sin plantillas genéricas ni "AI slop".
 4. **animate / improve-animations / choreograph** (Emil Kowalski) → animaciones con propósito, suaves y rápidas.
-5. Antes de entregar: \`/impeccable critique\`, \`/impeccable audit\` y **review-animations**; corrige lo que salga P0/P1.
+5. Antes de entregar: los comandos \`critique\` y \`audit\` de impeccable y **review-animations**; corrige lo que salga P0/P1. Revisa el sitio en el navegador a 390 px y a escritorio.
 
 ## Reglas de diseño (obligatorias)
 - **Diseño premium basado en el logo:** saca la paleta de colores, el estilo y la personalidad del logo (\`${d.logo || 'assets/logo'}\`). El sitio debe sentirse hecho a la medida de esa marca.
@@ -1537,11 +1540,19 @@ Cuando el cliente apruebe el sitio (o te digan "ya está listo"), crea \`entrega
 - Haz commit y push a \`main\`, y responde con el enlace final de \`/entrega\`.
 `;
 }
+// Claude Code lee CLAUDE.md y Codex lee AGENTS.md: CLAUDE.md importa AGENTS.md para tener una sola fuente
+const PLANTILLA_CLAUDE = `# Instrucciones del sitio
+
+Las instrucciones de este repositorio están en AGENTS.md (las mismas para Codex y Claude):
+
+@AGENTS.md
+@CONTEXTO-DGP.md
+`;
 function plantillaIndex(d) {
   return `<!doctype html>
 <!--
   ${d.titulo} · sitio en construcción por DGP Global Group.
-  Para Claude: lee CLAUDE.md antes de empezar. Diseño premium basado en el logo, sin emojis (solo iconos SVG),
+  Para Codex o Claude: lee AGENTS.md y CONTEXTO-DGP.md antes de empezar. Diseño premium basado en el logo, sin emojis (solo iconos SVG),
   pregunta el estilo visual, la página de ejemplo y los datos de contacto y redes que falten, y trabaja sobre eso.
 -->
 <html lang="es">
@@ -1568,14 +1579,31 @@ function plantillaIndex(d) {
 </html>
 `;
 }
-// Kit de diseño (skills de Claude: Impeccable, frontend-design, taste, ui-ux-pro-max, animaciones de Emil Kowalski) → .claude/skills del repositorio, en un solo commit
+// Kit de diseño (Impeccable, frontend-design, taste, ui-ux-pro-max, animaciones de Emil Kowalski) en un solo commit:
+// en .claude/skills (Claude Code) y en .agents/skills (Codex), más CONTEXTO-DGP.md y AGENTS.md si el repositorio no lo tiene
 async function instalarKit(env, repo) {
   const kit = await fetch(`${SITIO}/kit-diseno/kit.json`, { cf: { cacheTtl: 300 } }).then(r => r.json());
+  const contexto = await fetch(`${SITIO}/CONTEXTO-DGP.md`, { cf: { cacheTtl: 300 } }).then(r => r.ok ? r.text() : '').catch(() => '');
   const R = `/repos/${GH_ORG}/${repo}`;
   const ref = await gh(env, 'GET', `${R}/git/ref/heads/main`);
   const base = await gh(env, 'GET', `${R}/git/commits/${ref.object.sha}`);
-  const tree = await gh(env, 'POST', `${R}/git/trees`, { base_tree: base.tree.sha, tree: kit.files.map(f => ({ path: f.path, mode: f.mode || '100644', type: 'blob', content: f.content })) });
-  const commit = await gh(env, 'POST', `${R}/git/commits`, { message: `Kit de diseño DGP (${kit.version}): Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones`, tree: tree.sha, parents: [ref.object.sha] });
+  const tree1 = await gh(env, 'POST', `${R}/git/trees`, { base_tree: base.tree.sha, tree: kit.files.map(f => ({ path: f.path, mode: f.mode || '100644', type: 'blob', content: f.content })) });
+  // Copia para Codex: mismos archivos (mismos blobs, sin volver a subirlos) bajo .agents/skills
+  const todo = await gh(env, 'GET', `${R}/git/trees/${tree1.sha}?recursive=1`);
+  const extra = todo.tree.filter(x => x.type === 'blob' && x.path.startsWith('.claude/skills/')).map(x => ({ path: '.agents/' + x.path.slice('.claude/'.length), mode: x.mode, type: 'blob', sha: x.sha }));
+  if (contexto) extra.push({ path: 'CONTEXTO-DGP.md', mode: '100644', type: 'blob', content: contexto });
+  // Repositorios anteriores con solo CLAUDE.md: AGENTS.md con el mismo brief y CLAUDE.md pasa a importarlo
+  const tiene = p => todo.tree.some(x => x.path === p);
+  if (!tiene('AGENTS.md') && tiene('CLAUDE.md')) {
+    const claude = await gh(env, 'GET', `${R}/contents/CLAUDE.md`).catch(() => null);
+    const txt = claude?.content ? new TextDecoder().decode(Uint8Array.from(atob(claude.content.replace(/\s/g, '')), c => c.charCodeAt(0))) : '';
+    if (txt && !/^@AGENTS\.md/m.test(txt)) {
+      extra.push({ path: 'AGENTS.md', mode: '100644', type: 'blob', content: txt.replace(/\.claude\/skills\//g, '.agents/skills/').replace(/^Para Claude: /m, 'Para Codex o Claude: ') });
+      extra.push({ path: 'CLAUDE.md', mode: '100644', type: 'blob', content: PLANTILLA_CLAUDE });
+    }
+  }
+  const tree = await gh(env, 'POST', `${R}/git/trees`, { base_tree: tree1.sha, tree: extra });
+  const commit = await gh(env, 'POST', `${R}/git/commits`, { message: `Kit de diseño DGP (${kit.version}) para Codex y Claude: Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones`, tree: tree.sha, parents: [ref.object.sha] });
   await gh(env, 'PATCH', `${R}/git/refs/heads/main`, { sha: commit.sha });
   return { ok: true, archivos: kit.files.length, version: kit.version };
 }
@@ -1602,7 +1630,8 @@ async function crearSitio(env, token, b, email) {
   catch (e) { return { error: e.status === 422 ? `Ya existe un repositorio llamado ${repo}` : 'GitHub: ' + e.message }; }
   const subir = (path, contenido, msg) => gh(env, 'PUT', `${R}/contents/${path}`, { message: msg, content: contenido, branch: 'main' });
   await subir('index.html', b64(plantillaIndex(d)), 'Plantilla base del sitio');
-  await subir('CLAUDE.md', b64(plantillaClaude(d)), 'Brief para Claude: diseño premium, sin emojis, preguntas iniciales');
+  await subir('AGENTS.md', b64(plantillaAgentes(d)), 'Brief del sitio para Codex y Claude: diseño premium, sin emojis, preguntas iniciales');
+  await subir('CLAUDE.md', b64(PLANTILLA_CLAUDE), 'Claude Code: usa las instrucciones de AGENTS.md');
   if (logo) await subir(d.logo, logo.data, 'Logo de la empresa');
   if (dominio) await subir('CNAME', b64(dominio + '\n'), 'Dominio del sitio');
   const kit = await instalarKit(env, repo).catch(e => ({ error: e.message }));

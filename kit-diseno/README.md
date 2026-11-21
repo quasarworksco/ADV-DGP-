@@ -1,7 +1,11 @@
 # Kit de diseño para los sitios de DGP Global Group
 
-`kit.json` reúne skills de Claude Code que se instalan en `.claude/skills/` de cada sitio nuevo
-(botón **Nuevo sitio web** del panel) o en uno existente (**Sitios web → Instalar kit de diseño**).
+`kit.json` reúne skills de diseño que se instalan en cada sitio nuevo (botón **Nuevo sitio web** del panel)
+o en uno existente (**Sitios web → Instalar kit de diseño**). Se copian en dos carpetas con el mismo contenido:
+`.agents/skills/` para Codex y `.claude/skills/` para Claude Code.
+
+Junto con el kit, el bot agrega `CONTEXTO-DGP.md` (la memoria del negocio, desde la raíz de este repositorio) y,
+si el sitio solo tenía `CLAUDE.md`, crea `AGENTS.md` con el mismo brief y deja `CLAUDE.md` importándolo.
 
 | Skill | Fuente | Licencia |
 |---|---|---|
