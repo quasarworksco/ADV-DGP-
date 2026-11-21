@@ -1633,11 +1633,17 @@ function paginaCerrado(nombre, logo, mensaje) {
   h1 { font-size:24px; line-height:1.25; margin:0 0 10px; letter-spacing:-.01em; }
   p { margin:0; color:var(--tx2); line-height:1.6; font-size:15px; }
   .en { margin-top:18px; padding-top:18px; border-top:1px solid var(--ln); font-size:13.5px; }
+  .wrap { width:100%; max-width:460px; }
+  footer { margin-top:22px; font-size:12px; color:var(--tx2); text-align:center; }
+  footer a { color:inherit; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:30px; transition:background .2s ease, color .2s ease; }
+  footer a:hover, footer a:focus-visible { background:color-mix(in srgb,var(--tx2) 12%,transparent); color:var(--tx); outline:none; }
+  footer img { width:18px; height:18px; margin:0; border-radius:5px; }
   @keyframes in { from { opacity:0; transform:translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { main { animation:none; } }
 </style>
 </head>
 <body>
+  <div class="wrap">
   <main>
     ${logo ? `<img src="/${e(logo)}" alt="${e(nombre)}">` : ''}
     <div class="ic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
@@ -1645,6 +1651,8 @@ function paginaCerrado(nombre, logo, mensaje) {
     <p>${msg ? e(msg) : 'Este sitio está temporalmente fuera de línea. Vuelve pronto.'}</p>
     <p class="en" lang="en">This website is temporarily offline. Please check back soon.</p>
   </main>
+  <footer><a href="https://dgpglobalgroup.com" target="_blank" rel="noopener"><img src="https://adv.dgp-link.com/icon-192.png" alt="">Powered by DGP Global Group</a></footer>
+  </div>
 </body>
 </html>
 `;
