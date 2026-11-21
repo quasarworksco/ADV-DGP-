@@ -1956,6 +1956,8 @@ html.dark .vt-spark{--c:#6f8cff}html.dark .vt-spark.g{--c:#34d399}
 #page-dashboard .db-head .dash-section-label{flex:1;display:flex;align-items:center;gap:14px;font-size:12px!important;font-weight:600!important;color:var(--text-soft)!important;white-space:nowrap}
 #page-dashboard .db-head .dash-section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--text-soft) 30%,transparent),transparent 85%)}
 @media(max-width:900px){#page-dashboard .db-head{margin:30px 0 12px!important}}
+.hr-ico.wb-cerrado{color:#475569;background:color-mix(in srgb,#475569 14%,transparent)}
+html.dark .hr-ico.wb-cerrado{color:#cbd5e1;background:rgba(203,213,225,.12)}
 /* embudo de ventas */
 .emb-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .emb-h .nd-act-f{margin:0}
@@ -14963,7 +14965,7 @@ function wbPintar() {
   el.innerHTML = `<div class="cb-card" style="padding:0;overflow:hidden"><table class="wb-t" style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead><tr style="text-align:left;color:var(--text-soft);font-size:10.5px;letter-spacing:1px;text-transform:uppercase"><th style="padding:12px 16px">Estado</th><th>Cliente y web</th><th>Respuesta</th><th>Seguridad</th><th>Plan de hosting</th><th>Dominio</th><th></th></tr></thead><tbody>
     ${grupos.map(([titulo, lista]) => lista.length ? `<tr class="wb-g"><td colspan="7" style="padding:14px 16px 6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);background:var(--off,#f8fafc)">${titulo} · ${lista.length}</td></tr>` + lista.map(w => {
-      const e = EST[w.estado] || ['Sin revisar', '#f1f5f9', '#64748b'], x = wbSubs(w), id = esc(w._id);
+      const e = w.cerrado ? ['Cerrado', '#f1f5f9', '#475569'] : EST[w.estado] || ['Sin revisar', '#f1f5f9', '#64748b'], x = wbSubs(w), id = esc(w._id);
       const hs = x.hosting, ds = x.dominio;
       const plan = hs ? `${hs.ciclo === 'mensual' ? 'Mensual' : hs.ciclo === 'anual' ? 'Anual' : esc(hs.ciclo || 'Plan')} · renueva ${esc(wbFecha(hs.proximoPago))}` : '<span style="color:var(--text-soft)">Sin plan en Suscripciones</span>';
       const dom = ds ? `Renueva ${esc(wbFecha(ds.proximoPago))}` : hs ? '<span style="color:var(--text-soft)">Con el hosting</span>' : '—';
@@ -14975,7 +14977,7 @@ function wbPintar() {
         <td style="color:${w.candado === false && !['pendiente', 'activado'].includes(w.certEstado) ? '#b91c1c' : w.candado ? '#047857' : w.candado === false ? '#b45309' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}" title="${esc(w.certDetalle || '')}">${w.candado ? '✓ Candado activo' : w.candado === false ? (w.certEstado === 'pendiente' ? '<span class="wb-cert"><i></i>Candado en proceso</span><small style="display:block;font-weight:500;color:var(--text-soft)">Se activa solo</small>' : w.certEstado === 'activado' ? '✓ Activado · verificando' : w.certEstado === 'error' ? 'Candado falla<small style="display:block;font-weight:500;color:var(--text-soft)">Revisar DNS</small>' : 'Candado falla') : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> <button class="hr-ico" title="Instalar el kit de diseño (skills de Claude) en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> ${w.repo ? `<button class="hr-ico${w.cerrado ? ' wb-cerrado' : ''}" title="${w.cerrado ? 'Sitio cerrado: volver a abrirlo' : 'Cerrar el sitio (muestra un aviso de sitio cerrado)'}" aria-label="${w.cerrado ? 'Abrir sitio' : 'Cerrar sitio'}" onclick="wbCerrar('${id}')"><i class="fa-solid ${w.cerrado ? 'fa-lock' : 'fa-lock-open'}"></i></button> ` : ''}<button class="hr-ico" title="Instalar el kit de diseño para Codex y Claude en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
@@ -15177,6 +15179,37 @@ async function wbDominios(fresco) {
       const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:9px 11px"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</div>
         <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
+/* Cerrar / abrir un sitio: el bot publica en GitHub Pages un aviso de "sitio cerrado" (rama aparte) o vuelve a la rama del sitio */
+function wbCerrar(id) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  if (w.cerrado) {
+    if (!confirm(`¿Volver a abrir ${w.cliente || wbHost(w.dominio)}?\n\nEl sitio vuelve a verse tal como estaba en 1 o 2 minutos.`)) return;
+    return wbEstado(id, false, '');
+  }
+  ptModal('Cerrar sitio', `${w.cliente || ''} · ${wbHost(w.dominio)}`, `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:12.5px;color:var(--text-mid);line-height:1.55">Quien entre a la web verá un aviso de <b>sitio temporalmente cerrado</b> con el nombre y el logo del negocio, en español e inglés. No se borra nada: al abrirlo vuelve tal como estaba. El cambio tarda 1 o 2 minutos.</div>
+    <div class="ff" style="margin:0"><label>Mensaje para los visitantes (opcional)</label><textarea id="wb-cmsg" rows="2" maxlength="300" placeholder="Este sitio está temporalmente fuera de línea. Vuelve pronto."></textarea></div>
+    <button class="ll-btn" id="wb-cbtn" style="background:#475569" onclick="wbEstado('${esc(id)}', true, document.getElementById('wb-cmsg').value)">Cerrar sitio</button>
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button></div>`);
+}
+async function wbEstado(id, cerrar, mensaje) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  const btn = document.getElementById('wb-cbtn'); if (btn) { btn.disabled = true; btn.textContent = 'Cerrando…'; }
+  if (!cerrar) toast('Abriendo el sitio…');
+  try {
+    const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'sitio-estado', id, cerrar, mensaje }) }).then(r => r.json());
+    if (!d.ok) throw new Error(d.error || 'No se pudo cambiar');
+    w.cerrado = !!d.cerrado;
+    closePortalModal();
+    logActividad(cerrar ? 'Sitio cerrado' : 'Sitio abierto', `${w.cliente || ''} · ${wbHost(w.dominio)}`);
+    toast(cerrar ? `${w.cliente || 'El sitio'} quedó cerrado · se verá el aviso en 1 o 2 minutos` : `${w.cliente || 'El sitio'} vuelve a estar abierto · tarda 1 o 2 minutos ✅`);
+    wbPintar();
+  } catch (e) {
+    toast('No se pudo ' + (cerrar ? 'cerrar' : 'abrir') + ': ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = 'Cerrar sitio'; }
+  }
 }
 async function wbKit(id) {
   const w = (_wb.lista || []).find(x => x._id === id) || {};

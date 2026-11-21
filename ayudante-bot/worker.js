@@ -1607,6 +1607,87 @@ async function instalarKit(env, repo) {
   await gh(env, 'PATCH', `${R}/git/refs/heads/main`, { sha: commit.sha });
   return { ok: true, archivos: kit.files.length, version: kit.version };
 }
+/* ══════════════════════════════════════════════════════════════
+   Sitio cerrado / abierto desde el panel (Sitios web)
+   No borra nada: cerrar publica en GitHub Pages una rama aparte (sitio-cerrado) con un aviso;
+   abrir vuelve a publicar la rama de antes. El dominio y el candado se mantienen.
+══════════════════════════════════════════════════════════════ */
+const RAMA_CERRADO = 'sitio-cerrado';
+function paginaCerrado(nombre, logo, mensaje) {
+  const e = escHtml, msg = String(mensaje || '').trim();
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${e(nombre)} · Sitio temporalmente cerrado</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f5f7fb; --card:#ffffff; --tx:#0f172a; --tx2:#64748b; --ln:#e2e8f0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0b1120; --card:#111a2e; --tx:#e6ebf5; --tx2:#94a3b8; --ln:#1f2b46; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; background:var(--bg); color:var(--tx); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { width:100%; max-width:460px; background:var(--card); border:1px solid var(--ln); border-radius:22px; padding:40px 32px; text-align:center; box-shadow:0 24px 60px -30px rgba(15,23,42,.35); animation:in .5s cubic-bezier(.23,1,.32,1) both; }
+  img { max-width:160px; max-height:90px; object-fit:contain; margin:0 auto 22px; display:block; }
+  .ic { width:52px; height:52px; margin:0 auto 18px; border-radius:16px; display:grid; place-items:center; background:color-mix(in srgb,var(--tx2) 12%,transparent); color:var(--tx2); }
+  h1 { font-size:24px; line-height:1.25; margin:0 0 10px; letter-spacing:-.01em; }
+  p { margin:0; color:var(--tx2); line-height:1.6; font-size:15px; }
+  .en { margin-top:18px; padding-top:18px; border-top:1px solid var(--ln); font-size:13.5px; }
+  @keyframes in { from { opacity:0; transform:translateY(10px); } }
+  @media (prefers-reduced-motion: reduce) { main { animation:none; } }
+</style>
+</head>
+<body>
+  <main>
+    ${logo ? `<img src="/${e(logo)}" alt="${e(nombre)}">` : ''}
+    <div class="ic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h1>${e(nombre)}</h1>
+    <p>${msg ? e(msg) : 'Este sitio está temporalmente fuera de línea. Vuelve pronto.'}</p>
+    <p class="en" lang="en">This website is temporarily offline. Please check back soon.</p>
+  </main>
+</body>
+</html>
+`;
+}
+async function estadoSitio(env, token, id, cerrar, mensaje, email) {
+  if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
+  const w = await fsGet(env, `webs/${id}`, token);
+  if (!w) return { error: 'No encontré esa web' };
+  const repo = String(w.repo || '').replace(/^https?:\/\/github\.com\//, '');
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) return { error: 'Esta web no tiene un repositorio de GitHub anotado: solo se pueden cerrar las webs publicadas con GitHub Pages.' };
+  const R = `/repos/${repo}`;
+  let pages;
+  try { pages = await gh(env, 'GET', `${R}/pages`); } catch (e) { return { error: e.status === 404 ? 'Ese repositorio no tiene GitHub Pages activo.' : 'GitHub: ' + e.message }; }
+  if (pages.build_type === 'workflow') return { error: 'Este sitio se publica con GitHub Actions: ciérralo desde su repositorio.' };
+  const ahora = new Date();
+  if (cerrar) {
+    const previa = pages.source && pages.source.branch !== RAMA_CERRADO ? { branch: pages.source.branch, path: pages.source.path || '/' } : (w.fuentePrevia || { branch: 'main', path: '/' });
+    // Logo del sitio (si existe en la rama publicada) para que el aviso lleve su marca
+    let logo = null;
+    try {
+      const ref = await gh(env, 'GET', `${R}/git/ref/heads/${encodeURIComponent(previa.branch)}`);
+      const arbol = await gh(env, 'GET', `${R}/git/trees/${ref.object.sha}?recursive=1`);
+      logo = (arbol.tree || []).find(x => x.type === 'blob' && /^(assets\/)?logo\.(png|jpe?g|webp|svg)$/i.test(x.path)) || null;
+    } catch (e) {}
+    const nombre = w.cliente || repo.split('/')[1];
+    const html = paginaCerrado(nombre, logo?.path, mensaje);
+    const tree = [{ path: 'index.html', mode: '100644', type: 'blob', content: html }, { path: '404.html', mode: '100644', type: 'blob', content: html }, { path: '.nojekyll', mode: '100644', type: 'blob', content: '' }];
+    if (pages.cname) tree.push({ path: 'CNAME', mode: '100644', type: 'blob', content: pages.cname + '\n' });
+    if (logo) tree.push({ path: logo.path, mode: '100644', type: 'blob', sha: logo.sha });
+    const t = await gh(env, 'POST', `${R}/git/trees`, { tree });
+    const c = await gh(env, 'POST', `${R}/git/commits`, { message: 'Sitio cerrado temporalmente desde el panel de DGP', tree: t.sha, parents: [] });
+    try { await gh(env, 'PATCH', `${R}/git/refs/heads/${RAMA_CERRADO}`, { sha: c.sha, force: true }); }
+    catch (e) { await gh(env, 'POST', `${R}/git/refs`, { ref: `refs/heads/${RAMA_CERRADO}`, sha: c.sha }); }
+    await gh(env, 'PUT', `${R}/pages`, { source: { branch: RAMA_CERRADO, path: '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
+    await fsUpdate(env, `webs/${id}`, { cerrado: true, cerradoAt: ahora, cerradoPor: email || '', fuentePrevia: previa, mensajeCerrado: String(mensaje || '').slice(0, 300) },
+      ['cerrado', 'cerradoAt', 'cerradoPor', 'fuentePrevia', 'mensajeCerrado'], token);
+    return { ok: true, cerrado: true };
+  }
+  const previa = w.fuentePrevia || { branch: 'main', path: '/' };
+  await gh(env, 'PUT', `${R}/pages`, { source: { branch: previa.branch, path: previa.path || '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
+  await fsUpdate(env, `webs/${id}`, { cerrado: false, abiertoAt: ahora, abiertoPor: email || '' }, ['cerrado', 'abiertoAt', 'abiertoPor'], token);
+  return { ok: true, cerrado: false };
+}
 async function crearSitio(env, token, b, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
   const limpio = (x, n = 300) => String(x || '').replace(/[<>`]/g, '').trim().slice(0, n);
@@ -1686,6 +1767,11 @@ async function handleTarea(request, env) {
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'informe-web') { const a = await automatizaciones(env, v.token); if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400); return json(request, { ok: true, ...(await informesWeb(env, v.token, { webId: cuerpo.id, canal: cuerpo.canal || a.informeCanal })) }); }
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'sitio-estado') {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400);
+      try { return json(request, await estadoSitio(env, v.token, cuerpo.id, !!cuerpo.cerrar, String(cuerpo.mensaje || '').slice(0, 300), v.email)); }
+      catch (e) { return json(request, { error: 'GitHub: ' + e.message }, 502); }
+    }
     if (tarea === 'instalar-kit') { const rp = String(cuerpo.repo || '').replace(/^.*\//, '').replace(/[^A-Za-z0-9._-]/g, ''); if (!rp) return json(request, { error: 'Falta el repositorio' }, 400); try { return json(request, await instalarKit(env, rp)); } catch (e) { return json(request, { error: e.message }); } }
     if (tarea === 'gd') return json(request, await gdAccion(env, v.token, cuerpo, request, v.email));
     if (tarea === 'dominios') { if (!env.GODADDY_KEY) return json(request, { dominios: [] }); try { return json(request, { dominios: await gdDominios(env, !!cuerpo.fresco) }); } catch (e) { return json(request, { error: e.message }); } }
