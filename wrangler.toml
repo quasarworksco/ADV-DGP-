@@ -1,5 +1,5 @@
-# Configuración para la compilación automática de Cloudflare (Workers Builds),
-# que se ejecuta desde la raíz del repositorio. Es la misma de ayudante-bot/wrangler.toml:
+# Configuración para la compilación automática de Cloudflare (Workers Builds) cuando se ejecuta
+# desde la raíz del repositorio. Debe ser IGUAL a ayudante-bot/wrangler.toml (solo cambia la ruta de "main"):
 # si cambias una, cambia la otra.
 name = "ayudante-dgp-bot"
 main = "ayudante-bot/worker.js"
@@ -16,9 +16,17 @@ region = "gcp:us-central1"
 [ai]
 binding = "AI"
 
+# Guarda la sesión de Firebase para no iniciar sesión en cada aviso
+[[kv_namespaces]]
+binding = "CACHE"
+id = "ad3517fe9c134a0db50c33e33c81e875"
+
 [triggers]
 # UTC: publicación automática (revisa cada hora, a los :30) · resumen mensual (día 1) · resumen diario 11:00 (7:00 VE) · respaldo domingo 12:00 · briefing lunes 12:00 (8:00 VE)
-crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN", "0 12 * * MON", "30 * * * *"]
+crons = ["0 9 1 * *", "0 11 * * *", "0 12 * * SUN,MON", "30 * * * *", "45 * * * *"]
 
-# Las claves secretas (TG_TOKEN, GROQ_API_KEY, EMAIL_WEBHOOK, EMAIL_CLAVE...) se guardan
-# en el panel de Cloudflare, NUNCA aquí.
+# Las variables secretas (TG_TOKEN y GROQ_API_KEY) se agregan
+# desde el dashboard de Cloudflare — NO van aquí en texto plano.
+# TG_TOKEN_NOTIF = token del bot de notificaciones (solo como Secret, nunca en el código)
+# FIREBASE_PROJECT = dgp-group (opcional, es el valor por defecto)
+# FB_EMAIL / FB_PASSWORD = cuenta del equipo (con correo en /accesos) para leer facturas

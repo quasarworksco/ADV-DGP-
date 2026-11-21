@@ -7123,7 +7123,7 @@ async function renderAutopilot(fresco) {
       <ol><li>El cliente debe tener su página web con DGP.</li>
       <li>En su Meta Business Suite, el cliente te da acceso a su página de Facebook (con su Instagram vinculado) con permiso de <b>Contenido</b>.</li>
       <li>Aquí pulsas <b>Agregar cliente</b> y eliges su página.</li>
-      <li>Pides a Claude sus 20 posts del mes y los cargas con <b>Cargar plan</b>.</li>
+      <li>Pides a Claude o a Codex sus 20 posts del mes y los cargas con <b>Cargar plan</b>.</li>
       <li>Si tiene portal de cliente, el calendario aparece solo en su portal. Si tiene web con panel, copias el <b>código</b> y se pega ahí.</li>
       <li>Creas su suscripción de $${SA_PRECIO}/mes en Suscripciones.</li></ol></div>`;
     return;
@@ -7202,7 +7202,7 @@ async function saPlan(id) {
   ptModal('Cargar plan', a.nombre, planes.length ? `<div class="rd-form">
       <div class="ll-sub">Elige el plan. Reemplaza la lista pendiente y empieza desde el primer post (lo ya publicado queda en el historial).</div>
       ${planes.map(p => `<button class="ll-mini" style="justify-content:flex-start;padding:12px" onclick="saCargarPlan('${id}','${esc(p.archivo)}')"><b>${esc(p.titulo || p.mes)}</b>&nbsp;· ${esc(p.mes || '')}</button>`).join('')}
-    </div>` : `<div class="rd-form"><div class="ll-sub">Este cliente aún no tiene planes preparados. Pídele a Claude: <b>"Crea los 20 posts de ${esc(a.nombre)} para este mes"</b>, con su logo, colores, servicios y su Instagram. Aparecerán aquí listos para cargar.</div></div>`);
+    </div>` : `<div class="rd-form"><div class="ll-sub">Este cliente aún no tiene planes preparados. Pídele a Claude o a Codex: <b>"Crea los 20 posts de ${esc(a.nombre)} para este mes"</b>, con su logo, colores, servicios y su Instagram. Aparecerán aquí listos para cargar.</div></div>`);
 }
 async function saCargarPlan(id, archivo) {
   try {
@@ -8221,7 +8221,7 @@ ${REGLAS_MARCA_PROMPT}
 
 Referencia interna: factura ${doc.docId || fsId} · cliente ${doc.cli || '—'} · DGP Global Group`;
 }
-/* CLAUDE.md para la raíz del repositorio del negocio: reglas de diseño generales + su identidad, rellenada con el brief */
+/* AGENTS.md (Codex) + CLAUDE.md (Claude) para la raíz del repositorio del negocio: reglas de diseño generales + su identidad, rellenada con el brief */
 function claudeMdNegocio(b) {
   const linea = (t, v) => v ? `- ${t}: ${v}\n` : '';
   const pal = typeof b.colores === 'object' && b.colores?.paleta && PALETAS_BRIEF[b.colores.paleta];
@@ -8232,8 +8232,8 @@ function claudeMdNegocio(b) {
     : b.logoUrl ? b.logoUrl : b.logo === 'no' ? 'no tiene; usar el nombre del negocio como logotipo tipográfico' : 'pendiente (anota aquí su ruta cuando llegue)';
   const redes = b.redes ? Object.entries({ Instagram: b.redes.ig, Facebook: b.redes.fb, TikTok: b.redes.tt, YouTube: b.redes.yt, 'X/Twitter': b.redes.tw, LinkedIn: b.redes.li, WhatsApp: b.redes.wa, 'Google Business': b.redes.gmb })
     .filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(' · ') : '';
-  return `## CLAUDE.md del repositorio
-Si aún no existe, crea en la raíz del repositorio de este negocio un archivo CLAUDE.md con este contenido (completa lo que diga "por definir" en cuanto lo decidas) y síguelo en todo el trabajo:
+  return `## AGENTS.md del repositorio
+Si aún no existe, crea en la raíz del repositorio de este negocio un archivo AGENTS.md con este contenido (completa lo que diga "por definir" en cuanto lo decidas) y síguelo en todo el trabajo. Crea también un CLAUDE.md que solo diga \`@AGENTS.md\`, para que Codex y Claude lean las mismas reglas:
 
 \`\`\`markdown
 # ${b.negocio || 'Negocio'}: guía de diseño y marca
@@ -8247,7 +8247,7 @@ Si aún no existe, crea en la raíz del repositorio de este negocio un archivo C
 
 ## Identidad del negocio
 ${linea('Nombre', b.negocio)}${linea('Eslogan', b.slogan)}${linea('A qué se dedica', b.descripcion)}${linea('Qué lo hace diferente', b.diferencia)}${linea('Público', b.publico)}${linea('Ubicación', b.ubicacion)}- Colores: ${colores}
-- Fuentes: las elige Claude automáticamente según la página y el estilo del negocio (una de Google Fonts para títulos y otra para textos); anótalas aquí la primera vez y usa siempre las mismas
+- Fuentes: las elige el asistente automáticamente según la página y el estilo del negocio (una de Google Fonts para títulos y otra para textos); anótalas aquí la primera vez y usa siempre las mismas
 - Logo: ${logo}
 - Tono de los textos: ${b.tono || 'por definir'}
 ${linea('Estilo visual', b.estilo)}${linea('Evitar', b.noGusta)}${linea('Idioma', b.idioma)}${linea('Redes', redes)}${linea('Contacto', [b.tel, b.correo].filter(Boolean).join(' · '))}\`\`\``;
@@ -14814,7 +14814,7 @@ function nsAbrir(pre) {
   if (typeof pre !== 'string') pre = '';
   const dl = clientesList.map(c => `<option value="${esc(clNombre(c))}">`).join('');
   const f = (id, lab, ph = '', extra = '') => `<div class="ff" style="margin:0"><label>${lab}</label><input id="${id}" placeholder="${ph}" ${extra}></div>`;
-  ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco con la plantilla base para Claude. Lo que dejes vacío, Claude lo pregunta antes de diseñar.', `<div class="rd-form" style="display:grid;gap:10px">
+  ptModal('Nuevo sitio web', 'Crea el repositorio en quasarworksco listo para trabajar con Codex o Claude. Lo que dejes vacío, el asistente lo pregunta antes de diseñar.', `<div class="rd-form" style="display:grid;gap:10px">
     <details${pre ? '' : ''}><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--blue)">Pegar datos del brief (desde Proyectos)</summary>
       <textarea id="ns-pegar" rows="5" style="width:100%;box-sizing:border-box;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12.5px" placeholder="Empresa: …&#10;Correo: …&#10;Teléfono / WhatsApp: …"></textarea>
       <button class="btn-logout" style="margin-top:6px" onclick="nsRellenar(document.getElementById('ns-pegar').value)">Rellenar el formulario</button></details>
@@ -14828,8 +14828,8 @@ function nsAbrir(pre) {
     </div>
     <div class="ff" style="margin:0"><label>Logo</label><input id="ns-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><input id="ns-logourl" type="hidden"><div id="ns-logoinfo" style="font-size:11.5px;color:var(--text-soft);margin-top:4px"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que Claude pregunte</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
-      <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que Claude pregunte</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
+      <div class="ff" style="margin:0"><label>Estilo visual</label><select id="ns-estilo"><option value="">Que el asistente pregunte</option><option>Glassmorphism</option><option>Minimalista</option><option>Oscuro tecnológico</option><option>Elegante / lujo</option><option>Corporativo</option><option>Colorido y moderno</option></select></div>
+      <div class="ff" style="margin:0"><label>Idiomas</label><select id="ns-idi"><option value="">Que el asistente pregunte</option><option>Bilingüe ES/EN con botón</option><option>Solo español</option><option>Solo inglés</option></select></div>
     </div>
     ${f('ns-ej', 'Página de ejemplo (opcional)', 'https://…')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -14838,7 +14838,7 @@ function nsAbrir(pre) {
     </div>
     ${f('ns-redes', 'Redes sociales', 'Instagram @…, Facebook …')}
     ${f('ns-dom', 'Dominio (opcional)', 'empresa.com o empresa.dgp-link.com')}
-    <div class="ff" style="margin:0"><label>Notas para Claude (opcional)</label><textarea id="ns-notas" rows="3" placeholder="Servicios, zona que atiende, lo que pidió el cliente…"></textarea></div>
+    <div class="ff" style="margin:0"><label>Notas para el asistente (opcional)</label><textarea id="ns-notas" rows="3" placeholder="Servicios, zona que atiende, lo que pidió el cliente…"></textarea></div>
     <button class="ll-btn" id="ns-btn" style="background:var(--blue)" onclick="nsCrear()">Crear repositorio y sitio</button></div>`);
   if (pre) nsRellenar(pre);
 }
@@ -14871,13 +14871,16 @@ async function nsCrear() {
     const ico = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
     ptModal('Sitio creado', d.repo, `<div class="rd-form" style="display:grid;gap:8px">
       <a class="ll-btn" style="background:var(--blue);text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="${esc(d.repoUrl)}" target="_blank" rel="noopener">${ico} Abrir el repositorio</a>
-      <a class="ll-btn" style="background:#d97757;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="https://claude.ai/code" target="_blank" rel="noopener">${ico} Abrir Claude Code y elegir ${esc(d.repo.split('/')[1])}</a>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <a class="ll-btn" style="background:#d97757;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="https://claude.ai/code" target="_blank" rel="noopener">${ico} Abrir Claude Code</a>
+        <a class="ll-btn" style="background:#0d0d0d;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px" href="https://chatgpt.com/codex" target="_blank" rel="noopener">${ico} Abrir Codex</a>
+      </div>
       <div class="ll-sub">Sitio (tarda 1–2 minutos la primera vez): <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.url)}</a></div>
       ${d.pagesError ? `<div class="ll-sub" style="color:#dc2626">GitHub Pages no se activó solo (${esc(d.pagesError)}). Actívalo en el repositorio → Settings → Pages → rama main.</div>` : ''}
       ${d.dnsAuto?.ok ? '<div class="ll-sub" style="color:#16a34a"><b>Dominio configurado en GoDaddy ✅</b> · el candado de seguridad tarda hasta 1 hora en activarse.</div>' : d.dnsAuto ? `<div class="ll-sub" style="color:#d97706">No configuré el dominio en GoDaddy: ${esc(d.dnsAuto.motivo || '')}</div>` : ''}
       ${d.dns && d.dns.length ? `<div class="ll-sub"><b>Registros DNS para el dominio</b> (en GoDaddy o Cloudflare):<br>${d.dns.map(x => `${x.tipo} · <b>${esc(x.nombre)}</b> → ${esc(x.valor)}`).join('<br>')}</div>` : ''}
-      <div class="ll-sub">${d.kit?.ok ? `Kit de diseño instalado ✅ (${d.kit.archivos} archivos: Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones).` : `<span style="color:#d97706">El kit de diseño no se instaló (${esc(d.kit?.error || '')}): instálalo desde Sitios web.</span>`}</div>
-      <div class="ll-sub">Ya quedó en Sitios web. En Claude Code solo escribe "empecemos": el brief está en CLAUDE.md.</div></div>`);
+      <div class="ll-sub">${d.kit?.ok ? `Kit de diseño instalado para Codex y Claude ✅ (${d.kit.archivos} archivos: Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones).` : `<span style="color:#d97706">El kit de diseño no se instaló (${esc(d.kit?.error || '')}): instálalo desde Sitios web.</span>`}</div>
+      <div class="ll-sub">Ya quedó en Sitios web. Elige el repositorio <b>${esc(d.repo.split('/')[1])}</b> en Claude Code o en Codex y escribe "empecemos": el brief está en AGENTS.md y la memoria del negocio en CONTEXTO-DGP.md.</div></div>`);
     renderWebs(true).catch(() => {});
   } catch (e) { btn.disabled = false; btn.textContent = 'Crear repositorio y sitio'; toast(e.message, 'err'); }
 }
@@ -15178,7 +15181,7 @@ async function wbDominios(fresco) {
 async function wbKit(id) {
   const w = (_wb.lista || []).find(x => x._id === id) || {};
   const sug = String(w.repo || '').replace(/^.*\//, '') || String(w.dominio || '').replace(/^www\./, '').split('.')[0];
-  const repo = prompt('Instalar el kit de diseño (Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones) en el repositorio de quasarworksco:\n\nNombre del repositorio', sug);
+  const repo = prompt('Instalar el kit de diseño para Codex y Claude (Impeccable, frontend-design, taste, ui-ux-pro-max y animaciones) en el repositorio de quasarworksco. También agrega AGENTS.md y la memoria del negocio si faltan.\n\nNombre del repositorio', sug);
   if (!repo) return;
   toast('Instalando el kit de diseño…');
   try { const tok = await currentUser.getIdToken();
