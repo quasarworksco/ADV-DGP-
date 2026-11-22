@@ -1682,22 +1682,29 @@ async function buscarRepoSitio(env, w) {
   return null;
 }
 // Espera a que GitHub Pages termine de publicar (máx. ~30 s) y comprueba qué se ve en la web, sin caché
-async function verificarPublicacion(env, R, w, cerrar) {
+async function verificarPublicacion(env, R, w, cerrar, commit) {
+  // Cambiar la rama de Pages por la API no siempre lanza una publicación: se pide una
+  await gh(env, 'POST', `${R}/pages/builds`).catch(() => {});
   let estado = 'building', error = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     await new Promise(r => setTimeout(r, 4000));
     const b = await gh(env, 'GET', `${R}/pages/builds/latest`).catch(() => null);
-    if (b?.status === 'built') { estado = 'built'; break; }
-    if (b?.status === 'errored') { estado = 'errored'; error = b.error?.message || ''; break; }
+    // Solo cuenta la publicación de la versión que acabamos de poner (no la anterior)
+    if (!b || (commit && b.commit && b.commit !== commit)) continue;
+    if (b.status === 'built') { estado = 'built'; break; }
+    if (b.status === 'errored') { estado = 'errored'; error = b.error?.message || ''; break; }
   }
   const dom = String(w.dominio || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
   const url = dom ? `https://${dom}/?v=${Date.now().toString(36)}` : '';
+  // Un dominio propio que apunta a otro hosting (no a GitHub Pages) nunca mostrará el cambio
+  const host = dom.split('/')[0];
+  const apuntaGithub = !host || /\.github\.io$/i.test(host) ? true : await dnsApuntaGithub(host);
   let enVivo = null;
   if (url && estado === 'built') {
     const html = await fetch(url, { headers: { 'Cache-Control': 'no-cache' }, cf: { cacheTtl: 0 }, signal: AbortSignal.timeout(10000) }).then(r => r.text()).catch(() => null);
     if (html !== null) enVivo = html.includes('name="dgp-estado" content="cerrado"') === cerrar;
   }
-  return { publicacion: estado, errorPublicacion: error, enVivo, url };
+  return { publicacion: estado, errorPublicacion: error, enVivo, url, apuntaGithub, dominio: host };
 }
 async function estadoSitio(env, token, id, cerrar, mensaje, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
@@ -1735,12 +1742,13 @@ async function estadoSitio(env, token, id, cerrar, mensaje, email) {
     await gh(env, 'PUT', `${R}/pages`, { source: { branch: RAMA_CERRADO, path: '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
     await fsUpdate(env, `webs/${id}`, { cerrado: true, cerradoAt: ahora, cerradoPor: email || '', fuentePrevia: previa, mensajeCerrado: String(mensaje || '').slice(0, 300) },
       ['cerrado', 'cerradoAt', 'cerradoPor', 'fuentePrevia', 'mensajeCerrado'], token);
-    return { ok: true, cerrado: true, repo, ...(await verificarPublicacion(env, R, w, true)) };
+    return { ok: true, cerrado: true, repo, ...(await verificarPublicacion(env, R, w, true, c.sha)) };
   }
   const previa = w.fuentePrevia || { branch: 'main', path: '/' };
+  const cabeza = await gh(env, 'GET', `${R}/git/ref/heads/${encodeURIComponent(previa.branch)}`).catch(() => null);
   await gh(env, 'PUT', `${R}/pages`, { source: { branch: previa.branch, path: previa.path || '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
   await fsUpdate(env, `webs/${id}`, { cerrado: false, abiertoAt: ahora, abiertoPor: email || '' }, ['cerrado', 'abiertoAt', 'abiertoPor'], token);
-  return { ok: true, cerrado: false, repo, ...(await verificarPublicacion(env, R, w, false)) };
+  return { ok: true, cerrado: false, repo, ...(await verificarPublicacion(env, R, w, false, cabeza?.object?.sha)) };
 }
 async function crearSitio(env, token, b, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };

@@ -15184,8 +15184,11 @@ async function wbDominios(fresco) {
 function wbCerrar(id) {
   const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
   if (w.cerrado) {
-    if (!confirm(`¿Volver a abrir ${w.cliente || wbHost(w.dominio)}?\n\nEl sitio vuelve a verse tal como estaba en 1 o 2 minutos.`)) return;
-    return wbEstado(id, false, '');
+    return ptModal('Sitio cerrado', `${w.cliente || ''} · ${wbHost(w.dominio)}`, `<div class="rd-form" style="display:grid;gap:10px">
+      <div style="font-size:12.5px;color:var(--text-mid);line-height:1.55">Al abrirlo, la web vuelve a verse tal como estaba. Si la web todavía no muestra el aviso de cerrado, usa <b>Aplicar el cierre otra vez</b>.</div>
+      <button class="ll-btn" style="background:var(--blue)" onclick="closePortalModal();wbEstado('${esc(id)}', false, '')">Abrir el sitio</button>
+      <button class="ll-btn" id="wb-cbtn" style="background:#475569" onclick="wbEstado('${esc(id)}', true, ${JSON.stringify(w.mensajeCerrado || '').replace(/"/g, '&quot;')})">Aplicar el cierre otra vez</button>
+      <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button></div>`);
   }
   ptModal('Cerrar sitio', `${w.cliente || ''} · ${wbHost(w.dominio)}`, `<div class="rd-form" style="display:grid;gap:10px">
     <div style="font-size:12.5px;color:var(--text-mid);line-height:1.55">Quien entre a la web verá un aviso de <b>sitio temporalmente cerrado</b> con el nombre y el logo del negocio, en español e inglés. No se borra nada: al abrirlo vuelve tal como estaba. El panel espera a que GitHub lo publique (unos 30 segundos) y te confirma.</div>
@@ -15205,7 +15208,8 @@ async function wbEstado(id, cerrar, mensaje) {
     logActividad(cerrar ? 'Sitio cerrado' : 'Sitio abierto', `${w.cliente || ''} · ${wbHost(w.dominio)}`);
     wbPintar();
     const nom = esc(w.cliente || wbHost(w.dominio));
-    const estado = d.publicacion === 'errored' ? `<div style="color:#b91c1c;font-weight:600">GitHub no pudo publicar el cambio${d.errorPublicacion ? ': ' + esc(d.errorPublicacion) : ''}. Inténtalo de nuevo en unos minutos.</div>`
+    const estado = d.apuntaGithub === false ? `<div style="color:#b91c1c;font-weight:600">El dominio ${esc(d.dominio || wbHost(w.dominio))} no apunta a GitHub Pages: la web que se ve vive en otro hosting (por ejemplo, GoDaddy), así que este cambio no se va a ver ahí. Para ${cerrar ? 'cerrarla' : 'abrirla'}, hazlo desde ese hosting, o apunta el dominio a GitHub desde la sección Dominios.</div>`
+      : d.publicacion === 'errored' ? `<div style="color:#b91c1c;font-weight:600">GitHub no pudo publicar el cambio${d.errorPublicacion ? ': ' + esc(d.errorPublicacion) : ''}. Inténtalo de nuevo en unos minutos.</div>`
       : d.publicacion !== 'built' ? '<div style="color:#b45309;font-weight:600">GitHub todavía está publicando el cambio. Revisa en 1 o 2 minutos.</div>'
       : d.enVivo === false ? '<div style="color:#b45309;font-weight:600">GitHub ya lo publicó, pero la web todavía muestra la versión anterior. Suele tardar hasta 10 minutos en todo el mundo.</div>'
       : `<div style="color:var(--green-dark);font-weight:600">Listo: la web ya muestra ${cerrar ? 'el aviso de sitio cerrado' : 'el sitio de nuevo'}.</div>`;
