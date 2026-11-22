@@ -1621,6 +1621,7 @@ function paginaCerrado(nombre, logo, mensaje) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="dgp-estado" content="cerrado">
 <title>${e(nombre)} · Sitio temporalmente cerrado</title>
 <style>
   :root { color-scheme: light dark; --bg:#f5f7fb; --card:#ffffff; --tx:#0f172a; --tx2:#64748b; --ln:#e2e8f0; }
@@ -1657,12 +1658,57 @@ function paginaCerrado(nombre, logo, mensaje) {
 </html>
 `;
 }
+// Repositorio de una web que se agregó al panel sin anotarlo: por la dirección github.io o por el dominio (homepage o CNAME de Pages)
+async function buscarRepoSitio(env, w) {
+  const d = String(w.dominio || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
+  const gio = d.match(/^([a-z0-9-]+)\.github\.io\/([a-z0-9._-]+)/);
+  if (gio) return `${gio[1]}/${gio[2]}`;
+  if (!d) return null;
+  const host = u => String(u || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  let repos = [];
+  for (let pg = 1; pg <= 3; pg++) {
+    const l = await gh(env, 'GET', `/user/repos?per_page=100&page=${pg}&affiliation=owner,organization_member`).catch(() => []);
+    repos = repos.concat(l); if (l.length < 100) break;
+  }
+  const conPages = repos.filter(r => r.has_pages);
+  const directo = conPages.find(r => host(r.homepage) === d);
+  if (directo) return directo.full_name;
+  const base = d.split('.')[0].replace(/[^a-z0-9]/g, '');
+  const cands = conPages.filter(r => r.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(base) || base.includes(r.name.toLowerCase().replace(/[^a-z0-9]/g, ''))).slice(0, 6);
+  for (const r of cands) {
+    const pg = await gh(env, 'GET', `/repos/${r.full_name}/pages`).catch(() => null);
+    if (pg && host(pg.cname) === d) return r.full_name;
+  }
+  return null;
+}
+// Espera a que GitHub Pages termine de publicar (máx. ~30 s) y comprueba qué se ve en la web, sin caché
+async function verificarPublicacion(env, R, w, cerrar) {
+  let estado = 'building', error = '';
+  for (let i = 0; i < 8; i++) {
+    await new Promise(r => setTimeout(r, 4000));
+    const b = await gh(env, 'GET', `${R}/pages/builds/latest`).catch(() => null);
+    if (b?.status === 'built') { estado = 'built'; break; }
+    if (b?.status === 'errored') { estado = 'errored'; error = b.error?.message || ''; break; }
+  }
+  const dom = String(w.dominio || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const url = dom ? `https://${dom}/?v=${Date.now().toString(36)}` : '';
+  let enVivo = null;
+  if (url && estado === 'built') {
+    const html = await fetch(url, { headers: { 'Cache-Control': 'no-cache' }, cf: { cacheTtl: 0 }, signal: AbortSignal.timeout(10000) }).then(r => r.text()).catch(() => null);
+    if (html !== null) enVivo = html.includes('name="dgp-estado" content="cerrado"') === cerrar;
+  }
+  return { publicacion: estado, errorPublicacion: error, enVivo, url };
+}
 async function estadoSitio(env, token, id, cerrar, mensaje, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
   const w = await fsGet(env, `webs/${id}`, token);
   if (!w) return { error: 'No encontré esa web' };
-  const repo = String(w.repo || '').replace(/^https?:\/\/github\.com\//, '');
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) return { error: 'Esta web no tiene un repositorio de GitHub anotado: solo se pueden cerrar las webs publicadas con GitHub Pages.' };
+  let repo = String(w.repo || '').replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    repo = await buscarRepoSitio(env, w).catch(() => null);
+    if (!repo) return { error: `No encontré en GitHub el repositorio de ${w.dominio || 'esta web'}. Solo se pueden cerrar las webs publicadas con GitHub Pages; si es una de ellas, anota su repositorio con el botón de editar.` };
+    await fsUpdate(env, `webs/${id}`, { repo }, ['repo'], token).catch(() => {});
+  }
   const R = `/repos/${repo}`;
   let pages;
   try { pages = await gh(env, 'GET', `${R}/pages`); } catch (e) { return { error: e.status === 404 ? 'Ese repositorio no tiene GitHub Pages activo.' : 'GitHub: ' + e.message }; }
@@ -1689,12 +1735,12 @@ async function estadoSitio(env, token, id, cerrar, mensaje, email) {
     await gh(env, 'PUT', `${R}/pages`, { source: { branch: RAMA_CERRADO, path: '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
     await fsUpdate(env, `webs/${id}`, { cerrado: true, cerradoAt: ahora, cerradoPor: email || '', fuentePrevia: previa, mensajeCerrado: String(mensaje || '').slice(0, 300) },
       ['cerrado', 'cerradoAt', 'cerradoPor', 'fuentePrevia', 'mensajeCerrado'], token);
-    return { ok: true, cerrado: true };
+    return { ok: true, cerrado: true, repo, ...(await verificarPublicacion(env, R, w, true)) };
   }
   const previa = w.fuentePrevia || { branch: 'main', path: '/' };
   await gh(env, 'PUT', `${R}/pages`, { source: { branch: previa.branch, path: previa.path || '/' }, ...(pages.cname ? { cname: pages.cname } : {}) });
   await fsUpdate(env, `webs/${id}`, { cerrado: false, abiertoAt: ahora, abiertoPor: email || '' }, ['cerrado', 'abiertoAt', 'abiertoPor'], token);
-  return { ok: true, cerrado: false };
+  return { ok: true, cerrado: false, repo, ...(await verificarPublicacion(env, R, w, false)) };
 }
 async function crearSitio(env, token, b, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
