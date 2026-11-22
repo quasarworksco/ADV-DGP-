@@ -1549,31 +1549,85 @@ Las instrucciones de este repositorio están en AGENTS.md (las mismas para Codex
 @CONTEXTO-DGP.md
 `;
 function plantillaIndex(d) {
+  const e = escHtml;
+  const tel = String(d.telefono || '').replace(/[^\d+]/g, '');
+  const wa = tel.replace(/\D/g, '');
+  const correo = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.correo || '') ? d.correo : '';
+  const ic = {
+    wa: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+    mail: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
+  };
   return `<!doctype html>
 <!--
   ${d.titulo} · sitio en construcción por DGP Global Group.
-  Para Codex o Claude: lee AGENTS.md y CONTEXTO-DGP.md antes de empezar. Diseño premium basado en el logo, sin emojis (solo iconos SVG),
-  pregunta el estilo visual, la página de ejemplo y los datos de contacto y redes que falten, y trabaja sobre eso.
+  Para Codex o Claude: lee AGENTS.md y CONTEXTO-DGP.md antes de empezar.
 -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${d.titulo} · Próximamente</title>
+<title>${e(d.titulo)} · Próximamente</title>
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b1020">
+${d.logo ? `<link rel="icon" href="${e(d.logo)}">` : ''}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#0b1220; color:#e2e8f0; text-align:center; padding:24px; box-sizing:border-box; }
-  img { max-width:220px; max-height:140px; object-fit:contain; margin-bottom:28px; }
-  h1 { font-size:clamp(26px,5vw,40px); margin:0 0 10px; font-weight:700; letter-spacing:-.02em; }
-  p { margin:0; color:#94a3b8; }
+  :root { --bg:#0b1020; --tx:#eef2ff; --tx2:#a3acc8; --ln:rgba(255,255,255,.1); --a1:#4f6bff; --a2:#22d3ee; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; align-content:center; padding:28px 18px; background:var(--bg); color:var(--tx);
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",sans-serif; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+  /* luz de fondo que se mueve despacio */
+  .fondo { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+  .fondo i { position:absolute; border-radius:50%; filter:blur(70px); opacity:.55; }
+  .fondo i:nth-child(1) { width:55vmax; height:55vmax; left:-18vmax; top:-22vmax; background:radial-gradient(circle,var(--a1),transparent 65%); animation:flota 22s ease-in-out infinite alternate; }
+  .fondo i:nth-child(2) { width:45vmax; height:45vmax; right:-16vmax; bottom:-20vmax; background:radial-gradient(circle,var(--a2),transparent 65%); opacity:.35; animation:flota 28s ease-in-out infinite alternate-reverse; }
+  .fondo::after { content:''; position:absolute; inset:0; background-image:linear-gradient(var(--ln) 1px,transparent 1px),linear-gradient(90deg,var(--ln) 1px,transparent 1px); background-size:56px 56px;
+    mask-image:radial-gradient(ellipse at center,#000 10%,transparent 70%); -webkit-mask-image:radial-gradient(ellipse at center,#000 10%,transparent 70%); opacity:.35; }
+  main { width:100%; max-width:560px; text-align:center; }
+  .logo { display:block; max-width:200px; max-height:120px; object-fit:contain; margin:0 auto 30px; filter:drop-shadow(0 12px 30px rgba(0,0,0,.35)); animation:sube .8s cubic-bezier(.23,1,.32,1) both; }
+  .chip { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:40px; border:1px solid var(--ln); background:rgba(255,255,255,.04);
+    font-size:12.5px; font-weight:600; letter-spacing:.04em; color:var(--tx2); animation:sube .8s .08s cubic-bezier(.23,1,.32,1) both; }
+  .chip b { width:8px; height:8px; border-radius:50%; background:var(--a2); box-shadow:0 0 0 0 rgba(34,211,238,.6); animation:late 2s ease-out infinite; }
+  h1 { font-size:clamp(34px,7vw,58px); line-height:1.05; letter-spacing:-.035em; font-weight:800; margin:22px 0 14px; animation:sube .8s .14s cubic-bezier(.23,1,.32,1) both;
+    background:linear-gradient(120deg,#fff 30%,#c7d2fe 60%,#a5f3fc); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  p { margin:0 auto; max-width:440px; color:var(--tx2); font-size:16.5px; line-height:1.65; animation:sube .8s .2s cubic-bezier(.23,1,.32,1) both; }
+  .barra { position:relative; width:min(320px,80%); height:6px; margin:34px auto 0; border-radius:10px; background:rgba(255,255,255,.08); overflow:hidden; animation:sube .8s .26s cubic-bezier(.23,1,.32,1) both; }
+  .barra::before { content:''; position:absolute; inset:0; width:68%; border-radius:inherit; background:linear-gradient(90deg,var(--a1),var(--a2)); }
+  .barra::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent); transform:translateX(-100%); animation:brillo 2.4s ease-in-out infinite; }
+  .acciones { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:34px; animation:sube .8s .32s cubic-bezier(.23,1,.32,1) both; }
+  .btn { display:inline-flex; align-items:center; gap:9px; min-height:46px; padding:0 20px; border-radius:14px; font-weight:600; font-size:14.5px; text-decoration:none; color:var(--tx);
+    border:1px solid var(--ln); background:rgba(255,255,255,.05); transition:transform .2s cubic-bezier(.23,1,.32,1), background .2s ease, border-color .2s ease; }
+  .btn:hover { transform:translateY(-2px); background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.2); }
+  .btn:focus-visible { outline:2px solid var(--a2); outline-offset:3px; }
+  .btn.pri { background:linear-gradient(135deg,var(--a1),#3b82f6); border-color:transparent; box-shadow:0 12px 30px -12px rgba(79,107,255,.8); }
+  .en { margin-top:26px; font-size:13.5px; color:var(--tx2); opacity:.8; animation:sube .8s .38s cubic-bezier(.23,1,.32,1) both; }
+  footer { margin-top:46px; font-size:12px; animation:sube .8s .44s cubic-bezier(.23,1,.32,1) both; }
+  footer a { display:inline-flex; align-items:center; gap:8px; padding:7px 13px; border-radius:30px; color:var(--tx2); font-weight:600; text-decoration:none; transition:background .2s ease, color .2s ease; }
+  footer a:hover, footer a:focus-visible { background:rgba(255,255,255,.07); color:var(--tx); outline:none; }
+  footer img { width:18px; height:18px; border-radius:5px; }
+  @keyframes sube { from { opacity:0; transform:translateY(14px); } }
+  @keyframes flota { to { transform:translate(8vmax,6vmax) scale(1.1); } }
+  @keyframes late { 70%,100% { box-shadow:0 0 0 10px rgba(34,211,238,0); } }
+  @keyframes brillo { to { transform:translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
+  <div class="fondo" aria-hidden="true"><i></i><i></i></div>
   <main>
-    ${d.logo ? `<img src="${d.logo}" alt="${d.titulo}">` : ''}
-    <h1>${d.titulo}</h1>
-    <p>Nuestro sitio web está en construcción.</p>
+    ${d.logo ? `<img class="logo" src="${e(d.logo)}" alt="${e(d.titulo)}">` : ''}
+    <span class="chip"><b aria-hidden="true"></b>Muy pronto</span>
+    <h1>${e(d.titulo)}</h1>
+    <p>Estamos preparando nuestro nuevo sitio web. Muy pronto vas a poder conocer todo lo que tenemos para ti.</p>
+    <div class="barra" role="img" aria-label="Sitio en construcción"></div>
+    ${wa || correo ? `<div class="acciones">
+      ${wa ? `<a class="btn pri" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic.wa}Escríbenos por WhatsApp</a>` : ''}
+      ${correo ? `<a class="btn" href="mailto:${e(correo)}">${ic.mail}${e(correo)}</a>` : ''}
+    </div>` : ''}
+    <p class="en" lang="en">Our new website is coming soon.</p>
+    <footer><a href="https://dgpglobalgroup.com" target="_blank" rel="noopener"><img src="https://adv.dgp-link.com/icon-192.png" alt="">Powered by DGP Global Group</a></footer>
   </main>
 </body>
 </html>
