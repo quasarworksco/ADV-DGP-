@@ -1730,7 +1730,15 @@ async function estadoSitio(env, token, id, cerrar, mensaje, email) {
       const arbol = await gh(env, 'GET', `${R}/git/trees/${ref.object.sha}?recursive=1`);
       logo = (arbol.tree || []).find(x => x.type === 'blob' && /^(assets\/)?logo\.(png|jpe?g|webp|svg)$/i.test(x.path)) || null;
     } catch (e) {}
-    const nombre = w.cliente || repo.split('/')[1];
+    // Nombre para el aviso: el del cliente; si no está anotado, el título del sitio ("Iphone's accesorios | Tecnología…" → "Iphone's accesorios")
+    let nombre = String(w.cliente || '').trim();
+    if (!nombre) {
+      const idx = await gh(env, 'GET', `${R}/contents/index.html?ref=${encodeURIComponent(previa.branch)}`).catch(() => null);
+      const txt = idx?.content ? new TextDecoder().decode(Uint8Array.from(atob(idx.content.replace(/\s/g, '')), c => c.charCodeAt(0))) : '';
+      const tit = (txt.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || '';
+      nombre = tit.split(/\s[|·–—-]\s/)[0].replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, '’').trim().slice(0, 80);
+    }
+    if (!nombre) nombre = repo.split('/')[1].replace(/[-_]+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const html = paginaCerrado(nombre, logo?.path, mensaje);
     const tree = [{ path: 'index.html', mode: '100644', type: 'blob', content: html }, { path: '404.html', mode: '100644', type: 'blob', content: html }, { path: '.nojekyll', mode: '100644', type: 'blob', content: '' }];
     if (pages.cname) tree.push({ path: 'CNAME', mode: '100644', type: 'blob', content: pages.cname + '\n' });
