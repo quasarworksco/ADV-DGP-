@@ -1519,6 +1519,7 @@ Este repositorio trae el kit de diseño de DGP en \`.agents/skills/\` (Codex) y 
 - Rendimiento: imágenes optimizadas (webp), carga diferida, sin librerías pesadas innecesarias.
 - Nunca pidas ni muestres datos sensibles (SSN, ITIN, documentos de identidad) en formularios.
 - Pie de página: © año, nombre de la empresa y "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
+- **Deja el CSS listo para la barra de prueba de DGP:** suma \`var(--dgp-trial-h,0px)\` al \`top\` del header fijo, a \`scroll-padding-top\`, al \`padding-top\` del hero, a la barra de progreso de scroll y al enlace "saltar al contenido". El panel pone y quita esa barra (\`assets/dgp-trial.js\`); no la agregues a mano.
 
 ## Cómo trabajar
 - Todo el sitio vive en \`index.html\` (CSS y JS dentro) salvo imágenes en \`assets/\`, a menos que el proyecto pida varias páginas.
@@ -1760,6 +1761,61 @@ async function verificarPublicacion(env, R, w, cerrar, commit) {
   }
   return { publicacion: estado, errorPublicacion: error, enVivo, url, apuntaGithub, dominio: host };
 }
+/* ══════════════════════════════════════════════════════════════
+   Barra de periodo de prueba desde el panel (Sitios web → Prueba)
+   Activar: sube assets/dgp-trial.js (copia de kit-diseno/dgp-trial.js) y agrega su <script> antes de </body>
+   en las páginas del sitio. Quitar: borra la etiqueta y el archivo; el sitio queda como antes.
+══════════════════════════════════════════════════════════════ */
+const TRIAL_RE = [/\n?[ \t]*<!--\s*Aviso de periodo de prueba de DGP[\s\S]*?-->[ \t]*(?=\s*<script[^>]*dgp-trial\.js)/g, /\n?[ \t]*<script[^>]*dgp-trial\.js[^>]*>\s*<\/script>[ \t]*/g];
+const escAttr = t => String(t ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+async function pruebaSitio(env, token, id, activar, expira, nombre, email) {
+  if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
+  const w = await fsGet(env, `webs/${id}`, token);
+  if (!w) return { error: 'No encontré esa web' };
+  let repo = String(w.repo || '').replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    repo = await buscarRepoSitio(env, w).catch(() => null);
+    if (!repo) return { error: `No encontré en GitHub el repositorio de ${w.dominio || 'esta web'}. Anota su repositorio con el botón de editar.` };
+    await fsUpdate(env, `webs/${id}`, { repo }, ['repo'], token).catch(() => {});
+  }
+  if (activar && isNaN(new Date(expira).getTime())) return { error: 'La fecha de vencimiento no es válida' };
+  const R = `/repos/${repo}`;
+  // Rama del sitio (si está cerrado, la que estaba publicada antes)
+  const pages = await gh(env, 'GET', `${R}/pages`).catch(() => null);
+  const rama = pages?.source?.branch && pages.source.branch !== RAMA_CERRADO ? pages.source.branch : (w.fuentePrevia?.branch || 'main');
+  const ref = await gh(env, 'GET', `${R}/git/ref/heads/${encodeURIComponent(rama)}`);
+  const arbol = await gh(env, 'GET', `${R}/git/trees/${ref.object.sha}?recursive=1`);
+  const htmls = (arbol.tree || []).filter(x => x.type === 'blob' && /\.html?$/i.test(x.path) && !/^(admin|entrega|\.agents|\.claude|node_modules)\//i.test(x.path)).slice(0, 25);
+  if (!htmls.length) return { error: 'El sitio no tiene páginas .html en la rama ' + rama };
+  const tieneJs = (arbol.tree || []).some(x => x.path === 'assets/dgp-trial.js');
+  const cambios = [];
+  for (const f of htmls) {
+    const blob = await gh(env, 'GET', `${R}/git/blobs/${f.sha}`);
+    const txt = new TextDecoder().decode(Uint8Array.from(atob(String(blob.content || '').replace(/\s/g, '')), c => c.charCodeAt(0)));
+    let nuevo = TRIAL_RE.reduce((t, re) => t.replace(re, ''), txt);
+    if (activar) {
+      if (!/<\/body>/i.test(nuevo)) continue;
+      const pre = '../'.repeat(f.path.split('/').length - 1);
+      const tag = `<!-- Aviso de periodo de prueba de DGP. Para quitarlo al activar el sitio: borra esta línea y assets/dgp-trial.js -->\n<script src="${pre}assets/dgp-trial.js" data-expires="${escAttr(expira)}" data-site="${escAttr(nombre)}" defer></script>\n`;
+      nuevo = nuevo.replace(/<\/body>(?![\s\S]*<\/body>)/i, tag + '</body>');
+    }
+    if (nuevo !== txt) cambios.push({ path: f.path, mode: f.mode || '100644', type: 'blob', content: nuevo });
+  }
+  if (activar) {
+    const js = await fetch(`${SITIO}/kit-diseno/dgp-trial.js`, { cf: { cacheTtl: 300 } }).then(r => r.ok ? r.text() : '');
+    if (!js.includes('dgp-trial')) return { error: 'No pude leer la barra de prueba desde adv.dgp-link.com' };
+    cambios.push({ path: 'assets/dgp-trial.js', mode: '100644', type: 'blob', content: js });
+  } else if (tieneJs) cambios.push({ path: 'assets/dgp-trial.js', mode: '100644', type: 'blob', sha: null });
+  if (cambios.length) {
+    const tree = await gh(env, 'POST', `${R}/git/trees`, { base_tree: arbol.sha, tree: cambios });
+    const commit = await gh(env, 'POST', `${R}/git/commits`, { message: activar ? `Barra de periodo de prueba de DGP hasta ${expira}` : 'Se quita la barra de periodo de prueba de DGP (sitio activado)', tree: tree.sha, parents: [ref.object.sha] });
+    await gh(env, 'PATCH', `${R}/git/refs/heads/${encodeURIComponent(rama)}`, { sha: commit.sha });
+    if (pages && pages.build_type !== 'workflow') await gh(env, 'POST', `${R}/pages/builds`).catch(() => {});
+  }
+  const prueba = activar ? { activa: true, expira, nombre, desde: new Date().toISOString(), por: email || '' } : { activa: false, quitada: new Date().toISOString(), por: email || '' };
+  await fsUpdate(env, `webs/${id}`, { prueba }, ['prueba'], token);
+  return { ok: true, activa: !!activar, repo, paginas: cambios.filter(c => /\.html?$/i.test(c.path)).length, cerrado: !!w.cerrado };
+}
 async function estadoSitio(env, token, id, cerrar, mensaje, email) {
   if (!env.GH_TOKEN) return { error: 'Falta el secreto GH_TOKEN en Cloudflare (token de GitHub).' };
   const w = await fsGet(env, `webs/${id}`, token);
@@ -1891,6 +1947,11 @@ async function handleTarea(request, env) {
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'informe-web') { const a = await automatizaciones(env, v.token); if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400); return json(request, { ok: true, ...(await informesWeb(env, v.token, { webId: cuerpo.id, canal: cuerpo.canal || a.informeCanal })) }); }
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'sitio-prueba') {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400);
+      try { return json(request, await pruebaSitio(env, v.token, cuerpo.id, !!cuerpo.activar, String(cuerpo.expira || '').slice(0, 40), String(cuerpo.nombre || '').slice(0, 80), v.email)); }
+      catch (e) { return json(request, { error: 'GitHub: ' + e.message }, 502); }
+    }
     if (tarea === 'sitio-estado') {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400);
       try { return json(request, await estadoSitio(env, v.token, cuerpo.id, !!cuerpo.cerrar, String(cuerpo.mensaje || '').slice(0, 300), v.email)); }

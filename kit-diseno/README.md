@@ -15,4 +15,6 @@ si el sitio solo tenía `CLAUDE.md`, crea `AGENTS.md` con el mismo brief y deja 
 | ui-ux-pro-max (estilos, paletas, fuentes e íconos por tipo de negocio) | github.com/nextlevelbuilder/ui-ux-pro-max-skill | MIT |
 | animate, improve-animations, review-animations, choreograph, emil-design-eng… | github.com/emilkowalski/skill | MIT |
 
+`dgp-trial.js` es la barra de periodo de prueba que el panel pone y quita en los sitios (Sitios web → reloj de arena).
+
 Cada skill incluye su licencia. Para actualizar el kit se vuelve a generar `kit.json` desde esos repositorios.

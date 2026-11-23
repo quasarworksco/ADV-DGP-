@@ -47,6 +47,7 @@ Cada una tiene su interruptor en el panel (Altair → Automatizaciones).
 - Encuesta después de cada proyecto, invitación a reseña en Google, felicitaciones de aniversario y cumpleaños con descuento.
 - Prospección: busca cada día negocios de Florida y Texas sin web (o con web de Facebook o gratuita), les envía un correo personalizado con un ejemplo del portafolio y hace seguimiento.
 - Factura nueva por WhatsApp, renovación de suscripciones y hosting de aliados.
+- Barra de **periodo de prueba** en un sitio de cliente desde **Sitios web** (botón del reloj de arena). Muestra "Vista previa", una cuenta regresiva y el botón "Activar mi sitio" hacia el WhatsApp de DGP; al vencer, invita a escribir. El bot sube `assets/dgp-trial.js` (copia de `kit-diseno/dgp-trial.js` del panel) y su `<script>`, y al quitarla borra los dos.
 - Cerrar y abrir un sitio de cliente desde **Sitios web** (botón del candado). Muestra un aviso de "sitio temporalmente cerrado" sin borrar nada; GitHub Pages publica la rama `sitio-cerrado` y, al abrir, vuelve a la rama de antes.
 
 ## Cómo trabaja el dueño (preferencias)
@@ -97,6 +98,7 @@ Cualquier página o sección nueva (`/admin`, `/entrega`, una sección del panel
 - Diseño premium basado en el logo del cliente, **sin emojis** (solo íconos SVG), mobile first, SEO básico, botón de WhatsApp.
 - Pie de página: "Diseñado por DGP Global Group" con enlace a https://dgpglobalgroup.com
 - Al terminar se crea la página `/entrega` para mostrarle al cliente lo que se le entregó.
+- **CSS listo para la barra de prueba de DGP:** suma `var(--dgp-trial-h,0px)` a todo lo que esté fijo arriba o dependa de esa altura: `top` del header fijo, `scroll-padding-top`, `padding-top` del hero, la barra de progreso de scroll y el enlace "saltar al contenido". Con el valor por defecto 0px no cambia nada. La barra la pone y la quita el panel; no la agregues a mano.
 - El detalle de cada sitio está en su `AGENTS.md`.
 
 ## Cuidado en pruebas
