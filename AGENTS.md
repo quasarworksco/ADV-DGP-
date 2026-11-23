@@ -23,6 +23,7 @@
   - `CONTEXTO-DGP.md` y el kit de diseño de `kit-diseno/kit.json`, copiado en `.claude/skills/` y en `.agents/skills/`.
 
   Si cambias `CONTEXTO-DGP.md` o el kit, los sitios nuevos lo reciben solos porque el bot los lee desde adv.dgp-link.com.
+- **Barra de periodo de prueba:** `kit-diseno/dgp-trial.js` es la versión oficial. `pruebaSitio()` en el bot la copia a `assets/dgp-trial.js` del sitio y agrega o quita su `<script>`. Si la cambias, prueba que no se encime en 320–1366 px, en los dos idiomas y vencida.
 - **Comprobaciones antes de publicar:**
   - `node --check ayudante-bot/worker.js`
   - Para el bot: `npx wrangler deploy --dry-run` (en la raíz y en `ayudante-bot/`).

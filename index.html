@@ -1956,6 +1956,8 @@ html.dark .vt-spark{--c:#6f8cff}html.dark .vt-spark.g{--c:#34d399}
 #page-dashboard .db-head .dash-section-label{flex:1;display:flex;align-items:center;gap:14px;font-size:12px!important;font-weight:600!important;color:var(--text-soft)!important;white-space:nowrap}
 #page-dashboard .db-head .dash-section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--text-soft) 30%,transparent),transparent 85%)}
 @media(max-width:900px){#page-dashboard .db-head{margin:30px 0 12px!important}}
+.hr-ico.wb-prueba{color:#b45309;background:color-mix(in srgb,#d97706 14%,transparent)}
+html.dark .hr-ico.wb-prueba{color:#fbbf24;background:rgba(251,191,36,.12)}
 .hr-ico.wb-cerrado{color:#475569;background:color-mix(in srgb,#475569 14%,transparent)}
 html.dark .hr-ico.wb-cerrado{color:#cbd5e1;background:rgba(203,213,225,.12)}
 /* embudo de ventas */
@@ -14972,12 +14974,12 @@ function wbPintar() {
       const nota = w.estado === 'caida' ? `${w.caidaDesde ? 'Caída ' + hace(w.caidaDesde) : 'Caída'}${w.error ? ' · ' + esc(w.error) : ''}` : w.estado === 'lenta' ? 'Tarda en cargar' : '';
       return `<tr style="border-top:1px solid var(--border)">
         <td style="padding:12px 16px"><span style="display:inline-flex;align-items:center;gap:6px;background:${e[1]};color:${e[2]};font-weight:700;font-size:11px;border-radius:20px;padding:4px 10px;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:${e[2]}"></span>${e[0]}</span></td>
-        <td><b>${esc(w.cliente || '—')}</b><div><a href="https://${esc(wbHost(w.dominio))}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11.5px;text-decoration:none">${esc(wbHost(w.dominio))}</a></div>${nota ? `<div style="color:${w.estado === 'caida' ? '#b91c1c' : '#b45309'};font-size:11px">${nota}</div>` : ''}${w.revisado ? `<div style="color:var(--text-soft);font-size:10.5px">Revisada ${hace(w.revisado)}</div>` : ''}</td>
+        <td><b>${esc(w.cliente || '—')}</b><div><a href="https://${esc(wbHost(w.dominio))}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11.5px;text-decoration:none">${esc(wbHost(w.dominio))}</a></div>${w.prueba?.activa ? (() => { const v = new Date(w.prueba.expira), venc = v < new Date(); return `<div style="color:${venc ? '#b91c1c' : '#b45309'};font-size:11px;font-weight:600">${venc ? 'Prueba vencida' : 'En prueba'} · ${v.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</div>`; })() : ''}${nota ? `<div style="color:${w.estado === 'caida' ? '#b91c1c' : '#b45309'};font-size:11px">${nota}</div>` : ''}${w.revisado ? `<div style="color:var(--text-soft);font-size:10.5px">Revisada ${hace(w.revisado)}</div>` : ''}</td>
         <td>${w.ms ? (w.ms / 1000).toFixed(1) + ' s' : '—'}</td>
         <td style="color:${w.candado === false && !['pendiente', 'activado'].includes(w.certEstado) ? '#b91c1c' : w.candado ? '#047857' : w.candado === false ? '#b45309' : 'var(--text-soft)'};${w.candado === false ? 'font-weight:700' : ''}" title="${esc(w.certDetalle || '')}">${w.candado ? '✓ Candado activo' : w.candado === false ? (w.certEstado === 'pendiente' ? '<span class="wb-cert"><i></i>Candado en proceso</span><small style="display:block;font-weight:500;color:var(--text-soft)">Se activa solo</small>' : w.certEstado === 'activado' ? '✓ Activado · verificando' : w.certEstado === 'error' ? 'Candado falla<small style="display:block;font-weight:500;color:var(--text-soft)">Revisar DNS</small>' : 'Candado falla') : '—'}</td>
         <td style="${hs && wbPronto(hs.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${plan}</td>
         <td style="${ds && wbPronto(ds.proximoPago) ? 'color:#b45309;font-weight:700' : ''}">${dom}</td>
-        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> ${`<button class="hr-ico${w.cerrado ? ' wb-cerrado' : ''}" title="${w.cerrado ? 'Sitio cerrado: volver a abrirlo' : 'Cerrar el sitio (muestra un aviso de sitio cerrado)'}" aria-label="${w.cerrado ? 'Abrir sitio' : 'Cerrar sitio'}" onclick="wbCerrar('${id}')"><i class="fa-solid ${w.cerrado ? 'fa-lock' : 'fa-lock-open'}"></i></button> `}<button class="hr-ico" title="Instalar el kit de diseño para Codex y Claude en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio o repositorio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
+        <td style="white-space:nowrap;padding-right:14px"><button class="hr-btn" onclick="wbHist('${id}')">Historial</button> <button class="hr-ico" title="Enviar informe de la web al cliente" onclick="wbInforme('${id}')"><i class="fa-solid fa-chart-column"></i></button> ${`<button class="hr-ico${w.prueba?.activa ? ' wb-prueba' : ''}" title="${w.prueba?.activa ? 'Barra de prueba activa: cambiar fecha o quitarla' : 'Poner la barra de periodo de prueba'}" aria-label="Periodo de prueba" onclick="wbPrueba('${id}')"><i class="fa-solid fa-hourglass-half"></i></button> `}${`<button class="hr-ico${w.cerrado ? ' wb-cerrado' : ''}" title="${w.cerrado ? 'Sitio cerrado: volver a abrirlo' : 'Cerrar el sitio (muestra un aviso de sitio cerrado)'}" aria-label="${w.cerrado ? 'Abrir sitio' : 'Cerrar sitio'}" onclick="wbCerrar('${id}')"><i class="fa-solid ${w.cerrado ? 'fa-lock' : 'fa-lock-open'}"></i></button> `}<button class="hr-ico" title="Instalar el kit de diseño para Codex y Claude en su repositorio" onclick="wbKit('${id}')"><i class="fa-solid fa-wand-magic-sparkles"></i></button> <button class="hr-ico" title="Cambiar dominio o repositorio" onclick="wbEditar('${id}')">${HR_ICON.edit}</button> <button class="hr-ico del" title="Quitar" onclick="wbQuitar('${id}')">${HR_ICON.del}</button></td></tr>`; }).join('') : '').join('')}
     </tbody></table></div>`;
   wbPintarHist();
 }
@@ -15179,6 +15181,46 @@ async function wbDominios(fresco) {
       const col = x.dias === null ? 'var(--text-soft)' : x.dias < 0 ? '#dc2626' : x.dias <= 30 ? '#d97706' : '#16a34a';
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:9px 11px"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.dominio)}</div>
         <div style="font-size:11.5px;color:var(--text-soft);margin-top:2px">${x.cli ? esc(x.cli) + ' · ' : ''}<span style="color:${col};font-weight:600">${x.vence ? (x.dias < 0 ? 'venció hace ' + (-x.dias) + ' d' : 'vence ' + new Date(x.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'sin fecha'}</span> · ${x.autoRenovar ? 'auto-renueva' : '<b style="color:#d97706">sin auto-renovar</b>'}</div></div>`; }).join('')}</div></div>`;
+}
+/* Barra de periodo de prueba: el bot la pone (assets/dgp-trial.js + <script>) o la quita del sitio */
+function wbFechaFin(dias) {
+  const d = new Date(); d.setDate(d.getDate() + Math.max(1, Math.round(dias)));
+  const p = n => String(Math.abs(n)).padStart(2, '0'), off = -d.getTimezoneOffset();
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T23:59:59${off >= 0 ? '+' : '-'}${p(Math.trunc(off / 60))}:${p(off % 60)}`;
+}
+function wbPrueba(id) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  const pr = w.prueba?.activa ? w.prueba : null;
+  const fecha = pr ? new Date(pr.expira).toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  ptModal('Periodo de prueba', `${w.cliente || ''} · ${wbHost(w.dominio)}`, `<div class="rd-form" style="display:grid;gap:10px">
+    <div style="font-size:12.5px;color:var(--text-mid);line-height:1.55">${pr ? `La barra de prueba está activa hasta el <b>${esc(fecha)}</b>${new Date(pr.expira) < new Date() ? ' <b style="color:#b91c1c">(ya venció: el sitio muestra "La vista previa terminó")</b>' : ''}.`
+      : 'Arriba del sitio aparece una barra de DGP con "Vista previa", la cuenta regresiva y el botón <b>Activar mi sitio</b> que abre tu WhatsApp. Al vencer, invita a escribir para activarlo.'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="ff" style="margin:0"><label>${pr ? 'Nueva duración (días desde hoy)' : 'Días de prueba'}</label><input id="wb-pdias" type="number" min="1" max="60" value="7"></div>
+      <div class="ff" style="margin:0"><label>Nombre del negocio</label><input id="wb-pnom" maxlength="80" value="${esc(pr?.nombre || w.cliente || '')}" placeholder="Para el mensaje de WhatsApp"></div>
+    </div>
+    <button class="ll-btn" id="wb-pbtn" style="background:var(--blue)" onclick="wbPruebaGuardar('${esc(id)}', true)">${pr ? 'Cambiar la fecha' : 'Poner barra de prueba'}</button>
+    ${pr ? `<button class="ll-btn" id="wb-pquitar" style="background:var(--green-dark)" onclick="wbPruebaGuardar('${esc(id)}', false)">Quitar la barra (el cliente pagó)</button>` : ''}
+    <button class="btn-edit-cancel" onclick="closePortalModal()">Cancelar</button></div>`);
+}
+async function wbPruebaGuardar(id, activar) {
+  const w = (_wb.lista || []).find(x => x._id === id); if (!w) return;
+  const dias = Number(document.getElementById('wb-pdias')?.value) || 7;
+  const nombre = (document.getElementById('wb-pnom')?.value || '').trim() || w.cliente || wbHost(w.dominio);
+  const expira = wbFechaFin(dias);
+  const btn = document.getElementById(activar ? 'wb-pbtn' : 'wb-pquitar'); if (btn) { btn.disabled = true; btn.textContent = activar ? 'Poniendo la barra…' : 'Quitando la barra…'; }
+  try {
+    const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tarea: 'sitio-prueba', id, activar, expira, nombre }) }).then(r => r.json());
+    if (!d.ok) throw new Error(d.error || 'No se pudo cambiar');
+    w.prueba = activar ? { activa: true, expira, nombre } : { activa: false }; if (d.repo) w.repo = d.repo;
+    closePortalModal(); wbPintar();
+    logActividad(activar ? 'Barra de prueba puesta' : 'Barra de prueba quitada', `${w.cliente || ''} · ${wbHost(w.dominio)}${activar ? ' · hasta ' + expira.slice(0, 10) : ''}`);
+    toast(activar ? `Barra de prueba puesta hasta el ${new Date(expira).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · se ve en 1 o 2 minutos${d.cerrado ? ' (cuando abras el sitio)' : ''}` : `Barra quitada · el sitio queda limpio en 1 o 2 minutos ✅`);
+  } catch (e) {
+    toast('No se pudo: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = activar ? 'Poner barra de prueba' : 'Quitar la barra (el cliente pagó)'; }
+  }
 }
 /* Cerrar / abrir un sitio: el bot publica en GitHub Pages un aviso de "sitio cerrado" (rama aparte) o vuelve a la rama del sitio */
 function wbCerrar(id) {
