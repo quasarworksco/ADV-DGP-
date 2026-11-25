@@ -1960,6 +1960,41 @@ html.dark .vt-spark{--c:#6f8cff}html.dark .vt-spark.g{--c:#34d399}
 html.dark .hr-ico.wb-prueba{color:#fbbf24;background:rgba(251,191,36,.12)}
 .hr-ico.wb-cerrado{color:#475569;background:color-mix(in srgb,#475569 14%,transparent)}
 html.dark .hr-ico.wb-cerrado{color:#cbd5e1;background:rgba(203,213,225,.12)}
+/* Altair en vivo (ventana de Altair) */
+.alv{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--white)}
+.alv-top{display:flex;align-items:center;gap:12px}
+.alv-orb{position:relative;flex-shrink:0;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#8fdcf5,#3eaedd 45%,#166baf);box-shadow:0 0 14px rgba(62,174,221,.35);transition:box-shadow .4s ease,filter .4s ease;filter:saturate(.7)}
+.alv-orb::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid #3eaedd;opacity:0}
+.alv-orb.on{filter:none;box-shadow:0 0 28px rgba(62,174,221,.85);animation:altPulso 1.6s ease-in-out infinite}
+.alv-orb.on::after{animation:alvOnda 1.6s ease-out infinite}
+@keyframes alvOnda{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.5)}}
+.alv-top b{display:block;font:700 14.5px 'Plus Jakarta Sans',sans-serif;color:var(--black)}
+.alv-top small{display:block;font:500 12px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);margin-top:2px}
+.alv-vivo{margin-left:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font:700 10px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:var(--green-dark);white-space:nowrap}
+.alv-vivo i{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:hdrPing 2.6s ease-out infinite}
+.alv-act{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.alv-act li{display:flex;align-items:center;gap:8px;font:600 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--black);padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--blue) 8%,transparent);animation:ndSube .3s cubic-bezier(.23,1,.32,1) both}
+.alv-act li span{display:inline-flex;gap:3px}.alv-act li span i{width:4px;height:4px;border-radius:50%;background:var(--blue);animation:alvPunto 1.2s ease-in-out infinite}
+.alv-act li span i:nth-child(2){animation-delay:.15s}.alv-act li span i:nth-child(3){animation-delay:.3s}
+@keyframes alvPunto{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.alv-cnt{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;margin:14px 0 4px}
+.alv-cnt div{padding:8px 6px;border-radius:10px;background:var(--off);text-align:center;min-width:0}
+.alv-cnt b{display:block;font:800 17px 'Plus Jakarta Sans',sans-serif;color:var(--black);font-variant-numeric:tabular-nums}
+.alv-cnt small{display:block;font:600 10px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alv-cnt b.sube{animation:ndDest .9s ease}
+.alv-log{list-style:none;margin:0;padding:0;max-height:230px;overflow:auto;display:grid;gap:2px}
+.alv-log li{display:grid;grid-template-columns:10px 1fr auto;gap:9px;align-items:start;padding:7px 2px;font:500 12.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--text-mid)}
+.alv-log li.nuevo{animation:ndSube .4s cubic-bezier(.23,1,.32,1) both}
+.alv-log li i{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--blue)}
+.alv-log li i.pago{background:#0e9f6e}.alv-log li i.alerta{background:#d97706}.alv-log li i.error{background:#dc2626}
+.alv-log li em{font-style:normal;font-size:11px;color:var(--text-soft);white-space:nowrap;font-variant-numeric:tabular-nums}
+.alv-ag{display:grid;gap:4px;font:500 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-mid)}
+.alv-ag div{display:flex;justify-content:space-between;gap:10px;padding:5px 2px;border-bottom:1px dashed var(--border)}
+.alv-ag div:last-child{border-bottom:0}.alv-ag em{font-style:normal;font-weight:700;color:var(--black);white-space:nowrap}
+.alv-vacio{font:500 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);padding:6px 2px}
+html.dark .alv{background:#111a2e}
+html.dark .alv-log li i:not(.pago):not(.alerta):not(.error){background:#6f8cff}
+@media(prefers-reduced-motion:reduce){.alv-orb.on,.alv-orb.on::after,.alv-act li span i,.alv-vivo i,.alv-log li.nuevo,.alv-cnt b.sube{animation:none!important}}
 /* embudo de ventas */
 .emb-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .emb-h .nd-act-f{margin:0}
@@ -12718,6 +12753,7 @@ document.addEventListener('keydown', e => {
 });
 
 function ptModal(title, sub, html) {
+  if (typeof altVivoParar === 'function') altVivoParar();
   document.querySelector('#modalPortal .edit-sheet').style.maxWidth = '480px';
   document.getElementById('mp-title').textContent = title;
   document.getElementById('mp-sub').textContent = sub || '';
@@ -12725,6 +12761,7 @@ function ptModal(title, sub, html) {
   document.getElementById('modalPortal').classList.add('show');
 }
 function closePortalModal() {
+  if (typeof altVivoParar === 'function') altVivoParar();
   document.getElementById('modalPortal').classList.remove('show');
   _ptEdit = null;
 }
@@ -14324,6 +14361,17 @@ function abrirAltair() {
   const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
     <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
   ptModal('Altair', 'Tu asistente: háblale en Telegram y deja que trabaje por ti', `
+    <div class="alv" id="alv">
+      <div class="alv-top"><div class="alv-orb" id="alv-orb" aria-hidden="true"></div>
+        <div style="min-width:0"><b id="alv-est">Conectando con Altair…</b><small id="alv-sub"></small></div>
+        <span class="alv-vivo"><i aria-hidden="true"></i>EN VIVO</span></div>
+      <ul class="alv-act" id="alv-act" aria-live="polite"></ul>
+      <div class="alv-cnt" id="alv-cnt"></div>
+      <div class="alt-t" style="margin-top:12px">Bitácora de hoy</div>
+      <ul class="alv-log" id="alv-log"><li class="alv-vacio" style="display:block">Cargando…</li></ul>
+      <div class="alt-t" style="margin-top:12px">Próximas tareas</div>
+      <div class="alv-ag" id="alv-ag"></div>
+    </div>
     <div class="alt-hero">
       <div class="alt-orb"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.2 20 12 16.6 7.8 20 9 13.6 4 10l6.1-1.2z"/></svg></div>
       <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz o un mensaje y te responde con su voz. Por ejemplo:</small>
@@ -14355,6 +14403,67 @@ function abrirAltair() {
       <button class="alt-act" onclick="sonarChaching();ndAviso('Pago recibido','Así suena cuando entra un pago','pago');"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
     </div>`);
   pushEstadoHTML();
+  altVivo();
+}
+/* ═══ Altair en vivo: estado, contadores del día y bitácora (los escribe el bot en altair/estado, altairDias y altairLog) ═══ */
+let _alv = { unsub: [], timer: null, visto: new Set(), cnt: {}, estado: null };
+function altVivoParar() { _alv.unsub.forEach(f => { try { f(); } catch (e) {} }); _alv.unsub = []; clearInterval(_alv.timer); _alv.timer = null; }
+function altHace(f) { const m = Math.round((Date.now() - f.getTime()) / 60000); return m < 1 ? 'ahora' : m < 60 ? `hace ${m} min` : f.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' }); }
+const ALV_CNT = [['correos', 'Correos'], ['prospectos', 'Prospectos'], ['comprobantes', 'Comprobantes'], ['webs', 'Webs revisadas'], ['mensajes', 'Mensajes']];
+// Horarios del bot en UTC (ver scheduled() en ayudante-bot/worker.js)
+function altAgenda() {
+  const ahora = new Date(), L = [];
+  // Se recorren los próximos 8 días en cuartos de hora (todas las tareas caen en :00, :30 o :45)
+  const q = 15 * 6e4, desde = Math.ceil((ahora.getTime() + 1) / q) * q;
+  const prox = (fn) => { for (let i = 0; i < 8 * 96; i++) { const d = new Date(desde + i * q); if (fn(d)) return d; } return null; };
+  const en = (h, m) => d => d.getUTCHours() === h && d.getUTCMinutes() === m;
+  const add = (t, d) => d && L.push([t, d]);
+  add('Revisar webs y publicaciones', prox(d => d.getUTCMinutes() === 30));
+  add('Prospección: escribir a negocios', prox(d => { if (d.getUTCMinutes() !== 45) return false; const h = +new Date(d).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false }); return h >= 9 && h <= 16; }));
+  add('Resumen del día', prox(en(11, 0)));
+  add('Recordatorios de pago por WhatsApp', prox(en(15, 30)));
+  add('Briefing de los lunes', prox(d => d.getUTCDay() === 1 && en(12, 0)(d)));
+  add('Respaldo y resumen semanal', prox(d => d.getUTCDay() === 0 && en(12, 0)(d)));
+  return L.sort((a, b) => a[1] - b[1]).slice(0, 4);
+}
+function altPintarAgenda() {
+  const el = document.getElementById('alv-ag'); if (!el) return altVivoParar();
+  el.innerHTML = altAgenda().map(([t, d]) => { const m = Math.round((d - Date.now()) / 6e4);
+    const cuando = m < 60 ? `en ${Math.max(1, m)} min` : m < 24 * 60 && d.getDate() === new Date().getDate() ? d.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString('es', { weekday: 'short' }) + ' ' + d.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' });
+    return `<div><span>${esc(t)}</span><em>${cuando}</em></div>`; }).join('');
+  altPintarEstado();
+}
+function altPintarEstado() {
+  const e = _alv.estado || {}, orb = document.getElementById('alv-orb'); if (!orb) return;
+  const viejo = 20 * 6e4;
+  const act = Object.entries(e.activas || {}).filter(([, v]) => v && v.desde && Date.now() - v.desde.toDate().getTime() < viejo);
+  orb.classList.toggle('on', act.length > 0);
+  document.getElementById('alv-est').textContent = act.length ? 'Trabajando ahora' : 'Descansando';
+  const u = e.ultima && e.ultima.fecha ? e.ultima : null;
+  document.getElementById('alv-sub').textContent = act.length ? `${act.length} tarea${act.length > 1 ? 's' : ''} en curso` : u ? `Lo último: ${u.texto} · ${altHace(u.fecha.toDate())}` : 'Todavía no hay actividad registrada.';
+  document.getElementById('alv-act').innerHTML = act.map(([, v]) => `<li><span aria-hidden="true"><i></i><i></i><i></i></span>${esc(v.texto)}</li>`).join('');
+}
+function altVivo() {
+  altVivoParar();
+  const hoy = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);   // día de Venezuela, como el bot
+  _alv.visto = new Set(); _alv.cnt = {};
+  _alv.unsub.push(db.collection('altair').doc('estado').onSnapshot(s => { _alv.estado = s.exists ? s.data() : {}; altPintarEstado(); }, () => {}));
+  _alv.unsub.push(db.collection('altairDias').doc(hoy).onSnapshot(s => {
+    const d = s.exists ? s.data() : {}, el = document.getElementById('alv-cnt'); if (!el) return;
+    el.innerHTML = ALV_CNT.map(([k, t]) => `<div><b class="${_alv.cnt[k] !== undefined && (d[k] || 0) > _alv.cnt[k] ? 'sube' : ''}">${(d[k] || 0).toLocaleString('en-US')}</b><small>${t}</small></div>`).join('');
+    ALV_CNT.forEach(([k]) => { _alv.cnt[k] = d[k] || 0; });
+  }, () => {}));
+  const inicioDia = new Date(new Date().setHours(0, 0, 0, 0));
+  _alv.unsub.push(db.collection('altairLog').where('fecha', '>=', inicioDia).orderBy('fecha', 'desc').limit(30).onSnapshot(s => {
+    const el = document.getElementById('alv-log'); if (!el) return;
+    const primera = !_alv.visto.size;
+    el.innerHTML = s.docs.length ? s.docs.map(x => { const d = x.data(), f = d.fecha?.toDate ? d.fecha.toDate() : new Date(), nuevo = !primera && !_alv.visto.has(x.id);
+      return `<li class="${nuevo ? 'nuevo' : ''}"><i class="${esc(d.tipo || '')}"></i><span>${esc(d.texto || '')}</span><em>${altHace(f)}</em></li>`; }).join('')
+      : '<li class="alv-vacio" style="display:block">Hoy todavía no hay anotaciones. Altair anota aquí cada tarea que termina.</li>';
+    s.docs.forEach(x => _alv.visto.add(x.id));
+  }, e => { const el = document.getElementById('alv-log'); if (el) el.innerHTML = `<li class="alv-vacio" style="display:block">No se pudo leer la bitácora: ${esc(e.message)}</li>`; }));
+  altPintarAgenda();
+  _alv.timer = setInterval(altPintarAgenda, 30000);
 }
 async function cambiarAutoValor(k, v) {
   _auto[k] = v;

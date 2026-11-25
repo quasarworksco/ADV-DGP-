@@ -23,6 +23,7 @@
   - `CONTEXTO-DGP.md` y el kit de diseño de `kit-diseno/kit.json`, copiado en `.claude/skills/` y en `.agents/skills/`.
 
   Si cambias `CONTEXTO-DGP.md` o el kit, los sitios nuevos lo reciben solos porque el bot los lee desde adv.dgp-link.com.
+- **Altair en vivo:** las tareas del bot se anotan con `conAltair(env, clave, texto, fn, resumen)` y los eventos sueltos con `altNota(env, texto, tipo, cuenta)` (en `altair/estado`, `altairLog` y `altairDias`). Una tarea nueva del bot debe anotarse igual, para que aparezca en la ventana de Altair del panel. Las anotaciones nunca deben frenar ni romper la tarea.
 - **Barra de periodo de prueba:** `kit-diseno/dgp-trial.js` es la versión oficial. `pruebaSitio()` en el bot la copia a `assets/dgp-trial.js` del sitio y agrega o quita su `<script>`. Si la cambias, prueba que no se encime en 320–1366 px, en los dos idiomas y vencida.
 - **Comprobaciones antes de publicar:**
   - `node --check ayudante-bot/worker.js`

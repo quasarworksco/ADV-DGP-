@@ -39,7 +39,7 @@ Son los que usa la respuesta rápida "precios" del panel; confirma en el código
 **Publicación:** al unir cambios a `main`, GitHub Pages publica el panel y Cloudflare Workers Builds publica el bot (unos 30 segundos). Las claves viven solo en Cloudflare, nunca en el código.
 
 ## Automatizaciones que ya existen
-Cada una tiene su interruptor en el panel (Altair → Automatizaciones).
+Cada una tiene su interruptor en el panel (Altair → Automatizaciones). En esa misma ventana, **Altair en vivo** muestra qué está haciendo el bot, los contadores del día, la bitácora y las próximas tareas.
 - Recibo por correo y WhatsApp al registrar un pago o un abono, con el saldo que queda pendiente.
 - Cobrador amable: recordatorios los días 3 y 8 de atraso; el día 15 avisa para llamar.
 - Vendedor nocturno: responde al instante a quien escribe en la web y arma una cotización para aprobar.

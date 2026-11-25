@@ -189,26 +189,30 @@ export default {
   async scheduled(event, env, ctx) {
     _tgCtx = null;
     // Cron (UTC): mensual el día 1 · diario 11:00 (7:00 Venezuela) · domingo 12:00 (8:00 Venezuela)
-    if (event.cron === '0 11 * * *') ctx.waitUntil(tareaDiaria(env).catch(e => avisoError(env, 'Resumen diario', e)));
+    // conAltair(...) anota cada tarea en "Altair en vivo" (ventana de Altair del panel)
+    if (event.cron === '0 11 * * *') ctx.waitUntil(conAltair(env, 'diario', 'Preparando tu resumen del día…', () => tareaDiaria(env),
+      r => `Resumen del día enviado a Telegram: ${r.atrasadas} factura${r.atrasadas === 1 ? '' : 's'} atrasada${r.atrasadas === 1 ? '' : 's'}, ${r.porRevisar} comprobante${r.porRevisar === 1 ? '' : 's'} por revisar${r.creadas ? `, ${r.creadas} factura${r.creadas === 1 ? '' : 's'} de suscripción creada${r.creadas === 1 ? '' : 's'}` : ''}`).catch(e => avisoError(env, 'Resumen diario', e)));
     // Domingo y lunes comparten un solo horario (el plan gratis de Cloudflare permite 5): se distingue por el día
-    else if (event.cron === '0 12 * * SUN,MON' && new Date().getUTCDay() === 1) ctx.waitUntil((async () => { const t = await firebaseLogin(env); if ((await automatizaciones(env, t)).briefing) await briefingLunes(env); })().catch(e => avisoError(env, 'Briefing del lunes', e)));
+    else if (event.cron === '0 12 * * SUN,MON' && new Date().getUTCDay() === 1) ctx.waitUntil(conAltair(env, 'briefing', 'Preparando el briefing de la semana…', async () => { const t = await firebaseLogin(env); if ((await automatizaciones(env, t)).briefing) { await briefingLunes(env); return true; } return false; }, r => r ? 'Briefing de los lunes enviado a Telegram (texto y audio)' : null).catch(e => avisoError(env, 'Briefing del lunes', e)));
     else if (event.cron === '0 12 * * SUN,MON') {
-      ctx.waitUntil(enviarRespaldo(env).catch(e => avisoError(env, 'Respaldo semanal', e)));
-      ctx.waitUntil(resumenSemanal(env).catch(e => avisoError(env, 'Resumen semanal', e)));
+      ctx.waitUntil(conAltair(env, 'respaldo', 'Guardando el respaldo semanal…', () => enviarRespaldo(env), r => `Respaldo semanal guardado en Telegram (${r.registros} registros)`).catch(e => avisoError(env, 'Respaldo semanal', e)));
+      ctx.waitUntil(conAltair(env, 'semanal', 'Analizando tu semana…', () => resumenSemanal(env), () => 'Resumen semanal enviado a Telegram').catch(e => avisoError(env, 'Resumen semanal', e)));
     }
-    else if (event.cron === '45 * * * *') ctx.waitUntil(pzEnvioAutomatico(env).catch(async e => { await env.CACHE.put('pz:cron', JSON.stringify({ t: new Date().toISOString(), paso: 'error', error: String(e.message || e) })).catch(() => {}); await avisoError(env, 'Correos de prospección', e); }));
+    else if (event.cron === '45 * * * *') ctx.waitUntil(pzConAltair(env).catch(async e => { await env.CACHE.put('pz:cron', JSON.stringify({ t: new Date().toISOString(), paso: 'error', error: String(e.message || e) })).catch(() => {}); await avisoError(env, 'Correos de prospección', e); }));
     else if (event.cron === '30 * * * *') {
-      ctx.waitUntil(autoPublicar(env).catch(e => avisoError(env, 'Publicación automática', e)));
+      ctx.waitUntil(conAltair(env, 'publicar', 'Revisando publicaciones programadas…', () => autoPublicar(env), () => null).catch(e => avisoError(env, 'Publicación automática', e)));
       ctx.waitUntil(gdPendientes(env).catch(e => console.warn('Dominios pendientes', e)));
       ctx.waitUntil((async () => { if (!env.CACHE || await env.CACHE.get('fixSaldosFavor1')) return; await env.CACHE.put('fixSaldosFavor1', '1');
         const t = await firebaseLogin(env); const L = await aplicarSaldosFavor(env, t, null); if (L.length) await tgEnviar(env, ['💵 <b>Saldos a favor aplicados</b> (sobrantes que no se habían abonado)', ...L].join('\n')); })().catch(e => console.warn('fix saldos', e)));
-      if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(revisarPedidosSmm(env).catch(e => avisoError(env, 'Pedidos de seguidores', e)));
-      ctx.waitUntil(revisarWebs(env, false).catch(e => avisoError(env, 'Webs de clientes', e)));
-      if (new Date().getUTCHours() === 15) ctx.waitUntil(recordatoriosWA(env).catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
+      if (new Date().getUTCHours() % 3 === 0) ctx.waitUntil(conAltair(env, 'seguidores', 'Revisando pedidos de seguidores…', () => revisarPedidosSmm(env), () => 'Revisé los pedidos de seguidores').catch(e => avisoError(env, 'Pedidos de seguidores', e)));
+      ctx.waitUntil(conAltair(env, 'webs', 'Revisando las webs de tus clientes…', () => revisarWebs(env, false),
+        r => r.revisadas ? { texto: `Revisé ${r.revisadas} web${r.revisadas === 1 ? '' : 's'}: ${r.caidas ? `${r.caidas} caída${r.caidas === 1 ? '' : 's'}` : 'todas en línea'}`, tipo: r.caidas ? 'alerta' : 'ok', cuenta: { webs: r.revisadas } } : null).catch(e => avisoError(env, 'Webs de clientes', e)));
+      if (new Date().getUTCHours() === 15) ctx.waitUntil(conAltair(env, 'cobrowa', 'Enviando recordatorios de pago por WhatsApp…', () => recordatoriosWA(env), () => 'Revisé y envié los recordatorios de pago por WhatsApp').catch(e => avisoError(env, 'Recordatorios por WhatsApp', e)));
       if (new Date().getUTCHours() === 12) ctx.waitUntil(resumenMananaPush(env).catch(e => console.warn('Resumen de la mañana', e)));
-      if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(firebaseLogin(env).then(t => revisarRespuestas(env, t, true)).catch(e => console.warn('Respuestas de correo', e)));
+      if (new Date().getUTCHours() % 2 === 1) ctx.waitUntil(conAltair(env, 'respuestas', 'Leyendo respuestas de correo…', () => firebaseLogin(env).then(t => revisarRespuestas(env, t, true)),
+        r => r?.nuevas ? { texto: `Leí ${r.nuevas} respuesta${r.nuevas === 1 ? '' : 's'} nueva${r.nuevas === 1 ? '' : 's'} de correo`, cuenta: { mensajes: r.nuevas } } : null).catch(e => console.warn('Respuestas de correo', e)));
     }
-    else ctx.waitUntil(enviarResumenMensual(env));
+    else ctx.waitUntil(conAltair(env, 'mensual', 'Preparando el resumen del mes…', () => enviarResumenMensual(env), () => 'Resumen del mes enviado a Telegram'));
   },
 
   async fetch(request, env, ctx) {
@@ -480,6 +484,78 @@ function toValue(v) {
 function docUrl(env, path) {
   return `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents/${path}`;
 }
+/* ══════════════════════════════════════════════════════════════
+   ALTAIR EN VIVO: lo que el bot está haciendo y su diario, para la ventana de Altair del panel
+   · altair/estado  → activas.{tarea}: { texto, desde } mientras trabaja · ultima: { texto, fecha }
+   · altairLog      → una entrada por tarea terminada o por evento (contacto, comprobante, recibo…); se borran a los 7 días
+   · altairDias/{AAAA-MM-DD} → contadores del día (correos, prospectos, comprobantes, webs, mensajes, tareas)
+   Si una anotación falla, la tarea sigue igual: nunca se espera ni se lanza el error.
+══════════════════════════════════════════════════════════════ */
+const ALT_CUENTAS = ['correos', 'prospectos', 'comprobantes', 'webs', 'mensajes', 'tareas'];
+async function altCommit(env, writes) {
+  const token = await firebaseLogin(env);
+  const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+  const w = writes.filter(Boolean).map(x => x.update ? { ...x, update: { ...x.update, name: `${base}/${x.update.name}` } } : x);
+  await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: w }) });
+}
+const altCampos = o => toValue(o).mapValue.fields;
+function altEntrada(texto, tipo, tarea) {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return { update: { name: `altairLog/${id}`, fields: altCampos({ fecha: new Date(), texto: String(texto).slice(0, 300), tipo: tipo || 'info', tarea: tarea || '' }) } };
+}
+function altContar(cuenta) {
+  const t = Object.entries(cuenta || {}).filter(([k, v]) => ALT_CUENTAS.includes(k) && Number(v) > 0);
+  if (!t.length) return null;
+  return { update: { name: `altairDias/${hoyVE()}`, fields: altCampos({ fecha: hoyVE() }) }, updateMask: { fieldPaths: ['fecha'] },
+    updateTransforms: t.map(([k, v]) => ({ fieldPath: k, increment: { integerValue: String(Math.round(Number(v))) } })) };
+}
+async function altEmpieza(env, tarea, texto) {
+  await altCommit(env, [{ update: { name: 'altair/estado', fields: altCampos({ activas: { [tarea]: { texto, desde: new Date() } }, actualizado: new Date() }) },
+    updateMask: { fieldPaths: [`activas.${tarea}`, 'actualizado'] } }]).catch(e => console.warn('altair', e));
+}
+async function altTermina(env, tarea, texto, tipo, cuenta) {
+  const ahora = new Date();
+  await altCommit(env, [
+    { update: { name: 'altair/estado', fields: altCampos({ actualizado: ahora, ...(texto ? { ultima: { texto: String(texto).slice(0, 300), fecha: ahora, tarea } } : {}) }) },
+      updateMask: { fieldPaths: [`activas.${tarea}`, 'actualizado', ...(texto ? ['ultima'] : [])] } },
+    texto ? altEntrada(texto, tipo, tarea) : null,
+    altContar({ ...(cuenta || {}), ...(texto ? { tareas: 1 } : {}) })
+  ]).catch(e => console.warn('altair', e));
+}
+// Evento suelto (un contacto nuevo, un comprobante leído, un recibo enviado…)
+async function altNota(env, texto, tipo, cuenta) {
+  const ahora = new Date();
+  await altCommit(env, [
+    { update: { name: 'altair/estado', fields: altCampos({ actualizado: ahora, ultima: { texto: String(texto).slice(0, 300), fecha: ahora, tarea: tipo } }) }, updateMask: { fieldPaths: ['actualizado', 'ultima'] } },
+    altEntrada(texto, tipo, tipo), altContar(cuenta)
+  ]).catch(e => console.warn('altair', e));
+}
+// Corre una tarea anotando que empezó y lo que logró. resumen(r) → texto, o { texto, tipo, cuenta }, o null para no anotar
+async function conAltair(env, tarea, texto, fn, resumen) {
+  await altEmpieza(env, tarea, texto);
+  try {
+    const r = await fn();
+    let s = null; try { s = resumen ? resumen(r) : null; } catch (e) {}
+    const o = typeof s === 'string' ? { texto: s } : s;
+    await altTermina(env, tarea, o?.texto || null, o?.tipo || 'ok', o?.cuenta);
+    return r;
+  } catch (e) {
+    await altTermina(env, tarea, `${texto.replace(/…$/, '')}: algo falló (${String(e.message || e).slice(0, 120)})`, 'error');
+    throw e;
+  }
+}
+// Limpieza diaria: diario de más de 7 días y contadores de más de 40
+async function altLimpiar(env, token) {
+  const base = `projects/${env.FIREBASE_PROJECT || PROJECT_DEFAULT}/databases/(default)/documents`;
+  const lim = Date.now() - 7 * 864e5, limDia = new Date(Date.now() - 40 * 864e5).toISOString().slice(0, 10);
+  const viejos = [...(await fsList(env, 'altairLog', token).catch(() => [])).filter(x => Number(String(x._id).split('-')[0]) < lim).map(x => `altairLog/${x._id}`),
+    ...(await fsList(env, 'altairDias', token).catch(() => [])).filter(x => String(x._id) < limDia).map(x => `altairDias/${x._id}`)];
+  for (let i = 0; i < viejos.length; i += 400)
+    await fetch(`https://firestore.googleapis.com/v1/${base}:commit`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ writes: viejos.slice(i, i + 400).map(p => ({ delete: `${base}/${p}` })) }) });
+  return viejos.length;
+}
+
 async function fsGet(env, path, token) {
   const res = await fetch(docUrl(env, path), { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 404) return null;
@@ -734,6 +810,8 @@ async function handleVerificar(request, env, firebaseLogin) {
     if (msgId) await fsUpdate(env, `documentos/${fsId}`, { tgPagoMsgs: [...(Array.isArray(doc.tgPagoMsgs) ? doc.tgPagoMsgs : []), msgId].slice(-10) }, ['tgPagoMsgs'], token).catch(() => {});
     // El comprobante también le llega al remesista de esa cuenta de pago (si tiene uno)
     await reenviarRemesista(env, token, fsId, doc, url, ev, lectura).catch(e => console.warn('remesista', e));
+    const veredicto = { coincide: 'coincide con la factura', menor: 'es menor que la factura', mayor: 'es mayor que la factura', otra_moneda: 'está en otra moneda', ilegible: 'no se lee bien', no_es_comprobante: 'no parece un comprobante' }[ev.estado] || 'revisado';
+    await altNota(env, `Leí un comprobante de ${doc.cli || 'un cliente'}${ev.monto !== null ? ': $' + ev.monto.toFixed(2) : ''}${lectura.plataforma ? ' por ' + lectura.plataforma : ''}, ${veredicto}`, ev.estado === 'coincide' ? 'comprobante' : 'alerta', { comprobantes: 1 });
 
     return json(request, verificacion);
   } catch (e) {
@@ -1198,6 +1276,7 @@ async function tareaDiaria(env) {
   const meta = await lineaMeta(env, token, docs).catch(() => '');
   if (meta) L.push('', meta);
   await revisarCuarentena(env, token).catch(e => console.warn('Cuarentena', e));
+  await altLimpiar(env, token).catch(e => console.warn('Altair limpieza', e));
   if (L.length === 1 || (meta && L.length === 3)) L.push('', '✅ Todo al día: sin facturas atrasadas, comprobantes por revisar ni suscripciones por vencer.');
   L.push('', `<a href="${SITIO}/">Abrir el panel</a>`);
   await tgEnviar(env, L.join('\n'));
@@ -2326,6 +2405,7 @@ async function correoPagoCliente0(env, token, fsId, monto, por) {
       method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ writes: [{ transform: { document: `${base}/documentos/${fsId}`, fieldTransforms: [{ fieldPath: 'correos', appendMissingElements: { values: [toValue({ para: correo, fecha: new Date().toISOString(), por: por || 'automático', asunto: m.asunto, auto: 'pago' })] } }] } }] })
     }).catch(() => {});
+    await altNota(env, `Envié el recibo de pago por correo a ${doc.cli || correo} (${dinero(monto)})`, 'correo', { correos: 1 });
     return { enviado: true, correo };
   } catch (e) { console.warn('Correo de pago', e); return { enviado: false, motivo: e.message || 'error' }; }
 }
@@ -3211,6 +3291,7 @@ async function botMarcarPagado(env, token, fsId, pagoNuevo, op = {}) {
   if (!op.sinRecibo) extra += lineaCorreoPago(await correoPagoCliente(env, token, fsId, pagoNuevo ? pagoNuevo.monto : saldoDoc(doc), 'telegram'));   // con sobrante, el recibo va al final (con el total ya repartido)
   const animo = ['¡Brutal! 💰', '¡Eso es! Un pago más 🔥', '¡Cha-ching! 💸', '¡Vamos con todo! 🚀', '¡Así se hace! 🙌'][Math.floor(Math.random() * 5)];
   await tgSincronizarPago(env, token, fsId, 'pagado').catch(() => {});
+  await altNota(env, `Pago confirmado: ${doc.cli || 'cliente'} · ${nuevoId} · ${dinero(doc.total)}`, 'pago');
   return { aviso: 'Pago confirmado ✅', html: `${animo}\n✅ <b>Pago confirmado</b> · ${escHtml(nuevoId)}\n👤 ${escHtml(doc.cli || '—')} · ${dinero(doc.total)}${extra}\n\n<a href="${SITIO}/factura-publica.html?id=${fsId}">Ver recibo</a>\n<i>Si fue un error: ábrelo en el panel → "Volver a pendiente de pago".</i>` };
 }
 async function botAbono(env, token, fsId, monto) {
@@ -3227,6 +3308,7 @@ async function botAbono(env, token, fsId, monto) {
     ['pagos', 'montoPagado', 'pagadoParcial', 'pagoRechazado', 'comprobantesRevisados'], token);
   const correo = lineaCorreoPago(await correoPagoCliente(env, token, fsId, pago.monto, 'telegram'));
   await tgSincronizarPago(env, token, fsId, 'abono').catch(() => {});
+  await altNota(env, `Abono registrado: ${doc.cli || 'cliente'} pagó ${dinero(pago.monto)}, le quedan ${dinero((Number(doc.total) || 0) - nuevo)}`, 'pago');
   return { aviso: 'Abono registrado 💰', html: `💰 <b>Abono registrado</b> · ${escHtml(doc.docId || fsId)}\n👤 ${escHtml(doc.cli || '—')}\nRecibido: ${dinero(pago.monto)} · Pagado: ${dinero(nuevo)} de ${dinero(doc.total)}\nPendiente: <b>${dinero((Number(doc.total) || 0) - nuevo)}</b>${correo}` };
 }
 async function botRechazar(env, token, fsId) {
@@ -4001,6 +4083,7 @@ async function registrarLead(env, token, d, opciones = {}) {
     if (borrador) await tgApi(env, 'sendMessage', { chat_id: TG_CHAT, parse_mode: 'HTML', text: borrador.html, reply_markup: { inline_keyboard: [
       [{ text: '✅ Crear y enviársela', callback_data: `c:${borrador.id}` }, { text: '🇺🇸 Crear y enviar en inglés', callback_data: `ce:${borrador.id}` }],
       [{ text: '📝 Solo crearla', callback_data: `k:${borrador.id}` }, { text: '❌ Descartar', callback_data: `x:${borrador.id}` }]] } }).catch(() => {});
+    await altNota(env, `Nuevo contacto desde ${/chat/i.test(servicio) ? 'el chat' : 'la web'}: ${nombre}${negocio ? ' (' + negocio + ')' : ''}${acuse ? ' · le respondí al instante' : ''}${borrador ? ' · te armé una cotización' : ''}`, 'lead', { mensajes: 1, correos: acuse ? 1 : 0 });
   }
 }
 
@@ -6497,6 +6580,11 @@ async function pzCupoHoy(env, cfg) {
   return { cupo, enviados, quedan: Math.max(0, cupo - enviados) };
 }
 /* Cron cada hora: reparte el cupo del día entre 9:00 y 16:59 (hora de Florida), todos los días */
+async function pzConAltair(env) {
+  return conAltair(env, 'prospeccion', 'Prospección: escribiendo a negocios sin web…', () => pzEnvioAutomatico(env, false),
+    r => r.total ? { texto: `Prospección: envié ${r.total} correo${r.total === 1 ? '' : 's'} (${r.nuevos || 0} nuevo${r.nuevos === 1 ? '' : 's'}, ${r.seguimientos || 0} seguimiento${r.seguimientos === 1 ? '' : 's'}${r.recuperados ? `, ${r.recuperados} recuperado${r.recuperados === 1 ? '' : 's'}` : ''})`, cuenta: { correos: r.total } }
+      : r.paso === 'error' || (r.errores || []).length ? { texto: `Prospección: no pude enviar (${(r.errores || [r.error || r.paso])[0]})`, tipo: 'alerta' } : null);
+}
 async function pzEnvioAutomatico(env, forzar) {
   const reg = { t: new Date().toISOString(), paso: 'inicio' };
   const guardar = () => env.CACHE.put('pz:cron', JSON.stringify(reg)).catch(() => {});
@@ -6569,7 +6657,7 @@ async function handleProspeccion(request, env) {
       }
       if (b.accion === 'turno') {
         // Turno de envío lanzado desde GitHub cada hora (no depende de los horarios de Cloudflare)
-        const r = await pzEnvioAutomatico(env, false).catch(e => ({ paso: 'error', error: e.message }));
+        const r = await pzConAltair(env).catch(e => ({ paso: 'error', error: e.message }));
         return json(request, { ok: true, ...r });
       }
       if (b.accion === 'diag') {
@@ -6625,6 +6713,7 @@ async function handleProspeccion(request, env) {
           await fsGuardar(env, `prospeccion/${p.clave}`, p, token).then(() => { guardados++; claves.push(p.clave); }).catch(e => console.warn('pz guardar', e.message));
         }
         await pzMarcarVistos(env, claves);
+        if (guardados) await altNota(env, `Prospección: encontré ${guardados} negocio${guardados === 1 ? '' : 's'} sin web para escribirles`, 'prospeccion', { prospectos: guardados });
         return json(request, { ok: true, guardados });
       }
       if (b.accion === 'fin') {
