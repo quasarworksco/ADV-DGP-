@@ -1844,18 +1844,16 @@ body.menu-min .nav-sec.cerrado { display:flex; } body.menu-min button.nav-group 
   box-shadow:0 4px 14px -8px color-mix(in srgb,var(--blue) 55%,transparent);transition:box-shadow .2s ease,transform .16s ease-out}
 .header-right .altair-btn:hover{box-shadow:0 6px 18px -8px color-mix(in srgb,var(--blue) 75%,transparent)}
 .header-right .altair-btn:active{transform:scale(.97)}
-.altair-orb{position:relative;display:block;isolation:isolate;flex:none;width:var(--orb-size);aspect-ratio:1;border-radius:50%;overflow:hidden;background:#020617}
-.altair-orb img{display:block;width:100%;height:100%;object-fit:cover;transform:scale(var(--orb-crop,1));animation:altairOrbBreathe var(--orb-breathe,5s) ease-in-out infinite}
-.altair-orb::after{content:'';position:absolute;inset:9%;border-radius:50%;pointer-events:none;background:conic-gradient(from 20deg,transparent 0 70%,rgba(116,225,255,.12) 84%,rgba(181,237,255,.52) 97%,transparent 100%);mask-image:radial-gradient(closest-side,transparent 89%,#000 96%,transparent 100%);animation:altairOrbOrbit 8s linear infinite}
-.ai-orb{--orb-size:26px;--orb-crop:1.24}
-.ai-orb.trabajando{--orb-breathe:2.6s}
-.ai-orb.pendiente{--orb-breathe:2.8s;box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 58%,transparent)}
-@keyframes altairOrbBreathe{0%,100%{transform:scale(var(--orb-crop,1))}50%{transform:scale(calc(var(--orb-crop,1) * 1.085))}}
-@keyframes altairOrbOrbit{to{transform:rotate(1turn)}}
-.altair-movimiento-pausado .altair-orb img,.altair-movimiento-pausado .altair-orb::after{animation-play-state:paused}
+.altair-orb{position:relative;display:block;isolation:isolate;flex:none;width:var(--orb-size);aspect-ratio:1}
+.altair-orb img{display:block;width:100%;height:100%;object-fit:contain;animation:altairOrbFloat 4.8s ease-in-out}
+.ai-orb{--orb-size:28px;--orb-lift:-2px}
+.ai-orb.pendiente{filter:drop-shadow(0 1px 3px #6556dc)}
+:is(.ai-orb.trabajando,.alv-orb.on) img{animation-name:altairOrbWork;animation-duration:3.2s}
+@keyframes altairOrbFloat{50%{transform:perspective(320px) translateY(var(--orb-lift)) rotateY(-13deg) rotate(-4deg)}}
+@keyframes altairOrbWork{50%{transform:perspective(320px) translateY(var(--orb-lift)) rotateY(17deg) rotate(5deg)}}
 html.mono .altair-orb{filter:grayscale(1)}
 .header-right .altair-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-@media(prefers-reduced-motion:reduce){.altair-orb img,.altair-orb::after{animation:none}.header-right .altair-btn{transition:none}.header-right .altair-btn:active{transform:none}.altair-pausa{display:none}}
+@media(prefers-reduced-motion:reduce){.altair-orb img,.altair-orb::before,.altair-orb::after{animation:none!important}.header-right .altair-btn{transition:none}.header-right .altair-btn:active{transform:none}}
 .ai-lbl{display:inline-flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.01em}
 .ai-tag{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent);padding:2px 5px;border-radius:5px;line-height:1.2}
 html.dark .ai-tag{color:color-mix(in srgb,var(--blue) 45%,#fff)}
@@ -2000,11 +1998,12 @@ html.dark .ach-pie button{color:#f87171}
 /* Altair en vivo (ventana de Altair) */
 .alv{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--white)}
 .alv-top{display:flex;align-items:center;gap:12px}
-.alv-orb{--orb-size:116px;box-shadow:0 8px 24px -12px #226bad}
-.alv-orb.on{--orb-breathe:2.6s;box-shadow:0 7px 26px -7px #258aae}
-.alv-orb.on::after{animation-duration:4s}
-.alv-top .altair-pausa{min-height:38px;color:var(--black)}
-@media(max-width:480px){.alv-top{flex-wrap:wrap}.alv-orb{--orb-size:84px}}
+.alv-orb{--orb-size:132px;--orb-lift:-7px}
+.alv-orb::before{content:'';position:absolute;z-index:-1;inset:auto 20% 2% 20%;height:12%;background:radial-gradient(ellipse,rgba(92,70,217,.24),transparent 72%);animation:altairOrbShadow 4.8s ease-in-out}
+.alv-orb::after{content:'';position:absolute;top:50%;left:50%;width:3px;height:3px;border-radius:50%;pointer-events:none;box-shadow:-56px -22px #7c68ee,53px -29px #48a6ef,63px 14px #a290ff,-46px 40px #42b6e7,13px 53px #7365e8;animation:altairOrbDust 4.8s ease-in-out}
+@keyframes altairOrbShadow{50%{opacity:.45;transform:scale(.86)}}
+@keyframes altairOrbDust{50%{opacity:.48;transform:rotate(23deg) scale(1.08)}}
+@media(max-width:480px){.alv-top{flex-wrap:wrap}.alv-orb{--orb-size:106px}.alv-orb::after{scale:.8}}
 .alv-top b{display:block;font:700 14.5px 'Plus Jakarta Sans',sans-serif;color:var(--black)}
 .alv-top small{display:block;font:500 12px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);margin-top:2px}
 .alv-vivo{margin-left:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font:700 10px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:var(--green-dark);white-space:nowrap}
@@ -3057,8 +3056,6 @@ html.mono .btn-edit-save { box-shadow:0 8px 20px rgba(0,0,0,.18); }
 
 /* ═══ Altair ═══ */
 #modalPortal:has(#alv-orb) .edit-sheet{background:var(--white);color:var(--black)}
-.altair-pausa{min-height:34px;margin-top:6px;padding:4px 0;background:none;border:0;color:inherit;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.altair-pausa:focus-visible{outline:2px solid #bae6fd;outline-offset:2px}
 .alt-t { font-family:'Plus Jakarta Sans',sans-serif !important; margin-top:4px; }
 .alt-row { padding:13px 4px !important; border-radius:10px; border-bottom:1px solid var(--border) !important; transition:background .15s; font-family:'Plus Jakarta Sans',sans-serif !important; }
 .alt-row:hover { background:var(--off); }
@@ -3763,7 +3760,7 @@ html.mono #doc-sheet .sheet-total-block.factura-style { background:#111 !importa
     <button class="hdr-search hdr-eye" id="btn-enfoque" data-atajo="Ctrl B" onclick="toggleEnfoque()" title="Modo enfoque: ocultar montos y nombres (Ctrl+B)" aria-label="Modo enfoque" aria-pressed="false" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.9 17.9A10 10 0 0 1 12 20c-7 0-10-8-10-8a18.5 18.5 0 0 1 5.1-5.9M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2M1 1l22 22"/></svg></button>
     <button class="hdr-search" onclick="recargarPanel(this)" title="Actualizar (igual que F5)" aria-label="Actualizar" style="min-width:0;width:36px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     <button class="hdr-search" data-atajo="Ctrl K" onclick="abrirBuscador()" title="Buscar (Ctrl+K)" aria-label="Buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="hide-m">Buscar clientes, facturas o secciones</span><kbd class="hide-m">Ctrl K</kbd></button>
-    <button class="btn-logout altair-btn" type="button" onclick="abrirAltair()" aria-label="Abrir Altair" aria-haspopup="dialog" aria-controls="modalPortal" title="Altair: tu asistente con IA y automatizaciones"><span class="altair-orb ai-orb" aria-hidden="true"><img src="altair-orbe.webp" width="26" height="26" alt=""></span><span class="hide-m ai-lbl">Altair<em class="ai-tag">IA</em></span></button>
+    <button class="btn-logout altair-btn" type="button" onclick="abrirAltair()" aria-label="Abrir Altair" aria-haspopup="dialog" aria-controls="modalPortal" title="Altair: tu asistente con IA y automatizaciones"><span class="altair-orb ai-orb" aria-hidden="true"><img src="altair-orbe-flotante.webp" width="28" height="28" alt=""></span><span class="hide-m ai-lbl">Altair<em class="ai-tag">IA</em></span></button>
     <button class="btn-logout hdr-opt" onclick="abrirDiagnostico()" title="Revisa que reglas, Worker, IA y Telegram funcionen" style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="hide-m">Probar sistema</span></button>
     <button class="btn-logout theme-toggle" data-atajo="N" onclick="toggleTema()" title="Modo noche / día" aria-label="Cambiar entre modo noche y modo día" style="display:inline-flex;align-items:center;padding:7px 9px;"><svg class="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
     <div style="position:relative;" class="hdr-opt">
@@ -14404,9 +14401,8 @@ function abrirAltair() {
     </div>
     <div data-alt-tab="vivo">
     <div class="alv" id="alv">
-      <div class="alv-top"><div class="altair-orb alv-orb" id="alv-orb" aria-hidden="true"><img src="altair-orbe.webp" width="116" height="116" alt=""></div>
+      <div class="alv-top"><div class="altair-orb alv-orb" id="alv-orb" aria-hidden="true"><img src="altair-orbe-flotante.webp" width="132" height="132" alt=""></div>
         <div style="min-width:0"><b id="alv-est">Conectando con Altair…</b><small id="alv-sub"></small>
-          <button type="button" class="altair-pausa" onclick="alternarMovimientoAltair(this)">${document.documentElement.classList.contains('altair-movimiento-pausado') ? 'Reanudar animación' : 'Pausar animación'}</button>
         </div>
         <span class="alv-vivo"><i aria-hidden="true"></i>EN VIVO</span></div>
       <ul class="alv-act" id="alv-act" aria-live="polite"></ul>
@@ -14510,10 +14506,6 @@ async function altChatBorrar() {
   _ach.msgs = [];
   try { await achDoc().delete(); } catch (e) {}
   altChatPintar(); toast('Conversación borrada');
-}
-function alternarMovimientoAltair(boton) {
-  const pausado = document.documentElement.classList.toggle('altair-movimiento-pausado');
-  boton.textContent = pausado ? 'Reanudar animación' : 'Pausar animación';
 }
 /* ═══ Altair en vivo: estado, contadores del día y bitácora (los escribe el bot en altair/estado, altairDias y altairLog) ═══ */
 let _alv = { unsub: [], timer: null, visto: new Set(), cnt: {}, estado: null };

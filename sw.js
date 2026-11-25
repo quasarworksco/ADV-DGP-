@@ -1,8 +1,8 @@
-const CACHE_NAME = 'dgp-v3';
+const CACHE_NAME = 'dgp-v4';
 const OFFLINE_ASSETS = [
   '/',
   '/index.html',
-  '/altair-orbe.webp',
+  '/altair-orbe-flotante.webp',
   'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
 ];
@@ -45,7 +45,7 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  if (url.origin === self.location.origin && url.pathname === '/altair-orbe.webp') {
+  if (url.origin === self.location.origin && url.pathname === '/altair-orbe-flotante.webp') {
     e.respondWith(fetch(e.request).catch(async () => (await caches.match(url.pathname)) || Response.error()));
     return;
   }
