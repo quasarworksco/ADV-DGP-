@@ -1965,6 +1965,40 @@ html.dark .vt-spark{--c:#6f8cff}html.dark .vt-spark.g{--c:#34d399}
 html.dark .hr-ico.wb-prueba{color:#fbbf24;background:rgba(251,191,36,.12)}
 .hr-ico.wb-cerrado{color:#475569;background:color-mix(in srgb,#475569 14%,transparent)}
 html.dark .hr-ico.wb-cerrado{color:#cbd5e1;background:rgba(203,213,225,.12)}
+/* Ventana de Altair: pestañas y chat */
+.alt-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;margin-bottom:14px;border-radius:12px;background:var(--off);border:1px solid var(--border)}
+.alt-tabs button{border:0;background:transparent;border-radius:9px;padding:8px 6px;font:700 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);cursor:pointer;transition:background .16s ease,color .16s ease,box-shadow .16s ease}
+.alt-tabs button.on{background:var(--white);color:var(--black);box-shadow:0 1px 3px rgba(11,20,48,.12)}
+.alt-tabs button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+html.dark .alt-tabs button.on{background:#1b2440}
+.ach{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:16px;background:var(--white);overflow:hidden}
+html.dark .ach{background:#111a2e}
+.ach-msgs{height:min(52vh,430px);overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+.ach-m{display:flex;gap:8px;align-items:flex-end;animation:ndSube .3s cubic-bezier(.23,1,.32,1) both}
+.ach-m.yo{justify-content:flex-end}
+.ach-b{max-width:82%;padding:9px 12px;border-radius:16px;font:500 13.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--black);background:var(--off);border-bottom-left-radius:5px;overflow-wrap:anywhere}
+.ach-m.yo .ach-b{background:var(--blue);color:#fff;border-bottom-left-radius:16px;border-bottom-right-radius:5px}
+.ach-m.err .ach-b{background:color-mix(in srgb,#dc2626 10%,transparent);color:#b91c1c}
+.ach-av{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#8fdcf5,#3eaedd 45%,#166baf);box-shadow:0 0 10px rgba(62,174,221,.35)}
+.ach-av.big{width:48px;height:48px;margin:0 auto 10px;display:block}.ach-av.on{animation:altPulso 1.6s ease-in-out infinite}
+.ach-pens{display:inline-flex;gap:4px;align-items:center;min-height:20px}.ach-pens i{width:6px;height:6px;border-radius:50%;background:var(--text-soft);animation:alvPunto 1.2s ease-in-out infinite}
+.ach-pens i:nth-child(2){animation-delay:.15s}.ach-pens i:nth-child(3){animation-delay:.3s}
+.ach-vacio{margin:auto;text-align:center;padding:10px;font:500 12.5px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft)}
+.ach-vacio b{display:block;font-size:14.5px;color:var(--black)}.ach-vacio small{display:block;margin-top:2px}
+.ach-sug{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px}
+.ach-sug button{border:1px solid var(--border);background:var(--white);color:var(--text-mid);border-radius:20px;padding:6px 11px;font:600 12px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:border-color .16s ease,color .16s ease,transform .16s cubic-bezier(.23,1,.32,1)}
+.ach-sug button:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-1px)}
+html.dark .ach-sug button{background:#162038}
+.ach-in{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid var(--border)}
+.ach-in textarea{flex:1;resize:none;min-height:40px;max-height:120px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--off);color:var(--black);font:500 14px/1.4 'Plus Jakarta Sans',sans-serif;outline:none}
+.ach-in textarea:focus{border-color:var(--blue);background:var(--white)}
+html.dark .ach-in textarea:focus{background:#0d1528}
+.ach-in button{flex-shrink:0;width:40px;height:40px;border-radius:12px;border:0;background:var(--blue);color:#fff;display:grid;place-items:center;cursor:pointer;transition:transform .16s cubic-bezier(.23,1,.32,1),filter .16s ease}
+.ach-in button:hover{filter:brightness(1.08)}.ach-in button:active{transform:scale(.95)}
+.ach-pie{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 12px 10px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--text-soft)}
+.ach-pie button{flex-shrink:0;border:0;background:none;color:#b91c1c;font:700 11.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer;padding:4px}
+html.dark .ach-pie button{color:#f87171}
+@media(prefers-reduced-motion:reduce){.ach-m,.ach-av.on,.ach-pens i{animation:none!important}}
 /* Altair en vivo (ventana de Altair) */
 .alv{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--white)}
 .alv-top{display:flex;align-items:center;gap:12px}
@@ -14368,7 +14402,13 @@ let _auto = { waProspectos: false, cobrador: true, vendedor: true, briefing: tru
 function abrirAltair() {
   const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
     <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
-  ptModal('Altair', 'Tu asistente: háblale en Telegram y deja que trabaje por ti', `
+  ptModal('Altair', 'Tu asistente: míralo trabajar, pregúntale lo que quieras y ajusta lo que hace solo', `
+    <div class="alt-tabs" role="tablist" aria-label="Secciones de Altair">
+      <button type="button" role="tab" data-t="vivo" onclick="altTab('vivo')">En vivo</button>
+      <button type="button" role="tab" data-t="chat" onclick="altTab('chat')">Preguntar</button>
+      <button type="button" role="tab" data-t="ajustes" onclick="altTab('ajustes')">Ajustes</button>
+    </div>
+    <div data-alt-tab="vivo">
     <div class="alv" id="alv">
       <div class="alv-top"><div class="altair-orb alv-orb" id="alv-orb" aria-hidden="true"><img src="altair-orbe.webp" width="116" height="116" alt=""></div>
         <div style="min-width:0"><b id="alv-est">Conectando con Altair…</b><small id="alv-sub"></small>
@@ -14382,6 +14422,18 @@ function abrirAltair() {
       <div class="alt-t" style="margin-top:12px">Próximas tareas</div>
       <div class="alv-ag" id="alv-ag"></div>
     </div>
+    </div>
+    <div data-alt-tab="chat" hidden>
+      <div class="ach" id="ach">
+        <div class="ach-msgs" id="ach-msgs" aria-live="polite"></div>
+        <form class="ach-in" onsubmit="event.preventDefault();altChatEnviar()">
+          <textarea id="ach-txt" rows="1" maxlength="1200" placeholder="Escríbele a Altair…" aria-label="Mensaje para Altair" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();altChatEnviar()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+          <button type="submit" id="ach-btn" aria-label="Enviar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+        <div class="ach-pie"><span>Altair responde con los datos de tu panel. Para crear facturas o recordatorios usa Telegram.</span><button type="button" onclick="altChatBorrar()">Borrar conversación</button></div>
+      </div>
+    </div>
+    <div data-alt-tab="ajustes" hidden>
     <div class="alt-hero">
       <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz o un mensaje y te responde con su voz. Por ejemplo:</small>
         <div class="alt-ej"><span>¿Cuánto me debe Ana?</span><span>¿Quién vence esta semana?</span><span>Recuérdale a Luis que pague</span><span>Factura a Pedro de $200 por una web</span></div></div>
@@ -14410,10 +14462,64 @@ function abrirAltair() {
     <div class="alt-acts">
       <button class="alt-act" onclick="ejecutarTareaBot('briefing', this)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span><b>Probar briefing</b><small>Te llega a Telegram ahora</small></span></button>
       <button class="alt-act" onclick="sonarChaching();ndAviso('Pago recibido','Así suena cuando entra un pago','pago');"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A3 3 0 0 0 12 7.5c-1.7 0-3 .9-3 2.25S10.3 12 12 12s3 .9 3 2.25-1.3 2.25-3 2.25A3 3 0 0 1 9.2 15M12 6v1.5M12 16.5V18"/></svg><span><b>Probar cha-ching</b><small>Sonido y confeti</small></span></button>
+    </div>
     </div>`);
   document.querySelector('#modalPortal .sheet-x')?.focus();
   pushEstadoHTML();
   altVivo();
+  altTab(_altTab);
+}
+/* ═══ Pestañas de la ventana de Altair (se recuerda la última) ═══ */
+let _altTab = (() => { try { return localStorage.getItem('dgp-alt-tab') || 'vivo'; } catch (e) { return 'vivo'; } })();
+function altTab(t) {
+  _altTab = t; try { localStorage.setItem('dgp-alt-tab', t); } catch (e) {}
+  document.querySelectorAll('[data-alt-tab]').forEach(el => { el.hidden = el.dataset.altTab !== t; });
+  document.querySelectorAll('.alt-tabs button').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  if (t === 'chat') { altChatPintar(); setTimeout(() => document.getElementById('ach-txt')?.focus(), 60); }
+}
+/* ═══ Chat con Altair: la conversación se guarda en altairChat/{correo} hasta que la borres (se ve igual en todos tus equipos) ═══ */
+let _ach = { msgs: null, pensando: false };
+const ACH_SUG = ['¿Cuánto me deben en total?', '¿Quién tiene facturas vencidas?', '¿Cuánto cobré este mes?', '¿Qué suscripciones vencen esta semana?', '¿Cómo voy con la meta del mes?'];
+function achDoc() { return db.collection('altairChat').doc(String(currentUser?.email || 'equipo').toLowerCase()); }
+async function altChatCargar() {
+  if (_ach.msgs) return;
+  try { const s = await achDoc().get(); _ach.msgs = s.exists && Array.isArray(s.data().mensajes) ? s.data().mensajes : []; } catch (e) { _ach.msgs = []; }
+}
+function achTexto(t) { return esc(t).replace(/\n/g, '<br>'); }
+async function altChatPintar() {
+  const el = document.getElementById('ach-msgs'); if (!el) return;
+  if (!_ach.msgs) { el.innerHTML = '<div class="ach-vacio">Cargando la conversación…</div>'; await altChatCargar(); }
+  const M = _ach.msgs || [];
+  el.innerHTML = (M.length ? M.map(m => `<div class="ach-m ${m.rol === 'user' ? 'yo' : 'al'}${m.error ? ' err' : ''}">${m.rol === 'user' ? '' : '<span class="ach-av" aria-hidden="true"></span>'}<div class="ach-b">${achTexto(m.texto)}</div></div>`).join('')
+    : `<div class="ach-vacio"><span class="ach-av big" aria-hidden="true"></span><b>Pregúntame lo que quieras de tu negocio</b><small>Cobros, clientes, facturas, suscripciones, metas…</small>
+        <div class="ach-sug">${ACH_SUG.map(q => `<button type="button" onclick="altChatEnviar(${esc(JSON.stringify(q))})">${esc(q)}</button>`).join('')}</div></div>`)
+    + (_ach.pensando ? '<div class="ach-m al"><span class="ach-av on" aria-hidden="true"></span><div class="ach-b ach-pens" aria-label="Altair está pensando"><i></i><i></i><i></i></div></div>' : '');
+  el.scrollTop = el.scrollHeight;
+}
+async function altChatGuardar() { try { await achDoc().set({ mensajes: (_ach.msgs || []).slice(-100), actualizado: firebase.firestore.FieldValue.serverTimestamp() }); } catch (e) { console.warn('chat altair', e); } }
+async function altChatEnviar(sugerencia) {
+  const ta = document.getElementById('ach-txt'); if (_ach.pensando) return;
+  const texto = String(sugerencia || ta?.value || '').trim(); if (!texto) return;
+  await altChatCargar();
+  if (ta) { ta.value = ''; ta.style.height = 'auto'; }
+  _ach.msgs.push({ rol: 'user', texto, fecha: new Date().toISOString() });
+  _ach.pensando = true; altChatPintar(); altChatGuardar();
+  try {
+    const tok = await currentUser.getIdToken();
+    const d = await fetch(`${RW_WORKER}/tarea`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      body: JSON.stringify({ tarea: 'altair-chat', mensajes: _ach.msgs.filter(m => !m.error).slice(-12).map(m => ({ rol: m.rol, texto: m.texto })) }) }).then(r => r.json());
+    if (!d.ok) throw new Error(d.error || 'sin respuesta');
+    _ach.msgs.push({ rol: 'altair', texto: d.respuesta, fecha: new Date().toISOString() });
+  } catch (e) { _ach.msgs.push({ rol: 'altair', texto: 'No pude responder ahora mismo (' + e.message + '). Intenta de nuevo.', error: true, fecha: new Date().toISOString() }); }
+  _ach.pensando = false; altChatPintar(); altChatGuardar();
+  document.getElementById('ach-txt')?.focus();
+}
+async function altChatBorrar() {
+  if (!(_ach.msgs || []).length) return toast('La conversación ya está vacía');
+  if (!confirm('¿Borrar toda la conversación con Altair? No se puede deshacer.')) return;
+  _ach.msgs = [];
+  try { await achDoc().delete(); } catch (e) {}
+  altChatPintar(); toast('Conversación borrada');
 }
 function alternarMovimientoAltair(boton) {
   const pausado = document.documentElement.classList.toggle('altair-movimiento-pausado');
