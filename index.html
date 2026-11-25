@@ -1845,15 +1845,16 @@ body.menu-min .nav-sec.cerrado { display:flex; } body.menu-min button.nav-group 
 .header-right .altair-btn:hover{box-shadow:0 6px 18px -8px color-mix(in srgb,var(--blue) 75%,transparent)}
 .header-right .altair-btn:active{transform:scale(.97)}
 .altair-orb{position:relative;display:block;isolation:isolate;flex:none;width:var(--orb-size);aspect-ratio:1}
-.altair-orb img{display:block;width:100%;height:100%;object-fit:contain;animation:altairOrbFloat 4.8s ease-in-out}
+.altair-orb img{display:block;width:100%;height:100%;object-fit:contain}
+.ai-orb img,.alv-orb-art{animation:altairOrbFloat 4.8s ease-in-out}
 .ai-orb{--orb-size:28px;--orb-lift:-2px}
 .ai-orb.pendiente{filter:drop-shadow(0 1px 3px #6556dc)}
-:is(.ai-orb.trabajando,.alv-orb.on) img{animation-name:altairOrbWork;animation-duration:3.2s}
+:is(.ai-orb.trabajando img,.alv-orb.on .alv-orb-art){animation-name:altairOrbWork;animation-duration:3.2s}
 @keyframes altairOrbFloat{50%{transform:perspective(320px) translateY(var(--orb-lift)) rotateY(-13deg) rotate(-4deg)}}
 @keyframes altairOrbWork{50%{transform:perspective(320px) translateY(var(--orb-lift)) rotateY(17deg) rotate(5deg)}}
 html.mono .altair-orb{filter:grayscale(1)}
 .header-right .altair-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-@media(prefers-reduced-motion:reduce){.altair-orb img,.altair-orb::before,.altair-orb::after{animation:none!important}.header-right .altair-btn{transition:none}.header-right .altair-btn:active{transform:none}}
+@media(prefers-reduced-motion:reduce){.altair-orb img,.alv-orb-art,.alv-orb-core::before,.altair-orb::before,.altair-orb::after{animation:none!important}.header-right .altair-btn{transition:none}.header-right .altair-btn:active{transform:none}}
 .ai-lbl{display:inline-flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.01em}
 .ai-tag{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent);padding:2px 5px;border-radius:5px;line-height:1.2}
 html.dark .ai-tag{color:color-mix(in srgb,var(--blue) 45%,#fff)}
@@ -1999,6 +2000,12 @@ html.dark .ach-pie button{color:#f87171}
 .alv{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--white)}
 .alv-top{display:flex;align-items:center;gap:12px}
 .alv-orb{--orb-size:132px;--orb-lift:-7px}
+.alv-orb-art{position:relative;display:block}
+.alv-orb-core{position:absolute;inset:0;pointer-events:none;mask-image:radial-gradient(circle closest-side at 49% 48%,#000 0 42%,rgba(0,0,0,.72) 52%,transparent 68%)}
+.alv-orb-core::before{content:'';position:absolute;inset:0;background:url('altair-orbe-flotante.webp') center/contain no-repeat;transform-origin:49% 48%;animation:altairCoreFlow 4.8s ease-in-out}
+.alv-orb.on .alv-orb-core::before{animation:altairCoreFlowActive 3.2s ease-in-out}
+@keyframes altairCoreFlow{0%,100%{opacity:0}27%{opacity:1;transform:rotate(-80deg) scale(1.23,.89)}68%{opacity:1;transform:rotate(-215deg) scale(.91,1.22)}}
+@keyframes altairCoreFlowActive{0%,100%{opacity:0}27%{opacity:1;transform:rotate(95deg) scale(.9,1.22)}68%{opacity:1;transform:rotate(245deg) scale(1.23,.9)}}
 .alv-orb::before{content:'';position:absolute;z-index:-1;inset:auto 20% 2% 20%;height:12%;background:radial-gradient(ellipse,rgba(92,70,217,.24),transparent 72%);animation:altairOrbShadow 4.8s ease-in-out}
 .alv-orb::after{content:'';position:absolute;top:50%;left:50%;width:3px;height:3px;border-radius:50%;pointer-events:none;box-shadow:-56px -22px #7c68ee,53px -29px #48a6ef,63px 14px #a290ff,-46px 40px #42b6e7,13px 53px #7365e8;animation:altairOrbDust 4.8s ease-in-out}
 @keyframes altairOrbShadow{50%{opacity:.45;transform:scale(.86)}}
@@ -14401,7 +14408,7 @@ function abrirAltair() {
     </div>
     <div data-alt-tab="vivo">
     <div class="alv" id="alv">
-      <div class="alv-top"><div class="altair-orb alv-orb" id="alv-orb" aria-hidden="true"><img src="altair-orbe-flotante.webp" width="132" height="132" alt=""></div>
+      <div class="alv-top"><div class="altair-orb alv-orb" id="alv-orb" aria-hidden="true"><span class="alv-orb-art"><img src="altair-orbe-flotante.webp" width="132" height="132" alt=""><span class="alv-orb-core"></span></span></div>
         <div style="min-width:0"><b id="alv-est">Conectando con Altair…</b><small id="alv-sub"></small>
         </div>
         <span class="alv-vivo"><i aria-hidden="true"></i>EN VIVO</span></div>
