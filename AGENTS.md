@@ -24,6 +24,7 @@
 
   Si cambias `CONTEXTO-DGP.md` o el kit, los sitios nuevos lo reciben solos porque el bot los lee desde adv.dgp-link.com.
 - **Altair en vivo:** las tareas del bot se anotan con `conAltair(env, clave, texto, fn, resumen)` y los eventos sueltos con `altNota(env, texto, tipo, cuenta)` (en `altair/estado`, `altairLog` y `altairDias`). Una tarea nueva del bot debe anotarse igual, para que aparezca en la ventana de Altair del panel. Las anotaciones nunca deben frenar ni romper la tarea.
+- **Chat con Altair (panel):** la pestaña Preguntar llama a la tarea `altair-chat` (`altairChatPanel()` en el bot, con los mismos datos que Altair en Telegram) y guarda la conversación en `altairChat/{correo}` hasta que se borra. Solo responde; crear facturas o recordatorios sigue en Telegram.
 - **Barra de periodo de prueba:** `kit-diseno/dgp-trial.js` es la versión oficial. `pruebaSitio()` en el bot la copia a `assets/dgp-trial.js` del sitio y agrega o quita su `<script>`. Si la cambias, prueba que no se encime en 320–1366 px, en los dos idiomas y vencida.
 - **Comprobaciones antes de publicar:**
   - `node --check ayudante-bot/worker.js`

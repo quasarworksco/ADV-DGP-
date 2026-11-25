@@ -2026,6 +2026,10 @@ async function handleTarea(request, env) {
     if (tarea === 'webs') return json(request, { ok: true, ...(await revisarWebs(env, true)) });
     if (tarea === 'informe-web') { const a = await automatizaciones(env, v.token); if (!/^[A-Za-z0-9_-]{6,40}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400); return json(request, { ok: true, ...(await informesWeb(env, v.token, { webId: cuerpo.id, canal: cuerpo.canal || a.informeCanal })) }); }
     if (tarea === 'nuevo-sitio') return json(request, await crearSitio(env, v.token, cuerpo, v.email));
+    if (tarea === 'altair-chat') {
+      try { const r = await altairChatPanel(env, v.token, cuerpo.mensajes); return json(request, r.error ? r : { ok: true, ...r }, r.error ? 400 : 200); }
+      catch (e) { return json(request, { error: 'Altair no pudo responder: ' + e.message }, 502); }
+    }
     if (tarea === 'sitio-prueba') {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(cuerpo.id || '')) return json(request, { error: 'Web no válida' }, 400);
       try { return json(request, await pruebaSitio(env, v.token, cuerpo.id, !!cuerpo.activar, String(cuerpo.expira || '').slice(0, 40), String(cuerpo.nombre || '').slice(0, 80), v.email)); }
@@ -3418,6 +3422,27 @@ ${datos.texto}`, dicho, 400).catch(e => `No pude pensar la respuesta ahora mismo
   const limpio = resp.replace(/\*\*/g, '').trim();
   await tgEnviar(env, `${oido}✨ ${escHtml(limpio)}`);
   if (porVoz) await hablar(env, limpio).catch(e => console.warn('TTS', e));
+}
+
+/* Chat con Altair desde el panel (ventana de Altair → Preguntar): mismas respuestas y datos que en Telegram.
+   Solo responde; crear facturas o recordatorios sigue en Telegram (allí están los botones para confirmar). */
+async function altairChatPanel(env, token, mensajes) {
+  const msgs = (Array.isArray(mensajes) ? mensajes : []).slice(-12)
+    .map(m => ({ rol: m.rol === 'user' ? 'Dueño' : 'Altair', texto: String(m.texto || '').slice(0, 1200).trim() })).filter(m => m.texto);
+  const ultimo = msgs[msgs.length - 1];
+  if (!ultimo || ultimo.rol !== 'Dueño') return { error: 'Mensaje vacío' };
+  const datos = await datosNegocio(env, token);
+  const conv = msgs.map(m => `${m.rol}: ${m.texto}`).join('\n');
+  const resp = await aiTexto(env, `${ALTAIR_PERSONA}
+Estás en el chat del panel de DGP, hablando con el dueño. Responde su último mensaje usando SOLO los DATOS del negocio y lo que se habló antes en la conversación.
+Si el dato no está, dilo con honestidad. No inventes cifras, nombres ni fechas.
+Responde en máximo 10 líneas; puedes usar viñetas "• " y montos con $. Sin markdown con asteriscos.
+Si te pide crear una factura o cotización, o recordarle a un cliente que pague, explícale que desde este chat todavía no puedes hacerlo: que te lo pida en Telegram (ahí lo preparas con botones para confirmar) o lo haga desde el panel.
+Si es charla, responde amable y ofrece ayuda en una frase.
+DATOS (${datos.hoy}):
+${datos.texto}`, `CONVERSACIÓN:\n${conv}\n\nResponde el último mensaje del Dueño como Altair.`, 600);
+  const limpio = String(resp || '').replace(/\*\*/g, '').replace(/^Altair:\s*/i, '').trim();
+  return { respuesta: limpio.slice(0, 3000) || 'No pude pensar la respuesta ahora mismo. Intenta de nuevo.' };
 }
 
 /* Voz de Altair (Workers AI · MeloTTS en español) */
