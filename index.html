@@ -1846,7 +1846,7 @@ body.menu-min .nav-sec.cerrado { display:flex; } body.menu-min button.nav-group 
 .header-right .altair-btn:active{transform:scale(.97)}
 .altair-orb{position:relative;display:block;isolation:isolate;flex:none;width:var(--orb-size);aspect-ratio:1}
 .altair-orb img{display:block;width:100%;height:100%;object-fit:contain}
-.ai-orb img,.alv-orb-art{animation:altairOrbFloat 4.8s ease-in-out}
+.ai-orb img{animation:altairOrbFloat 4.8s ease-in-out}
 .ai-orb{--orb-size:28px;--orb-lift:-2px}
 .ai-orb.pendiente{filter:drop-shadow(0 1px 3px #6556dc)}
 :is(.ai-orb.trabajando img,.alv-orb.on .alv-orb-art){animation-name:altairOrbWork;animation-duration:3.2s}
@@ -2000,14 +2000,19 @@ html.dark .ach-pie button{color:#f87171}
 .alv{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;background:var(--white)}
 .alv-top{display:flex;align-items:center;gap:12px}
 .alv-orb{--orb-size:132px;--orb-lift:-7px}
-.alv-orb-art{position:relative;display:block}
+.alv-orb-art{position:relative;display:block;animation:altairOrbFloat 5.4s ease-in-out infinite}
 .alv-orb-core{position:absolute;inset:0;pointer-events:none;mask-image:radial-gradient(circle closest-side at 49% 48%,#000 0 42%,rgba(0,0,0,.72) 52%,transparent 68%)}
-.alv-orb-core::before{content:'';position:absolute;inset:0;background:url('altair-orbe-flotante.webp') center/contain no-repeat;transform-origin:49% 48%;animation:altairCoreFlow 4.8s ease-in-out}
-.alv-orb.on .alv-orb-core::before{animation:altairCoreFlowActive 3.2s ease-in-out}
-@keyframes altairCoreFlow{0%,100%{opacity:0}27%{opacity:1;transform:rotate(-80deg) scale(1.23,.89)}68%{opacity:1;transform:rotate(-215deg) scale(.91,1.22)}}
-@keyframes altairCoreFlowActive{0%,100%{opacity:0}27%{opacity:1;transform:rotate(95deg) scale(.9,1.22)}68%{opacity:1;transform:rotate(245deg) scale(1.23,.9)}}
-.alv-orb::before{content:'';position:absolute;z-index:-1;inset:auto 20% 2% 20%;height:12%;background:radial-gradient(ellipse,rgba(92,70,217,.24),transparent 72%);animation:altairOrbShadow 4.8s ease-in-out}
-.alv-orb::after{content:'';position:absolute;top:50%;left:50%;width:3px;height:3px;border-radius:50%;pointer-events:none;box-shadow:-56px -22px #7c68ee,53px -29px #48a6ef,63px 14px #a290ff,-46px 40px #42b6e7,13px 53px #7365e8;animation:altairOrbDust 4.8s ease-in-out}
+.alv-orb-core::before{content:'';position:absolute;inset:0;background:url('altair-orbe-flotante.webp') center/contain no-repeat;transform-origin:49% 48%;opacity:0;animation:altairCoreFlow 7.2s linear infinite}
+.alv-orb.on .alv-orb-core::before{animation-duration:4.4s}
+@keyframes altairCoreFlow{
+  0%{opacity:.92;transform:rotate(0deg) scale(1.08,1.03)}
+  25%{opacity:.85;transform:rotate(-90deg) scale(1.2,.96)}
+  50%{opacity:1;transform:rotate(-180deg) scale(1.03,1.15)}
+  75%{opacity:.88;transform:rotate(-270deg) scale(.98,1.19)}
+  100%{opacity:.92;transform:rotate(-360deg) scale(1.08,1.03)}
+}
+.alv-orb::before{content:'';position:absolute;z-index:-1;inset:auto 20% 2% 20%;height:12%;background:radial-gradient(ellipse,rgba(92,70,217,.24),transparent 72%);animation:altairOrbShadow 5.4s ease-in-out infinite}
+.alv-orb::after{content:'';position:absolute;top:50%;left:50%;width:3px;height:3px;border-radius:50%;pointer-events:none;box-shadow:-56px -22px #7c68ee,53px -29px #48a6ef,63px 14px #a290ff,-46px 40px #42b6e7,13px 53px #7365e8;animation:altairOrbDust 7.6s ease-in-out infinite}
 @keyframes altairOrbShadow{50%{opacity:.45;transform:scale(.86)}}
 @keyframes altairOrbDust{50%{opacity:.48;transform:rotate(23deg) scale(1.08)}}
 @media(max-width:480px){.alv-top{flex-wrap:wrap}.alv-orb{--orb-size:106px}.alv-orb::after{scale:.8}}
