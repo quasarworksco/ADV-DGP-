@@ -1420,8 +1420,6 @@ html.dark .ll-ico.ent { color:#8fb0ff; } html.dark .ll-ico.sal { color:#34d399; 
     .cat-p small { font-weight:500; color:var(--text-soft); }
     .cat-form { border:1px solid var(--border); background:var(--off); border-radius:12px; padding:12px; margin:16px 0 8px; }
     #cat-lista { max-height:340px; overflow-y:auto; }
-    .alt-hero { display:flex; gap:14px; align-items:flex-start; padding:14px; border-radius:14px; background:linear-gradient(135deg,#0b1633,#172b5e 55%,#166baf); color:#fff; margin-bottom:16px; font-family:'IBM Plex Sans',sans-serif; }
-    .alt-hero b { display:block; font-size:14px; margin-bottom:4px; } .alt-hero small { font-size:11.5px; color:#bfe9fa; line-height:1.55; display:block; }
     .alt-t { font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-soft); margin-bottom:6px; }
     .alt-row { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:11px 2px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; text-transform:none; letter-spacing:0; }
     .alt-row b { display:block; font-size:13px; color:var(--black); } .alt-row small { font-size:11.5px; color:var(--text-soft); line-height:1.45; display:block; margin-top:2px; }
@@ -2016,7 +2014,8 @@ html.dark .ach-pie button{color:#f87171}
 .alv-act li span{display:inline-flex;gap:3px}.alv-act li span i{width:4px;height:4px;border-radius:50%;background:var(--blue);animation:alvPunto 1.2s ease-in-out infinite}
 .alv-act li span i:nth-child(2){animation-delay:.15s}.alv-act li span i:nth-child(3){animation-delay:.3s}
 @keyframes alvPunto{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
-.alv-cnt{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;margin:14px 0 4px}
+.alv-cnt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:14px 0 4px}
+@media(max-width:480px){.alv-cnt{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .alv-cnt div{padding:8px 6px;border-radius:10px;background:var(--off);text-align:center;min-width:0}
 .alv-cnt b{display:block;font:800 17px 'Plus Jakarta Sans',sans-serif;color:var(--black);font-variant-numeric:tabular-nums}
 .alv-cnt small{display:block;font:600 10px 'Plus Jakarta Sans',sans-serif;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3058,13 +3057,8 @@ html.mono .btn-edit-save { box-shadow:0 8px 20px rgba(0,0,0,.18); }
 
 /* ═══ Altair ═══ */
 #modalPortal:has(#alv-orb) .edit-sheet{background:var(--white);color:var(--black)}
-.alt-hero { position:relative; overflow:hidden; border-radius:16px !important; padding:16px !important; background:linear-gradient(135deg,#0b1633,#162a5c 55%,#1d6fb3) !important; }
 .altair-pausa{min-height:34px;margin-top:6px;padding:4px 0;background:none;border:0;color:inherit;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .altair-pausa:focus-visible{outline:2px solid #bae6fd;outline-offset:2px}
-.alt-hero b { font:700 15px 'Plus Jakarta Sans',sans-serif !important; }
-.alt-ej { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-.alt-ej span { font-size:11px; color:#e0f2fe; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.16); padding:4px 9px; border-radius:999px; }
-html.mono .alt-hero { background:linear-gradient(135deg,#0a0a0a,#262626) !important; }
 .alt-t { font-family:'Plus Jakarta Sans',sans-serif !important; margin-top:4px; }
 .alt-row { padding:13px 4px !important; border-radius:10px; border-bottom:1px solid var(--border) !important; transition:background .15s; font-family:'Plus Jakarta Sans',sans-serif !important; }
 .alt-row:hover { background:var(--off); }
@@ -14402,7 +14396,7 @@ let _auto = { waProspectos: false, cobrador: true, vendedor: true, briefing: tru
 function abrirAltair() {
   const fila = (k, t, d) => `<label class="alt-row"><span><b>${t}</b><small>${d}</small></span>
     <input type="checkbox" class="alt-sw" ${k === 'chaching' ? (chachingActivo() ? 'checked' : '') : (_auto[k] !== false ? 'checked' : '')} onchange="cambiarAuto('${k}', this.checked)"></label>`;
-  ptModal('Altair', 'Tu asistente: míralo trabajar, pregúntale lo que quieras y ajusta lo que hace solo', `
+  ptModal('Altair', 'Actividad, conversación y ajustes', `
     <div class="alt-tabs" role="tablist" aria-label="Secciones de Altair">
       <button type="button" role="tab" data-t="vivo" onclick="altTab('vivo')">En vivo</button>
       <button type="button" role="tab" data-t="chat" onclick="altTab('chat')">Preguntar</button>
@@ -14434,10 +14428,6 @@ function abrirAltair() {
       </div>
     </div>
     <div data-alt-tab="ajustes" hidden>
-    <div class="alt-hero">
-      <div><b>Habla con Altair en Telegram</b><small>Mándale una nota de voz o un mensaje y te responde con su voz. Por ejemplo:</small>
-        <div class="alt-ej"><span>¿Cuánto me debe Ana?</span><span>¿Quién vence esta semana?</span><span>Recuérdale a Luis que pague</span><span>Factura a Pedro de $200 por una web</span></div></div>
-    </div>
     <div class="alt-t">Notificaciones en el celular</div>
     <div id="push-caja" style="font-size:12.5px;color:var(--text-mid);line-height:1.55;padding:2px 0 10px">Revisando…</div>
     <div class="alt-t">Automatizaciones</div>
@@ -14529,7 +14519,7 @@ function alternarMovimientoAltair(boton) {
 let _alv = { unsub: [], timer: null, visto: new Set(), cnt: {}, estado: null };
 function altVivoParar() { _alv.unsub.forEach(f => { try { f(); } catch (e) {} }); _alv.unsub = []; clearInterval(_alv.timer); _alv.timer = null; }
 function altHace(f) { const m = Math.round((Date.now() - f.getTime()) / 60000); return m < 1 ? 'ahora' : m < 60 ? `hace ${m} min` : f.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' }); }
-const ALV_CNT = [['correos', 'Correos'], ['prospectos', 'Prospectos'], ['comprobantes', 'Comprobantes'], ['webs', 'Webs revisadas'], ['mensajes', 'Mensajes']];
+const ALV_CNT = [['correos', 'Correos'], ['prospectos', 'Prospectos'], ['comprobantes', 'Comprobantes'], ['webs', 'Webs revisadas']];
 // Horarios del bot en UTC (ver scheduled() en ayudante-bot/worker.js)
 function altAgenda() {
   const ahora = new Date(), L = [];

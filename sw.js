@@ -1,7 +1,8 @@
-const CACHE_NAME = 'dgp-v2';
+const CACHE_NAME = 'dgp-v3';
 const OFFLINE_ASSETS = [
   '/',
   '/index.html',
+  '/altair-orbe.webp',
   'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
 ];
@@ -9,7 +10,7 @@ const OFFLINE_ASSETS = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(OFFLINE_ASSETS).catch(() => {})
+      Promise.allSettled(OFFLINE_ASSETS.map(url => cache.add(new Request(url, { cache: 'reload' }))))
     )
   );
   self.skipWaiting();
@@ -18,7 +19,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => /^dgp-v\d+$/.test(k) && k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -28,6 +29,26 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/contenido/')) return;
   if (e.request.url.includes('firestore') || e.request.url.includes('googleapis.com/identitytoolkit')) return;
+  const url = new URL(e.request.url);
+  if (url.origin === self.location.origin && e.request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/index.html')) {
+    e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(async response => {
+      if (response.ok) {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(url.pathname, response.clone());
+        } catch (e) { /* La navegación sigue disponible si falla el caché. */ }
+      }
+      return response;
+    }).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return (await cache.match(url.pathname)) || (await cache.match('/index.html')) || Response.error();
+    }));
+    return;
+  }
+  if (url.origin === self.location.origin && url.pathname === '/altair-orbe.webp') {
+    e.respondWith(fetch(e.request).catch(async () => (await caches.match(url.pathname)) || Response.error()));
+    return;
+  }
   e.respondWith(
     fetch(e.request).catch(() =>
       caches.match(e.request).then(r => r || caches.match('/index.html'))
