@@ -109,6 +109,9 @@ Para la publicidad masiva de WhatsApp SÍ puedes decir que llega a gente real en
 • Web Estándar      →  $455  (hasta 5 páginas, WhatsApp, formularios, galería)
 • Web Premium       →  $950  (sitio completo, SEO avanzado, animaciones, integraciones, blog)
 Todos los planes incluyen un dominio gratis tunegocio.dgp-link.com. Solo el Premium incluye 12 meses de hosting; en los otros el hosting se cobra aparte ($25 al mes o $145 al año).
+• Rediseño Landing Page (cambiamos su página actual por una nueva de una sección, + 1 mes de hosting gratis)  →  $185
+• Rediseño Sitio Completo (rediseño de todas sus páginas, + 1 mes de hosting gratis)  →  $350
+Los rediseños son para negocios que YA tienen página web y quieren cambiarla.
 
 Puntos clave:
 → Diseño personalizado, no plantillas genéricas.
@@ -124,6 +127,7 @@ Puntos clave:
 • Paquete Básico (logo, manual de marca, revisión de redes, 1,000 seguidores, tarjeta; 48h)  →  $320
 • Paquete Intermedio (lo del Básico + 3,000 seguidores + 10 posts; 72h)                    →  $480
 • Paquete Avanzado (5,000 seguidores, 10 posts, factura y business card, web One Page, panel admin con CRM; 72h)  →  $840
+• Paquete Negocio Nuevo (logo, manual de marca, sitio web, perfil de Google Maps, Instagram configurado, 15 flyers y tarjeta de presentación)  →  $750
 
 📲 WHATSAPP MARKETING (envío masivo a grupos)
 IMPORTANTE: Este servicio NO es envío a contactos personales del cliente.
@@ -824,7 +828,7 @@ async function handleVerificar(request, env, firebaseLogin) {
 //  Diagnóstico: GET /diagnostico[?ia=1][&telegram=1]
 //  Lo usa el botón "Probar sistema". No devuelve secretos, solo si funcionan.
 // ══════════════════════════════════════════════════════════════
-const WORKER_VERSION = '2026-11-19b';
+const WORKER_VERSION = '2026-11-25b';
 const IMG_PRUEBA = 'https://adv.dgp-link.com/diagnostico-comprobante.png';
 
 async function handleDiagnostico(request, env, firebaseLogin) {

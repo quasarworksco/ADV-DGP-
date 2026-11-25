@@ -5069,6 +5069,8 @@ const CATALOGO_BASE = [
   ['Sistemas a medida', 'CRM a medida (pago único)', 997, 927],
   ['Diseño & Identidad', 'Identidad Visual (Logo + Manual de Marca)', 185, 172], ['Diseño & Identidad', 'Tarjeta de Presentación', 20, 19], ['Diseño & Identidad', 'Post / Flyers RRSS', 10, 9],
   ['Diseño & Identidad', 'Paquete Básico', 320, 298], ['Diseño & Identidad', 'Paquete Intermedio', 480, 446], ['Diseño & Identidad', 'Paquete Avanzado', 840, 781],
+  ['Diseño & Identidad', 'Paquete Negocio Nuevo · Logo + Manual de Marca + Sitio web + Google Maps + Instagram + 15 Flyers + Tarjeta de presentación', 750, 698],
+  ['Sitios Web', 'Rediseño Landing Page + 1 mes de hosting gratis', 185, 172], ['Sitios Web', 'Rediseño Sitio Completo + 1 mes de hosting gratis', 350, 326],
   ['WhatsApp Marketing', 'WhatsApp Bronce (1 Sem)', 55, 51], ['WhatsApp Marketing', 'WhatsApp Plata (2 Sem)', 75, 70], ['WhatsApp Marketing', 'WhatsApp Oro (1 Mes)', 108, 100],
   ['WhatsApp Marketing', 'WhatsApp Pro (3 Meses)', 225, 209], ['WhatsApp Marketing', 'WhatsApp Enterprise (1 Año)', 650, 605],
   ['Seguidores Instagram y Facebook', 'Instagram/Facebook 1,000 Seguidores', 55, 51], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 3,000 Seguidores', 75, 70], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 5,000 Seguidores', 125, 116], ['Seguidores Instagram y Facebook', 'Instagram/Facebook 10,000 Seguidores', 190, 177],
@@ -5130,7 +5132,7 @@ function initCatalogo() {
     catalogoList.filter(x => /^Social Media Autopilot · 15 posts/.test(x.nombre || '')).forEach(x => { x.nombre = x.nombre.replace('15 posts', '20 posts'); db.collection('catalogo').doc(x._id).update({ nombre: x.nombre }).catch(() => {}); });
     // Autopilot repetido (se creó dos veces al cambiar de 15 a 20 posts): se deja uno solo activo
     catalogoList.filter(x => /^Social Media Autopilot/.test(x.nombre || '') && x.activo !== false).slice(1).forEach(x => { x.activo = false; db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}); });
-    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|registro de empresa premium|autopilot|crm a medida/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
+    const nuevosCat = CATALOGO_BASE.filter(b => /likes|tiktok|aliado|registro de empresa premium|autopilot|crm a medida|negocio nuevo|rediseño/i.test(b.nombre) && !catalogoList.some(x => x.nombre === b.nombre));
     if (nuevosCat.length && !window._catNuevos) { window._catNuevos = true; nuevosCat.forEach(b => db.collection('catalogo').add({ ...b, activo: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {})); }
     catalogoList.filter(x => /office pack/i.test(x.nombre || '') && x.activo !== false).forEach(x =>
       db.collection('catalogo').doc(x._id).update({ activo: false }).catch(() => {}));
