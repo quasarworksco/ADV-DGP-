@@ -14677,49 +14677,67 @@ async function waAbrirChat(id) {
   waApi('visto', { chatId: id }).catch(() => {});
 }
 function waVolver() { waVivoMsgOff(); _wa.chat = null; document.getElementById('wa-app').classList.remove('con-chat'); waPintarDerecha(); waPintarLista(); }
-/* ── En vivo: el bot guarda una copia de cada mensaje en Firestore (waChats) y el panel la escucha.
-   Así los mensajes nuevos aparecen al instante sin pedirle la lista completa a WAHA. ── */
-const waDocId = id => String(id || '').replace(/\//g, '_');
-function waVivoChats() {
-  if (_wa.offChats) return;
-  let primera = true;
-  _wa.offChats = db.collection('waChats').orderBy('ts', 'desc').limit(40).onSnapshot(snap => {
-    let cambio = false;
-    snap.docChanges().forEach(ch => {
-      if (ch.type === 'removed') return;
-      const d = ch.doc.data(); if (!d.id || !d.ultimo) return;
-      let c = _wa.chats.find(x => x.id === d.id);
-      const antes = c?.lastMessage?.timestamp || 0, ts = d.ultimo.timestamp || 0;
-      if (c && ts <= antes) return;
-      if (!c) { if (primera) return; c = { id: d.id, name: d.nombre || '', lastMessage: {} }; _wa.chats.unshift(c); }
-      c.lastMessage = { ...(c.lastMessage || {}), ...d.ultimo };
-      if (!c.name && d.nombre) c.name = d.nombre;
-      if (!primera && !d.ultimo.fromMe && _wa.chat !== d.id) c.unreadCount = (waNoLeidos(c) || 0) + 1;
-      if (!d.ultimo.fromMe && _wa.chat === d.id && !document.hidden) waApi('visto', { chatId: d.id }).catch(() => {});
-      cambio = true;
-    });
-    primera = false;
-    if (cambio) { _wa.chats.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)); waPintarLista(); }
-  }, e => console.warn('WA en vivo (chats)', e));
+/* ── En vivo: el bot guarda una copia de cada mensaje de WhatsApp en Supabase (no en Firebase, para no gastar Firestore)
+   y el panel la escucha. Así los mensajes nuevos aparecen al instante sin pedirle la lista completa a WAHA.
+   La sesión sigue siendo la de Firebase: Supabase solo deja ver los mensajes a los correos del equipo. ── */
+const WA_SUPA_URL = 'https://qiwqrnsedzfluvllryka.supabase.co', WA_SUPA_KEY = 'sb_publishable_O-K3QtrH6tGl8qy_ajcxbw_ZroiePrd';
+let _waSupaP = null;
+function waSupa() {   // la librería se carga solo al abrir WhatsApp
+  if (_waSupaP) return _waSupaP;
+  _waSupaP = new Promise((ok, mal) => {
+    const crear = () => ok(window.supabase.createClient(WA_SUPA_URL, WA_SUPA_KEY, { accessToken: async () => (auth.currentUser ? auth.currentUser.getIdToken() : null) }));
+    if (window.supabase?.createClient) return crear();
+    const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js';
+    sc.onload = crear; sc.onerror = () => { _waSupaP = null; mal(new Error('No se pudo cargar Supabase')); }; document.head.appendChild(sc);
+  });
+  return _waSupaP;
 }
-function waVivoMensajes() {
-  waVivoMsgOff();
+const waDeFila = r => ({ id: r.id, body: r.body || '', fromMe: !!r.from_me, timestamp: Number(r.ts) || 0, ack: r.ack || 0, hasMedia: !!r.has_media, media: r.has_media ? { mimetype: r.mimetype || '' } : null });
+function waAplicarChat(d, enVivo) {
+  if (!d?.id || !d.ultimo) return false;
+  let c = _wa.chats.find(x => x.id === d.id);
+  const antes = c?.lastMessage?.timestamp || 0, ts = Number(d.ultimo.timestamp) || 0;
+  if (c && ts <= antes) return false;
+  if (!c) { if (!enVivo) return false; c = { id: d.id, name: d.nombre || '', lastMessage: {} }; _wa.chats.unshift(c); }
+  c.lastMessage = { ...(c.lastMessage || {}), ...d.ultimo };
+  if (!c.name && d.nombre) c.name = d.nombre;
+  if (enVivo && !d.ultimo.fromMe && _wa.chat !== d.id) c.unreadCount = (waNoLeidos(c) || 0) + 1;
+  if (enVivo && !d.ultimo.fromMe && _wa.chat === d.id && !document.hidden) waApi('visto', { chatId: d.id }).catch(() => {});
+  return true;
+}
+function waOrdenarPintar() { _wa.chats.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)); waPintarLista(); }
+function waMensajeVivo(m, chat) {
+  if (!m.id || chat !== _wa.chat) return;
+  const i = _wa.msgs.findIndex(x => x.id === m.id);
+  if (i >= 0) { if ((m.ack || 0) > (_wa.msgs[i].ack || 0)) { _wa.msgs[i].ack = m.ack; waPintarMensajes(false); } return; }
+  if (m.fromMe) { const t = _wa.msgs.findIndex(x => String(x.id).startsWith('tmp') && x.body === m.body); if (t >= 0) _wa.msgs.splice(t, 1); }
+  _wa.msgs.push(m); _wa.msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); waPintarMensajes(false);
+}
+async function waVivoChats() {
+  if (_wa.canal) return;
+  _wa.canal = 'cargando';
+  try {
+    const sb = await waSupa();
+    _wa.canal = sb.channel('wa-panel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_chats' }, ev => { if (waAplicarChat(ev.new, true)) waOrdenarPintar(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_mensajes' }, ev => { if (ev.new?.id) waMensajeVivo(waDeFila(ev.new), ev.new.chat); })
+      .subscribe();
+    // Se pone al día con lo que la lista de WAHA todavía no mostraba
+    const { data } = await sb.from('wa_chats').select('id,nombre,ultimo').order('ts', { ascending: false }).limit(40);
+    let cambio = false; (data || []).forEach(d => { cambio = waAplicarChat(d, false) || cambio; }); if (cambio) waOrdenarPintar();
+  } catch (e) { console.warn('WA en vivo', e); _wa.canal = null; }
+}
+async function waVivoMensajes() {   // al abrir un chat, suma lo último guardado por si WAHA aún no lo tenía
   const chat = _wa.chat; if (!chat) return;
-  _wa.offMsgs = db.collection('waChats').doc(waDocId(chat)).collection('msgs').orderBy('timestamp', 'desc').limit(40).onSnapshot(snap => {
-    if (_wa.chat !== chat) return;
-    let cambio = false;
-    snap.docs.forEach(doc => {
-      const m = doc.data(); if (!m.id) return;
-      const i = _wa.msgs.findIndex(x => x.id === m.id);
-      if (i >= 0) { if ((m.ack || 0) > (_wa.msgs[i].ack || 0)) { _wa.msgs[i].ack = m.ack; cambio = true; } return; }
-      if (m.fromMe) { const t = _wa.msgs.findIndex(x => String(x.id).startsWith('tmp') && x.body === m.body); if (t >= 0) _wa.msgs.splice(t, 1); }
-      _wa.msgs.push(m); cambio = true;
-    });
-    if (cambio) { _wa.msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); waPintarMensajes(false); }
-  }, e => console.warn('WA en vivo (mensajes)', e));
+  try {
+    const sb = await waSupa();
+    const { data } = await sb.from('wa_mensajes').select('id,chat,body,from_me,ts,ack,has_media,mimetype').eq('chat', chat).order('ts', { ascending: false }).limit(40);
+    (data || []).forEach(r => waMensajeVivo(waDeFila(r), r.chat));
+  } catch (e) { console.warn('WA en vivo (mensajes)', e); }
 }
-function waVivoMsgOff() { if (_wa.offMsgs) { _wa.offMsgs(); _wa.offMsgs = null; } }
-function waVivoOff() { waVivoMsgOff(); if (_wa.offChats) { _wa.offChats(); _wa.offChats = null; } }
+function waVivoMsgOff() {}
+function waVivoOff() { const ch = _wa.canal; _wa.canal = null; if (ch && ch !== 'cargando') waSupa().then(sb => sb.removeChannel(ch)).catch(() => {}); }
+
 async function waCargarMensajes(primera) {
   if (!_wa.chat) return;
   try {

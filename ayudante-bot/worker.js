@@ -2903,27 +2903,21 @@ async function waOptimizar(env) {
   await waJSON(env, `/api/sessions/${WA_SESION}`, { method: 'PUT', body: JSON.stringify({ name: WA_SESION, config: nuevo }) });
   await env.CACHE.put('waOpt:v1', '1').catch(() => {});
 }
-/* Copia de los chats en Firestore para que el panel los vea en vivo (onSnapshot) en vez de preguntarle a WAHA cada vez.
-   waChats/{chat} → último mensaje y nombre · waChats/{chat}/msgs/{id} → el mensaje (sin archivos: esos se abren en el celular) */
-const waIdDoc = id => String(id || '').replace(/\//g, '_').slice(0, 300);
-async function fsParche(env, path, obj, token) {
-  const qs = Object.keys(obj).map(m => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
-  const r = await fetch(`${docUrl(env, path)}?${qs}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: toValue(obj).mapValue.fields }) });
-  if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || r.status)); }
-}
+/* Copia de los mensajes de WhatsApp en Supabase (proyecto de DGP), no en Firebase, para no gastar lecturas y escrituras de Firestore.
+   El panel la escucha en vivo. El bot entra con su misma sesión de Firebase: Supabase acepta solo correos del equipo (tabla wa_equipo).
+   El inicio de sesión y todo lo demás siguen en Firebase. Los archivos no se copian: se abren en el celular. */
+const WA_SUPA_URL = 'https://qiwqrnsedzfluvllryka.supabase.co';
+const WA_SUPA_KEY = 'sb_publishable_O-K3QtrH6tGl8qy_ajcxbw_ZroiePrd';   // clave pública (no es secreta)
 async function waGuardarLocal(env, p) {
   const chat = String(p.fromMe ? p.to : p.from || ''), id = String(p.id || '');
   if (!id || !/@(c\.us|lid)$/.test(chat)) return;
   const token = await firebaseLogin(env);
-  const ts = Number(p.timestamp) || Math.floor(Date.now() / 1000);
-  const msg = { id, body: String(p.body || '').slice(0, 4000), fromMe: !!p.fromMe, timestamp: ts, ack: Number(p.ack ?? (p.fromMe ? 1 : 0)) || 0,
-    hasMedia: !!p.hasMedia, media: p.hasMedia ? { mimetype: String(p.media?.mimetype || '') } : null };
-  const nombre = p.fromMe ? '' : String(p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '').slice(0, 120);
-  const ultimo = { body: msg.body.slice(0, 200), fromMe: msg.fromMe, timestamp: ts, hasMedia: msg.hasMedia, ack: msg.ack };
-  await Promise.all([
-    fsGuardar(env, `waChats/${waIdDoc(chat)}/msgs/${waIdDoc(id)}`, msg, token),
-    fsParche(env, `waChats/${waIdDoc(chat)}`, { id: chat, ts, ultimo, ...(nombre ? { nombre } : {}) }, token)
-  ]);
+  const fila = { id, chat, body: String(p.body || '').slice(0, 4000), fromMe: !!p.fromMe, ts: Number(p.timestamp) || Math.floor(Date.now() / 1000),
+    ack: Number(p.ack ?? (p.fromMe ? 1 : 0)) || 0, hasMedia: !!p.hasMedia, mimetype: p.hasMedia ? String(p.media?.mimetype || '') : '',
+    nombre: p.fromMe ? '' : String(p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '').slice(0, 120) };
+  const r = await fetch(`${WA_SUPA_URL}/rest/v1/rpc/wa_guardar`, { method: 'POST', headers: { apikey: WA_SUPA_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p: fila }), signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error('Supabase ' + r.status + ': ' + (await r.text()).slice(0, 200));
 }
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
