@@ -3,7 +3,7 @@
 # DGP Global Group · WhatsApp del panel (WAHA, gratis y de código abierto)
 # Se ejecuta UNA vez en la máquina de Google Cloud (Ubuntu), con:
 #   curl -fsSL https://adv.dgp-link.com/wa/instalar.sh | sudo bash
-# Instala: Docker, WAHA (motor GOWS, liviano) y Caddy (candado https automático).
+# Instala: Docker, WAHA (motor NOWEB, el más liviano para la máquina gratis) y Caddy (candado https automático).
 # Al final muestra 3 datos para guardar en Cloudflare como secretos.
 # ──────────────────────────────────────────────────────────────
 set -e
@@ -57,10 +57,10 @@ echo "▶ 4/5 Instalando WhatsApp (WAHA) y el candado (Caddy)…"
 cat > $DIR/docker-compose.yml <<EOF
 services:
   waha:
-    image: devlikeapro/waha:gows
+    image: devlikeapro/waha:latest
     restart: always
     environment:
-      - WHATSAPP_DEFAULT_ENGINE=GOWS
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
       - WAHA_API_KEY=${WAHA_API_KEY}
       - WAHA_DASHBOARD_ENABLED=true
       - WAHA_DASHBOARD_USERNAME=dgp

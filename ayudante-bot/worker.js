@@ -906,7 +906,7 @@ async function handleDiagnostico(request, env, firebaseLogin) {
     try {
       const [ses, srv] = await Promise.all([waJSON(env, `/api/sessions/${WA_SESION}`).catch(e => ({ error: e.message })), waJSON(env, '/api/server/status').catch(e => ({ error: e.message }))]);
       const rec = env.CACHE ? await env.CACHE.get('waReconex', 'json').catch(() => null) : null;
-      out.checks.whatsapp = { ok: ses?.status === 'WORKING', estado: ses?.status || ses?.error, ignora: ses?.config?.ignore || null, servidorDesde: srv?.startTimestamp ? new Date(srv.startTimestamp).toISOString() : (srv?.error || null), optimizado: env.CACHE ? !!(await env.CACHE.get('waOpt:v1').catch(() => null)) : null, reconexiones24h: rec ? rec.filter(t => Date.now() - t < 864e5).length : 0 };
+      out.checks.whatsapp = { ok: ses?.status === 'WORKING', estado: ses?.status || ses?.error, ignora: ses?.config?.ignore || null, servidorDesde: srv?.startTimestamp ? new Date(srv.startTimestamp).toISOString() : (srv?.error || null), optimizado: env.CACHE ? !!(await env.CACHE.get('waOpt:v2').catch(() => null)) : null, reconexiones24h: rec ? rec.filter(t => Date.now() - t < 864e5).length : 0 };
     } catch (e) { out.checks.whatsapp = { ok: false, error: e.message }; }
   }
   if (q.get('ia')) {
@@ -2591,7 +2591,8 @@ async function waEstado(env) {
   catch (e) {
     if (e.status !== 404) throw e;
     // Primera vez: se crea la sesión (los avisos ya van al bot por la configuración del servidor)
-    return waJSON(env, '/api/sessions', { method: 'POST', body: JSON.stringify({ name: WA_SESION, start: true }) });
+    // Motor NOWEB (liviano para la máquina gratis): necesita guardar chats y mensajes para que el panel los liste
+    return waJSON(env, '/api/sessions', { method: 'POST', body: JSON.stringify({ name: WA_SESION, start: true, config: { noweb: { store: { enabled: true, fullSync: false } }, ignore: { status: true, groups: true, channels: true } } }) });
   }
 }
 async function handleWA(request, env) {
@@ -2894,14 +2895,14 @@ async function waPausarAsistente(env, chat, msgId) {
 }
 /* Sesión liviana: WhatsApp no carga grupos, canales ni estados (evita reinicios y resincronizaciones por memoria). Se aplica una sola vez. */
 async function waOptimizar(env) {
-  if (!env.CACHE || await env.CACHE.get('waOpt:v1').catch(() => null)) return;
+  if (!env.CACHE || await env.CACHE.get('waOpt:v2').catch(() => null)) return;
   const ses = await waJSON(env, `/api/sessions/${WA_SESION}`);
   const cfg = ses?.config || {};
   const ign = cfg.ignore || {};
-  if (ign.groups && ign.status && ign.channels) { await env.CACHE.put('waOpt:v1', '1').catch(() => {}); return; }
+  if (ign.groups && ign.status && ign.channels) { await env.CACHE.put('waOpt:v2', '1').catch(() => {}); return; }
   const nuevo = { ...cfg, ignore: { ...ign, status: true, groups: true, channels: true } };
   await waJSON(env, `/api/sessions/${WA_SESION}`, { method: 'PUT', body: JSON.stringify({ name: WA_SESION, config: nuevo }) });
-  await env.CACHE.put('waOpt:v1', '1').catch(() => {});
+  await env.CACHE.put('waOpt:v2', '1').catch(() => {});
 }
 /* Copia de los mensajes de WhatsApp en Supabase (proyecto de DGP), no en Firebase, para no gastar lecturas y escrituras de Firestore.
    El panel la escucha en vivo. El bot entra con su misma sesión de Firebase: Supabase acepta solo correos del equipo (tabla wa_equipo).
