@@ -14617,17 +14617,17 @@ function waAbrir() {
   clearInterval(_wa.timer); _wa.autoIni = true; window.scrollTo(0, 0);
   try { document.getElementById('wa-app').classList.toggle('sin-ficha', localStorage.getItem('dgp-wa-ficha') === '0'); } catch (e) {} waAjustar(); setTimeout(waAjustar, 300);
   waRevisar();
-  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } /* conectado: no se piden chats ni mensajes solos (cada consulta hace que el celular sincronice); se actualiza al entrar o con el botón */ }, 6000);
+  _wa.timer = setInterval(() => { if (document.hidden) return; _wa.n++; if (_wa.estado !== 'WORKING') { if (_wa.n % 2 === 0) waRevisar(); } /* conectado: no se le piden chats ni mensajes a WAHA (cada consulta hace que el celular sincronice); se actualiza al entrar o con el botón */ }, 6000);
 }
 function waNuevoQR() { const q = document.getElementById('wa-qr'); if (q) q.innerHTML = '<div class="au-spin"></div>'; waApi('iniciar').then(() => setTimeout(waRevisar, 4000)).catch(e => toast(e.message, 'err')); }
-function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; }
+function waCerrar() { clearInterval(_wa.timer); _wa.timer = null; waVivoOff(); }
 async function waRevisar() {
   try {
     const d = await waApi('estado');
     if (d.instalado === false) { _wa.estado = 'NO'; waPintarDerecha(); document.getElementById('wa-yo').textContent = 'Sin instalar'; return; }
     const antes = _wa.estado; _wa.estado = d.estado; _wa.yo = d.yo;
     document.getElementById('wa-yo').textContent = d.estado === 'WORKING' ? `Conectado${d.yo?.id ? ' · +' + waNum(d.yo.id) : ''}` : { SCAN_QR_CODE: 'Escanea el código QR', STARTING: 'Iniciando…', STOPPED: 'Detenido', FAILED: 'Falló la conexión' }[d.estado] || d.estado;
-    if (d.estado === 'WORKING') { if (antes !== 'WORKING') { waCargarChats(true); waPintarDerecha(); } }
+    if (d.estado === 'WORKING') { if (antes !== 'WORKING') { waCargarChats(true).then(waVivoChats); waPintarDerecha(); } else waVivoChats(); }
     else { if (d.estado === 'STOPPED' || (d.estado === 'FAILED' && _wa.autoIni)) { _wa.autoIni = false; waApi('iniciar').catch(() => {}); } waPintarDerecha(); }
   } catch (e) { document.getElementById('wa-yo').textContent = 'Sin conexión con el servidor'; _wa.estado = 'ERR'; _wa.err = e.message; waPintarDerecha(); }
 }
@@ -14673,9 +14673,53 @@ function waPintarLista() {
 async function waAbrirChat(id) {
   _wa.chat = id; _wa.msgs = []; document.getElementById('wa-app').classList.add('con-chat');
   waPintarLista(); waPintarDerecha(); await waCargarMensajes(true);
+  waVivoMensajes();
   waApi('visto', { chatId: id }).catch(() => {});
 }
-function waVolver() { _wa.chat = null; document.getElementById('wa-app').classList.remove('con-chat'); waPintarDerecha(); waPintarLista(); }
+function waVolver() { waVivoMsgOff(); _wa.chat = null; document.getElementById('wa-app').classList.remove('con-chat'); waPintarDerecha(); waPintarLista(); }
+/* ── En vivo: el bot guarda una copia de cada mensaje en Firestore (waChats) y el panel la escucha.
+   Así los mensajes nuevos aparecen al instante sin pedirle la lista completa a WAHA. ── */
+const waDocId = id => String(id || '').replace(/\//g, '_');
+function waVivoChats() {
+  if (_wa.offChats) return;
+  let primera = true;
+  _wa.offChats = db.collection('waChats').orderBy('ts', 'desc').limit(40).onSnapshot(snap => {
+    let cambio = false;
+    snap.docChanges().forEach(ch => {
+      if (ch.type === 'removed') return;
+      const d = ch.doc.data(); if (!d.id || !d.ultimo) return;
+      let c = _wa.chats.find(x => x.id === d.id);
+      const antes = c?.lastMessage?.timestamp || 0, ts = d.ultimo.timestamp || 0;
+      if (c && ts <= antes) return;
+      if (!c) { if (primera) return; c = { id: d.id, name: d.nombre || '', lastMessage: {} }; _wa.chats.unshift(c); }
+      c.lastMessage = { ...(c.lastMessage || {}), ...d.ultimo };
+      if (!c.name && d.nombre) c.name = d.nombre;
+      if (!primera && !d.ultimo.fromMe && _wa.chat !== d.id) c.unreadCount = (waNoLeidos(c) || 0) + 1;
+      if (!d.ultimo.fromMe && _wa.chat === d.id && !document.hidden) waApi('visto', { chatId: d.id }).catch(() => {});
+      cambio = true;
+    });
+    primera = false;
+    if (cambio) { _wa.chats.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)); waPintarLista(); }
+  }, e => console.warn('WA en vivo (chats)', e));
+}
+function waVivoMensajes() {
+  waVivoMsgOff();
+  const chat = _wa.chat; if (!chat) return;
+  _wa.offMsgs = db.collection('waChats').doc(waDocId(chat)).collection('msgs').orderBy('timestamp', 'desc').limit(40).onSnapshot(snap => {
+    if (_wa.chat !== chat) return;
+    let cambio = false;
+    snap.docs.forEach(doc => {
+      const m = doc.data(); if (!m.id) return;
+      const i = _wa.msgs.findIndex(x => x.id === m.id);
+      if (i >= 0) { if ((m.ack || 0) > (_wa.msgs[i].ack || 0)) { _wa.msgs[i].ack = m.ack; cambio = true; } return; }
+      if (m.fromMe) { const t = _wa.msgs.findIndex(x => String(x.id).startsWith('tmp') && x.body === m.body); if (t >= 0) _wa.msgs.splice(t, 1); }
+      _wa.msgs.push(m); cambio = true;
+    });
+    if (cambio) { _wa.msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); waPintarMensajes(false); }
+  }, e => console.warn('WA en vivo (mensajes)', e));
+}
+function waVivoMsgOff() { if (_wa.offMsgs) { _wa.offMsgs(); _wa.offMsgs = null; } }
+function waVivoOff() { waVivoMsgOff(); if (_wa.offChats) { _wa.offChats(); _wa.offChats = null; } }
 async function waCargarMensajes(primera) {
   if (!_wa.chat) return;
   try {
@@ -14891,7 +14935,9 @@ async function waEnviar() {
   const t = document.getElementById('wa-txt'), texto = (t?.value || '').trim(); if (!texto || !_wa.chat) return;
   t.value = ''; t.style.height = 'auto';
   _wa.msgs.push({ id: 'tmp' + Date.now(), body: texto, fromMe: true, timestamp: Math.floor(Date.now() / 1000), ack: 0 }); waPintarMensajes(true);
-  try { await waApi('enviar', { chatId: _wa.chat, texto }); setTimeout(() => { waCargarMensajes(); waCargarChats(); }, 1200); }
+  // El mensaje real llega en vivo por Firestore y reemplaza al temporal; si no llega en 6 s, se recarga el chat
+  const chat = _wa.chat;
+  try { await waApi('enviar', { chatId: chat, texto }); setTimeout(() => { if (_wa.chat === chat && _wa.msgs.some(m => String(m.id).startsWith('tmp'))) waCargarMensajes(); }, 6000); }
   catch (e) { toast('No se pudo enviar: ' + e.message, 'err'); t.value = texto; _wa.msgs = _wa.msgs.filter(m => !String(m.id).startsWith('tmp')); waPintarMensajes(true); }
 }
 async function waAdjuntar(input) {

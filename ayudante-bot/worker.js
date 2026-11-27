@@ -2903,6 +2903,28 @@ async function waOptimizar(env) {
   await waJSON(env, `/api/sessions/${WA_SESION}`, { method: 'PUT', body: JSON.stringify({ name: WA_SESION, config: nuevo }) });
   await env.CACHE.put('waOpt:v1', '1').catch(() => {});
 }
+/* Copia de los chats en Firestore para que el panel los vea en vivo (onSnapshot) en vez de preguntarle a WAHA cada vez.
+   waChats/{chat} → último mensaje y nombre · waChats/{chat}/msgs/{id} → el mensaje (sin archivos: esos se abren en el celular) */
+const waIdDoc = id => String(id || '').replace(/\//g, '_').slice(0, 300);
+async function fsParche(env, path, obj, token) {
+  const qs = Object.keys(obj).map(m => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
+  const r = await fetch(`${docUrl(env, path)}?${qs}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: toValue(obj).mapValue.fields }) });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error('Firestore: ' + (d.error?.message || r.status)); }
+}
+async function waGuardarLocal(env, p) {
+  const chat = String(p.fromMe ? p.to : p.from || ''), id = String(p.id || '');
+  if (!id || !/@(c\.us|lid)$/.test(chat)) return;
+  const token = await firebaseLogin(env);
+  const ts = Number(p.timestamp) || Math.floor(Date.now() / 1000);
+  const msg = { id, body: String(p.body || '').slice(0, 4000), fromMe: !!p.fromMe, timestamp: ts, ack: Number(p.ack ?? (p.fromMe ? 1 : 0)) || 0,
+    hasMedia: !!p.hasMedia, media: p.hasMedia ? { mimetype: String(p.media?.mimetype || '') } : null };
+  const nombre = p.fromMe ? '' : String(p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '').slice(0, 120);
+  const ultimo = { body: msg.body.slice(0, 200), fromMe: msg.fromMe, timestamp: ts, hasMedia: msg.hasMedia, ack: msg.ack };
+  await Promise.all([
+    fsGuardar(env, `waChats/${waIdDoc(chat)}/msgs/${waIdDoc(id)}`, msg, token),
+    fsParche(env, `waChats/${waIdDoc(chat)}`, { id: chat, ts, ultimo, ...(nombre ? { nombre } : {}) }, token)
+  ]);
+}
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
   if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
@@ -2914,6 +2936,8 @@ async function handleWAWebhook(request, env, ctx) {
   const tarea = (async () => {
     const p = ev.payload || {};
     if (/@(g\.us|newsletter|broadcast)$/.test(String(p.from || p.to || '')) || /@(g\.us|newsletter|broadcast)$/.test(String(p.to || ''))) return;   // grupos: nunca se procesan
+    // Copia de cada mensaje en Firestore: el panel lo muestra al instante sin pedirle nada a WAHA
+    if (ev.event === 'message.any') await waGuardarLocal(env, p).catch(e => console.warn('WA copia', e));
     if (ev.event === 'message.any' && p.fromMe) { if (env.CACHE && p.to) await env.CACHE.put('waSil:' + String(p.to), '1', { expirationTtl: 12 * 3600 }).catch(() => {}); await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
