@@ -14693,12 +14693,12 @@ function waSupa() {   // la librería se carga solo al abrir WhatsApp
   return _waSupaP;
 }
 const waDeFila = r => ({ id: r.id, body: r.body || '', fromMe: !!r.from_me, timestamp: Number(r.ts) || 0, ack: r.ack || 0, hasMedia: !!r.has_media, media: r.has_media ? { mimetype: r.mimetype || '' } : null });
-function waAplicarChat(d, enVivo) {
+function waAplicarChat(d, enVivo, agregar = enVivo) {
   if (!d?.id || !d.ultimo) return false;
   let c = _wa.chats.find(x => x.id === d.id);
   const antes = c?.lastMessage?.timestamp || 0, ts = Number(d.ultimo.timestamp) || 0;
   if (c && ts <= antes) return false;
-  if (!c) { if (!enVivo) return false; c = { id: d.id, name: d.nombre || '', lastMessage: {} }; _wa.chats.unshift(c); }
+  if (!c) { if (!agregar) return false; c = { id: d.id, name: d.nombre || '', lastMessage: {} }; _wa.chats.unshift(c); }
   c.lastMessage = { ...(c.lastMessage || {}), ...d.ultimo };
   if (!c.name && d.nombre) c.name = d.nombre;
   if (enVivo && !d.ultimo.fromMe && _wa.chat !== d.id) c.unreadCount = (waNoLeidos(c) || 0) + 1;
@@ -14722,9 +14722,9 @@ async function waVivoChats() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_chats' }, ev => { if (waAplicarChat(ev.new, true)) waOrdenarPintar(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_mensajes' }, ev => { if (ev.new?.id) waMensajeVivo(waDeFila(ev.new), ev.new.chat); })
       .subscribe();
-    // Se pone al día con lo que la lista de WAHA todavía no mostraba
+    // Se pone al día con lo que la lista de WAHA todavía no mostraba (y si WAHA no trajo chats, la lista sale de aquí)
     const { data } = await sb.from('wa_chats').select('id,nombre,ultimo').order('ts', { ascending: false }).limit(40);
-    let cambio = false; (data || []).forEach(d => { cambio = waAplicarChat(d, false) || cambio; }); if (cambio) waOrdenarPintar();
+    let cambio = false; (data || []).forEach(d => { cambio = waAplicarChat(d, false, true) || cambio; }); if (cambio) waOrdenarPintar();
   } catch (e) { console.warn('WA en vivo', e); _wa.canal = null; }
 }
 async function waVivoMensajes() {   // al abrir un chat, suma lo último guardado por si WAHA aún no lo tenía
