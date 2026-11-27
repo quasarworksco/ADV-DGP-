@@ -2903,6 +2903,22 @@ async function waOptimizar(env) {
   await waJSON(env, `/api/sessions/${WA_SESION}`, { method: 'PUT', body: JSON.stringify({ name: WA_SESION, config: nuevo }) });
   await env.CACHE.put('waOpt:v1', '1').catch(() => {});
 }
+/* Copia de los mensajes de WhatsApp en Supabase (proyecto de DGP), no en Firebase, para no gastar lecturas y escrituras de Firestore.
+   El panel la escucha en vivo. El bot entra con su misma sesión de Firebase: Supabase acepta solo correos del equipo (tabla wa_equipo).
+   El inicio de sesión y todo lo demás siguen en Firebase. Los archivos no se copian: se abren en el celular. */
+const WA_SUPA_URL = 'https://qiwqrnsedzfluvllryka.supabase.co';
+const WA_SUPA_KEY = 'sb_publishable_O-K3QtrH6tGl8qy_ajcxbw_ZroiePrd';   // clave pública (no es secreta)
+async function waGuardarLocal(env, p) {
+  const chat = String(p.fromMe ? p.to : p.from || ''), id = String(p.id || '');
+  if (!id || !/@(c\.us|lid)$/.test(chat)) return;
+  const token = await firebaseLogin(env);
+  const fila = { id, chat, body: String(p.body || '').slice(0, 4000), fromMe: !!p.fromMe, ts: Number(p.timestamp) || Math.floor(Date.now() / 1000),
+    ack: Number(p.ack ?? (p.fromMe ? 1 : 0)) || 0, hasMedia: !!p.hasMedia, mimetype: p.hasMedia ? String(p.media?.mimetype || '') : '',
+    nombre: p.fromMe ? '' : String(p._data?.notifyName || p._data?.pushName || p._data?.Info?.PushName || '').slice(0, 120) };
+  const r = await fetch(`${WA_SUPA_URL}/rest/v1/rpc/wa_guardar`, { method: 'POST', headers: { apikey: WA_SUPA_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p: fila }), signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error('Supabase ' + r.status + ': ' + (await r.text()).slice(0, 200));
+}
 async function handleWAWebhook(request, env, ctx) {
   const cuerpo = await request.text();
   if (!env.WA_HMAC) return new Response('no configurado', { status: 503 });
@@ -2914,6 +2930,8 @@ async function handleWAWebhook(request, env, ctx) {
   const tarea = (async () => {
     const p = ev.payload || {};
     if (/@(g\.us|newsletter|broadcast)$/.test(String(p.from || p.to || '')) || /@(g\.us|newsletter|broadcast)$/.test(String(p.to || ''))) return;   // grupos: nunca se procesan
+    // Copia de cada mensaje en Firestore: el panel lo muestra al instante sin pedirle nada a WAHA
+    if (ev.event === 'message.any') await waGuardarLocal(env, p).catch(e => console.warn('WA copia', e));
     if (ev.event === 'message.any' && p.fromMe) { if (env.CACHE && p.to) await env.CACHE.put('waSil:' + String(p.to), '1', { expirationTtl: 12 * 3600 }).catch(() => {}); await waLeido(env, String(p.to || '')); await waPausarAsistente(env, String(p.to || ''), String(p.id || '')); return; }
     if (ev.event === 'message' && !p.fromMe) {
       const de = String(p.from || '');
